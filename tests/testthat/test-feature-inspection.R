@@ -360,6 +360,112 @@ testthat::test_that("pulse feature views expose long and wide pulse-known data",
   )
 })
 
+# ledgr-test-profile: fast
+testthat::test_that("[LTB-0549] pulse inspection manifests prepared primitives directly", {
+  bars <- ledgr_test_make_bars(c("BBB", "AAA"), as.Date("2020-01-01") + 0:5)
+  snapshot <- ledgr_snapshot_from_df(
+    bars,
+    db_path = tempfile(fileext = ".duckdb")
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  features <- ledgr_feature_map(
+    z_ret = ledgr_ind_returns(2),
+    a_sma = ledgr_ind_sma(3)
+  )
+  pulse <- ledgr_pulse_snapshot(
+    snapshot,
+    universe = c("BBB", "AAA"),
+    ts_utc = ledgr_utc("2020-01-06"),
+    features = features,
+    cash = 1000
+  )
+  on.exit(close(pulse), add = TRUE)
+
+  long <- ledgr_pulse_features(pulse)
+  testthat::expect_identical(
+    long$ts_utc,
+    rep(ledgr_utc("2020-01-06"), 4L)
+  )
+  testthat::expect_identical(
+    long$instrument_id,
+    rep(c("BBB", "AAA"), each = 2L)
+  )
+  testthat::expect_identical(
+    long$feature_id,
+    rep(c("return_2", "sma_3"), times = 2L)
+  )
+  testthat::expect_identical(
+    long$alias,
+    rep(c("z_ret", "a_sma"), times = 2L)
+  )
+  testthat::expect_identical(
+    long$feature_value,
+    c(
+      pulse$return_2[["BBB"]], pulse$sma_3[["BBB"]],
+      pulse$return_2[["AAA"]], pulse$sma_3[["AAA"]]
+    )
+  )
+
+  original_lookup <- unclass(pulse)[[".pulse_lookup"]]
+  counted_lookup <- list2env(
+    as.list.environment(original_lookup, all.names = TRUE),
+    parent = emptyenv()
+  )
+  original_vector <- original_lookup$feature_vector
+  calls <- 0L
+  counted_lookup$feature_vector <- function(feature_id, default = NA_real_) {
+    calls <<- calls + 1L
+    original_vector(feature_id, default = default)
+  }
+  raw <- unclass(pulse)
+  raw[[".pulse_lookup"]] <- counted_lookup
+  counted <- structure(raw, class = "ledgr_pulse_context")
+
+  testthat::expect_identical(ledgr_pulse_features(counted), long)
+  testthat::expect_identical(calls, 2L)
+  calls <- 0L
+  wide <- testthat::with_mocked_bindings(
+    ledgr_pulse_wide(counted),
+    ledgr_pulse_features = function(...) stop("wide inspection must not build long rows"),
+    .package = "ledgr"
+  )
+  testthat::expect_identical(calls, 2L)
+  testthat::expect_identical(
+    names(wide),
+    c(
+      "ts_utc", "cash", "equity",
+      "AAA__ohlcv_open", "AAA__ohlcv_high", "AAA__ohlcv_low",
+      "AAA__ohlcv_close", "AAA__ohlcv_volume",
+      "AAA__feature_z_ret", "AAA__feature_a_sma",
+      "BBB__ohlcv_open", "BBB__ohlcv_high", "BBB__ohlcv_low",
+      "BBB__ohlcv_close", "BBB__ohlcv_volume",
+      "BBB__feature_z_ret", "BBB__feature_a_sma"
+    )
+  )
+  testthat::expect_identical(wide$ts_utc, ledgr_utc("2020-01-06"))
+  testthat::expect_identical(wide$AAA__feature_z_ret, pulse$return_2[["AAA"]])
+  testthat::expect_identical(wide$BBB__feature_a_sma, pulse$sma_3[["BBB"]])
+
+  long_source <- paste(deparse(ledgr_pulse_features), collapse = "\n")
+  wide_source <- paste(deparse(ledgr_pulse_wide), collapse = "\n")
+  time_source <- paste(
+    deparse(ledgr:::ledgr_pulse_inspection_time),
+    collapse = "\n"
+  )
+  for (forbidden in c("ledgr_utc", "tibble::tibble(", "rbind(")) {
+    testthat::expect_false(grepl(forbidden, long_source, fixed = TRUE), info = forbidden)
+  }
+  for (forbidden in c(
+    "ledgr_pulse_features(", "pivot(", "tibble::as_tibble(", "rows$",
+    "ledgr_utc", "rbind("
+  )) {
+    testthat::expect_false(grepl(forbidden, wide_source, fixed = TRUE), info = forbidden)
+  }
+  for (forbidden in c("ledgr_utc", "as.POSIXct", "as.POSIXlt", "strptime", "grepl")) {
+    testthat::expect_false(grepl(forbidden, time_source, fixed = TRUE), info = forbidden)
+  }
+})
+
 testthat::test_that("pulse snapshots resolve active aliases with feature params", {
   bars <- ledgr_test_make_bars("AAA", as.Date("2020-01-01") + 0:5)
   db_path <- tempfile(fileext = ".duckdb")

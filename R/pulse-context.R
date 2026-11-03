@@ -446,6 +446,8 @@ ledgr_attach_feature_helpers <- function(ctx,
     readable_env = prepared_feature_lookup$readable_env
   )
   ctx$.pulse_lookup$feature_vector <- feature_vector
+  ctx$.pulse_lookup$cutoff_num <- cutoff_num %||%
+    as.numeric(ledgr_utc(ctx$ts_utc))
 
   if (is.environment(ctx)) {
     ctx$.feature_vector <- feature_vector

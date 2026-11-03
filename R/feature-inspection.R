@@ -357,23 +357,46 @@ ledgr_pulse_features <- function(pulse, feature_map = NULL) {
   instruments <- as.character(pulse$universe %||% character())
   n_instrument <- length(instruments)
   n_feature <- length(feature_ids)
-
-  values <- if (n_instrument == 0L || n_feature == 0L) {
-    matrix(numeric(), nrow = n_instrument, ncol = n_feature)
-  } else {
-    matrix(
-      unlist(lapply(feature_ids, lookup$feature_vector), use.names = FALSE),
-      nrow = n_instrument,
-      ncol = n_feature
-    )
-  }
+  values <- ledgr_pulse_inspection_feature_matrix(
+    lookup, feature_ids, n_instrument
+  )
   alias <- if (isTRUE(mapping$mapped)) names(mapping$feature_map) else rep(NA_character_, n_feature)
-  tibble::tibble(
-    ts_utc = rep(ledgr_utc(pulse$ts_utc), n_instrument * n_feature),
+  n <- n_instrument * n_feature
+  tibble::new_tibble(list(
+    ts_utc = rep(ledgr_pulse_inspection_time(lookup), n),
     instrument_id = rep(instruments, each = n_feature),
     feature_id = rep(feature_ids, times = n_instrument),
     feature_value = as.numeric(t(values)),
     alias = rep(alias, times = n_instrument)
+  ), nrow = n)
+}
+
+ledgr_pulse_inspection_time <- function(lookup) {
+  cutoff <- lookup$cutoff_num
+  if (!is.numeric(cutoff) || length(cutoff) != 1L || !is.finite(cutoff)) {
+    rlang::abort(
+      "Pulse context inspection has no prepared numeric cutoff.",
+      class = "ledgr_invalid_pulse_context"
+    )
+  }
+  structure(
+    as.numeric(cutoff),
+    class = c("POSIXct", "POSIXt"),
+    tzone = "UTC"
+  )
+}
+
+ledgr_pulse_inspection_feature_matrix <- function(lookup,
+                                                  feature_ids,
+                                                  n_instrument) {
+  n_feature <- length(feature_ids)
+  if (n_instrument == 0L || n_feature == 0L) {
+    return(matrix(numeric(), nrow = n_instrument, ncol = n_feature))
+  }
+  matrix(
+    unlist(lapply(feature_ids, lookup$feature_vector), use.names = FALSE),
+    nrow = n_instrument,
+    ncol = n_feature
   )
 }
 
@@ -463,29 +486,34 @@ ledgr_pulse_inspection_feature_map <- function(lookup, feature_map = NULL) {
 #' @export
 ledgr_pulse_wide <- function(pulse, feature_map = NULL) {
   ledgr_validate_feature_inspection_pulse(pulse)
-  rows <- ledgr_pulse_features(pulse, feature_map)
+  lookup <- unclass(pulse)[[".pulse_lookup"]]
+  mapping <- ledgr_pulse_inspection_feature_map(lookup, feature_map)
+  feature_ids <- unname(mapping$feature_map)
   instruments <- sort(as.character(pulse$universe), method = "radix")
-  feature_keys <- unique(ifelse(is.na(rows$alias), rows$feature_id, rows$alias))
+  feature_keys <- if (length(instruments) == 0L) {
+    character()
+  } else if (isTRUE(mapping$mapped)) {
+    names(mapping$feature_map)
+  } else {
+    feature_ids
+  }
   ledgr_validate_pulse_wide_names(instruments = instruments, feature_ids = feature_keys)
   fields <- c("open", "high", "low", "close", "volume")
   bars <- matrix(unlist(lapply(fields, function(field) {
-    value <- pulse[[field]]
-    if (!is.numeric(value) || is.null(names(value))) {
+    value <- lookup$bars[[field]]
+    if (!is.numeric(value)) {
       rlang::abort(
         sprintf("Pulse context is missing named bar column `%s`.", field),
         class = "ledgr_invalid_pulse_context"
       )
     }
-    as.numeric(value[instruments])
+    as.numeric(value[match(instruments, lookup$universe)])
   }), use.names = FALSE), nrow = length(instruments), ncol = length(fields))
   features <- if (length(instruments) == 0L || length(feature_keys) == 0L) {
     matrix(numeric(), nrow = length(instruments), ncol = length(feature_keys))
   } else {
-    value_matrix <- matrix(
-      rows$feature_value,
-      nrow = length(pulse$universe),
-      ncol = length(feature_keys),
-      byrow = TRUE
+    value_matrix <- ledgr_pulse_inspection_feature_matrix(
+      lookup, feature_ids, length(pulse$universe)
     )
     value_matrix[match(instruments, pulse$universe), , drop = FALSE]
   }
@@ -494,13 +522,13 @@ ledgr_pulse_wide <- function(pulse, feature_map = NULL) {
   value_names <- as.vector(t(outer(instruments, suffixes, paste, sep = "__")))
   out <- c(
     list(
-      ts_utc = if (!is.null(pulse$ts_utc)) ledgr_utc(pulse$ts_utc) else as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"),
+      ts_utc = ledgr_pulse_inspection_time(lookup),
       cash = as.numeric(pulse$cash),
       equity = as.numeric(pulse$equity)
     ),
     stats::setNames(as.list(as.numeric(t(values))), value_names)
   )
-  tibble::as_tibble(out)
+  tibble::new_tibble(out, nrow = 1L)
 }
 
 ledgr_validate_pulse_wide_names <- function(instruments, feature_ids = character()) {
