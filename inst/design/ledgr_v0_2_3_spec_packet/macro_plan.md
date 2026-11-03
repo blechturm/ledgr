@@ -829,6 +829,25 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
   the first probe counts quiet pulses on the peer workloads and what each
   costs. The R implementation stays the oracle, and a compiled stage is
   considered only for a stage that still dominates after these R options.
+- **Amendment (maintainer, 2026-11-03, FIFO kernel and dependencies):** the
+  R-floor and lean-FIFO spikes (`dev/spikes/r_floor/`,
+  `dev/spikes/lean_fifo/`) show the one FIFO lot kernel is the largest cost
+  of a lean fold on trading workloads. Book copies cost nothing measurable,
+  so copy-on-modify stays; per-call validation, the dust helper and generic
+  arithmetic are the cost. Decisions:
+  - the lean core takes a lean R implementation of the same kernel,
+    bit-identical to today's (2.2 to 2.5 times faster in the spike), with
+    validation once at a trusted boundary, and keeps the lot book in a typed
+    representation inside the fold, converting only at its edges;
+  - no new dependency for compiled kernels. quickr matched bit for bit and
+    was 5 to 6 times faster, but adds Fortran, a young build-time tool and
+    cross-compiler exactness risk; it is parked on the horizon;
+  - if WS14 still finds the FIFO kernel dominant after the R options, its
+    compiled form is C++ through the existing cpp11 dependency, built with
+    `-ffp-contract=off`, with the lean R kernel as its oracle and the Type 2
+    decision this section already requires; that same change retires the
+    opt-in `spot_fifo.cpp`, so ledgr keeps one R oracle and at most one
+    compiled FIFO.
 
 ## 4. Cut strategy
 

@@ -29,6 +29,29 @@ an architecture note, or a spec packet.
 
 ## Open
 
+<a id="2026-11-03-execution-quickr-kernel-generator"></a>
+### 2026-11-03 [execution] quickr as a build-time generator for numerical kernels
+
+The lean-FIFO spike (`dev/spikes/lean_fifo/`) compiled the lot kernel's
+arithmetic core with quickr 0.3.0: bit-identical to `ledgr_lot_fill()` on
+every recorded and random stream, 5 to 6 times faster per call, and the
+compiled core alone about 0.1 us per fill. The same quickr source, run as
+plain R with a no-op `declare()`, also matched, so one R source could serve
+as both the readable oracle and the compiled path. With
+`quickr::compile_package()` the generated Fortran is committed and quickr is
+a build-time tool only.
+
+The maintainer decided on 2026-11-03 against a new dependency for compiled
+kernels (macro plan WS14, "FIFO kernel and dependencies"): Fortran next to
+C++, a young single-maintainer generator, committed generated code to
+review, and bit-identity unproven under LLVM flang and Apple arm64, where
+multiply-adds may be fused. Revisit only if a cross-platform check shows
+quickr's generated code stays bit-identical and "one R source" outweighs
+those costs. The compiler spike's own conclusion was the same: handwritten
+C++ remains the production default.
+
+This entry authorizes no implementation.
+
 <a id="2026-11-03-ux-showcase-exact-decision-explanations"></a>
 ### 2026-11-03 [ux] Showcase exact decision explanations with a worked example
 
