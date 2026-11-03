@@ -1242,8 +1242,13 @@ cuts:
   - id: 11
     name: "Typed accounting and exact durable evidence"
     cut: "2026-11-03"
-    status: "draft"
-    accepted: null
+    status: "accepted"
+    accepted: >-
+      2026-11-03 by the maintainer after the independent cut review and focused
+      PASS_AFTER_PATCHES confirmation. The maintainer accepts the proposed
+      INCOMPLETE correction: sweep/candidate annualized_return becomes
+      NA_real_, matching the durable run metrics table; no other surface
+      changes and audit S2-014 remains out of scope.
     opening: >-
       The execution core now has one typed stage carrier, but durable
       accounting still crosses JSON, three reader families replay overlapping
@@ -1286,9 +1291,10 @@ cuts:
       typed columns first exist. (3) The raw public
       ledger remains SELECT * and therefore gains the bound typed columns;
       every other public table, print and summary is exact except the decided
-      INCOMPLETE annualized_return correction. Its exact value is a pending
-      maintainer choice recorded by the cut review; no implementation starts
-      until acceptance binds it. Audit S2-014 stays out of scope. (4) The
+      INCOMPLETE correction: for the A0 avail_incomplete candidates, the sweep
+      annualized_return becomes NA_real_, equal to the durable run metrics
+      table at avail_incomplete/run/metrics.csv; no other surface changes and
+      audit S2-014 stays out of scope. (4) The
       final store format uses schema-version 125 plus a new diagnostic-codec
       store-format rule binding. Together they cover the typed ledger, exact
       diagnostic codec, summaries, association evidence and removal of
@@ -1355,7 +1361,7 @@ cuts:
       integrated records. Finding-bearing reviews write packet files. A design
       concern returns NEEDS_TYPE_2; a third correction round stops for maintainer
       disposition.
-    cut_review: "CHANGES_REQUIRED in cut_review_11.md (independent clean-context Claude CLI, Opus/high): R1-R12 required ticket ordering, fingerprint, evidence, census and documentation patches. Focused confirmation returned PASS_AFTER_PATCHES; N1-N2's exact memory-gate and contract-ownership wording is applied and needs no further review. R13, the exact INCOMPLETE annualized_return value, remains an explicit maintainer decision at acceptance."
+    cut_review: "CHANGES_REQUIRED in cut_review_11.md (independent clean-context Claude CLI, Opus/high): R1-R12 required ticket ordering, fingerprint, evidence, census and documentation patches. Focused confirmation returned PASS_AFTER_PATCHES; N1-N2's exact memory-gate and contract-ownership wording is applied and needs no further review. The maintainer accepted R13 as NA_real_ in the A0 avail_incomplete sweep/candidate annualized_return, matching the durable run metrics table; Cut 11 is operative."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -3632,10 +3638,14 @@ tickets:
       position walks, unsorted fallbacks and duplicate fill-delta recovery.
       Keep raw ledger, typed dedupe and identity/order/cleanup queries as narrow
       typed exceptions. Preserve and detect inline_summary() as the memory
-      candidate's live result projection. Correct INCOMPLETE annualized_return
-      to the run-reader authority and migrate every public table/summary/print.
+      candidate's live result projection. Correct the A0 avail_incomplete
+      sweep/candidate annualized_return from 0 to NA_real_, equal to the
+      durable run metrics rows in
+      dev/bench/v0_2_3_output_freeze/records/avail_incomplete/run/metrics.csv;
+      no other surface changes and S2-014 remains out of scope. Migrate every
+      public table/summary/print.
     acceptance:
-      - "the LDG-3200 records are byte/exact equal after normalization except the explicitly recorded INCOMPLETE annualized_return correction; ledger shape has not changed yet"
+      - "the LDG-3200 records are byte/exact equal after normalization except A0 avail_incomplete sweep_w1/sweep.csv and sweep_w2/sweep.csv annualized_return, which become typed NA_real_ to match run/metrics.csv; no other surface changes and ledger shape has not changed yet"
       - "a source/runtime census proves every accounting-semantic durable/reconstruction reader calls the preparer/replay, every exempt query is named and derives no accounting state, and restoring any old reader/position walk fails"
       - "terminal recovery performs one replay over the event stream and grows linearly on the registered pulse/event ladder; removing the forward state or restoring pulse-by-pulse replay fails its detector"
       - "inline_summary production use and exact parity with durable supported candidate shapes are detected separately; the seven-shape walk is complete"

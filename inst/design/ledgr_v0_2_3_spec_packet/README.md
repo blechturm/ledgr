@@ -1,10 +1,9 @@
 # ledgr v0.2.3 Spec Packet
 
 Role: living; current packet front door.
-Status: working; macro plan revision 9 records the accepted within-release
-order. Cuts 1, 2, 4, 5, 6, 7, 9 and 10 are closed. Cut 11 is the
-draft implementation packet for macro WS7, WS8 and WS15; maintainer acceptance
-is next. Cut 6 (WS4b, one execution path) is
+Status: working; macro plan revision 10 records the accepted within-release
+order. Cuts 1, 2, 4, 5, 6, 7, 9 and 10 are closed. Cut 11 is accepted and
+operative for macro WS7, WS8 and WS15. Cut 6 (WS4b, one execution path) is
 implemented and accepted through `14252ffb`: its final independent Type 1
 confirmation is `PASS`, and workstream 14/LDG-3178 are complete. Cut 7 is the
 accepted WS5 strategy-authoring implementation cut (workstreams 15-18,
@@ -91,7 +90,7 @@ maintainer waived a separate cut review. The independent close review found
 no product defect; its detector and evidence corrections landed at `daa30f06`,
 and a fresh focused review returned PASS.
 
-Cut 11 is the draft "Typed accounting and exact durable evidence"
+Cut 11 is the accepted "Typed accounting and exact durable evidence"
 cut (workstreams 23-25, nine operative tickets across LDG-3200-LDG-3209;
 LDG-3203 retired during review). It freezes one canonical logical
 trace before changes, merges accounting readers behind one typed replay,
@@ -100,9 +99,9 @@ pulse-level resume and stores an exactly reconstructible diagnostic trace.
 Its independent [cut review](cut_review_11.md) returned `CHANGES_REQUIRED`;
 R1-R12 were applied and focused confirmation returned `PASS_AFTER_PATCHES`.
 The two exact final wording patches are applied and require no further review.
-The exact INCOMPLETE annualized-return value remains a maintainer choice at
-acceptance. The cut remains unaccepted and authorizes no implementation until
-the maintainer accepts it.
+The maintainer accepted the remaining R13 choice: INCOMPLETE sweep/candidate
+annualized return becomes typed `NA_real_`, matching the durable run metrics
+table. Implementation starts with LDG-3200 in workstream 23.
 
 v0.2.3 is the cleanup, performance and research-authoring release that follows
 the published v0.2.2 point-in-time foundation. The macro plan and cut 1 were
