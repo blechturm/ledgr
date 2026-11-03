@@ -6,7 +6,7 @@ three-feature `ledgr_pulse_snapshot()` context. Snapshot construction, feature
 preparation and pulse construction are outside the clock. Each arm runs in a
 fresh process installed from its pinned commit by the shared timing harness.
 
-Five alternating pairs time repeated calls long enough to clear the Windows
+Eight alternating pairs time repeated calls long enough to clear the Windows
 timer quantum. The work string pins output dimensions and numeric content.
 The long-helper candidate/base bound is 0.40; the wide-helper bound is 0.25.
 These are implementation materiality gates, not public callback-cost promises.
