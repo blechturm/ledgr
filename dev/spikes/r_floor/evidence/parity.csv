@@ -1,0 +1,7 @@
+"shape","variant","n_fills_floor","n_fills_ledgr","fills_identical","equity_identical","cash_identical","max_abs_equity_diff","final_equity"
+"10x7200","inline",7971,7971,TRUE,TRUE,TRUE,0,"10012372.434942"
+"10x7200","strategy",7971,7971,TRUE,TRUE,TRUE,0,"10012372.434942"
+"20x23400","inline",51242,51242,TRUE,TRUE,TRUE,0,"10564607.716622"
+"20x23400","strategy",51242,51242,TRUE,TRUE,TRUE,0,"10564607.716622"
+"500x1260","inline",67725,67725,TRUE,TRUE,TRUE,0,"10728506.707646"
+"500x1260","strategy",67725,67725,TRUE,TRUE,TRUE,0,"10728506.707646"
