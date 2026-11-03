@@ -354,7 +354,7 @@ testthat::test_that("[LTB-0175] reporting is identical from memory, reopen and r
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0553] run readers admit row-scoped legacy subtype metadata", {
+testthat::test_that("[LTB-0553] run readers retain late heterogeneous disposition fields", {
   snapshot <- terminal_outcome_snapshot(
     list(AAA = c(100, 90, 91)),
     corporate = terminal_outcome_acquisition("AAA", 2L)
@@ -362,7 +362,7 @@ testthat::test_that("[LTB-0553] run readers admit row-scoped legacy subtype meta
   withr::defer(ledgr_snapshot_close(snapshot))
   bt <- ledgr_run(
     terminal_outcome_experiment(snapshot, positions = c(AAA = 2)),
-    run_id = "row-scoped-legacy-subtype"
+    run_id = "late-disposition-schema-probe"
   )
   withr::defer(close(bt))
 
@@ -371,25 +371,56 @@ testthat::test_that("[LTB-0553] run readers admit row-scoped legacy subtype meta
   testthat::expect_no_error(ledgr_corporate_action_summary(bt))
   testthat::expect_no_error(ledgr_compute_metrics(bt))
 
-  # A store may carry a subtype on a different accounting row.
-  # Preserve that row's value while the disposition's rectangular cell stays
-  # missing, then exercise the three public readers that replay the block.
+  # Put the first disposition after yyjsonr's former 100-row schema probe.
+  # The added rows are valid, zero-effect accounting evidence, so all three
+  # public readers must still retain the late disposition fields.
   opened <- ledgr:::ledgr_snapshot_connection(snapshot)
-  opening <- DBI::dbGetQuery(
+  disposition <- DBI::dbGetQuery(
     opened$con,
     paste(
-      "SELECT event_seq, meta_json FROM ledger_events",
-      "WHERE run_id = ? AND event_type = 'CASHFLOW' ORDER BY event_seq LIMIT 1"
+      "SELECT event_seq FROM ledger_events",
+      "WHERE run_id = ? AND event_type = 'DISPOSITION'"
     ),
     params = list(bt$run_id)
   )
-  meta <- ledgr:::ledgr_json_read_nested(opening$meta_json[[1L]])
-  meta$subtype <- "legacy_opening_position"
   DBI::dbExecute(
     opened$con,
-    "UPDATE ledger_events SET meta_json = ? WHERE run_id = ? AND event_seq = ?",
-    params = list(
-      ledgr:::canonical_json(meta), bt$run_id, opening$event_seq[[1L]]
+    "UPDATE ledger_events SET event_seq = 102 WHERE run_id = ? AND event_seq = ?",
+    params = list(bt$run_id, disposition$event_seq[[1L]])
+  )
+  meta_json <- vapply(2:101, function(event_seq) {
+    ledgr:::canonical_json(list(
+      source = "corporate_action_cash",
+      source_fact_id = paste0("late-probe-cash-", event_seq),
+      cash_delta = 0,
+      position_delta = 0,
+      entitled_quantity = 0,
+      gross_cash_per_parent_unit = 1,
+      amount_policy_id = "amount-policy",
+      posting_policy_id = "posting-policy",
+      late_arrival = FALSE,
+      affected_marked_exposure = 0
+    ))
+  }, character(1))
+  DBI::dbAppendTable(
+    opened$con,
+    "ledger_events",
+    data.frame(
+      event_id = paste0("late-probe-event-", 2:101),
+      run_id = bt$run_id,
+      ts_utc = as.POSIXct(
+        rep("2020-01-01 16:00:00", 100L),
+        tz = "UTC"
+      ),
+      event_type = "CASHFLOW",
+      instrument_id = "AAA",
+      side = NA_character_,
+      qty = NA_real_,
+      price = NA_real_,
+      fee = 0,
+      meta_json = meta_json,
+      event_seq = 2:101,
+      stringsAsFactors = FALSE
     )
   )
   testthat::expect_no_error(ledgr_run_info(snapshot, bt$run_id))

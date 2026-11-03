@@ -124,6 +124,41 @@ testthat::test_that("[LTB-0550] typed accounting carrier owns fields and block b
     "AAA"
   ))
 
+  # The first disposition may arrive after yyjsonr's default 100-row schema
+  # probe. One bulk preparation must still retain every late evidence field.
+  early_cash <- do.call(rbind, lapply(2:101, function(event_seq) {
+    typed_accounting_row(
+      event_seq,
+      "CASHFLOW",
+      meta = list(
+        source = "corporate_action_cash",
+        source_fact_id = paste0("early-cash-", event_seq),
+        cash_delta = 0,
+        position_delta = 0,
+        entitled_quantity = 0,
+        gross_cash_per_parent_unit = 1,
+        amount_policy_id = "amount-policy",
+        posting_policy_id = "posting-policy",
+        late_arrival = FALSE,
+        affected_marked_exposure = 0
+      )
+    )
+  }))
+  late_disposition <- typed_accounting_disposition(102L)
+  late_prepared <- ledgr:::ledgr_prepare_accounting_events(
+    rbind(typed_accounting_opening(1L), early_cash, late_disposition),
+    "AAA"
+  )
+  testthat::expect_identical(late_prepared$qty[[102L]], 10)
+  testthat::expect_identical(late_prepared$price[[102L]], 110)
+  testthat::expect_identical(late_prepared$position_before[[102L]], 10)
+  testthat::expect_identical(late_prepared$position_delta[[102L]], -10)
+  testthat::expect_identical(late_prepared$realized_model_pnl[[102L]], 100)
+  testthat::expect_identical(
+    late_prepared$disposition_policy_id[[102L]],
+    "policy-102"
+  )
+
   replay <- ledgr:::ledgr_replay_accounting_events(prepared, initial_cash = 1000)
   testthat::expect_equal(replay$cash, 2845)
   testthat::expect_equal(unname(replay$positions[["AAA"]]), 0)

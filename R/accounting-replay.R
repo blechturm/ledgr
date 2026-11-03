@@ -16,7 +16,14 @@ ledgr_accounting_meta_frame <- function(meta_json) {
   payload <- as.character(meta_json)
   payload[is.na(payload) | !nzchar(payload)] <- "{}"
   parsed <- tryCatch(
-    yyjsonr::read_ndjson_str(paste(payload, collapse = "\n")),
+    # yyjsonr probes only the first 100 rows by default. Accounting blocks are
+    # heterogeneous, so evidence fields that first appear later would be
+    # omitted from the rectangular result. Probe the full block while keeping
+    # one bulk decode boundary and one final frame.
+    yyjsonr::read_ndjson_str(
+      paste(payload, collapse = "\n"),
+      nprobe = length(payload)
+    ),
     error = function(e) {
       ledgr_accounting_event_error(
         "Accounting event meta_json is malformed.",
