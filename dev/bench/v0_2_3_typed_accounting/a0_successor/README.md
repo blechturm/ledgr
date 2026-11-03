@@ -17,4 +17,5 @@ for exactly four accepted cells: the two candidates in each of
 `record_identities.csv` binds both record arms to their exact commits and
 product-tree identities. The record was regenerated at `7361951e`. Correction
 `fbf90cb1` changes `R/`, and regenerating at its tree reproduces all 281 files
-byte for byte.
+byte for byte. The later row-scoped subtype reader correction at `01cc546d`
+changes no recorded A0 output; the committed pair still passes `compare.R`.

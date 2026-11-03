@@ -35,15 +35,15 @@
 "R/accounting-replay.R",339,"abort_wrapper_class","ledgr_invalid_ledger_meta",TRUE,"ledgr_accounting_event_error(""Corporate-action cash metadata is malformed or does not reconcile."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
 "R/accounting-replay.R",379,"abort_wrapper_class","ledgr_invalid_accounting_event",TRUE,"ledgr_accounting_event_error(""Accounting event metadata contains fields forbidden for its event kind."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
 "R/accounting-replay.R",379,"abort_wrapper_class","ledgr_invalid_ledger_meta",TRUE,"ledgr_accounting_event_error(""Accounting event metadata contains fields forbidden for its event kind."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
-"R/accounting-replay.R",401,"abort_wrapper_class","ledgr_invalid_accounting_event",TRUE,"ledgr_accounting_event_error(""DISPOSITION metadata is malformed or carries a forbidden subtype."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
-"R/accounting-replay.R",401,"abort_wrapper_class","ledgr_invalid_ledger_meta",TRUE,"ledgr_accounting_event_error(""DISPOSITION metadata is malformed or carries a forbidden subtype."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
-"R/accounting-replay.R",423,"abort_wrapper_class","ledgr_invalid_accounting_event",TRUE,"ledgr_accounting_event_error(""DISPOSITION evidence fields are malformed."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
-"R/accounting-replay.R",423,"abort_wrapper_class","ledgr_invalid_ledger_meta",TRUE,"ledgr_accounting_event_error(""DISPOSITION evidence fields are malformed."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
-"R/accounting-replay.R",435,"abort_wrapper_class","ledgr_invalid_accounting_event",TRUE,"ledgr_accounting_event_error(""DISPOSITION cash and position deltas do not reconcile to its position and mark."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
-"R/accounting-replay.R",435,"abort_wrapper_class","ledgr_invalid_ledger_meta",TRUE,"ledgr_accounting_event_error(""DISPOSITION cash and position deltas do not reconcile to its position and mark."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
-"R/accounting-replay.R",517,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
-"R/accounting-replay.R",570,"abort_wrapper_class","ledgr_invalid_accounting_event",TRUE,"ledgr_accounting_event_error(""DISPOSITION lot metadata is malformed."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
-"R/accounting-replay.R",570,"abort_wrapper_class","ledgr_invalid_ledger_meta",TRUE,"ledgr_accounting_event_error(""DISPOSITION lot metadata is malformed."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
+"R/accounting-replay.R",407,"abort_wrapper_class","ledgr_invalid_accounting_event",TRUE,"ledgr_accounting_event_error(""DISPOSITION metadata is malformed or carries a forbidden subtype."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
+"R/accounting-replay.R",407,"abort_wrapper_class","ledgr_invalid_ledger_meta",TRUE,"ledgr_accounting_event_error(""DISPOSITION metadata is malformed or carries a forbidden subtype."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
+"R/accounting-replay.R",429,"abort_wrapper_class","ledgr_invalid_accounting_event",TRUE,"ledgr_accounting_event_error(""DISPOSITION evidence fields are malformed."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
+"R/accounting-replay.R",429,"abort_wrapper_class","ledgr_invalid_ledger_meta",TRUE,"ledgr_accounting_event_error(""DISPOSITION evidence fields are malformed."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
+"R/accounting-replay.R",441,"abort_wrapper_class","ledgr_invalid_accounting_event",TRUE,"ledgr_accounting_event_error(""DISPOSITION cash and position deltas do not reconcile to its position and mark."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
+"R/accounting-replay.R",441,"abort_wrapper_class","ledgr_invalid_ledger_meta",TRUE,"ledgr_accounting_event_error(""DISPOSITION cash and position deltas do not reconcile to its position and mark."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
+"R/accounting-replay.R",523,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
+"R/accounting-replay.R",576,"abort_wrapper_class","ledgr_invalid_accounting_event",TRUE,"ledgr_accounting_event_error(""DISPOSITION lot metadata is malformed."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
+"R/accounting-replay.R",576,"abort_wrapper_class","ledgr_invalid_ledger_meta",TRUE,"ledgr_accounting_event_error(""DISPOSITION lot metadata is malformed."", ""ledgr_invalid_ledger_meta"")",TRUE,TRUE,FALSE
 "R/accounting-replay.R",79,"abort_class","ledgr_config_non_finite",TRUE,"""ledgr_config_non_finite""",TRUE,TRUE,FALSE
 "R/availability-diagnostic-writer.R",53,"abort_class","ledgr_invalid_args",TRUE,"""ledgr_invalid_args""",TRUE,TRUE,FALSE
 "R/availability-diagnostic-writer.R",85,"abort_class","ledgr_invalid_fold_execution",TRUE,"""ledgr_invalid_fold_execution""",TRUE,TRUE,FALSE

@@ -96,7 +96,7 @@
 "ledgr_internal_error","R/determinism.R",146,24,FALSE,TRUE,FALSE,FALSE,"internal"
 "ledgr_invalid_accounting_event","R/accounting-replay.R",2,24,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_invalid_alias_map","R/feature-alias-map.R",84,3,TRUE,FALSE,TRUE,TRUE,"documented_public"
-"ledgr_invalid_args","R/accounting-replay.R",517,796,TRUE,FALSE,TRUE,TRUE,"documented_public"
+"ledgr_invalid_args","R/accounting-replay.R",523,796,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_invalid_backtest","R/availability-results.R",3,21,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_invalid_business_objective","R/business-objective.R",25,8,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_invalid_con","R/derived-state.R",3,14,TRUE,FALSE,TRUE,TRUE,"documented_public"

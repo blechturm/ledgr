@@ -113,8 +113,9 @@
 "test","producer_append","tests/testthat/test-sweep.R",3
 "test","producer_fill","tests/testthat/test-sweep.R",2
 "test","ledger_reference","tests/testthat/test-sweep.R",3
+"test","ledger_reference","tests/testthat/test-terminal-reporting.R",2
 "test","producer_append","tests/testthat/test-typed-accounting-boundary.R",5
-"test","reader_prepare","tests/testthat/test-typed-accounting-boundary.R",8
+"test","reader_prepare","tests/testthat/test-typed-accounting-boundary.R",9
 "test","reader_replay","tests/testthat/test-typed-accounting-boundary.R",3
 "test","ledger_reference","tests/testthat/test-walk-forward-orchestrator.R",2
 "test","producer_fill","tests/testthat/test-ws4a-carrier.R",4

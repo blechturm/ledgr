@@ -115,11 +115,26 @@ January solely to append monotonically after its 2 and 3 January witnesses.
 The successor A0 comparator now recomputes each file's size and SHA-256 rather
 than trusting a stored manifest.
 
+## Private-gate reader correction
+
+The first private aggregate arm completed, but its public `ledgr_run_info()`,
+corporate-action summary and metric reads exposed a reader-only regression.
+`yyjsonr` rectangularizes the whole metadata block: a subtype on one valid
+non-disposition event creates a missing subtype cell on every other row. The
+typed validator incorrectly treated the column's existence as a subtype on
+every DISPOSITION. Product `01cc546d` evaluates the prohibition per row. An
+actual disposition subtype remains forbidden, while LTB-0553 pins the three
+public readers before and after adding a legacy subtype only to an opening
+CASHFLOW row. Focused typed-boundary, terminal-reporting, corporate-action,
+result-output and run-store suites pass. The source and codebase census
+checkers pass, and A0 remains exact.
+
 ## Open evidence gates
 
-The private Sharadar aggregate record is **OPEN**. No private data was
-available in this implementation session, so no digest, count, latency or
-peak-memory result is claimed.
+The private Sharadar aggregate record is **OPEN**. Its first candidate arm
+found the row-scoping defect above before producing an accepted comparison;
+the aggregate comparison must resume on the corrected candidate. No digest,
+count, latency or peak-memory pass is claimed yet.
 
 The private record is routed as a mandatory precondition before Workstream 24
 changes the store: take it from immutable base `0d6c0b11`, compare it with the
