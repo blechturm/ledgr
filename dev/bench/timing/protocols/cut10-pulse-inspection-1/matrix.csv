@@ -1,0 +1,3 @@
+cell,workload,clock,args,pairs
+long_600x3,pulse_inspection,inspect,kind=long;reps=1000,5
+wide_600x3,pulse_inspection,inspect,kind=wide;reps=200,5
