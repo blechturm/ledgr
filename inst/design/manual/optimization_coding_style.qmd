@@ -4,7 +4,8 @@ title: "Optimization Coding Style"
 
 **Status:** Maintainer coding-style article updated after v0.2.0.1
 productionization (LDG-2732); rules revised 2026-10-30 after the v0.2.3
-PMwR, JSON and shape audits and an external review.
+PMwR, JSON and shape audits and an external review; the hot-loop POSIXct
+rule added 2026-11-03 after the WS20 timestamp re-parse.
 
 **Authority:** Synthesis plus implementation trace. Binding rules remain in the
 v0.1.8.9 spec (column-buffer write rule), `../contracts.md`, the accepted RFC
@@ -58,6 +59,7 @@ open to measurement. What changed was representation and the placement of loops.
 | provider re-resolving facts from data frames per instrument and pulse | 396 s for 757 identical decision views; 82.7% of loop samples | production primitive planes and cursors; provider-only pass 0.2 s and 0.26% of profiled loop samples | provider spike and LDG-2722/2723 |
 | O(n^2) membership conflict validator run at seal | 95.1% of the traced seal at 30,300 rows (about 1,200 s extrapolated from slices) | production grouped sweeps; 6,000 randomized equivalence comparisons passed; full-scale seal timing remains a Batch 8 measurement | sealing probe and LDG-2728/2729/2730 |
 | per-bar timestamp loop in the ingest dry run | 17 s for 426,191 bars | vectorised call already exists: 0.02 s | sealing probe |
+| one scalar `ledgr_utc(ctx$ts_utc)` re-parse per pulse, added by a review correction | about 0.3 s of a 9.8 s run (500 x 1,260), which cancelled the whole gain from retiring the context frames | numeric epoch passed from the decision packet: run 10.25 s to 9.31 s, decide-stage samples 123 to 75 | WS20 correction 5e21ba51, measured against cc73a9d8 with the fill-heavy probe (`../../../dev/bench/v0_2_3_fill_heavy_profile/`) |
 
 After the production diagnostic block, the profiled 757-pulse spike attributed
 67.6% of captured in-loop samples to valuation, 20.7% to residual fold work,
@@ -187,6 +189,18 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   `ledgr_normalize_ts_utc()` element by element over bars, facts, events, or
   instrument-by-pulse axes. If text is genuinely required, format the whole
   vector once and reuse it.
+- **No POSIXct in the hot loop** (maintainer, 2026-11-03). Code that runs once
+  per pulse, fill or event reads time only as a numeric epoch taken from a
+  prepared run axis or packet. It never constructs, converts, parses or
+  formats a POSIXct, POSIXlt or timestamp string: no `as.POSIXct()`,
+  `ledgr_utc()`, `ledgr_iso_utc()`, `format()` or `strptime()`. That includes
+  a single scalar once per pulse. R's date-time conversions dispatch, check
+  time zones and often round-trip through POSIXlt, so one character-to-POSIXct
+  parse costs a few hundred microseconds. That is a per-pulse cost on the
+  order of the whole frame build it replaced. Values the strategy sees as
+  POSIXct or text are prepared once for the whole axis before the loop and
+  indexed by position. Conversion back belongs to result readers and other
+  boundaries.
 - **No JSON on per-pulse or per-fill paths** (maintainer, 2026-10-30). Fold,
   planning, accounting and reader hot paths carry typed vectors. Canonical
   JSON is allowed only for identity hashing and cold, once-per-run records.
@@ -208,8 +222,9 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
     declares the axis it lives on (instrument, pulse, fill, lot segment).
 
   On data-scale kernel paths, repeated construction of data frames,
-  per-element lists or S3 objects, generic dispatch, JSON, POSIXct
-  conversion and identifier matching need a stated reason. Address by
+  per-element lists or S3 objects, generic dispatch, JSON and identifier
+  matching need a stated reason; POSIXct conversion is not allowed at all
+  (see "No POSIXct in the hot loop"). Address by
   position on a fixed run axis, with a membership mask where the universe
   changes. Sequential loops are allowed where the semantics are sequential
   (FIFO consumption within one instrument, ordered affordability, stateful
@@ -590,6 +605,8 @@ One diagnostic block per pulse versus one frame per instrument:
   proving a new property or paying again for an old one?
 - Is any POSIXct value being formatted merely to compare, order, group, join,
   or align it? If so, keep it as POSIXct or an epoch vector.
+- Does any code that runs per pulse, fill or event touch POSIXct, POSIXlt or
+  timestamp text, even once on a scalar? Which prepared epoch replaces it?
 - Is state inside the fold held in typed vectors, matrices, or segment tables
   with cursors, and do frames appear only at boundaries?
 - Are per-row writes by index into preallocated buffers, with no append?
