@@ -415,3 +415,124 @@ Apply R1-R12 to `tickets.yml` and the three governance files, take the
 maintainer's answer on R13, then run a focused re-review of the re-grained
 tickets (merged WS24 ticket, swapped LDG-3207/3208) and of the R3/R5
 wording.
+
+## Focused Confirmation (M2)
+
+- Date: 2026-11-03
+- Reviewer: independent clean-context Claude CLI, Opus
+- Mode: focused Type 1 re-review of R1-R13 and of new breakage
+- Baseline: correction commit `356ef794` on `release/v0.2.3`
+- Verdict: **PASS_AFTER_PATCHES**
+
+Checked: `tickets.yml` parses, has no duplicate IDs, and Cut 11 has nine
+operative tickets in one serial chain (LDG-3200 -> 3201 -> 3202 -> 3204 ->
+3205 -> 3206 -> 3207 -> 3208 -> 3209). LDG-3203 has no ticket entry, and
+only the sequencing text and README name it, as retired and not reused.
+Workstreams 23-25 belong to cut 11, and their review reasons match the new
+ticket order. The README, `decisions.md` rows, the macro-plan draft-routing
+note and its Section 4 bullet all say the cut is draft and non-operative.
+`R/store-gate.R:3-12` discovers every `ledgr_*_(schema|rule)_version`
+binding from the namespace, so a new codec constant enters the fingerprint
+with no list to edit.
+
+### Status
+
+- **R1 resolved.** LDG-3204 owns the DDL, schema 125, refusal, every
+  producer, all three write paths and the deletion of extraction and JSON,
+  in one green commit. It depends on LDG-3202 and is effort L.
+- **R2 resolved.** LDG-3207 decodes from all-explicit rows, forbids omission
+  and removes the fills-to-diagnostics edge. Only LDG-3208 selects implicit
+  forms.
+- **R3 resolved.** Decision (4), the identity record and LDG-3208 name the
+  codec binding as store-format only, not run identity. LDG-3209 item 1
+  refuses a schema-125 store that carries the WS24-close fingerprint, and
+  item 6 keeps every intermediate commit green.
+- **R4 resolved.** Decision (8) supersedes the earlier gates. LDG-3202 and
+  LDG-3205 have no milestone clock. LDG-3209 names both bases, the four
+  hotspots, the three shape cells, the quiet per-function samples, helper
+  sizing and rows/bytes. LDG-3200 registers the protocol folder.
+- **R5 not resolved; see N1.** The gate has an owner, but the acceptance item
+  states the wrong measure.
+- **R6 resolved.** The disposable candidate-format rebuild comes after
+  hash/digest parity, and LDG-3200 item 3 lists the aggregate digests and
+  counts.
+- **R7 resolved.** The LDG-3200 census covers the named seams. LDG-3207
+  items 2 and 5 exhaust the census and classify the always-physical readers.
+  The LDG-3206 scope covers `max_pulses` and the finalization-only branch,
+  and LDG-3204 item 7 keeps the walk-forward dedupe consumer.
+- **R8 resolved.** `checkpoint_every` stays, and a configuration-hash pin
+  checks it against LDG-3200.
+- **R9 partly resolved; see N2.** LDG-3206 owns the resume text and LDG-3207
+  owns the decoder text. Nobody owns the contract text that LDG-3208 makes
+  false.
+- **R10 resolved.** LDG-3206 items 2 and 6.
+- **R11 resolved.** LDG-3208 item 5.
+- **R12 resolved.** LDG-3204 scope and item 9.
+- **R13: acceptable cut-stage disposition.** Decision (3) says plainly that
+  the value is pending, and that no implementation starts until acceptance
+  binds it. The README and the `cut_review` field say the same, so the
+  choice is surfaced rather than hidden. For the acceptance act to bind it,
+  the act has to edit decision (3) and LDG-3202 item 1 to state the value
+  and the A0 record row. It also has to settle which "run-reader authority"
+  LDG-3202's scope means, because S2-014 makes that ambiguous. If acceptance
+  does not make these edits, the open-acceptance defect R13 named comes
+  back. This review does not choose the value.
+- **Should-fix 1-7 incorporated.** LDG-3201 items 1, 3 and 4; LDG-3204
+  items 7 and 9; decision (2); `measured_input`; LDG-3207 item 5; LDG-3204
+  and LDG-3208 on one batching path; the README revision and the
+  macro-plan routing note.
+
+### N1. LDG-3209 misstates the H1 resource gate
+
+LDG-3209 acceptance item 5 gates "elapsed and peak memory" at 1.10x. The
+gate in `contracts.md:3351-3363` passes or fails on five memory ratios:
+single-run parent working set and private commit, two-worker parent working
+set and private commit, and summed parent-plus-daemon private commit. It
+discloses summed working set without gating it, and it gates no elapsed
+time. As written, the item adds a timing gate that decision (8) and rule 16
+exclude, while leaving the gated measures unnamed. It also leaves out two
+things: the contract's condition that an exception carries a user-visible
+limit and a routed follow-up, and the baseline commit (the review asked for
+LDG-3200's base).
+
+**Patch.** Replace item 5 with: "the paired H1 history resource protocol,
+with its baseline arm built fresh from the LDG-3200 base commit, passes the
+five gated working-set/private-commit ratios at no more than 1.10x (summed
+working set disclosed, elapsed reported but not gated), or a recorded
+maintainer exception gives a user-visible limit and a routed follow-up; this
+is the one binding memory gate retained by decision (8)."
+
+### N2. No ticket owns the contract text for physical encoding
+
+R9 moved documentation from LDG-3209 into LDG-3206 (resume) and LDG-3207
+(decoder boundary). LDG-3208 is the ticket that makes two contract
+statements false, and it has no documentation item:
+
+- `contract-persistence-current-format` (`contracts.md:1476-1491`) does not
+  name the diagnostic-codec binding;
+- `contract-persistence-fold-evidence` (`:1505`) says direct runs "persist
+  one decision trace row per invoked axis ID".
+
+After the R9 correction, LDG-3209 may reconcile only governance links, so
+this text has no owner. That breaks rules 6 and 7 again, and the WS25 close
+review would have no contract text to check the encoding against.
+
+**Patch.** Add to the LDG-3208 scope: "update the current-store-format and
+fold-evidence contracts for the codec binding and certified physical
+omission (logical trace unchanged)". Add to its acceptance: "contract text
+names the codec binding and distinguishes logical rows from physical
+encoding; exact-name searches detect a restored one-physical-row-per-axis
+claim."
+
+### Nit (optional)
+
+LDG-3207 lets the fills association come from "explicit association
+evidence", and LDG-3208 also "implements" association evidence. If
+LDG-3207 needs that evidence, LDG-3207 should write it while all rows stay
+physical. A clause saying so removes the double ownership. LDG-3207 item 3
+already blocks any fallback to diagnostics, so this is about clarity only.
+
+### Next Step
+
+Apply N1 and N2 to `tickets.yml`. No further review is needed for those two
+text patches. Acceptance then binds R13 as described above.

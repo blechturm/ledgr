@@ -98,9 +98,11 @@ trace before changes, merges accounting readers behind one typed replay,
 publishes the schema-125 ledger without accounting JSON, then retires
 pulse-level resume and stores an exactly reconstructible diagnostic trace.
 Its independent [cut review](cut_review_11.md) returned `CHANGES_REQUIRED`;
-R1-R12 are applied, while the exact INCOMPLETE annualized-return value awaits
-the maintainer before focused confirmation. The cut remains unaccepted and
-authorizes no implementation until the maintainer accepts it.
+R1-R12 were applied and focused confirmation returned `PASS_AFTER_PATCHES`.
+The two exact final wording patches are applied and require no further review.
+The exact INCOMPLETE annualized-return value remains a maintainer choice at
+acceptance. The cut remains unaccepted and authorizes no implementation until
+the maintainer accepts it.
 
 v0.2.3 is the cleanup, performance and research-authoring release that follows
 the published v0.2.2 point-in-time foundation. The macro plan and cut 1 were

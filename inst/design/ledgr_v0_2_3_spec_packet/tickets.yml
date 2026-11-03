@@ -1355,7 +1355,7 @@ cuts:
       integrated records. Finding-bearing reviews write packet files. A design
       concern returns NEEDS_TYPE_2; a third correction round stops for maintainer
       disposition.
-    cut_review: "CHANGES_REQUIRED in cut_review_11.md (independent clean-context Claude CLI, Opus/high): R1-R12 require ticket ordering, fingerprint, evidence, census and documentation patches; all are applied in the draft. R13, the exact INCOMPLETE annualized_return value, remains pending maintainer decision before focused confirmation."
+    cut_review: "CHANGES_REQUIRED in cut_review_11.md (independent clean-context Claude CLI, Opus/high): R1-R12 required ticket ordering, fingerprint, evidence, census and documentation patches. Focused confirmation returned PASS_AFTER_PATCHES; N1-N2's exact memory-gate and contract-ownership wording is applied and needs no further review. R13, the exact INCOMPLETE annualized_return value, remains an explicit maintainer decision at acceptance."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -3744,7 +3744,8 @@ tickets:
       every other LDG-3200 census consumer onto it or exact summaries. Remove
       the fills reader's dependency on execution diagnostics and derive unique
       association from typed event sequence/opportunity calendars or explicit
-      association evidence. Decode filtered explanations from only their
+      association evidence; where derivation is not unique, write that explicit
+      evidence here while every row is still physical. Decode filtered explanations from only their
       dependency prefix/window. No physical row is omitted in this ticket.
       Reads execute no user callback and write nothing. Update fold-evidence
       and completion-evidence contracts for the decoder boundary.
@@ -3766,7 +3767,8 @@ tickets:
       From canonical typed fold carriers, select a certified exact implicit
       form or explicit typed residual before diagnostic row expansion,
       validation/JSON and publication. Implement the LDG-3200 derivation map,
-      exact sequence accounting, association evidence and compact D8/decision
+      exact sequence accounting, preservation of LDG-3207 association evidence
+      and compact D8/decision
       summaries. Preserve every non-derivable reason/detail/timestamp/value,
       sub-tolerance intent difference, risk/restriction/unfilled/final-pulse
       evidence, exact sizing tuple and reconciliation arithmetic. Keep one
@@ -3774,6 +3776,9 @@ tickets:
       Apply retention before expansion without exposing next-bar outcomes to
       P2/risk. Add ledgr_diagnostic_codec_rule_version as a store-format binding
       only, not run identity; no second batching path or strategy replay exists.
+      Update the current-store-format and fold-evidence contracts for the codec
+      binding and certified physical omission while the logical trace remains
+      unchanged.
     acceptance:
       - "every LDG-3200 row/field decodes from a named implicit rule or explicit residual; corrupt/missing coverage, residual or association evidence refuses rather than inferring hold"
       - "raw/mixed/helper sizing includes the unchanged-integer placement witness, guard/rounding, zero/liquidation, unavailable and no-instruction distinctions with exact sequence positions"
@@ -3782,6 +3787,7 @@ tickets:
       - "a mutation exposing the next-bar outcome to P2 or risk before retention fails the registered no-lookahead witness, and fill timing remains identical to LDG-3200"
       - "the codec rule binding changes the store fingerprint but not run identity; one shared durable batching path serves the surviving writes"
       - "full/filtered trace, explanations, summaries and close/reopen remain exact after physical omission, and every registered corruption refuses"
+      - "contract text names the codec binding and distinguishes logical rows from physical encoding; exact-name searches detect a restored one-physical-row-per-axis claim"
     evidence: []
   - id: "LDG-3209"
     title: "Verify the final schema, proof families and Cut 11"
@@ -3810,6 +3816,6 @@ tickets:
       - "all seven proof families have exact trace/explanation/summary/sequence/economic parity and corruption/refusal witnesses; absent private evidence keeps the gate open for explicit maintainer disposition"
       - "full tests, registered profiles, A0/frozen references, fixture lanes, source census, package build and R CMD check pass on the exact final candidate"
       - "the one milestone record reports both named bases, all four WS8 hotspots, all three shape cells, quiet per-function counts, helper-sizing and logical/physical rows/bytes plus requested read/decode/memory evidence honestly"
-      - "the paired H1 history resource protocol is at most 1.10x for elapsed and peak memory, or an explicit maintainer exception is recorded; this is the one binding memory gate retained by decision (8)"
+      - "the paired H1 history resource protocol, with its baseline arm built fresh from the LDG-3200 base commit, passes the five gated working-set/private-commit ratios at no more than 1.10x (summed working set disclosed, elapsed reported but not gated), or a recorded maintainer exception gives a user-visible limit and a routed follow-up; this is the one binding memory gate retained by decision (8)"
       - "the golden catalogue and binding list change at each DDL/rule change so every intermediate commit is green; governance links remove pending obligations only after implementation evidence and acceptance"
     evidence: []
