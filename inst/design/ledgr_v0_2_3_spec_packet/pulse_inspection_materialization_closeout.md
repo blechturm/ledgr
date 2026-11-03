@@ -1,8 +1,8 @@
 # Cut 10 pulse inspection materialization closeout
 
 **Candidate:** `9a3b3f2a` for product code; `d40f0d61` includes exact-candidate
-evidence. **Base:** `04fac1bf`. **Status:** awaiting independent Type 1 code
-review.
+evidence; `daa30f06` closes the review findings. **Base:** `04fac1bf`.
+**Status:** independent Type 1 review green after bounded corrections.
 
 ## Product result
 

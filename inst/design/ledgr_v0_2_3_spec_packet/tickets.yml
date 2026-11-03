@@ -1172,7 +1172,16 @@ cuts:
   - id: 10
     name: "Pulse inspection materialization"
     cut: "2026-11-03"
-    status: "open"
+    status: "closed"
+    closed: >-
+      2026-11-03 after Workstream 22 completed and its independent review
+      cycle ended PASS. Two independent verdicts were recorded over two
+      completed tickets (1.000, measured rather than gated): the initial
+      CHANGES_REQUIRED changed the timestamp detector and evidence provenance
+      but no product code; a fresh focused PASS confirmed all three findings
+      closed. The maintainer waived a separate cut review and accepted the
+      bounded implementation direction before work began. No ticket was added,
+      dropped or padded for review accounting.
     accepted: >-
       2026-11-03 by the maintainer after the bounded implementation spike.
       The maintainer waived a separate cut review; one clean-context Claude
@@ -1432,11 +1441,12 @@ workstreams:
   - id: 22
     name: "Direct pulse inspection materialization"
     cut: 10
-    status: "review_pending"
-    accepted: null
+    status: "complete"
+    accepted: "2026-11-03 after independent Type 1 close review and fresh focused PASS confirmation"
     depends_on_workstream: 21
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 22, after LDG-3199", reason: "One bounded optimization claim joins LDG-3198 and LDG-3199: both public pulse inspection helpers retain exact Cut 9 output and refusal behavior, reuse the prepared timestamp, allocate their final typed outputs directly, and wide inspection never constructs or pivots through long inspection; paired clocks meet the recorded materiality bounds without identity, dependency or callback-contract change."}
+    close_review: "CHANGES_REQUIRED in close_review_22.md (independent clean-context Claude Type 1): product code accepted; F1 required a behavioral indirect-reparse detector, F2 repaired evidence provenance and F3 recorded one base-identical zero-feature boundary. Corrections landed at daa30f06; the mutation fails LTB-0549, focused suites and evidence checkers pass, and a fresh clean-context focused Claude review returned PASS with no new finding."
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"

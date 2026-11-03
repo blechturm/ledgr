@@ -81,12 +81,13 @@ PASS, and both workstreams passed their independent close-review cycles.
 Cut 8, workstream 19 and LDG-3191-LDG-3193 belong to the withdrawn, unmerged
 hot-path ban-list branch; their numbers are not reused.
 
-Cut 10 is the accepted bounded pulse-inspection materialization cut
+Cut 10 is the completed bounded pulse-inspection materialization cut
 (workstream 22, LDG-3198-LDG-3199). It preserves Cut 9's public inspection
 semantics while replacing avoidable timestamp parsing, general tibble
 construction and the long-then-wide round trip with direct typed output. The
-maintainer waived a separate cut review; one independent clean-context code
-review closes the workstream after implementation evidence is complete.
+maintainer waived a separate cut review. The independent close review found
+no product defect; its detector and evidence corrections landed at `daa30f06`,
+and a fresh focused review returned PASS.
 
 v0.2.3 is the cleanup, performance and research-authoring release that follows
 the published v0.2.2 point-in-time foundation. The macro plan and cut 1 were
