@@ -460,8 +460,8 @@ ledgr_history_substrate_bar_matrices <- function(bars,
   out
 }
 
-# One pulse column of the bar planes. P1 reads `close` for marks, P2 builds
-# ctx$bars from the packet and P3/P4 fill at the next packet's OHLCV.
+# One pulse column of the bar planes. P1 reads `close` for marks, P2 binds the
+# aligned OHLCV primitives and P3/P4 fill at the next packet's OHLCV.
 ledgr_history_substrate_bar_packet <- function(substrate, pulse_idx) {
   ledgr_history_substrate_require(substrate)
   pulse_idx <- as.integer(pulse_idx)
@@ -482,35 +482,6 @@ ledgr_history_substrate_bar_packet <- function(substrate, pulse_idx) {
     close = as.numeric(bars$close[, pulse_idx]),
     volume = as.numeric(bars$volume[, pulse_idx]),
     observed = as.logical(bars$observed[, pulse_idx])
-  )
-}
-
-# The ctx$bars frame of one packet. Every substrate bar comes from a sealed
-# snapshot row and is never synthetic, so `gap_type` is "NONE" where a bar
-# row filled the cell and "MISSING_EXPECTED_SESSION" elsewhere, and
-# `is_synthetic` is FALSE; both are derived here rather than stored as planes.
-ledgr_history_bar_packet_frame <- function(packet, instrument_idx = NULL) {
-  if (!is.list(packet) || !is.character(packet$instrument_id)) {
-    rlang::abort(
-      "History bar packet is invalid.",
-      class = c("ledgr_invalid_history_substrate", "ledgr_invalid_fold_execution")
-    )
-  }
-  if (is.null(instrument_idx)) instrument_idx <- seq_along(packet$instrument_id)
-  instrument_idx <- as.integer(instrument_idx)
-  data.frame(
-    instrument_id = packet$instrument_id[instrument_idx],
-    ts_utc = as.POSIXct(rep(packet$ts_utc, length(instrument_idx)), tz = "UTC"),
-    open = packet$open[instrument_idx],
-    high = packet$high[instrument_idx],
-    low = packet$low[instrument_idx],
-    close = packet$close[instrument_idx],
-    volume = packet$volume[instrument_idx],
-    gap_type = c("MISSING_EXPECTED_SESSION", "NONE")[
-      packet$observed[instrument_idx] + 1L
-    ],
-    is_synthetic = rep(FALSE, length(instrument_idx)),
-    stringsAsFactors = FALSE
   )
 }
 

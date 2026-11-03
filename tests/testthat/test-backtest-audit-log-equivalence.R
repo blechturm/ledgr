@@ -22,7 +22,7 @@ testthat::test_that("audit_log matches db_live results", {
   ledgr_snapshot_seal(snap)
 
   strategy <- function(ctx, params) {
-    if (as.numeric(ctx$bars$close[[1]]) > as.numeric(ctx$bars$open[[1]])) {
+    if (ctx$close[["BTC"]] > ctx$open[["BTC"]]) {
       return(c(BTC = 1))
     }
     c(BTC = 0)

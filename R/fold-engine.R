@@ -750,10 +750,13 @@ ledgr_fold_stage_decide <- function(
   context_ids <- services$instrument_ids[context_pos]
   p2 <- ledgr_carrier_p2_input(packet, context_ids)
   data <- observation$data
-  bars_current <- ledgr_history_bar_packet_frame(list(
-    ts_utc = ts, instrument_id = context_ids, open = data$open, high = data$high,
-    low = data$low, close = data$close, volume = data$volume, observed = data$observed
-  ))
+  bars_current <- list(
+    open = data$open,
+    high = data$high,
+    low = data$low,
+    close = data$close,
+    volume = data$volume
+  )
   positions_snapshot <- ledgr_fold_positions_snapshot(position, context_ids)
   position_facts <- ledgr_position_fact_source(
     fold_state$position_facts,
@@ -764,42 +767,10 @@ ledgr_fold_stage_decide <- function(
     context_pos = context_pos,
     unknown_basis = services$position_fact_unknown_basis_mask
   )
-  # The long feature table is the schema-only frame the context contract
-  # allows on the availability path; accessors and the wide view carry values.
-  features_current <- services$empty_feature_table
-  if (!is.data.frame(features_current)) {
-    features_current <- services$empty_feature_table
-  }
-  features_wide_current <- ledgr_projection_features_wide(
-    services$runtime_projection,
-    projection_idx,
-    feature_ids = services$def_ids
-  )
-  if (!is.data.frame(features_wide_current)) {
-    features_wide_current <- services$empty_df
-  }
-  if (nrow(features_current) > 0L) {
-    features_current <- features_current[
-      as.character(features_current$instrument_id) %in% context_ids,
-      ,
-      drop = FALSE
-    ]
-  }
-  if (nrow(features_wide_current) > 0L &&
-      "instrument_id" %in% names(features_wide_current)) {
-    features_wide_current <- features_wide_current[
-      as.character(features_wide_current$instrument_id) %in% context_ids,
-      ,
-      drop = FALSE
-    ]
-  }
-
   ctx <- list(
     run_id = services$run_id,
     ts_utc = ts_iso,
     universe = context_ids,
-    bars = bars_current,
-    feature_table = features_current,
     .positions = positions_snapshot,
     cash = fold_state$cash,
     equity = fold_state$cash + observation$positions_value,
@@ -815,13 +786,12 @@ ledgr_fold_stage_decide <- function(
   ctx <- ledgr_update_pulse_context_helpers(
     ctx,
     bars = bars_current,
-    features = features_current,
+    features = services$empty_df,
     positions = positions_snapshot,
     universe = context_ids,
     projection = services$runtime_projection,
     pulse_idx = projection_idx,
     feature_ids = services$def_ids,
-    features_wide = features_wide_current,
     active_alias_map = services$active_alias_map,
     feature_name_state = services$availability_feature_name_state,
     feature_lookup_state = services$availability_feature_lookup_state,
@@ -1708,11 +1678,6 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   }
   n_inst <- length(instrument_ids)
 
-  empty_feature_table <- if (n_def > 0L) {
-    ledgr_projection_feature_table(runtime_projection, 1L, feature_ids = character())
-  } else {
-    empty_df
-  }
   projection_pulse_idx <- unname(runtime_projection$pulse_index[
     ledgr_projection_pulse_names(pulses_posix)
   ])
@@ -1815,7 +1780,6 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     id_to_idx = id_to_idx,
     history_reader = history_reader,
     empty_df = empty_df,
-    empty_feature_table = empty_feature_table,
     runtime_projection = runtime_projection,
     projection_pulse_idx = as.integer(projection_pulse_idx),
     def_ids = def_ids,

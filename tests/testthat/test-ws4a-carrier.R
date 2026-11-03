@@ -1498,12 +1498,8 @@ testthat::test_that("[WS4a O3.28] the compiled risk plan is validated in E, not 
 # shared name-keyed predicate also flags %in% here; the census lists the P2
 # input and return boundaries that name instruments.
 ws4a_d3_3165 <- c(
-  # P2 input: the feature tables of the public context are filtered to the
-  # context IDs (a column-name test and two ID filters).
-  ledgr_fold_stage_decide = "as.character(features_current$instrument_id) %in% context_ids",
-  ledgr_fold_stage_decide = "\"instrument_id\" %in% names(features_wide_current)",
-  ledgr_fold_stage_decide = "as.character(features_wide_current$instrument_id) %in% context_ids",
-  # P2 return: the strategy helpers note skipped sizing by instrument ID.
+  # LDG-3195 removed the P2 frame/table input and its three membership scans.
+  # P2 return still notes skipped sizing by instrument ID.
   ledgr_fold_stage_decide = "context_ids %in% services$pulse_notes$sizing_skipped",
   # Mark-source tokens of the decoded dictionary, not instruments.
   ledgr_fold_scheduled_skip_decision = "mark_source %in% c(\"stale_close\", \"frozen_close\")"

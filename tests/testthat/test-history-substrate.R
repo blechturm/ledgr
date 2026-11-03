@@ -1837,20 +1837,14 @@ testthat::test_that("[LTB-0332] removed history representations stay removed", {
   )))
   testthat::expect_false("sessions" %in% names(substrate$provider_plan))
 
-  # The per-pulse packet carries only what P1-P4 read; ctx$bars derives
-  # gap_type and is_synthetic from `observed`. AAA has no bar at session 2.
+  # The per-pulse packet carries only what P1-P4 read. AAA has no bar at
+  # session 2; the flat context consumes these primitives without a frame.
   packet <- ledgr:::ledgr_history_substrate_bar_packet(substrate, 2L)
   testthat::expect_identical(
     names(packet),
     c("ts_utc", "instrument_id", "open", "high", "low", "close", "volume", "observed")
   )
-  frame <- ledgr:::ledgr_history_bar_packet_frame(packet)
-  testthat::expect_identical(frame$gap_type, c("MISSING_EXPECTED_SESSION", "NONE"))
-  testthat::expect_identical(frame$is_synthetic, c(FALSE, FALSE))
-  testthat::expect_identical(
-    ledgr:::ledgr_history_bar_packet_frame(packet, integer())$gap_type,
-    character()
-  )
+  testthat::expect_identical(is.na(packet$close), c(TRUE, FALSE))
 
   provider <- ledgr:::ledgr_availability_provider_from_substrate(
     substrate, fixture$config, "ws41"
@@ -1860,6 +1854,7 @@ testthat::test_that("[LTB-0332] removed history representations stay removed", {
 
   ns <- asNamespace("ledgr")
   for (removed in c(
+    "ledgr_history_bar_packet_frame",
     "ledgr_history_substrate_bar_frame",
     "ledgr_history_substrate_instrument_frame",
     "ledgr_history_substrate_history_reader",

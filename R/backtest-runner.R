@@ -14,19 +14,12 @@ ledgr_strategy_context_list <- function(x, max_items = 8L) {
 }
 
 ledgr_strategy_error_features <- function(ctx) {
-  feature_table <- ctx$feature_table
-  raw <- unclass(ctx)
-  if (is.null(feature_table) && is.data.frame(raw$features)) {
-    feature_table <- raw$features
-  }
-  if (!is.data.frame(feature_table)) {
-    feature_table <- data.frame()
-  }
-  features <- tryCatch(ledgr_feature_names(feature_table), error = function(e) character())
-  if (length(features) == 0L && is.data.frame(ctx$features_wide)) {
-    features <- setdiff(names(ctx$features_wide), c("instrument_id", "ts_utc"))
-  }
-  ledgr_strategy_context_list(features)
+  lookup <- unclass(ctx)[[".pulse_lookup"]]
+  prepared <- if (is.environment(lookup)) lookup$feature_lookup else NULL
+  available <- prepared$available_message %||%
+    prepared$name_lookup$available_message %||%
+    ledgr_feature_names_message(prepared$name_lookup$feature_ids %||% character())
+  as.character(available)
 }
 
 ledgr_strategy_error_message <- function(error, ctx) {

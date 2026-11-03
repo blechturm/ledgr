@@ -394,7 +394,7 @@ ledgr_strategy_preflight_analysis <- function(strategy) {
 # others hold lookup state behind the public accessors (LDG-3072).
 ledgr_pulse_context_private_fields <- function() {
   c(
-    ".feature_table_current", ".feature_vector", ".history", ".notes",
+    ".feature_vector", ".history", ".notes",
     ".schedule_query",
     ".positions", ".pulse_lookup", ".safety_state"
   )
@@ -407,7 +407,7 @@ ledgr_pulse_context_private_fields <- function() {
 # `.positions`, `.safety_state`) hold pulse-local state, so only their
 # literal extraction is refused.
 ledgr_pulse_context_future_carriers <- function() {
-  c(".feature_table_current", ".feature_vector", ".history", ".pulse_lookup")
+  c(".feature_vector", ".history", ".pulse_lookup")
 }
 
 # Functions that return a closure, call, frame or namespace environment, read

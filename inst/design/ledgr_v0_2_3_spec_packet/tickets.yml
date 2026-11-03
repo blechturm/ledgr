@@ -1335,7 +1335,7 @@ workstreams:
   - id: 20
     name: "Primitive pulse context and inspection (macro WS6)"
     cut: 9
-    status: "pending"
+    status: "review_pending"
     accepted: null
     depends_on_workstream: null
     requires_review_acceptance: true
@@ -3131,12 +3131,12 @@ tickets:
       - "the mutation matrix names one failing registered witness for each eager frame constructor, helper-call-closure shape, readable-name rebuild, memo, retired-name, alias/order/empty, metadata/alias-hash, frozen-ownership live-buffer leak, print/strategy-error frame-or-hash, and fixture per-row timestamp-normalization regression"
       - "the response probe remains descriptive and no timing or absent-function claim relies on it as the failure-sensitive oracle"
     evidence:
-      - "dev/spikes/ctx_frame_views/ws6_prechange_inventory.md (commit pending): source-derived B1-B11 runtime, test, maintained-consumer, contract/manual and registered-claim population; named expected differences and ten-family failure-sensitive mutation matrix, frozen before product edits."
+      - "dev/spikes/ctx_frame_views/ws6_prechange_inventory.md at bfd34ef1: source-derived B1-B11 runtime, test, maintained-consumer, contract/manual and registered-claim population; named expected differences and ten-family failure-sensitive mutation matrix, frozen before product edits."
       - "Empirical: input dev/spikes/ctx_frame_views/response_probe.R against unchanged product tree 74015f96 through planning commit 4342c39b; environment Windows 11 x64, R 4.6.1, collapse 2.1.8; reproduction command Rscript dev/spikes/ctx_frame_views/response_probe.R .; result declared-session run DONE, held nonmember and missing bar present, runtime/experiment inspection agreement, retained helper results frozen, empty-axis current behavior recorded, 600 x 3 descriptive timings completed; clock 16.3 seconds wall; the probe remains descriptive and owns no mutation claim."
   - id: "LDG-3195"
     title: "Retire context frames and rebase pulse inspection"
     workstream: 20
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3194"]
@@ -3176,7 +3176,10 @@ tickets:
       - "the seven optimization-shape walk over both helpers and every package callee finds no nested growing loop, rbind, repeated growth, per-row timestamp formatting, repeated ID scan, hash, seal, query or provenance work"
       - "every LDG-3194-registered mutation owned by B1-B10 applies once and fails its named witness on the LDG-3195 candidate; LDG-3197 reruns them"
       - "every test whose subject is ledgr_pulse_features() or ledgr_pulse_wide() builds its context from a real run or ledgr_pulse_snapshot(), never the private fixture adapter (B8), recording B8 as the setup-change reason"
-    evidence: []
+    evidence:
+      - "Product implementation removes the eager P2 bar/long/wide frames, the four public frame fields, snapshot-only alias metadata, the frame/schema builders and two newly orphaned scalar helpers. R/pulse-context.R keeps one primitive lookup; R/feature-inspection.R manifests typed long and wide inspection output on demand."
+      - "Registered LTB-0546/LCL-0535, LTB-0547/LCL-0536 and LTB-0548/LCL-0537 cover real runtime and both inspection entrances, retired-field refusal, aliases/order, frozen retention, absence of frame/hash/query shapes and typed mapped empty axes. Existing semantic tests were rewritten or deleted only where their represented frame ceased to exist."
+      - "Exact-source profile records under dev/bench/v0_2_3_context_frame_retirement: ordinary fast 635/635 in 218.19 seconds (the advisory 112-second timing hint exceeded); ordinary review 524/524 in 951.20 seconds with one registered optional-package skip. The frozen availability witness, WS18 strategy-port digest, WS4a carrier census, control-plane and codebase census pass after the profile-found corrections."
   - id: "LDG-3196"
     title: "Migrate context-frame consumers and contracts"
     workstream: 21

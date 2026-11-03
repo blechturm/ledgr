@@ -347,34 +347,29 @@ ledgr_indicator_source <- function(indicator) {
 #' @export
 ledgr_pulse_features <- function(pulse, feature_map = NULL) {
   ledgr_validate_feature_inspection_pulse(pulse)
-  table <- ledgr_pulse_feature_table(pulse)
+  lookup <- unclass(pulse)[[".pulse_lookup"]]
+  mapping <- ledgr_pulse_inspection_feature_map(lookup, feature_map)
+  feature_ids <- unname(mapping$feature_map)
+  instruments <- as.character(pulse$universe %||% character())
+  n_instrument <- length(instruments)
+  n_feature <- length(feature_ids)
 
-  if (is.null(feature_map)) {
-    active_alias_map <- ledgr_pulse_active_alias_map(pulse)
-    if (!is.null(active_alias_map)) {
-      return(ledgr_pulse_feature_rows_for_alias_map(table, pulse$universe, active_alias_map))
-    }
-    out <- ledgr_pulse_feature_rows(table)
-    out <- out[order(
-      out$instrument_id,
-      out$feature_id,
-      method = "radix"
-    ), , drop = FALSE]
-    rownames(out) <- NULL
-    out$alias <- NA_character_
-    return(out)
-  }
-
-  ledgr_pulse_feature_rows_for_alias_map(
-    table,
-    pulse$universe,
-    ledgr_explicit_feature_lookup(
-      feature_map,
-      ledgr_feature_name_lookup_state(
-        unique(as.character(table$feature_name %||% character())),
-        active_alias_map = ledgr_pulse_active_alias_map(pulse)
-      )
+  values <- if (n_instrument == 0L || n_feature == 0L) {
+    matrix(numeric(), nrow = n_instrument, ncol = n_feature)
+  } else {
+    matrix(
+      unlist(lapply(feature_ids, lookup$feature_vector), use.names = FALSE),
+      nrow = n_instrument,
+      ncol = n_feature
     )
+  }
+  alias <- if (isTRUE(mapping$mapped)) names(mapping$feature_map) else rep(NA_character_, n_feature)
+  tibble::tibble(
+    ts_utc = rep(ledgr_utc(pulse$ts_utc), n_instrument * n_feature),
+    instrument_id = rep(instruments, each = n_feature),
+    feature_id = rep(feature_ids, times = n_instrument),
+    feature_value = as.numeric(t(values)),
+    alias = rep(alias, times = n_instrument)
   )
 }
 
@@ -385,127 +380,28 @@ ledgr_validate_feature_inspection_pulse <- function(pulse) {
   invisible(TRUE)
 }
 
-ledgr_pulse_feature_table <- function(pulse) {
-  table <- pulse$feature_table
-  if (is.null(table)) {
-    table <- data.frame()
+ledgr_pulse_inspection_feature_map <- function(lookup, feature_map = NULL) {
+  if (!is.environment(lookup) || !is.list(lookup$feature_lookup) ||
+      !is.function(lookup$feature_vector)) {
+    rlang::abort(
+      "Pulse context feature inspection is not initialized.",
+      class = "ledgr_invalid_pulse_context"
+    )
   }
-  if (!is.data.frame(table)) {
-    rlang::abort("Pulse feature table must be a data frame.", class = "ledgr_invalid_pulse_context")
-  }
-  current_table <- pulse$.feature_table_current
-  if (nrow(table) == 0L &&
-      is.function(current_table)) {
-    table <- current_table()
-    if (!is.data.frame(table)) {
-      rlang::abort(
-        "Pulse feature inspection must return a data frame.",
-        class = "ledgr_invalid_pulse_context"
-      )
-    }
-  }
-  table
-}
-
-ledgr_pulse_feature_rows <- function(table) {
-  if (nrow(table) == 0L) {
-    return(tibble::tibble(
-      ts_utc = as.POSIXct(character(), tz = "UTC"),
-      instrument_id = character(),
-      feature_id = character(),
-      feature_value = numeric()
+  prepared <- lookup$feature_lookup$name_lookup
+  available <- as.character(prepared$feature_ids %||% character())
+  if (!is.null(feature_map)) {
+    return(list(
+      feature_map = ledgr_explicit_feature_lookup(feature_map, prepared),
+      mapped = TRUE
     ))
   }
-
-  required <- c("ts_utc", "instrument_id", "feature_name", "feature_value")
-  missing <- setdiff(required, names(table))
-  if (length(missing) > 0L) {
-    rlang::abort(
-      sprintf("Pulse feature table is missing required columns: %s.", paste(missing, collapse = ", ")),
-      class = "ledgr_invalid_pulse_context"
-    )
+  active <- prepared$alias_map
+  if (!is.null(active)) {
+    return(list(feature_map = active, mapped = TRUE))
   }
-
-  tibble::tibble(
-    ts_utc = ledgr_utc(table$ts_utc),
-    instrument_id = as.character(table$instrument_id),
-    feature_id = as.character(table$feature_name),
-    feature_value = as.numeric(table$feature_value)
-  )
-}
-
-ledgr_pulse_active_alias_map <- function(pulse) {
-  # Runtime alias state is inspection metadata, not an author-facing context
-  # column.  Read the stored pulse packet directly so strict `$` dispatch does
-  # not turn this internal consumer into a compatibility surface.
-  alias_map <- unclass(pulse)[["active_alias_map"]]
-  if (is.null(alias_map)) {
-    return(NULL)
-  }
-  ledgr_normalize_alias_map(alias_map)
-}
-
-ledgr_pulse_feature_rows_for_alias_map <- function(table, universe, alias_map) {
-  rows <- ledgr_pulse_feature_rows(table)
-  if (nrow(rows) == 0L) {
-    rlang::abort(
-      "Feature map requests unavailable feature IDs. Available feature IDs: <none>.",
-      class = "ledgr_unknown_feature_id"
-    )
-  }
-
-  rows <- rows[order(
-    rows$instrument_id,
-    rows$feature_id,
-    method = "radix"
-  ), , drop = FALSE]
-  rownames(rows) <- NULL
-  alias_map <- ledgr_normalize_alias_map(alias_map)
-  aliases <- names(alias_map)
-  feature_ids <- unname(alias_map)
-  missing <- setdiff(feature_ids, unique(rows$feature_id))
-  if (length(missing) > 0L) {
-    rlang::abort(
-      sprintf(
-        "Feature map requests unavailable feature ID `%s`. Available feature IDs: %s.",
-        missing[[1L]],
-        ledgr_feature_names_message(unique(rows$feature_id))
-      ),
-      class = "ledgr_unknown_feature_id"
-    )
-  }
-  universe <- as.character(universe)
-  if (length(universe) == 0L) {
-    rlang::abort(
-      "Pulse context universe must not be empty.",
-      class = "ledgr_invalid_pulse_context"
-    )
-  }
-
-  out <- vector("list", length(universe) * length(feature_ids))
-  idx <- 0L
-  for (instrument_id in universe) {
-    for (i in seq_along(feature_ids)) {
-      row_idx <- which(rows$instrument_id == instrument_id & rows$feature_id == feature_ids[[i]])
-      if (length(row_idx) == 0L) {
-        next
-      }
-      row <- rows[row_idx[[length(row_idx)]], , drop = FALSE]
-      row$alias <- aliases[[i]]
-      idx <- idx + 1L
-      out[[idx]] <- row
-    }
-  }
-
-  if (idx == 0L) {
-    rows <- rows[0, , drop = FALSE]
-    rows$alias <- character()
-    return(rows)
-  }
-
-  out <- do.call(rbind, out[seq_len(idx)])
-  rownames(out) <- NULL
-  out
+  available <- sort(available, method = "radix")
+  list(feature_map = stats::setNames(available, available), mapped = FALSE)
 }
 
 #' Inspect a pulse as one wide row
@@ -560,51 +456,42 @@ ledgr_pulse_wide <- function(pulse, feature_map = NULL) {
   ledgr_validate_feature_inspection_pulse(pulse)
   rows <- ledgr_pulse_features(pulse, feature_map)
   instruments <- sort(as.character(pulse$universe), method = "radix")
-
-  out <- tibble::tibble(
-    ts_utc = if (!is.null(pulse$ts_utc)) ledgr_utc(pulse$ts_utc) else as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"),
-    cash = as.numeric(pulse$cash),
-    equity = as.numeric(pulse$equity)
-  )
-
-  feature_keys <- ifelse(is.na(rows$alias), rows$feature_id, rows$alias)
+  feature_keys <- unique(ifelse(is.na(rows$alias), rows$feature_id, rows$alias))
   ledgr_validate_pulse_wide_names(instruments = instruments, feature_ids = feature_keys)
-  for (instrument_id in instruments) {
-    out <- ledgr_pulse_wide_add_ohlcv(out, pulse, instrument_id)
-
-    if (nrow(rows) > 0L) {
-      instrument_rows <- rows[rows$instrument_id == instrument_id, , drop = FALSE]
-      if (nrow(instrument_rows) > 0L) {
-        for (i in seq_len(nrow(instrument_rows))) {
-          feature_key <- if (is.na(instrument_rows$alias[[i]])) {
-            instrument_rows$feature_id[[i]]
-          } else {
-            instrument_rows$alias[[i]]
-          }
-          col <- paste0(instrument_id, "__feature_", feature_key)
-          out[[col]] <- instrument_rows$feature_value[[i]]
-        }
-      }
-    }
-  }
-
-  out
-}
-
-ledgr_pulse_wide_add_ohlcv <- function(out, pulse, instrument_id) {
   fields <- c("open", "high", "low", "close", "volume")
-  for (field in fields) {
-    values <- pulse[[field]]
-    if (!is.numeric(values) || is.null(names(values))) {
+  bars <- matrix(unlist(lapply(fields, function(field) {
+    value <- pulse[[field]]
+    if (!is.numeric(value) || is.null(names(value))) {
       rlang::abort(
         sprintf("Pulse context is missing named bar column `%s`.", field),
         class = "ledgr_invalid_pulse_context"
       )
     }
-    col <- paste0(instrument_id, "__ohlcv_", field)
-    out[[col]] <- values[[instrument_id]]
+    as.numeric(value[instruments])
+  }), use.names = FALSE), nrow = length(instruments), ncol = length(fields))
+  features <- if (length(instruments) == 0L || length(feature_keys) == 0L) {
+    matrix(numeric(), nrow = length(instruments), ncol = length(feature_keys))
+  } else {
+    value_matrix <- matrix(
+      rows$feature_value,
+      nrow = length(pulse$universe),
+      ncol = length(feature_keys),
+      byrow = TRUE
+    )
+    value_matrix[match(instruments, pulse$universe), , drop = FALSE]
   }
-  out
+  values <- cbind(bars, features)
+  suffixes <- c(paste0("ohlcv_", fields), paste0("feature_", feature_keys))
+  value_names <- as.vector(t(outer(instruments, suffixes, paste, sep = "__")))
+  out <- c(
+    list(
+      ts_utc = if (!is.null(pulse$ts_utc)) ledgr_utc(pulse$ts_utc) else as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"),
+      cash = as.numeric(pulse$cash),
+      equity = as.numeric(pulse$equity)
+    ),
+    stats::setNames(as.list(as.numeric(t(values))), value_names)
+  )
+  tibble::as_tibble(out)
 }
 
 ledgr_validate_pulse_wide_names <- function(instruments, feature_ids = character()) {

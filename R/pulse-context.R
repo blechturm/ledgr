@@ -14,8 +14,6 @@ ledgr_pulse_context <- function(run_id,
     run_id = run_id,
     ts_utc = ledgr_normalize_ts_utc(ts_utc),
     universe = universe,
-    bars = bars,
-    feature_table = features,
     .positions = positions,
     cash = cash,
     equity = equity,
@@ -27,15 +25,21 @@ ledgr_pulse_context <- function(run_id,
   )
 
   class(ctx) <- "ledgr_pulse_context"
-  ctx <- ledgr_update_pulse_context_helpers(ctx)
+  ctx <- ledgr_update_pulse_context_helpers(
+    ctx,
+    bars = bars,
+    features = features,
+    positions = positions,
+    universe = universe
+  )
   ledgr_validate_pulse_context(ctx)
   ctx
 }
 
 # The author-facing context is a strict lazy list.  The ordinary list stores
-# portfolio values and the four WS6-owned frame/bar surfaces; asset columns
-# live behind the pulse-local lookup so a read can be cached without mutating
-# the list (and without retaining a mutable fold buffer).
+# portfolio values; asset and feature columns live behind the pulse-local
+# lookup so a read can be cached without mutating the list (and without
+# retaining a mutable fold buffer).
 ledgr_pulse_context_asset_fields <- function() {
   c(
     "open", "high", "low", "close", "volume", "position", "held",
@@ -45,13 +49,15 @@ ledgr_pulse_context_asset_fields <- function() {
 }
 
 ledgr_pulse_context_retired_fields <- function() {
-  c("vec", "feature", "features", "position", "idx", "tradable")
+  c(
+    "vec", "feature", "features", "position", "idx", "tradable",
+    "bars", "bar", "feature_table", "features_wide"
+  )
 }
 
 ledgr_pulse_context_reserved_fields <- function() {
   unique(c(
-    "run_id", "ts_utc", "universe", "members", "bars", "bar",
-    "feature_table", "features_wide", "cash", "equity", "seed",
+    "run_id", "ts_utc", "universe", "members", "cash", "equity", "seed",
     "pulse_seed", "state", "flat", "hold",
     ledgr_pulse_context_asset_fields(), ledgr_pulse_context_retired_fields()
   ))
@@ -201,14 +207,10 @@ str.ledgr_pulse_context <- function(object, ...) {
   invisible(object)
 }
 
-ledgr_feature_table_ready <- function(features) {
-  !is.null(features) &&
-    all(c("instrument_id", "feature_name", "feature_value") %in% names(features)) &&
-    length(features[["feature_value"]]) > 0
-}
-
 ledgr_feature_names <- function(features) {
-  if (!ledgr_feature_table_ready(features)) return(character(0))
+  if (is.null(features) ||
+      !all(c("instrument_id", "feature_name", "feature_value") %in% names(features)) ||
+      length(features[["feature_value"]]) == 0L) return(character(0))
   feature_names <- unique(as.character(features[["feature_name"]]))
   sort(
     feature_names[!is.na(feature_names) & nzchar(feature_names)],
@@ -312,7 +314,6 @@ ledgr_feature_vector_accessor <- function(features,
                                           universe,
                                           active_alias_map = NULL,
                                           prepared = NULL) {
-  force(features)
   universe <- as.character(universe)
   available_features <- ledgr_feature_names(features)
   if (is.null(prepared)) {
@@ -322,68 +323,50 @@ ledgr_feature_vector_accessor <- function(features,
     )
   }
 
+  feature_ids <- as.character(prepared$feature_ids %||% available_features)
+  feature_values <- matrix(
+    NA_real_,
+    nrow = length(universe),
+    ncol = length(feature_ids),
+    dimnames = list(universe, feature_ids)
+  )
+  if (nrow(features) > 0L && length(feature_ids) > 0L) {
+    row_idx <- match(
+      as.character(features[["instrument_id"]]),
+      universe,
+      nomatch = 0L
+    )
+    col_idx <- match(
+      as.character(features[["feature_name"]]),
+      feature_ids,
+      nomatch = 0L
+    )
+    keep <- row_idx > 0L & col_idx > 0L
+    if (any(keep)) {
+      feature_values[cbind(row_idx[keep], col_idx[keep])] <-
+        as.numeric(features[["feature_value"]][keep])
+    }
+  }
+  force(feature_values)
+  force(prepared)
+  rm(features)
+
   function(feature_name, default = NA_real_) {
     feature_name <- ledgr_resolve_feature_name(feature_name, prepared)
-
-    out <- rep(as.numeric(default), length(universe))
-    instrument_id <- as.character(features[["instrument_id"]])
-    feature_id <- as.character(features[["feature_name"]])
-    values <- as.numeric(features[["feature_value"]])
-    keep <- feature_id == feature_name
-    if (any(keep)) {
-      idx <- match(instrument_id[keep], universe, nomatch = 0L)
-      valid <- idx > 0L
-      out[idx[valid]] <- values[keep][valid]
+    idx <- match(feature_name, colnames(feature_values), nomatch = 0L)
+    if (idx == 0L) {
+      return(rep(as.numeric(default), nrow(feature_values)))
     }
-    out
+    unname(feature_values[, idx])
   }
-}
-
-ledgr_features_wide <- function(features) {
-  if (!ledgr_feature_table_ready(features)) return(data.frame())
-
-  instrument_id <- as.character(features[["instrument_id"]])
-  feature_name <- as.character(features[["feature_name"]])
-  feature_value <- as.numeric(features[["feature_value"]])
-
-  valid <- !is.na(instrument_id) & nzchar(instrument_id) & !is.na(feature_name) & nzchar(feature_name)
-  if (!any(valid)) return(data.frame())
-
-  instrument_id <- instrument_id[valid]
-  feature_name <- feature_name[valid]
-  feature_value <- feature_value[valid]
-
-  instruments <- unique(instrument_id)
-  feature_names <- unique(feature_name)
-  values <- matrix(
-    NA_real_,
-    nrow = length(instruments),
-    ncol = length(feature_names),
-    dimnames = list(instruments, feature_names)
-  )
-
-  row_index <- match(instrument_id, instruments)
-  column_index <- match(feature_name, feature_names)
-  values[cbind(row_index, column_index)] <- feature_value
-
-  out <- data.frame(instrument_id = instruments, stringsAsFactors = FALSE)
-  if ("ts_utc" %in% names(features)) {
-    ts_utc <- vapply(features[["ts_utc"]][valid], ledgr_iso_utc, character(1))
-    out$ts_utc <- ts_utc[match(instruments, instrument_id)]
-  }
-
-  out <- cbind(out, as.data.frame(values, check.names = FALSE, stringsAsFactors = FALSE))
-  rownames(out) <- NULL
-  out
 }
 
 ledgr_attach_feature_helpers <- function(ctx,
-                                         features = ctx$feature_table,
+                                         features = NULL,
                                          universe = ctx$universe,
                                          projection = NULL,
                                          pulse_idx = NULL,
                                          feature_ids = NULL,
-                                         features_wide = NULL,
                                          active_alias_map = NULL,
                                          feature_name_state = NULL,
                                          feature_lookup_state = NULL) {
@@ -398,42 +381,24 @@ ledgr_attach_feature_helpers <- function(ctx,
         feature_name_state = feature_name_state
       )
     }
-    if (!is.data.frame(features)) {
-      features <- ledgr_projection_feature_table(projection, pulse_idx, feature_ids = feature_ids)
-    }
-    if (!is.data.frame(features_wide)) {
-      features_wide <- ledgr_projection_features_wide(projection, pulse_idx, feature_ids = feature_ids)
-    }
     feature_vector <- ledgr_projection_feature_vector_accessor(
       projection,
       pulse_idx,
       feature_ids = feature_ids,
       prepared = prepared_feature_lookup
     )
-    current_pulse_idx <- as.integer(pulse_idx)
-    current_feature_ids <- ledgr_projection_feature_ids(projection, feature_ids)
     ctx$.pulse_lookup$feature_lookup <- prepared_feature_lookup
-    feature_table_current <- function() {
-      ledgr_projection_feature_table(
-        projection,
-        current_pulse_idx,
-        feature_ids = current_feature_ids
-      )
-    }
+    ctx$.pulse_lookup$feature_vector <- feature_vector
     if (is.environment(ctx)) {
-      ctx$feature_table <- features
-      ctx$features_wide <- features_wide
-      ctx$.feature_table_current <- feature_table_current
       ctx$.feature_vector <- feature_vector
       return(invisible(ctx))
     }
 
-    ctx$feature_table <- features
-    ctx$features_wide <- features_wide
-    ctx$.feature_table_current <- feature_table_current
     ctx$.feature_vector <- feature_vector
     return(ctx)
   }
+
+  if (is.null(features)) return(ctx)
 
   prepared_feature_lookup <- ledgr_feature_name_lookup_state(
     ledgr_feature_names(features),
@@ -445,31 +410,25 @@ ledgr_attach_feature_helpers <- function(ctx,
     prepared = prepared_feature_lookup
   )
   ctx$.pulse_lookup$feature_lookup <- list(name_lookup = prepared_feature_lookup)
+  ctx$.pulse_lookup$feature_vector <- feature_vector
 
   if (is.environment(ctx)) {
-    ctx$feature_table <- features
-    ctx$features_wide <- ledgr_features_wide(features)
-    ctx$.feature_table_current <- NULL
     ctx$.feature_vector <- feature_vector
     return(invisible(ctx))
   }
 
-  ctx$feature_table <- features
-  ctx$features_wide <- ledgr_features_wide(features)
-  ctx$.feature_table_current <- NULL
   ctx$.feature_vector <- feature_vector
   ctx
 }
 
 ledgr_update_pulse_context_helpers <- function(ctx,
-                                               bars = ctx$bars,
-                                               features = if (is.data.frame(ctx$feature_table)) ctx$feature_table else data.frame(),
+                                               bars = NULL,
+                                               features = NULL,
                                                positions = ctx$.positions,
                                                universe = ctx$universe,
                                                projection = NULL,
                                                pulse_idx = NULL,
                                                feature_ids = NULL,
-                                               features_wide = NULL,
                                                active_alias_map = NULL,
                                                feature_name_state = NULL,
                                                feature_lookup_state = NULL,
@@ -482,18 +441,33 @@ ledgr_update_pulse_context_helpers <- function(ctx,
                                                positions_aligned = FALSE,
                                                availability_aligned = FALSE) {
   ctx <- ledgr_ensure_pulse_context_accessors(ctx)
-  ctx <- ledgr_attach_feature_helpers(
-    ctx,
-    features,
-    universe = universe,
-    projection = projection,
-    pulse_idx = pulse_idx,
-    feature_ids = feature_ids,
-    features_wide = features_wide,
-    active_alias_map = active_alias_map,
-    feature_name_state = feature_name_state,
-    feature_lookup_state = feature_lookup_state
-  )
+  if (!is.null(projection) || !is.null(features)) {
+    ctx <- ledgr_attach_feature_helpers(
+      ctx,
+      features,
+      universe = universe,
+      projection = projection,
+      pulse_idx = pulse_idx,
+      feature_ids = feature_ids,
+      active_alias_map = active_alias_map,
+      feature_name_state = feature_name_state,
+      feature_lookup_state = feature_lookup_state
+    )
+  } else if (!is.null(active_alias_map)) {
+    lookup <- unclass(ctx)[[".pulse_lookup"]]
+    existing <- lookup$feature_lookup$name_lookup$feature_ids %||% character()
+    name_lookup <- ledgr_feature_name_lookup_state(
+      existing,
+      active_alias_map = active_alias_map
+    )
+    concrete_vector <- lookup$feature_vector
+    lookup$feature_lookup$name_lookup <- name_lookup
+    lookup$feature_vector <- function(feature_name, default = NA_real_) {
+      feature_id <- ledgr_resolve_feature_name(feature_name, name_lookup)
+      concrete_vector(feature_id, default = default)
+    }
+    ctx$.feature_vector <- lookup$feature_vector
+  }
   ledgr_refresh_pulse_context_lookup(
     ctx,
     bars = bars,
@@ -518,29 +492,20 @@ ledgr_filter_pulse_context_features <- function(ctx, universe, private_universe,
   feature_vector <- raw$.feature_vector
   force(feature_vector)
   context_index <- context_pos %||% match(universe, private_universe)
+  ctx$universe <- universe
   ctx$.feature_vector <- function(feature_name, default = NA_real_) {
     feature_vector(feature_name, default = default)[context_index]
   }
   ctx$.pulse_lookup$feature_vector <- ctx$.feature_vector
-  feature_table_current <- raw$.feature_table_current
-  if (is.function(feature_table_current)) force(feature_table_current)
-  if (is.function(feature_table_current)) {
-    ctx$.feature_table_current <- function() {
-      table <- feature_table_current()
-      table[as.character(table$instrument_id) %in% universe, , drop = FALSE]
-    }
-  }
   ctx
 }
 
 ledgr_pulse_context_helper_bundle <- function(lookup) {
-  bar <- function(id) ledgr_pulse_context_bar(lookup, id)
   flat <- function(default = 0) ledgr_pulse_context_targets(lookup, default = default)
   hold <- function() ledgr_pulse_context_current_targets(lookup)
 
   list(
     .pulse_lookup = lookup,
-    bar = bar,
     flat = flat,
     hold = hold
   )
@@ -567,7 +532,7 @@ ledgr_ensure_pulse_context_accessors <- function(ctx) {
 }
 
 ledgr_refresh_pulse_context_lookup <- function(ctx,
-                                               bars = ctx$bars,
+                                               bars = NULL,
                                                positions = ctx$.positions,
                                                universe = ctx$universe,
                                                id_to_idx = NULL,
@@ -584,17 +549,56 @@ ledgr_refresh_pulse_context_lookup <- function(ctx,
   }
 
   universe <- as.character(universe)
-  lookup$bars <- if (isTRUE(bars_aligned)) bars else if (is.data.frame(bars)) as.data.frame(bars, stringsAsFactors = FALSE) else lapply(bars, identity)
+  fields <- c("open", "high", "low", "close", "volume")
+  if (is.null(bars) && is.list(lookup$bars)) {
+    bars <- lookup$bars
+    bars_aligned <- TRUE
+  } else if (is.null(bars)) {
+    bars <- list()
+  }
+  if (isTRUE(bars_aligned)) {
+    lookup$bars <- stats::setNames(lapply(fields, function(field) {
+      value <- bars[[field]]
+      if (is.null(value)) rep(NA_real_, length(universe)) else as.numeric(value)
+    }), fields)
+    bar_index <- integer()
+  } else {
+    if (!is.list(bars) && !is.data.frame(bars)) {
+      rlang::abort(
+        "Pulse context fixture bars must be a data frame or list-like object.",
+        class = "ledgr_invalid_pulse_context"
+      )
+    }
+    if ("ts_utc" %in% names(bars) && length(bars$ts_utc) > 0L) {
+      normalized <- ledgr_utc(bars$ts_utc)
+      expected <- ledgr_utc(ctx$ts_utc)
+      if (any(is.na(normalized)) || any(normalized != expected)) {
+        rlang::abort(
+          "PulseContext fixture bars must not contain timestamps other than ctx$ts_utc.",
+          class = "ledgr_invalid_pulse_context"
+        )
+      }
+    }
+    bar_index <- ledgr_pulse_context_bar_index(bars, universe)
+    row_idx <- as.integer(bar_index[universe])
+    present <- !is.na(row_idx)
+    lookup$bars <- stats::setNames(lapply(fields, function(field) {
+      out <- rep(NA_real_, length(universe))
+      value <- bars[[field]]
+      if (!is.null(value) && any(present)) out[present] <- as.numeric(value[row_idx[present]])
+      out
+    }), fields)
+  }
   lookup$positions <- if (is.null(positions)) NULL else if (isTRUE(positions_aligned)) positions else structure(as.numeric(positions), names = names(positions))
   lookup$universe <- universe
   lookup$id_to_idx <- ledgr_pulse_context_id_to_idx(universe, id_to_idx)
   lookup$feature_vector <- ctx$.feature_vector
-  lookup$bar_index <- if (isTRUE(bars_aligned)) integer() else ledgr_pulse_context_bar_index(bars, universe)
+  lookup$bar_index <- bar_index
   if (!is.list(availability)) {
     availability <- ledgr_pulse_context_default_availability(
       universe,
       positions,
-      bars
+      lookup$bars
     )
   }
   lookup$availability <- if (isTRUE(availability_aligned)) {
@@ -604,7 +608,7 @@ ledgr_refresh_pulse_context_lookup <- function(ctx,
       if (is.atomic(value)) structure(value, names = names(value)) else value
     })
   }
-  lookup$bars_aligned <- isTRUE(bars_aligned)
+  lookup$bars_aligned <- TRUE
   lookup$positions_aligned <- isTRUE(positions_aligned)
   lookup$availability_aligned <- isTRUE(availability_aligned)
   lookup$position_facts <- position_facts
@@ -629,12 +633,10 @@ ledgr_pulse_context_default_availability <- function(universe, positions, bars) 
       held[idx[keep]] <- positions[keep] != 0
     }
   }
-  close <- rep(NA_real_, length(universe))
-  bar_index <- ledgr_pulse_context_bar_index(bars, universe)
-  if (length(bar_index) > 0L && "close" %in% names(bars)) {
-    idx <- as.integer(bar_index[universe])
-    present <- !is.na(idx)
-    close[present] <- as.numeric(bars$close[idx[present]])
+  close <- if ("close" %in% names(bars) && length(bars$close) == length(universe)) {
+    as.numeric(bars$close)
+  } else {
+    rep(NA_real_, length(universe))
   }
   priced <- is.finite(close) & close > 0
   list(
@@ -761,57 +763,6 @@ ledgr_pulse_context_universe_message <- function(universe) {
   paste(universe, collapse = ", ")
 }
 
-ledgr_pulse_context_require_id <- function(lookup, id) {
-  if (!is.character(id) || length(id) != 1L || is.na(id) || !nzchar(id)) {
-    rlang::abort("`id` must be a non-empty character scalar.", class = "ledgr_invalid_args")
-  }
-
-  universe <- lookup$universe
-  if (is.null(universe)) universe <- character(0)
-  universe <- as.character(universe)
-  if (match(id, universe, nomatch = 0L) == 0L) {
-    rlang::abort(
-      sprintf(
-        "Unknown instrument_id '%s'. Available ctx$universe: %s.",
-        id,
-        ledgr_pulse_context_universe_message(universe)
-      ),
-      class = "ledgr_invalid_pulse_context"
-    )
-  }
-
-  id
-}
-
-ledgr_pulse_context_row_index <- function(lookup, id) {
-  id <- ledgr_pulse_context_require_id(lookup, id)
-  bar_index <- lookup$bar_index
-  row_idx <- if (length(bar_index) == 0L) 0L else match(id, names(bar_index), nomatch = 0L)
-  if (row_idx == 0L) {
-    rlang::abort(
-      sprintf("No bar row for instrument_id '%s' in ctx$bars at the current pulse.", id),
-      class = "ledgr_invalid_pulse_context"
-    )
-  }
-  unname(as.integer(bar_index[[row_idx]]))
-}
-
-ledgr_pulse_context_bar <- function(lookup, id) {
-  row_idx <- ledgr_pulse_context_row_index(lookup, id)
-  bars <- lookup$bars
-
-  if (is.data.frame(bars)) {
-    out <- bars[row_idx, , drop = FALSE]
-    rownames(out) <- NULL
-    return(out)
-  }
-
-  out <- lapply(bars, function(column) column[row_idx])
-  out <- as.data.frame(out, stringsAsFactors = FALSE, optional = TRUE)
-  rownames(out) <- NULL
-  out
-}
-
 ledgr_pulse_context_targets <- function(lookup, default = 0) {
   if (!is.numeric(default) || length(default) != 1L || is.na(default) || !is.finite(default)) {
     rlang::abort("`default` must be a finite numeric scalar.", class = "ledgr_invalid_args")
@@ -909,52 +860,21 @@ ledgr_validate_pulse_context <- function(ctx) {
     rlang::abort("PulseContext `universe` must not contain duplicate instrument_ids.", class = "ledgr_invalid_pulse_context")
   }
 
-  validate_df_ts <- function(df, label) {
-    if (!is.data.frame(df)) {
-      rlang::abort(sprintf("PulseContext `%s` must be a data.frame (or tibble).", label), class = "ledgr_invalid_pulse_context")
-    }
-    if (nrow(df) == 0) return(invisible(TRUE))
-    if (!("ts_utc" %in% names(df))) {
-      rlang::abort(sprintf("PulseContext `%s` must include a `ts_utc` column.", label), class = "ledgr_invalid_pulse_context")
-    }
-    ts_norm <- vapply(df$ts_utc, ledgr_normalize_ts_utc, character(1))
-    if (any(ts_norm != ctx$ts_utc)) {
+  lookup <- unclass(ctx)[[".pulse_lookup"]]
+  if (!is.environment(lookup) || !identical(as.character(lookup$universe), ctx$universe)) {
+    rlang::abort(
+      "PulseContext primitive lookup must align with `universe`.",
+      class = "ledgr_invalid_pulse_context"
+    )
+  }
+  for (field in c("open", "high", "low", "close", "volume")) {
+    value <- lookup$bars[[field]]
+    if (is.null(value) || length(value) != length(ctx$universe)) {
       rlang::abort(
-        sprintf("PulseContext `%s` must not contain timestamps other than ctx$ts_utc.", label),
+        sprintf("PulseContext primitive `%s` must align with `universe`.", field),
         class = "ledgr_invalid_pulse_context"
       )
     }
-    invisible(TRUE)
-  }
-
-  validate_df_instruments <- function(df, label) {
-    if (nrow(df) == 0) return(invisible(TRUE))
-    if (!("instrument_id" %in% names(df))) {
-      rlang::abort(sprintf("PulseContext `%s` must include an `instrument_id` column.", label), class = "ledgr_invalid_pulse_context")
-    }
-    bad <- setdiff(unique(as.character(df$instrument_id)), ctx$universe)
-    if (length(bad) > 0) {
-      rlang::abort(
-        sprintf("PulseContext `%s` contains instrument_ids not in universe: %s", label, paste(bad, collapse = ", ")),
-        class = "ledgr_invalid_pulse_context"
-      )
-    }
-    invisible(TRUE)
-  }
-
-  validate_df_ts(ctx$bars, "bars")
-  validate_df_instruments(ctx$bars, "bars")
-
-  feature_table <- ctx$feature_table
-  if (is.null(feature_table)) {
-    feature_table <- data.frame()
-  }
-  if (!is.data.frame(feature_table)) {
-    rlang::abort("PulseContext `feature_table` must be a data.frame (or tibble).", class = "ledgr_invalid_pulse_context")
-  }
-  if (nrow(feature_table) > 0) {
-    validate_df_ts(feature_table, "feature_table")
-    validate_df_instruments(feature_table, "feature_table")
   }
 
   if (!is.numeric(ctx$.positions)) {

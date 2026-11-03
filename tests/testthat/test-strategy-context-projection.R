@@ -61,7 +61,6 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
   ctx <- ledgr:::ledgr_update_pulse_context_helpers(
     ctx,
     bars = bars,
-    features = ledgr:::ledgr_projection_feature_table_schema(),
     universe = c("AAA", "BBB"),
     projection = projection,
     pulse_idx = 1L,
@@ -76,7 +75,7 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
     function(value) inherits(value, "ledgr_runtime_projection"),
     logical(1)
   )))
-  testthat::expect_true(is.function(ctx$.feature_table_current))
+  testthat::expect_error(ctx$.feature_table_current, class = "ledgr_unknown_context_field")
   testthat::expect_identical(ctx[["signal"]][["AAA"]], NA_real_)
   testthat::expect_identical(ctx[["signal"]], c(AAA = NA_real_, BBB = NA_real_))
   first_table <- ledgr_pulse_features(ctx)
@@ -89,10 +88,11 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
 
   second_bars <- bars
   second_bars$ts_utc <- pulses[[2L]]
+  second <- ctx
+  second$ts_utc <- ledgr_iso_utc(pulses[[2L]])
   second <- ledgr:::ledgr_update_pulse_context_helpers(
-    ctx,
+    second,
     bars = second_bars,
-    features = ledgr:::ledgr_projection_feature_table_schema(),
     universe = c("AAA", "BBB"),
     projection = projection,
     pulse_idx = 2L,

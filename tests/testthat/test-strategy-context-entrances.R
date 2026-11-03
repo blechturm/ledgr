@@ -86,8 +86,6 @@ strategy_context_empty_axis_fixture <- function() {
     run_id = "empty-axis",
     ts_utc = "2026-01-02T21:00:00Z",
     universe = character(),
-    bars = empty_bars,
-    feature_table = ledgr:::ledgr_projection_feature_table_schema(),
     .positions = stats::setNames(numeric(), character()),
     cash = 100,
     equity = 100,
@@ -101,7 +99,7 @@ strategy_context_empty_axis_fixture <- function() {
   ledgr:::ledgr_update_pulse_context_helpers(
     empty_axis,
     bars = empty_bars,
-    features = empty_axis$feature_table,
+    features = data.frame(),
     positions = empty_axis$.positions,
     universe = character(),
     availability = NULL
@@ -554,7 +552,7 @@ testthat::test_that("[LTB-0098] missing selection decisions require an explicit 
     ts_utc = ts,
     universe = ids,
     bars = bars,
-    features = ledgr:::ledgr_projection_feature_table_schema(),
+    features = data.frame(),
     positions = c(AAA = 2),
     cash = 80,
     equity = 100
@@ -962,7 +960,6 @@ testthat::test_that("[LTB-0122] the signal wrapper maps eligible instruments and
     ts_utc = "2026-01-02T21:00:00Z",
     universe = character(),
     bars = empty_bars,
-    feature_table = ledgr:::ledgr_projection_feature_table_schema(),
     .positions = stats::setNames(numeric(), character()),
     cash = 100,
     equity = 100,
@@ -976,7 +973,7 @@ testthat::test_that("[LTB-0122] the signal wrapper maps eligible instruments and
   empty_axis <- ledgr:::ledgr_update_pulse_context_helpers(
     empty_axis,
     bars = empty_bars,
-    features = empty_axis$feature_table,
+    features = data.frame(),
     positions = empty_axis$.positions,
     universe = character(),
     availability = NULL

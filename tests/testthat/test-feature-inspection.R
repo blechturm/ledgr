@@ -228,7 +228,13 @@ testthat::test_that("[LTB-0186] feature params resolve inspection like execution
     feature_params = params
   )
   on.exit(close(pulse), add = TRUE)
-  testthat::expect_identical(pulse$active_alias_map, expected_map)
+  testthat::expect_identical(
+    unclass(pulse)[[".pulse_lookup"]]$feature_lookup$name_lookup$alias_map,
+    expected_map
+  )
+  for (removed in c("feature_params", "active_alias_map", "alias_map_json", "alias_map_hash", "alias_map_version")) {
+    testthat::expect_error(pulse[[removed]], class = "ledgr_unknown_context_field")
+  }
 
   run <- ledgr_run(
     ledgr_experiment(
@@ -377,8 +383,11 @@ testthat::test_that("pulse snapshots resolve active aliases with feature params"
 
   x <- c(z_short = pulse$z_short[["AAA"]], a_long = pulse$a_long[["AAA"]])
   testthat::expect_identical(names(x), c("z_short", "a_long"))
-  testthat::expect_identical(pulse$active_alias_map, c(z_short = "sma_2", a_long = "sma_3"))
-  testthat::expect_match(pulse$alias_map_hash, "^[0-9a-f]{64}$")
+  testthat::expect_identical(
+    unclass(pulse)[[".pulse_lookup"]]$feature_lookup$name_lookup$alias_map,
+    c(z_short = "sma_2", a_long = "sma_3")
+  )
+  testthat::expect_error(pulse$alias_map_hash, class = "ledgr_unknown_context_field")
 
   long <- ledgr_pulse_features(pulse)
   testthat::expect_identical(long$alias, c("z_short", "a_long"))

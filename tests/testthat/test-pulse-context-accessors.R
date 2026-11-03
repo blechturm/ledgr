@@ -1,4 +1,4 @@
-testthat::test_that("pulse context exposes flat named columns and retained frame helpers", {
+testthat::test_that("pulse context exposes flat named columns and refuses retired frames", {
   ts <- "2020-01-02T00:00:00Z"
   universe <- c("A", "B")
   bars <- data.frame(
@@ -23,7 +23,9 @@ testthat::test_that("pulse context exposes flat named columns and retained frame
     equity = 1061.5
   )
 
-  testthat::expect_true(is.function(ctx$bar))
+  for (retired in c("bars", "bar", "feature_table", "features_wide")) {
+    testthat::expect_error(ctx[[retired]], class = "ledgr_unknown_context_field")
+  }
   testthat::expect_true(is.numeric(ctx$open))
   testthat::expect_true(is.numeric(ctx$high))
   testthat::expect_true(is.numeric(ctx$low))
@@ -55,11 +57,6 @@ testthat::test_that("pulse context exposes flat named columns and retained frame
   testthat::expect_equal(ctx$volume, c(A = 100, B = 200))
   testthat::expect_equal(ctx$position, c(A = 0, B = 3))
 
-  bar_b <- ctx$bar("B")
-  testthat::expect_true(is.data.frame(bar_b))
-  testthat::expect_equal(nrow(bar_b), 1L)
-  testthat::expect_identical(as.character(bar_b$instrument_id), "B")
-
   testthat::expect_equal(ctx$position[["A"]], 0)
   testthat::expect_equal(ctx$position[["B"]], 3)
   testthat::expect_identical(ctx$flat(), stats::setNames(c(0, 0), universe))
@@ -73,7 +70,11 @@ testthat::test_that("pulse context exposes flat named columns and retained frame
   testthat::expect_false(is.function(ctx$equity))
 
   testthat::expect_true(is.environment(ctx$.pulse_lookup))
-  testthat::expect_identical(ctx$.pulse_lookup$bar_index, stats::setNames(1:2, universe))
+  testthat::expect_false(any(vapply(
+    as.list.environment(ctx$.pulse_lookup, all.names = TRUE),
+    is.data.frame,
+    logical(1)
+  )))
 })
 
 testthat::test_that("[LTB-0061] ctx$buyable is eligibility and not a price plane", {
@@ -152,97 +153,7 @@ testthat::test_that("[LTB-0061] ctx$buyable is eligibility and not a price plane
   testthat::expect_identical(targets, stats::setNames(rep(0, length(ids)), ids))
 })
 
-testthat::test_that("runtime projection helpers preserve feature-table and wide-view semantics", {
-  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:1
-  values <- matrix(
-    c(NA_real_, 10, 2, 20),
-    nrow = 2L,
-    ncol = 2L,
-    dimnames = list(c("AAA", "BBB"), NULL)
-  )
-  projection <- ledgr:::ledgr_runtime_projection(
-    feature_values = list(signal = values),
-    universe = c("AAA", "BBB"),
-    pulses_posix = pulses
-  )
-
-  table <- ledgr:::ledgr_projection_feature_table(projection, 2L, "signal")
-  wide <- ledgr:::ledgr_projection_features_wide(projection, 2L, "signal")
-  reference <- ledgr:::ledgr_features_wide(table)
-
-  testthat::expect_equal(table$feature_value, c(2, 20))
-  testthat::expect_identical(names(wide), c("instrument_id", "ts_utc", "signal"))
-  testthat::expect_equal(wide, reference)
-  testthat::expect_equal(
-    ledgr:::ledgr_projection_feature_at(projection, "AAA", "signal", 1L, default = 0),
-    NA_real_
-  )
-  testthat::expect_equal(
-    ledgr:::ledgr_projection_feature_at(projection, "ZZZ", "signal", 1L, default = 0),
-    0
-  )
-})
-
-testthat::test_that("projection-backed wide views are fresh public objects", {
-  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:1
-  projection <- ledgr:::ledgr_runtime_projection(
-    feature_values = list(signal = matrix(c(1, 2, 3, 4), nrow = 2L)),
-    universe = c("AAA", "BBB"),
-    pulses_posix = pulses
-  )
-
-  first <- ledgr:::ledgr_projection_features_wide(projection, 1L, "signal")
-  second <- ledgr:::ledgr_projection_features_wide(projection, 2L, "signal")
-  second$signal[[1]] <- 999
-
-  testthat::expect_equal(first$signal, c(1, 2))
-  testthat::expect_equal(second$signal, c(999, 4))
-})
-
-testthat::test_that("projection pulse accessors return schema-stable long and wide values", {
-  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:1
-  projection <- ledgr:::ledgr_runtime_projection(
-    feature_values = list(signal = matrix(c(1, 2, 3, 4), nrow = 2L)),
-    universe = c("AAA", "BBB"),
-    pulses_posix = pulses
-  )
-
-  schema <- ledgr:::ledgr_projection_feature_table_schema()
-  full <- ledgr:::ledgr_projection_feature_table(projection, 1L, "signal")
-  wide <- ledgr:::ledgr_projection_features_wide(projection, 1L, "signal")
-
-  testthat::expect_true(is.data.frame(schema))
-  testthat::expect_identical(nrow(schema), 0L)
-  testthat::expect_identical(
-    names(schema),
-    c("instrument_id", "ts_utc", "feature_name", "feature_value")
-  )
-  testthat::expect_equal(nrow(full), 2L)
-  testthat::expect_equal(wide, ledgr:::ledgr_features_wide(full))
-})
-
-testthat::test_that("projection wide access matches single-pulse construction", {
-  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2
-  projection <- ledgr:::ledgr_runtime_projection(
-    feature_values = list(
-      alpha = matrix(seq_len(6), nrow = 2L),
-      beta = matrix(seq_len(6) + 10, nrow = 2L)
-    ),
-    universe = c("AAA", "BBB"),
-    pulses_posix = pulses
-  )
-
-  for (pulse_idx in seq_along(pulses)) {
-    testthat::expect_equal(
-      ledgr:::ledgr_projection_features_wide(projection, pulse_idx),
-      ledgr:::ledgr_features_wide(
-        ledgr:::ledgr_projection_feature_table(projection, pulse_idx)
-      )
-    )
-  }
-})
-
-testthat::test_that("non-fast projection contexts keep schema-only feature tables", {
+testthat::test_that("projection contexts manifest inspection only on demand", {
   pulses <- as.POSIXct("2020-01-01", tz = "UTC")
   universe <- c("AAA", "BBB")
   projection <- ledgr:::ledgr_runtime_projection(
@@ -260,21 +171,17 @@ testthat::test_that("non-fast projection contexts keep schema-only feature table
     volume = c(100, 200),
     stringsAsFactors = FALSE
   )
-  schema <- ledgr:::ledgr_projection_feature_table_schema()
-
   ctx <- ledgr:::ledgr_pulse_context(
     run_id = "run-1",
     ts_utc = pulses[[1]],
     universe = universe,
     bars = bars,
-    features = schema,
     cash = 1000,
     equity = 1000
   )
   ctx <- ledgr:::ledgr_update_pulse_context_helpers(
     ctx,
     bars = bars,
-    features = schema,
     universe = universe,
     projection = projection,
     pulse_idx = 1L,
@@ -282,30 +189,12 @@ testthat::test_that("non-fast projection contexts keep schema-only feature table
   )
 
   testthat::expect_s3_class(ctx, "ledgr_pulse_context")
-  testthat::expect_true(is.data.frame(ctx$feature_table))
-  testthat::expect_equal(nrow(ctx$feature_table), 0L)
+  testthat::expect_error(ctx$feature_table, class = "ledgr_unknown_context_field")
+  testthat::expect_error(ctx$features_wide, class = "ledgr_unknown_context_field")
   testthat::expect_equal(ctx[["signal"]][["AAA"]], 1)
   testthat::expect_equal(unname(ctx[["signal"]]), c(1, 2))
-  testthat::expect_equal(ctx$features_wide$signal, c(1, 2))
-  testthat::expect_equal(nrow(ledgr_pulse_features(ctx)), 2L)
-})
-
-testthat::test_that("projection wide views can restrict a candidate feature subset", {
-  pulses <- as.POSIXct("2020-01-01", tz = "UTC")
-  projection <- ledgr:::ledgr_runtime_projection(
-    feature_values = list(
-      alpha = matrix(c(1, 2), nrow = 2L),
-      beta = matrix(c(3, 4), nrow = 2L),
-      gamma = matrix(c(5, 6), nrow = 2L)
-    ),
-    universe = c("AAA", "BBB"),
-    pulses_posix = pulses
-  )
-  restricted <- ledgr:::ledgr_projection_features_wide(projection, 1L, feature_ids = "alpha")
-  unrestricted <- ledgr:::ledgr_projection_features_wide(projection, 1L)
-
-  testthat::expect_identical(names(restricted), c("instrument_id", "ts_utc", "alpha"))
-  testthat::expect_identical(names(unrestricted), c("instrument_id", "ts_utc", "alpha", "beta", "gamma"))
+  testthat::expect_equal(ledgr_pulse_features(ctx)$feature_value, c(1, 2))
+  testthat::expect_equal(ledgr_pulse_wide(ctx)$AAA__feature_signal, 1)
 })
 
 testthat::test_that("pulse context accessors fail loudly on ambiguity", {
@@ -550,7 +439,8 @@ testthat::test_that("interactive pulse snapshots expose strategy authoring helpe
   testthat::expect_true(is.function(ctx$flat))
   testthat::expect_true(is.function(ctx$hold))
   testthat::expect_error(ctx$features, class = "ledgr_unknown_context_field")
-  testthat::expect_equal(ctx$close[["TEST_A"]], ctx$bars$close[ctx$bars$instrument_id == "TEST_A"])
+  bar_ts <- vapply(test_bars$ts_utc, ledgr_iso_utc, character(1))
+  testthat::expect_equal(ctx$close[["TEST_A"]], test_bars$close[test_bars$instrument_id == "TEST_A" & bar_ts == ts_utc])
   testthat::expect_equal(ctx$position[["TEST_A"]], 0)
   testthat::expect_identical(ctx$flat(), stats::setNames(c(0, 0), universe))
   testthat::expect_identical(ctx$hold(), stats::setNames(c(0, 0), universe))
@@ -696,9 +586,6 @@ testthat::test_that("runtime strategy contexts expose strategy authoring helpers
     }
     if (is.function(ctx$cash) || is.function(ctx$equity)) {
       stop("cash/equity must remain scalar fields")
-    }
-    if (!identical(ctx$close[["TEST_A"]], unname(ctx$bars$close[ctx$bars$instrument_id == "TEST_A"]))) {
-      stop("runtime close accessor does not match ctx$bars")
     }
     if (!identical(ctx$position[["TEST_A"]], unname(ctx$position[[match("TEST_A", ctx$universe)]]))) {
       stop("runtime scalar position does not match ctx$position")

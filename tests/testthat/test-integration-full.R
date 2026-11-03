@@ -42,10 +42,10 @@ testthat::test_that("LDG-507 full v0.1.2 workflow completes without warnings", {
 
     targets[] <- 0
     for (instrument_id in ctx$universe) {
-      bar <- ctx$bars[ctx$bars$instrument_id == instrument_id, , drop = FALSE]
       sma_3 <- ctx[["sma_3"]][[instrument_id]]
       ema_3 <- ctx[["ema_3"]][[instrument_id]]
-      if (nrow(bar) == 1L && is.finite(sma_3) && is.finite(ema_3) && bar$close[[1]] > sma_3 && bar$close[[1]] > ema_3) {
+      close <- ctx$close[[instrument_id]]
+      if (is.finite(close) && is.finite(sma_3) && is.finite(ema_3) && close > sma_3 && close > ema_3) {
         targets[[instrument_id]] <- 2
       }
     }

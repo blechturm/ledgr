@@ -13,45 +13,6 @@ workstream8_feature_lookup_oracle <- function(feature_map = NULL,
   ledgr:::ledgr_feature_lookup_map(feature_map)
 }
 
-workstream8_features_wide_oracle <- function(features) {
-  if (!ledgr:::ledgr_feature_table_ready(features)) return(data.frame())
-  instrument_id <- as.character(features[["instrument_id"]])
-  feature_name <- as.character(features[["feature_name"]])
-  feature_value <- as.numeric(features[["feature_value"]])
-  valid <- !is.na(instrument_id) & nzchar(instrument_id) &
-    !is.na(feature_name) & nzchar(feature_name)
-  if (!any(valid)) return(data.frame())
-  instrument_id <- instrument_id[valid]
-  feature_name <- feature_name[valid]
-  feature_value <- feature_value[valid]
-  instruments <- unique(instrument_id)
-  feature_names <- unique(feature_name)
-  values <- matrix(
-    NA_real_,
-    nrow = length(instruments),
-    ncol = length(feature_names),
-    dimnames = list(instruments, feature_names)
-  )
-  for (i in seq_along(feature_value)) {
-    values[instrument_id[[i]], feature_name[[i]]] <- feature_value[[i]]
-  }
-  out <- data.frame(instrument_id = instruments, stringsAsFactors = FALSE)
-  if ("ts_utc" %in% names(features)) {
-    ts_utc <- vapply(features[["ts_utc"]][valid], ledgr:::ledgr_iso_utc, character(1))
-    out$ts_utc <- vapply(
-      instruments,
-      function(inst) ts_utc[which(instrument_id == inst)[[1L]]],
-      character(1)
-    )
-  }
-  out <- cbind(
-    out,
-    as.data.frame(values, check.names = FALSE, stringsAsFactors = FALSE)
-  )
-  rownames(out) <- NULL
-  out
-}
-
 workstream8_reachable_functions <- function(entry_points, overrides = list()) {
   namespace <- asNamespace("ledgr")
   queue <- unique(entry_points)
@@ -230,73 +191,6 @@ testthat::test_that("workstream 8 hot-path substitutions preserve exact results"
     class = "ledgr_invalid_alias_map"
   )
 
-  pulses <- as.POSIXct("2020-01-01", tz = "UTC") + 0:2 * 86400
-  projection <- ledgr:::ledgr_runtime_projection(
-    feature_values = list(signal = matrix(seq_len(6), nrow = 2L)),
-    universe = c("AAA", "BBB"),
-    pulses_posix = pulses
-  )
-  schema <- ledgr:::ledgr_projection_feature_table_schema()
-  feature_table <- lapply(seq_along(pulses), function(i) {
-    ledgr:::ledgr_projection_feature_table(
-      projection,
-      i,
-      feature_ids = character()
-    )
-  })
-  features_wide <- lapply(seq_along(pulses), function(i) {
-    ledgr:::ledgr_projection_features_wide(
-      projection,
-      i,
-      feature_ids = "signal"
-    )
-  })
-  testthat::expect_identical(
-    feature_table,
-    replicate(3L, schema, simplify = FALSE)
-  )
-  testthat::expect_identical(
-    vapply(features_wide, nrow, integer(1)),
-    rep(2L, 3L)
-  )
-  changed <- schema[, c("ts_utc", "instrument_id", "feature_name", "feature_value")]
-  testthat::expect_false(identical(rep(list(changed), 3L), feature_table))
-})
-
-# ledgr-test-profile: review
-testthat::test_that("features_wide uses integer indexing with last-write parity", {
-  make_features <- function(n_instruments, n_features) {
-    instruments <- sprintf("I%04d", seq_len(n_instruments))
-    features <- sprintf("F%02d", seq_len(n_features))
-    data.frame(
-      instrument_id = rep(instruments, times = n_features),
-      ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
-      feature_name = rep(features, each = n_instruments),
-      feature_value = seq_len(n_instruments * n_features),
-      stringsAsFactors = FALSE
-    )
-  }
-  for (shape in list(c(40L, 2L), c(200L, 5L), c(563L, 5L))) {
-    input <- make_features(shape[[1L]], shape[[2L]])
-    testthat::expect_identical(
-      ledgr:::ledgr_features_wide(input),
-      workstream8_features_wide_oracle(input)
-    )
-  }
-  missing <- make_features(40L, 2L)
-  missing$feature_value[c(1L, 17L)] <- NA_real_
-  duplicate <- rbind(
-    missing,
-    transform(missing[1L, , drop = FALSE], feature_value = 999)
-  )
-  testthat::expect_identical(
-    ledgr:::ledgr_features_wide(duplicate),
-    workstream8_features_wide_oracle(duplicate)
-  )
-  testthat::expect_identical(
-    ledgr:::ledgr_features_wide(duplicate)$F01[[1L]],
-    999
-  )
 })
 
 # ledgr-test-profile: review

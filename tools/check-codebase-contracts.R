@@ -1443,9 +1443,6 @@ test_seam_contracts <- c(
   ledgr_pulse_context = paste(
     "Construct minimal pulse contexts for accessor contract tests."
   ),
-  ledgr_projection_feature_at = paste(
-    "Probe indexed projection reads and missing-value behavior directly."
-  ),
   ledgr_snapshot_verified_reset = paste(
     "Clear the process-local verification registry between isolation tests."
   ),
