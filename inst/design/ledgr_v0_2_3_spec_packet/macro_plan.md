@@ -655,6 +655,23 @@ execution-sensitive economics cuts are held to rule 17 instead.
   must stay per pulse. They also set a per-stage budget so that no stage can
   grow unnoticed inside a smaller total. The profile is rerun after the
   subtraction cut, and its per-stage table is part of that cut's evidence.
+- **Measured per-pulse premium (2026-11-03), review input.** A hold-only
+  10 x 7,200 durable run costs about 1.8 ms per pulse at the Cut 9 head
+  (`ae289ce0`) against about 0.6 ms in v0.2.2. Profile samples scaled to wall
+  time (v0.2.2 against head, us per pulse): carrier validation 0 against 380;
+  decision-trace staging and flush 0 against 347 (WS15 owns it); availability
+  provider view 1 against 312 (for a fixed basket without status or lifetime
+  facts it recomputes the same answer every pulse, with ID matching and two
+  ISO cutoff parses); availability pulse plan 0 against 135; context helper
+  refresh 0 against 119; carrier packets and history bars 0 against 93.
+  Timestamp parsing sits on 133 us of every pulse against the
+  optimization manual's "No POSIXct in the hot loop". The published
+  crossover workloads show the same premium end to end: 10 x 7,200 takes
+  20.1 s against 9.9 s in v0.2.2, and a 20 x 23,400 analogue of the
+  intraday-shaped cell 74.9 s against 42.4 s (1.77x, `0d6c0b11`), while the
+  fill-heavy 500 x 1,260 cell runs about twice as fast as v0.2.2. The
+  reviewers start from these buckets; the probes are scratch and are
+  re-recorded by whichever cut relies on them.
 - **Subtraction cut.** One cut implements the accepted deletions. It adds
   no behavior and changes no registered test, fixture or oracle. Its
   evidence is the removed line count, the rule-17 baseline after the cut
@@ -788,6 +805,30 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
   tenth of the post-WS4b no-fill loop. At the stretch target, 25 `fmatch()`
   calls alone would use a third to half of the pulse budget, so the rule is
   removal, with `fmatch()` only at the boundary.
+- **Amendment (maintainer, 2026-11-03, quiet pulses and R options):** on most
+  pulses of an ordinary strategy nothing changes: targets equal holdings and
+  nothing fills. Today such a pulse still runs planning, applying, commit and
+  per-pulse valuation. The checkpoint considers, alongside the options
+  above:
+  - exact quiet-pulse skipping: a pulse with unchanged targets, no fill and
+    no event does no planning, apply or commit work beyond what its
+    evidence requires;
+  - valuation over a stretch without fills as one product of held
+    quantities and the prepared price matrix, instead of per-pulse
+    bookkeeping;
+  - computing once per run what a fixed basket without status or lifetime
+    facts would otherwise recompute every pulse (membership, availability
+    views, masks);
+  - a declared path-independent strategy form whose signals are computed
+    over the whole run, which changes the strategy contract and needs its
+    own RFC.
+
+  The maintainer parked the first two on 2026-11-02 until the waste is gone;
+  they are raised here, at the checkpoint, not in earlier cuts. Each option
+  is evaluated by a bounded spike under `spike_protocol.md`, measure first:
+  the first probe counts quiet pulses on the peer workloads and what each
+  costs. The R implementation stays the oracle, and a compiled stage is
+  considered only for a stage that still dominates after these R options.
 
 ## 4. Cut strategy
 
