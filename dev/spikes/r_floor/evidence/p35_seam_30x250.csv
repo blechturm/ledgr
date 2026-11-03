@@ -1,0 +1,2 @@
+"n_inst","n_sessions","fills","partial_sells","fills_columns_identical","fills_columns","equity_columns_identical","equity_columns","lean_p35_us_per_pulse","ledgr_fold_without_decide_us_per_pulse","ledgr_decide_us_per_pulse","ledgr_run_us_per_pulse","empty_book_kb"
+30,250,2717,788,10,10,4,4,268,3017.43119266055,711.804281345566,5060,2.6484375

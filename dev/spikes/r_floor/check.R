@@ -51,6 +51,19 @@ for (f in list.files(evidence, "^p2_seam_[0-9]+x[0-9]+[.]csv$")) {
     problems <- c(problems, sprintf("%s: the lean P2 no longer reproduces what the strategy sees", f))
   }
 }
+for (f in list.files(evidence, "^p35_seam_[0-9]+x[0-9]+[.]csv$")) {
+  n <- strsplit(regmatches(f, regexpr("[0-9]+x[0-9]+", f)), "x")[[1]]
+  rc <- system2(file.path(R.home("bin"), "Rscript"),
+                c(file.path(here, "run4.R"), lib, scratch, n[[1]], n[[2]]), stdout = FALSE, stderr = FALSE)
+  if (rc != 0L) { problems <- c(problems, sprintf("run4.R %s exited %d", f, rc)); next }
+  cols <- c("n_inst", "n_sessions", "fills", "partial_sells", "fills_columns_identical",
+            "fills_columns", "equity_columns_identical", "equity_columns")
+  fresh <- read(scratch, f)[cols]
+  if (!identical(fresh, read(evidence, f)[cols])) problems <- c(problems, sprintf("%s parity differs from the recorded evidence", f))
+  if (fresh$fills_columns_identical != fresh$fills_columns || fresh$equity_columns_identical != fresh$equity_columns) {
+    problems <- c(problems, sprintf("%s: lean P3-P5 no longer reproduces ledgr", f))
+  }
+}
 if (!identical(status(), before)) problems <- c(problems, "package scope changed during the run")
 
 if (length(problems)) {

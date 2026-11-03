@@ -176,9 +176,40 @@ Rules parity taught, all first wrong in the seam:
 core needs chunked preparation by time window; this seam does not bound
 memory.
 
-**Not in this seam.** P3 to P5 with ledgr's own FIFO lot accounting reused,
-restrictions and terminals, schedules, corporate actions, sizing helpers,
-costs, risk and RNG.
+### Second seam: P1 valuation and P3 to P5 with ledgr's own lot kernel
+
+`seam_p35.R` is fed the axis and targets ledgr's strategy produced on every
+pulse (a rule with varying quantities, so sells consume FIFO lots
+partially). It values held positions at the last observed close, plans
+orders in decision-axis order, skips instruments without a bar at the next
+session, and applies fills through ledgr's own `ledgr_lot_fill()` and
+`ledgr_cash_scan()`. No second FIFO exists. `run4.R` compares every column of
+ledgr's fills table and equity.
+
+| changing axis | fills (partial sells) | parity | lean P1 + P3-P5 | ledgr fold without decide |
+| --- | ---: | --- | ---: | ---: |
+| 30 x 250 | 2,717 (788) | fills 10/10, equity 4/4 columns | 268 us | 3,017 us |
+| 200 x 250 | 17,782 (4,954) | fills 10/10, equity 4/4 columns | 472 us | 6,013 us |
+
+Parity taught one more rule: the fills reader reports a closing leg's own
+`realized_close` and zero for openings, not the book's running
+`event_realized`.
+
+The reused kernel is 87 percent of the lean seam's time (`ledgr_lot_apply`
+27 percent self, `ledgr_lot_dust_tolerance_rows` 17 percent): the book is
+copied on every change by design (lot-accounting.R, decision 7) and every
+call validates its input and applied rows. That is roughly 6 to 20 us per
+fill plus a fixed cost per call; without it the lean fold would be about 40
+to 70 us per pulse. The one FIFO kernel is therefore the largest cost of a
+lean core on trading workloads, and a target in its own right.
+
+Together, the two seams cost about 280 us (30 instruments) and 500 us (200
+instruments) per pulse against about 3.7 and 6.9 ms in ledgr's fold, 12 to
+14 times less, with every compared output identical.
+
+**Not in these seams.** Restrictions and terminals, schedules, corporate
+actions, sizing helpers, costs, risk, RNG, the decision trace on this
+fixture, chunked preparation for bounded memory.
 
 ## What the spec may consume, and what is open
 
