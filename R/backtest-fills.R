@@ -128,13 +128,20 @@ ledgr_extract_fills_impl <- function(bt, con = NULL, recording_pulse = TRUE) {
   replay_ids <- character()
   replay_positions <- numeric()
   replay_cash <- 0
+  prior_event_seq <- NULL
+  prior_ts_utc <- NULL
   fetch_size <- 50000L
 
   repeat {
     rows <- DBI::dbFetch(ledger_res, n = fetch_size)
     if (nrow(rows) == 0) break
 
-    prepared <- ledgr_prepare_accounting_events(rows, replay_ids)
+    prepared <- ledgr_prepare_accounting_events(
+      rows,
+      replay_ids,
+      prior_event_seq = prior_event_seq,
+      prior_ts_utc = prior_ts_utc
+    )
     replay <- ledgr_replay_accounting_events(
       prepared,
       initial_cash = replay_cash,
@@ -145,6 +152,8 @@ ledgr_extract_fills_impl <- function(bt, con = NULL, recording_pulse = TRUE) {
     replay_ids <- prepared$instrument_ids
     replay_cash <- replay$cash
     replay_positions <- replay$positions
+    prior_event_seq <- prepared$event_seq[[length(prepared$event_seq)]]
+    prior_ts_utc <- prepared$ts_utc[[length(prepared$ts_utc)]]
     block_fills <- ledgr_accounting_fills_from_replay(
       replay,
       as.POSIXct(character(), tz = "UTC")

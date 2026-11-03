@@ -4,6 +4,7 @@ here <- if (length(file_arg)) dirname(normalizePath(sub("^--file=", "", file_arg
 root <- normalizePath(file.path(here, "..", "..", ".."), winslash = "/")
 patterns <- c(
   accounting_preparer = "ledgr_prepare_accounting_events",
+  accounting_validator = "ledgr_validate_accounting_append",
   accounting_replay = "ledgr_replay_accounting_events",
   ledger_table = "ledger_events",
   state_asof = "ledgr_state_asof",

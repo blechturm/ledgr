@@ -579,7 +579,6 @@ ledgr_corporate_action_plan <- function(rows,
       event_seq = seq_value,
       stringsAsFactors = FALSE
     )
-    ledgr_prepare_accounting_events(event_rows, instrument_ids)
     output_handler$append_event_rows(event_rows)
     state_value$cash <- as.numeric(state_value$cash) + sum(cash_delta)
     state$cash_posted <- replace(state$cash_posted, selected, TRUE)

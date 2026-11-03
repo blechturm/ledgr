@@ -8,11 +8,11 @@ ledgr_accounting_test_events <- function() {
     run_id = rep("accounting-core", 4),
     ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 0:3,
     event_type = c("CASHFLOW", "FILL", "FILL", "CASHFLOW"),
-    instrument_id = c("AAA", "AAA", "AAA", NA_character_),
+    instrument_id = rep("AAA", 4),
     side = c(NA_character_, "SELL", "BUY", NA_character_),
-    qty = c(NA_real_, 15, 5, NA_real_),
-    price = c(NA_real_, 120, 110, NA_real_),
-    fee = c(NA_real_, 5, 1, NA_real_),
+    qty = c(10, 15, 5, NA_real_),
+    price = c(100, 120, 110, NA_real_),
+    fee = c(0, 5, 1, 0),
     meta_json = c(
       ledgr_accounting_test_meta(
         source = "opening_position", cash_delta = 0,
@@ -20,7 +20,13 @@ ledgr_accounting_test_events <- function() {
       ),
       ledgr_accounting_test_meta(cash_delta = 1795, position_delta = -15),
       ledgr_accounting_test_meta(cash_delta = -551, position_delta = 5),
-      ledgr_accounting_test_meta(cash_delta = 500, position_delta = 0)
+      ledgr_accounting_test_meta(
+        source = "corporate_action_cash", source_fact_id = "fact-cash-1",
+        cash_delta = 500, position_delta = 0, entitled_quantity = 10,
+        gross_cash_per_parent_unit = 50, amount_policy_id = "cash_amount.v002",
+        posting_policy_id = "cash_posting.v002", late_arrival = FALSE,
+        affected_marked_exposure = 0
+      )
     ),
     event_seq = 1:4,
     stringsAsFactors = FALSE
@@ -155,6 +161,8 @@ testthat::test_that("[LTB-0020] one preparer gives memory and table sources one 
   )
   for (opening_basis in c(0, -5)) {
     valid <- table_rows[1, , drop = FALSE]
+    valid$qty <- 1
+    valid$price <- opening_basis
     valid$meta_json <- ledgr_accounting_test_meta(
       source = "opening_position", cash_delta = 0,
       position_delta = 1, cost_basis = opening_basis

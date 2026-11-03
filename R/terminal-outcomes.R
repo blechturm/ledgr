@@ -200,7 +200,6 @@ ledgr_disposition_post <- function(ids,
     event_seq = seq_value,
     stringsAsFactors = FALSE
   )
-  ledgr_prepare_accounting_events(event_rows, instrument_ids)
   output_handler$append_event_rows(event_rows)
   list(
     state = candidate,

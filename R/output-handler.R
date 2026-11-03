@@ -580,6 +580,15 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       event_seq = event_seq,
       serialize_meta_json = sink$serialize_meta_json
     )
+    if (identical(block$status, "WROTE")) {
+      rows <- as.data.frame(block[ledgr_output_event_columns], stringsAsFactors = FALSE)
+      rows$ts_utc <- .POSIXct(block$ts_utc, tz = "UTC")
+      ledgr_validate_accounting_append(
+        rows,
+        cash_delta = block$cash_delta,
+        position_delta = block$position_delta
+      )
+    }
     if (isTRUE(stage)) stage_fill_block(block)
     block
   }
@@ -682,7 +691,10 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     handler$buffer_strategy_state <- sink$buffer_state
     handler$write_strategy_state <- sink$write_state
     handler$append_event_rows <- function(rows) {
-      if (!is.null(rows) && nrow(rows) > 0L) sink$append_events(rows)
+      if (!is.null(rows) && nrow(rows) > 0L) {
+        ledgr_validate_accounting_append(rows)
+        sink$append_events(rows)
+      }
       invisible(TRUE)
     }
     handler$flush_pending <- function() {
@@ -728,6 +740,7 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
 
   handler$append_event_rows <- function(rows) {
     if (!is.null(rows) && nrow(rows) > 0L) {
+      prepared <- ledgr_validate_accounting_append(rows)
       n <- nrow(rows)
       start <- state$event_count + 1L
       end <- state$event_count + n
@@ -740,8 +753,8 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       # row's metadata is parsed once (the routed memory meta, WS8) and the
       # typed columns are written by index.
       meta <- lapply(rows$meta_json, ledgr_lot_parse_meta)
-      cash_delta <- vapply(meta, function(m) as.numeric(m$cash_delta %||% NA_real_)[[1L]], numeric(1))
-      position_delta <- vapply(meta, function(m) as.numeric(m$position_delta %||% NA_real_)[[1L]], numeric(1))
+      cash_delta <- prepared$cash_delta
+      position_delta <- prepared$position_delta
       ledgr_event_buffer_setv(state$event_cols, "meta", idx, meta)
       ledgr_event_buffer_setv(state$event_cols, "cash_delta", idx, cash_delta)
       ledgr_event_buffer_setv(state$event_cols, "position_delta", idx, position_delta)
@@ -757,6 +770,25 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     if (n == 0L) {
       return(invisible(TRUE))
     }
+    rows <- data.frame(
+      event_id = batch$event_id,
+      run_id = batch$event_run_id,
+      ts_utc = .POSIXct(batch$event_ts_utc, tz = "UTC"),
+      event_type = batch$event_type,
+      instrument_id = batch$event_instrument_id,
+      side = batch$event_side,
+      qty = batch$event_qty,
+      price = batch$event_price,
+      fee = batch$event_fee,
+      meta_json = NA_character_,
+      event_seq = batch$event_seq,
+      stringsAsFactors = FALSE
+    )
+    ledgr_validate_accounting_append(
+      rows,
+      cash_delta = batch$cash_delta,
+      position_delta = batch$position_delta
+    )
     start <- state$event_count + 1L
     end <- state$event_count + n
     ensure_event_capacity(end)

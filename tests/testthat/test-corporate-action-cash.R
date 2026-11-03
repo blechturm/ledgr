@@ -213,11 +213,12 @@ testthat::test_that("[LTB-0217] a resumed plan binds past entitlements like the 
   # Dense stamping (fills at the bar time): a fill decided at pulse 2 is
   # stamped at pulse 3 and stays excluded.
   testthat::expect_identical(bound(fill(1L, close[[3L]], "BUY", 10), 3L), 0)
-  # A ledger whose timestamps decrease in event order (never written by ledgr)
-  # counts its events at or before the boundary, in event order.
-  testthat::expect_identical(
+  # A ledger whose timestamps decrease in event order is not a valid typed
+  # accounting stream; the shared preparation boundary refuses it rather
+  # than maintaining a second unordered position model.
+  testthat::expect_error(
     bound(rbind(fill(1L, open[[3L]], "BUY", 10), fill(2L, open[[2L]], "BUY", 0.1), fill(3L, open[[2L]], "BUY", 0.2)), 3L),
-    0.1 + 0.2
+    class = "ledgr_invalid_accounting_event"
   )
   # A fill whose meta records its position delta, as the fold writes it, and a
   # disposition that closes the holding before the boundary.

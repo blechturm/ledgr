@@ -256,6 +256,7 @@ ledgr_write_opening_position_events <- function(con,
     lots = lots
   )
   if (nrow(rows) > 0L) {
+    ledgr_validate_accounting_append(rows)
     ledgr_store_append(con, "ledger_events", rows)
   }
   as.integer(event_seq_start) + as.integer(nrow(rows))
