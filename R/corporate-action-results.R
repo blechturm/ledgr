@@ -217,7 +217,8 @@ ledgr_corporate_action_held_unsupported <- function(con, snapshot_id, run_id, ro
 ledgr_corporate_action_composition_report <- function(con,
                                                        snapshot_id,
                                                        run_id,
-                                                       rows) {
+                                                       rows,
+                                                       replay = NULL) {
   columns <- list(
     source_fact_id = character(),
     subtype = character(),
@@ -242,13 +243,19 @@ ledgr_corporate_action_composition_report <- function(con,
   if (length(selected) == 0L) return(empty)
 
   source_rows <- rows[selected, , drop = FALSE]
-  events <- ledgr_corporate_action_result_events(
-    con,
-    run_id,
-    source_rows$parent_instrument_id
-  )
-  if (nrow(events) == 0L) return(empty)
-  replay <- ledgr_replay_accounting_events(ledgr_prepare_accounting_events(events))
+  if (is.null(replay)) {
+    events <- ledgr_corporate_action_result_events(
+      con,
+      run_id,
+      source_rows$parent_instrument_id
+    )
+    if (nrow(events) == 0L) return(empty)
+    replay <- ledgr_replay_accounting_events(
+      ledgr_prepare_accounting_events(events)
+    )
+  } else if (length(replay$prepared$event_seq) == 0L) {
+    return(empty)
+  }
   quantity <- ledgr_corporate_action_run_quantities(
     con, snapshot_id, run_id, rows, selected, replay
   )
@@ -426,12 +433,15 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     paste(
       "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,",
       "qty, price, fee, meta_json, event_seq FROM ledger_events",
-      "WHERE run_id = ? AND event_type IN ('CASHFLOW','DISPOSITION')",
+      "WHERE run_id = ? AND event_type IN ('FILL','CASHFLOW','DISPOSITION')",
       "ORDER BY event_seq"
     ),
     params = list(bt$run_id)
   )
-  prepared <- ledgr_prepare_accounting_events(event_rows)
+  replay <- ledgr_replay_accounting_events(
+    ledgr_prepare_accounting_events(event_rows)
+  )
+  prepared <- replay$prepared
   cash_index <- which(prepared$source == "corporate_action_cash")
   # Scheduled corporate-action dispositions and lifetime terminal
   # dispositions share one terminal fidelity authority.
@@ -468,7 +478,8 @@ ledgr_corporate_action_summary <- function(bt, con = NULL) {
     con,
     snapshot_id,
     bt$run_id,
-    facts$rows
+    facts$rows,
+    replay = replay
   )
   # A held fact is unsupported when its effect is not represented: quantity
   # legs, an acquisition in a run where no disposition acts (dense), a
