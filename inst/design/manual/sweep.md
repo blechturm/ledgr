@@ -233,10 +233,10 @@ that partial worker results are discarded and no promotable sweep result
 is returned.
 
 Candidate execution uses `ledgr_output_handler()` over
-`ledgr_output_sink_memory()`. The handler
-appends events to in-memory typed buffers, supports a compiled spot-FIFO
-batch append method when the B2 lane is active, and can compute inline
-summaries without round-tripping through persistent run tables.
+`ledgr_output_sink_memory()`. The handler appends events to in-memory
+typed buffers, supports a compiled spot-FIFO batch append method when
+the B2 lane is active, and can compute inline summaries without
+round-tripping through persistent run tables.
 
 ### B2 Dispatch In Candidate Execution
 

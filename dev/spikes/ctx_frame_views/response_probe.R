@@ -134,7 +134,7 @@ untrace("ledgr_fold_stage_decide", where = ns)
 say("  run wall %.2f s over %d pulses = %.0f us/pulse", wall, D, 1e6 * wall / D)
 services <- cap$services; observation <- cap$observation
 ctxb <- keep$ctx
-p2_primitive_bind <- function() {
+hand_copied_primitive_list_bind <- function() {
   data <- observation$data
   list(open = data$open, high = data$high, low = data$low,
     close = data$close, volume = data$volume)
@@ -143,7 +143,8 @@ fids <- c("r5", "r10", "r20")
 flat_matrix <- function() { assign("cache", new.env(parent = emptyenv()), envir = ctxb$.pulse_lookup)
   vapply(fids, function(f) ctxb[[f]], numeric(length(ctxb$universe))) }
 mb <- microbenchmark::microbenchmark(
-  p2_primitive_bind = p2_primitive_bind(), flat_feature_matrix = flat_matrix(),
+  hand_copied_primitive_list_bind = hand_copied_primitive_list_bind(),
+  flat_feature_matrix = flat_matrix(),
   times = 200L, unit = "us")
 print(summary(mb)[, c("expr", "median")], row.names = FALSE)
 pb <- ledgr_pulse_snapshot(bsnap, universe = ids, ts_utc = ts[[40]], features = fmap3)

@@ -21,6 +21,56 @@ ws20_context_has_data_frame <- function(ctx) {
   direct || contains(raw[[".pulse_lookup"]])
 }
 
+ws21_retired_surface_census <- function(root,
+                                        census_roots,
+                                        expected_counts,
+                                        retired_pattern) {
+  missing_roots <- census_roots[!dir.exists(file.path(root, census_roots))]
+  census_files <- unlist(lapply(census_roots, function(path) {
+    list.files(
+      file.path(root, path), pattern = "[.](R|qmd|md|Rd)$",
+      recursive = TRUE, full.names = TRUE
+    )
+  }), use.names = FALSE)
+  hit_counts <- integer()
+  if (length(census_files) > 0L) {
+    for (path in census_files) {
+      at <- grep(retired_pattern, readLines(path, warn = FALSE), perl = TRUE)
+      if (length(at) == 0L) next
+      rel <- substring(
+        normalizePath(path, winslash = "/"),
+        nchar(normalizePath(root, winslash = "/")) + 2L
+      )
+      hit_counts[[rel]] <- length(at)
+    }
+  }
+  if (length(hit_counts) > 0L) {
+    hit_counts <- hit_counts[order(names(hit_counts), method = "radix")]
+  }
+  if (length(expected_counts) > 0L) {
+    expected_counts <- expected_counts[
+      order(names(expected_counts), method = "radix")
+    ]
+  }
+  problems <- character()
+  if (length(missing_roots) > 0L) {
+    problems <- c(problems, paste("missing roots:", paste(missing_roots, collapse = ", ")))
+  }
+  if (length(census_files) == 0L) {
+    problems <- c(problems, "zero scanned files")
+  }
+  if (!identical(hit_counts, expected_counts)) {
+    problems <- c(problems, "retired-surface hit counts differ")
+  }
+  list(
+    missing_roots = missing_roots,
+    file_count = length(census_files),
+    hit_counts = hit_counts,
+    expected_counts = expected_counts,
+    problems = problems
+  )
+}
+
 # ledgr-test-profile: fast
 testthat::test_that("[LTB-0546] flat contexts retire frames across all entrances", {
   ids <- c("BBB", "AAA")
@@ -274,12 +324,6 @@ testthat::test_that("[LTB-0547] P2 reuses prepared primitives and manifests no f
     "R", "vignettes", "man", "inst/design/manual", "dev/bench/shared",
     "tests/testthat"
   )
-  census_files <- unlist(lapply(census_roots, function(path) {
-    list.files(
-      file.path(root, path), pattern = "[.](R|qmd|md|Rd)$",
-      recursive = TRUE, full.names = TRUE
-    )
-  }), use.names = FALSE)
   retired_pattern <- paste0(
     "ctx\\$(bars|bar|feature_table|features_wide)([^[:alnum:]_]|$)",
     "|ctx\\[\\[[\"'](bars|bar|feature_table|features_wide)[\"']\\]\\]",
@@ -288,20 +332,45 @@ testthat::test_that("[LTB-0547] P2 reuses prepared primitives and manifests no f
     "projection_features_wide(_columns)?|features_wide|pulse_context_bar|",
     "pulse_feature_table)([^[:alnum:]_]|$)"
   )
-  allowed_tests <- c(
-    "test-context-frame-retirement.R", "test-history-substrate.R",
-    "test-history-teaching.R", "test-indicator-tools.R",
-    "test-pulse-context-accessors.R", "test-strategy-context-projection.R"
+  expected_counts <- c(
+    "tests/testthat/test-context-frame-retirement.R" = 7L,
+    "tests/testthat/test-history-substrate.R" = 1L,
+    "tests/testthat/test-history-teaching.R" = 1L,
+    "tests/testthat/test-indicator-tools.R" = 3L,
+    "tests/testthat/test-pulse-context-accessors.R" = 2L,
+    "tests/testthat/test-strategy-context-projection.R" = 1L
   )
-  unexpected <- character()
-  for (path in census_files) {
-    lines <- readLines(path, warn = FALSE)
-    at <- grep(retired_pattern, lines, perl = TRUE)
-    if (length(at) == 0L || basename(path) %in% allowed_tests) next
-    rel <- substring(normalizePath(path, winslash = "/"), nchar(root) + 2L)
-    unexpected <- c(unexpected, sprintf("%s:%d:%s", rel, at, trimws(lines[at])))
+  if (ledgr_test_design_source_context(root)) {
+    census <- ws21_retired_surface_census(
+      root, census_roots, expected_counts, retired_pattern
+    )
+    testthat::expect_identical(census$missing_roots, character())
+    testthat::expect_gt(census$file_count, 0L)
+    testthat::expect_identical(census$hit_counts, census$expected_counts)
+    testthat::expect_identical(census$problems, character())
+
+    empty_root <- tempfile("ws21-empty-census-")
+    dir.create(file.path(empty_root, "empty"), recursive = TRUE)
+    empty <- ws21_retired_surface_census(
+      empty_root, "empty", integer(), retired_pattern
+    )
+    testthat::expect_match(empty$problems, "zero scanned files")
+
+    changed_root <- tempfile("ws21-allowlist-mutation-")
+    changed_dir <- file.path(changed_root, "tests", "testthat")
+    dir.create(changed_dir, recursive = TRUE)
+    writeLines(
+      paste0("strategy <- function(ctx, params) ctx", "$", "bars"),
+      file.path(changed_dir, "test-indicator-tools.R")
+    )
+    changed <- ws21_retired_surface_census(
+      changed_root,
+      "tests/testthat",
+      c("tests/testthat/test-indicator-tools.R" = 0L),
+      retired_pattern
+    )
+    testthat::expect_match(changed$problems, "hit counts differ")
   }
-  testthat::expect_identical(unexpected, character())
 
   fixture_ctx <- ledgr:::ledgr_pulse_context(
     run_id = "ws20-fixture",

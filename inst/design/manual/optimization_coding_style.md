@@ -2,7 +2,10 @@
 
 
 **Status:** Maintainer coding-style article updated after v0.2.0.1
-productionization (LDG-2732).
+productionization (LDG-2732); rules revised 2026-10-30 after the v0.2.3
+PMwR, JSON and shape audits and an external review; the hot-loop
+POSIXct, kernel-to-context, boundary-helper and test-scaffolding rules
+added 2026-11-03 after the WS20 timestamp re-parse.
 
 **Authority:** Synthesis plus implementation trace. Binding rules remain
 in the v0.1.8.9 spec (column-buffer write rule), `../contracts.md`, the
@@ -15,6 +18,12 @@ measured and removed.
 **Anchor scope:** `R/...:line` references resolve against branch
 `v0.2.0.1` at commit `0f618fd`, after the three warm seams, finalization
 repair, and grouped seal validators reached production code.
+
+**Which part wins (2026-10-30):** the Rules, Scope Guards and Maintainer
+Checklist are current; AGENTS.md makes them review criteria. Evidence
+The Rules Rest On, the Implementation Trace and the Concrete Examples
+are historical records of the v0.2.0.1 arc. Where a historical passage
+disagrees with a Rule, the Rule wins.
 
 You are about to write or review code that touches bars, facts, pulses,
 instruments, events, or diagnostics, and you need to know which shapes
@@ -36,10 +45,11 @@ of “faster” needs before it is believed.
 
 Every discontinuity the arc found was the same thing: R-level iteration
 over a collection whose size grows with the data, doing per-element work
-that R can do once for the whole vector. Architecture was never the
-problem; the event-sourced fold, the sealed snapshot, and the sparse
-fact tables survived every spike. What changed was representation and
-the placement of loops.
+that R can do once for the whole vector. In the cases investigated,
+architecture was not the problem; the event-sourced fold, the sealed
+snapshot, and the sparse fact tables survived every spike. Future
+architectural choices stay open to measurement. What changed was
+representation and the placement of loops.
 
 ## Evidence The Rules Rest On
 
@@ -51,6 +61,7 @@ the placement of loops.
 | provider re-resolving facts from data frames per instrument and pulse | 396 s for 757 identical decision views; 82.7% of loop samples | production primitive planes and cursors; provider-only pass 0.2 s and 0.26% of profiled loop samples | provider spike and LDG-2722/2723 |
 | O(n^2) membership conflict validator run at seal | 95.1% of the traced seal at 30,300 rows (about 1,200 s extrapolated from slices) | production grouped sweeps; 6,000 randomized equivalence comparisons passed; full-scale seal timing remains a Batch 8 measurement | sealing probe and LDG-2728/2729/2730 |
 | per-bar timestamp loop in the ingest dry run | 17 s for 426,191 bars | vectorised call already exists: 0.02 s | sealing probe |
+| one scalar `ledgr_utc(ctx$ts_utc)` re-parse per pulse, added by a review correction | about 0.3 s of a 9.8 s run (500 x 1,260), which cancelled the whole gain from retiring the context frames | numeric epoch passed from the decision packet: run 10.25 s to 9.31 s, decide-stage samples 123 to 75 | WS20 correction 5e21ba51, measured against cc73a9d8 with the fill-heavy probe (`../../../dev/bench/v0_2_3_fill_heavy_profile/`) |
 
 After the production diagnostic block, the profiled 757-pulse spike
 attributed 67.6% of captured in-loop samples to valuation, 20.7% to
@@ -69,11 +80,12 @@ may cite as one.
 
 1.  **One-row frame per element, bound at the end.** A `data.frame()`
     per diagnostic, event, state row, or score, collected in a list and
-    joined with `do.call(rbind, ...)`. Cost is quadratic-ish in rows and
-    dominated by attribute handling, not values. Replace with typed
-    column buffers written by index and manifested as one frame per
-    chunk or at the persistence boundary, or with columns built by
-    `rep()` and one constructor call.
+    joined with `do.call(rbind, ...)`. Cost is dominated by per-frame
+    allocation and attribute handling, not values. It becomes quadratic
+    when the accumulated result is itself rebound on every iteration.
+    Replace with typed column buffers written by index and manifested as
+    one frame per chunk or at the persistence boundary, or with columns
+    built by `rep()` and one constructor call.
 2.  **Full-table subset inside a loop over ids.**
     `rows[rows$instrument_id == id, , drop = FALSE]` for every id, every
     pulse: O(instruments x rows) per pulse and, in the old provider,
@@ -117,10 +129,19 @@ may cite as one.
     construction quadratic in the rows written. Measured at 630,000
     elements, each base write costs about 1,620 microseconds against
     about 20 for `setv()`. Replace with a by-reference write through
-    `collapse::setv()`, or move the buffer out of the environment. The
-    discriminator is the environment, not the temporary name: a locally
-    owned list mutates in place, so `bars_mat$close[j, ] <- v` over a
-    local list is a different shape and carries no penalty.
+    `collapse::setv()`, or move the buffer out of the environment. In
+    the measured cases the environment was the discriminator, not the
+    temporary name: a locally owned list with no other reference was
+    modified in place, so `bars_mat$close[j, ] <- v` over such a list
+    carried no penalty. R copies whenever another reference exists, so
+    check with `tracemem()` rather than assume.
+
+**Helper criterion.** A new internal helper exists because a reviewer
+can name its contract or because it has a second caller. A test-only
+seam needs a named testing contract and a real test caller. The
+executable source detector applies the deliberately weaker floor—no
+wholly uncalled private function—while review still asks whether a
+one-caller extraction reduces risk or only adds surface.
 
 ## Rules
 
@@ -130,18 +151,41 @@ may cite as one.
   fold. The pulse loop reads by index and advances cursors; it does not
   filter, sort, split, or subset a data frame. Canonical sparse tables
   remain the durable input; compiled planes are transient.
+- **Data flows from the kernel to the context, never back** (maintainer,
+  2026-11-03). The kernel never reads a value from what it hands the
+  strategy (`ctx`, its views, its display fields). When the kernel needs
+  a value, it takes it from the packet, the carrier or a prepared axis.
+  The WS20 correction derived the pulse’s numeric cutoff from
+  `ctx$ts_utc`, the strategy-facing ISO string, although the decision
+  packet already held the epoch. This rule alone would have prevented
+  the regression, whatever the type of the value.
 - **Frames manifest at boundaries only.** Public results, persistence
   chunks, and inspection surfaces are data frames or tibbles. Inside the
   fold and inside compile steps, state lives in typed atomic vectors,
   matrices, or CSR-style flat segment vectors with offsets.
-- **Write by index into preallocated typed buffers.** Every typed
-  column, character and list included, through
-  `collapse::setv(col, i, value, vind1 = TRUE)`. The declared floor is
+- **Write by index into preallocated typed buffers.** Atomic columns
+  (numeric, integer, logical, character, epoch) use
+  `collapse::setv(col, i, value, vind1 = TRUE)`. List columns need
+  `xlist = TRUE`, or `setv()` treats the list as a set of columns and
+  refuses the index:
+  `collapse::setv(col, i, list(value), vind1 = TRUE,   xlist = TRUE)`
+  (as in `R/fold-event-buffer.R:66`). The declared floor is
   `collapse (>= 2.1.8)` because 2.1.8 fixed the generational write
   barrier that made character and list `setv()` unsafe under 2.1.7; that
   bug is why earlier guidance sent character writes through base
   replacement, and that detour is what shape 7 describes. Never grow a
   vector or list by appending.
+- **By-reference writes need exclusive ownership** (2026-10-30).
+  `setv()` changes its target in place for every holder of a reference;
+  a second reference does not preserve the old value (`copyv()` copies
+  first). A buffer written by reference is owned by exactly one fold,
+  candidate or writer, or has a documented shared-mutation contract.
+  Values handed to a strategy (`ctx` views, `state_prev`), published
+  results, retained diagnostic frames and inputs shared across
+  candidates or workers must not change when execution advances or a
+  buffer is reused: hand out a copy or a value that is never written
+  again. Returning a carrier from a stage transfers ownership; the
+  caller does not keep writing to what it passed in.
 - **Advance, do not recompute.** Point-in-time state changes at known
   boundaries. Keep a cursor per instrument or per header over sorted
   boundary times; advance it for non-decreasing cutoffs and re-seek with
@@ -157,6 +201,16 @@ may cite as one.
   callback, deserialization, or synthetic-row step may invalidate a
   guarantee; name that edge and check the changed property there rather
   than replaying every upstream validator.
+- **Boundary helpers stay at the boundary** (maintainer, 2026-11-03).
+  Normalisers and validators written for untrusted input never run per
+  pulse, fill or event on values a boundary already accepted. That
+  covers `ledgr_utc()`, `ledgr_normalize_*()`, `*_problem()` checks,
+  `match.arg()` and `stopifnot()`-style guards. Such a helper pays for
+  type dispatch, regexes, NA scans and error construction. That is
+  correct at ingest and pure overhead on trusted data: `ledgr_utc()`
+  costs about 250 us on one trusted ISO string. The per-stage
+  `ledgr_carrier_problem()` checks in the Cut 7 fill-heavy profile have
+  the same shape.
 - **Keep timestamps as timestamps.** POSIXct formatting is an
   external-boundary operation for display, serialization, or a contract
   that explicitly binds canonical text. Equality, ordering, grouping,
@@ -165,28 +219,208 @@ may cite as one.
   `ledgr_iso_utc()`, or `ledgr_normalize_ts_utc()` element by element
   over bars, facts, events, or instrument-by-pulse axes. If text is
   genuinely required, format the whole vector once and reuse it.
+- **No POSIXct in the hot loop** (maintainer, 2026-11-03). Code that
+  runs once per pulse, fill or event reads time only as a numeric epoch
+  taken from a prepared run axis or packet. It never constructs,
+  converts, parses or formats a POSIXct, POSIXlt or timestamp string: no
+  `as.POSIXct()`, `ledgr_utc()`, `ledgr_iso_utc()`, `format()` or
+  `strptime()`. That includes a single scalar once per pulse. R’s
+  date-time conversions dispatch, check time zones and often round-trip
+  through POSIXlt, so one character-to-POSIXct parse costs a few hundred
+  microseconds. That is a per-pulse cost on the order of the whole frame
+  build it replaced. Values the strategy sees as POSIXct or text are
+  prepared once for the whole axis before the loop and indexed by
+  position. Conversion back belongs to result readers and other
+  boundaries.
+- **Tests do not make the product compute things** (maintainer,
+  2026-11-03). Tests pin behaviour and output, not private per-pulse
+  fields the product does not consume. A hot-path field whose only
+  reader is a test is test scaffolding that runs in production. The WS20
+  correction’s `cutoff_num` existed because a review witness pinned it;
+  nothing in `R/` read it, and computing it cost 0.3 s per run.
+- **No JSON on per-pulse or per-fill paths** (maintainer, 2026-10-30).
+  Fold, planning, accounting and reader hot paths carry typed vectors.
+  Canonical JSON is allowed only for identity hashing and cold,
+  once-per-run records. A JSON encode or parse inside a loop over
+  pulses, fills or events is a review finding. Three measured cases led
+  here: per-fill `meta_json` payloads, per-pulse strategy state, and
+  per-pulse padding of an empty `asset_state` entry for every instrument
+  on the availability path (`../../../dev/spikes/pmwr-performance/`,
+  `../../../dev/spikes/ws4a-carrier-probe/`).
+- **Base-R representations in the execution kernel** (maintainer,
+  2026-10-30). The rule binds the internal execution kernel of fold,
+  planning, accounting and reader paths: the code between the strategy
+  and result boundaries that runs per pulse, fill, event or instrument.
+  The kernel uses prevalidated positional representations:
+  - typed atomic vectors, with times as numeric epochs;
+  - matrices, as dense instrument x pulse planes within the memory
+    budget;
+  - flat segment vectors with offsets;
+  - lists only as containers of typed columns, where each group of
+    columns declares the axis it lives on (instrument, pulse, fill, lot
+    segment).
+
+  On data-scale kernel paths, repeated construction of data frames,
+  per-element lists or S3 objects, generic dispatch, JSON and identifier
+  matching need a stated reason; POSIXct conversion is not allowed at
+  all (see “No POSIXct in the hot loop”). Address by position on a fixed
+  run axis, with a membership mask where the universe changes.
+  Sequential loops are allowed where the semantics are sequential (FIFO
+  consumption within one instrument, ordered affordability, stateful
+  transitions); vectorize across the independent dimension instead.
+  Names, classes and frames are attached at the strategy and result
+  boundaries; the public `ctx` and strategy return stay ergonomic R
+  objects, normalized once, even though the strategy runs inside the
+  pulse loop. Where a dense plane exceeds the memory budget, segments
+  are the base-R form, not frames. `PMwR::btest` (preallocated matrices,
+  one vector update per bar) and collapse (typed vectors, `setv()` by
+  index) are the reference pattern
+  (`../../../dev/spikes/pmwr-performance/`).
+- **Clarity is a design goal of every representation change**
+  (maintainer, 2026-10-30). Vectorized code is denser than a per-element
+  loop, and positions fail silently where names fail loudly, so clarity
+  is designed in rather than hoped for:
+  1.  **One carrier contract.** Every typed column the fold carries is
+      documented in one table (name, type, axis, unit, invariant). The
+      constructor points to it.
+  2.  **Axis discipline.** Inside loops, instruments are integer
+      positions on one fixed run axis. ID-to-position and position-to-ID
+      conversion happens only in a few named boundary helpers, never ad
+      hoc mid-path.
+  3.  **Validate at construction.** Constructors check lengths, axis and
+      types once; consumers trust them.
+  4.  **Canonical R stays readable.** It is the normative oracle, so it
+      is the version people read: plain vector code over cleverness. A
+      later compiled path may be dense; the R path stays explainable.
+  5.  **Small stages with explicit inputs and outputs.** Each stage
+      takes the carrier and returns it; no hidden mutation across
+      stages.
+  6.  **Explain the indexing.** Every non-obvious mask, offset or
+      segment expression carries a one-line comment saying why.
+- **Compute at the frequency of change** (maintainer, 2026-10-30).
+  Compute an expensive value at the lowest frequency at which its inputs
+  can change (per run, per pulse, per fill, per event) and carry it
+  forward, rather than recomputing it at a higher frequency or in a
+  second consumer. Prefer hoisting or incremental maintenance where
+  lifetime, ownership and memory cost stay clear. Recomputing
+  deliberately is acceptable, with a stated reason, when retaining the
+  result costs more: a large plane kept alive across candidates or
+  replicated to workers counts against the memory budget, as do
+  temporary allocations and buffers. Caching is allowed; an expensive
+  cache key is not. A memo whose key costs as much as the work is a
+  finding (the `canonical_json()` cache hashed every argument with
+  SHA-256 to skip an encode). Code DRY means one implementation per
+  concept, not one generic helper for similar-looking code; the clarity
+  rule wins over shared flags. Measured cases: timestamps re-validated
+  per fill, positions recomputed from lots per fill, FIFO replayed in
+  fold, finalisation and every reader, unchanged state re-encoded per
+  pulse, terminal recovery replaying per pulse
+  (`../../../dev/spikes/json-hot-path-audit/`).
 - **Preserve the production rule, move the loop to compile time.** When
   a resolver is replaced, resolve each segment once at build time with
   the exact production predicate (applicability, supersession,
   precedence, stable tie order), and prove parity by comparing full
   views arm-to-arm at shuffled cutoffs rather than by re-deriving the
   rule.
+- **A fast path names its canonical path, its differential and its
+  exit.** A second path that answers a question the code already answers
+  (a same-clock cursor beside a two-clock resolver, a sparse or
+  complete-set compiler beside the per-instrument compiler, a memo or
+  overlay beside a whole-prefix primitive) ships only with two things: a
+  registered differential test that compares its full output with the
+  canonical path over the inputs where both apply, including the
+  condition that selects the fast path; and a stated removal or merge
+  condition, the measurement or simplification under which it goes away
+  or folds into the canonical path. The differential compares error
+  behaviour, missing values and ordering as well as successful values,
+  and states its numeric comparison rule (exact or a named tolerance). A
+  shared production predicate shows the paths agree; it does not show
+  the predicate is right. A fast path without both is an unproven
+  duplicate, not an optimization. The history system’s representations
+  and paths, with their oracles and conditions, are listed in
+  `../ledgr_v0_2_2_spec_packet/history_representation_map.md`; a change
+  that adds a history fast path or representation adds its row there.
 - **Make the identity boundary explicit.** Anything that participates in
   `config_hash`, snapshot hash, or run identity is off limits to an
-  optimization; anything that is a local locator (run ID, store path,
-  creation time) is excluded from parity comparisons, and the exclusion
-  is written down.
+  optimization. Each parity comparison writes down its own exclusions:
+  only fields that legitimately differ between the compared arms (store
+  path, creation time, a generated ID that differs by design). A field
+  that should match, such as a run ID fixed on both arms, is compared.
 - **Measure before and after with the arc’s clocks.** Wall around the
   measured call in a fresh process, externally sampled peak working set,
-  profiler shares as a decomposition only (Windows `Rprof()` samples
-  about 64% of loop time), and cold versus warm clocks kept separate
-  (`../spike_protocol.md` section 10). Small-fixture numbers never
-  appear in a ranking, and no manual article, vignette, or release note
-  turns them into a public claim.
+  profiler shares as a decomposition only, and cold versus warm clocks
+  kept separate. On the recorded Windows host, `Rprof()` captured about
+  64% of wall time at a 10 ms interval and about a third at 5 ms,
+  because of the 15.6 ms timer; scale stage seconds by wall over sampled
+  time per run, not by a constant. Cold and warm clocks follow
+  `../spike_protocol.md` section 10. Small-fixture numbers never appear
+  in a ranking, and no manual article, vignette, or release note turns
+  them into a public claim.
 - **Probe before prose.** A performance claim about package behaviour
   that no probe executed is returned. The order is smallest runnable
   fork, run it, let failures generate at most ten cases, then freeze
   expected answers.
+
+## Reference Costs
+
+What common operations cost per call, measured 2026-11-03
+(`../../../dev/bench/v0_2_3_r_cost_reference/`, which holds the full
+tables of 138 operations and 53 base/collapse pairs). The scale to keep
+in mind: at 1,260 pulses, 1 us per pulse costs 1.3 ms per run and 1 ms
+per pulse costs 1.3 s. A full 500 x 1,260 fill-heavy run is about 7 ms
+per pulse. The numbers are isolated warm-cache medians on the maintainer
+host; read them as lower bounds and orders of magnitude.
+
+| operation (500 instruments unless stated)                     | us per call |
+|---------------------------------------------------------------|------------:|
+| epoch compare `e1 <= e2`                                      |        0.08 |
+| POSIXct compare `t1 <= t2`                                    |         6.9 |
+| `as.numeric(<POSIXct>)`                                       |        0.41 |
+| `format(<POSIXct>)`, one value                                |        13.6 |
+| `ledgr_utc()` on one ISO string                               |         228 |
+| `env[[id]]` in a hashed environment                           |        0.07 |
+| `match(id, ids)`, one id                                      |         1.5 |
+| `match(ids, ids)`, 500 ids                                    |         6.1 |
+| `collapse::fmatch(ids, ids)`, 500 ids                         |         2.0 |
+| `setdiff(ids, other)`                                         |        24.8 |
+| empty closure call / create a closure                         | 0.05 / 0.02 |
+| S3 dispatch via `UseMethod`                                   |         1.3 |
+| `match.arg()` / `tryCatch()`                                  |   3.0 / 3.0 |
+| `vapply()` or `lapply()` over 500 with a closure              |   about 150 |
+| `for` loop with 500 scalar writes                             |          32 |
+| `sort(ids)`, locale default                                   |         782 |
+| `order(ids, method = "radix")`                                |          20 |
+| `data.frame()` 500 x 9 / `tibble()` 500 x 9                   |   212 / 768 |
+| `structure(<list>, class = "data.frame")` / `collapse::qDF()` |   2.1 / 1.7 |
+| `df[rows, ]`, 54 of 500 rows                                  |          33 |
+| `ledgr_canonical_json_encode()`, small fill record            |          21 |
+| yyjsonr encode, small fill record                             |         2.0 |
+| DuckDB `dbAppendTable()`, 54 or 500 rows                      | about 6,000 |
+| DuckDB one-row parameterised insert                           |         884 |
+
+**Base or collapse.** Every collapse call carries about 2 to 2.5 us of
+fixed overhead (generic dispatch and argument handling), so the choice
+depends on the operation:
+
+- Use collapse for matching, sets, grouping, ordering and frames at any
+  size: `fmatch()` (3 to 4x faster than `match()`), `%iin%` and `%!in%`
+  (2 to 3x), `a[a %!iin% b]` for `setdiff()` of unique ids (4 to 6x),
+  `fnunique()` (6 to 9x), `fsum(x, g)`, `fbetween()` and `fwithin()`
+  (1.6 to 12x over `tapply()`, `rowsum()` and `ave()`), `qF()` (13x over
+  `factor()`), `qDF()`, `ss()` and `rowbind()` (4 to 100x), and
+  column-wise `fmax()` and `fcumsum()` on matrices (7 to 15x over
+  `apply()`).
+- Keep base for elementwise arithmetic and simple reductions on
+  instrument-axis vectors: `sum()`, `max()`, `cumsum()`, a lag or a
+  difference on 500 elements are 2 to 6x faster in base, and `x[lgl]` is
+  faster in base at both 500 and 5,000. The two cross over around 5,000
+  elements.
+- In-place writes (`setv()`, `setop()`, `%+=%`) are at most 2.7x faster
+  per call at these sizes; their reason is no allocation across pulses,
+  not speed per call.
+- Never order ids with the locale default. `order(ids)` and `sort(ids)`
+  are 40 to 64x slower than `radixorder()` or `order(method = "radix")`
+  and depend on the session locale.
 
 ## Sealed Snapshot Guarantee Graph
 
@@ -316,7 +550,7 @@ and result readers.
   fact or the configured universe names, built with
   `ledgr_availability_stable_ids()` (`R/availability-provider.R:9-13`);
   all planes are indexed by position in it
-  (`R/availability-provider-prepared.R:172-181`, uncommitted).
+  (`R/availability-provider-prepared.R:172-181`).
 - **Membership plane (production).** Headers in the resolver’s
   processing order with eligibility times
   `max(effective_from, knowledge_time)`, per-header member index sets,
@@ -329,12 +563,14 @@ and result readers.
   vectors with `off` and `cnt` per instrument (CSR), values resolved at
   compile time by the production rule; one cursor vector `cur` over all
   instruments (`R/availability-provider-prepared.R:98-165`).
-- **Event buffer (production).** Preallocated typed columns in the
-  durable handler with `collapse::setv` for numeric, integer, and
-  POSIXct fields and base replacement for character fields
-  (`R/backtest-runner.R:379-394`); the sweep memory handler’s character
-  and list columns still copy on write (`R/sweep.R:1576-1584`, an open
-  audit item).
+- **Event buffer (v0.2.0.1; superseded).** At v0.2.0.1 the durable
+  handler used `collapse::setv` for numeric, integer, and POSIXct fields
+  and base replacement for character fields
+  (`R/backtest-runner.R:379-394`), and the sweep memory handler’s
+  character and list columns copied on write (`R/sweep.R:1576-1584`).
+  The 2.1.8 floor and the v0.2.3 single output handler
+  (`R/fold-event-buffer.R`) replaced both; the current rule is “Write by
+  index into preallocated typed buffers”.
 
 ### Code Anchors
 
@@ -383,13 +619,14 @@ and result readers.
 ### Edge Cases
 
 - `collapse::setv()` on character vectors under collapse 2.1.7 can skip
-  the generational write barrier; the arc kept character writes on base
-  replacement until the floor moves. Numeric, integer, and POSIXct
-  writes are safe in both versions.
+  the generational write barrier, so the arc kept character writes on
+  base replacement. The floor is now 2.1.8, which fixed this: character
+  and list columns use `setv()` (list columns with `xlist = TRUE`).
+  Numeric, integer, and POSIXct writes were safe in both versions.
 - `col[[i]] <- v; assign(name, col, envir)` on a character column copies
-  the whole buffer when the vector is shared; hold buffers in an
-  environment, avoid extra references, and prefer block writes per
-  pulse.
+  the whole buffer when the vector is shared. Write environment-held
+  buffers through `setv()` (shape 7), avoid extra references, and prefer
+  block writes per pulse.
 - Stable sort ties: the production lifetime resolver takes the last
   applicable row after `order(effective_from, knowledge_time)`, whose
   ties follow input row order, and the DuckDB read orders rows by
@@ -433,9 +670,17 @@ had:
 ``` r
 # before: 426,191 iterations, about 17 s
 for (i in seq_along(x)) out[[i]] <- tryCatch(ledgr_fact_time(x[i], "ts_utc", allow_missing = TRUE)[[1L]], error = function(e) NA)
-# after: 0.02 s, then mask failures
+# after: 0.02 s, valid only when x is already adapter-normalized
 out <- ledgr_fact_time(x, "ts_utc", allow_missing = TRUE)
 ```
+
+The two are not equivalent on arbitrary input. The loop turns each
+failing element into `NA`. The vectorised call aborts the whole vector
+on an unparseable string or a sub-second value (`ledgr_fact_time()`,
+`R/availability-facts.R:1671-1697`). The rewrite is correct here because
+adapter normalization already guarantees parseable whole-second values;
+on untrusted input, find the failures explicitly before the vectorised
+call rather than assuming the same per-element behaviour.
 
 A quadratic validator versus a grouped, state-aware sweep (membership
 shown; the same shape applies to status with one running maximum per
@@ -485,10 +730,39 @@ One diagnostic block per pulse versus one frame per instrument:
   code proving a new property or paying again for an old one?
 - Is any POSIXct value being formatted merely to compare, order, group,
   join, or align it? If so, keep it as POSIXct or an epoch vector.
+- Does any code that runs per pulse, fill or event touch POSIXct,
+  POSIXlt or timestamp text, even once on a scalar? Which prepared epoch
+  replaces it?
+- Does kernel code read anything from `ctx` or another strategy-facing
+  value? Which packet, carrier or axis field should it read instead?
+- Does a per-pulse path call a normaliser or validator on values a
+  boundary already accepted?
+- Does the change add a private hot-path field? Which product code reads
+  it, or is a test its only reader?
 - Is state inside the fold held in typed vectors, matrices, or segment
   tables with cursors, and do frames appear only at boundaries?
 - Are per-row writes by index into preallocated buffers, with no append?
+- Who owns each buffer written by reference? Can a strategy, a published
+  result, a retained diagnostic frame or another candidate still hold a
+  reference to it?
+- Does any JSON encode or parse run once per pulse, fill or event? If
+  so, which typed vector replaces it?
+- Inside the loop, does any data frame, per-element list, S3 object,
+  POSIXct conversion or name match appear? Which position, mask or typed
+  column replaces it?
+- Could a clean-context reader explain each changed stage from its code
+  and the carrier contract alone? Are ID/position conversions confined
+  to the named boundary helpers, and is every non-obvious index
+  expression commented?
+- Is any value computed at a higher frequency than it changes, or
+  computed again by a second consumer? Is a cache standing in for
+  hoisting?
 - Is any value computed on a hot path never read on the common branch?
+- Does the change add a second path to an answer the code already
+  computes? Name its canonical path, its registered differential test
+  and its removal or merge condition. Does it add an availability/dense
+  branch? The codebase census check refuses a mode-branch site missing
+  from its committed record.
 - Does the change keep identity, schema, view shape, and reason
   vocabulary unchanged, and does the parity harness compare full outputs
   arm-to-arm with locators excluded explicitly?
@@ -513,6 +787,10 @@ One diagnostic block per pulse versus one frame per instrument:
 - `../../../dev/spikes/snapshot-sealing/loop_audit.md`
 - `../ledgr_v0_2_0_1_spec_packet/setup-orchestration-optimization-note.md`
 - `../spike_protocol.md` (sections 1, 3, 4, 10)
+- `../ledgr_v0_2_2_spec_packet/history_representation_map.md` (history
+  representations, fast paths with their differential oracles and
+  removal conditions, and the execution-mode branch census; Cut 16
+  decision 17)
 - `performance_arc_v0_1_8_x.qmd`, `benchmark_methodology.qmd`,
   `execution_fold_core.qmd`
 

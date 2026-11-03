@@ -2033,7 +2033,7 @@ and `AAA` a held nonmember, each holding 5:
   - a `$`, `@`, `[[` or `[` extraction, on any object, of a literal private
     context field name (`ledgr_pulse_context_private_fields()`: `.history`,
     `.pulse_lookup`, `.feature_vector`, `.notes`,
-    `.positions`, `.safety_state`);
+    `.positions`, `.safety_state`, `.schedule_query`);
   - a field that holds prepared data beyond the pulse (`.history`,
     `.pulse_lookup`, `.feature_vector`) named
     anywhere, as a string or as a symbol, including inside `quote()`,
@@ -2484,6 +2484,13 @@ and `AAA` a held nonmember, each holding 5:
   refusal; no general map materializer is exported.
 - There is no context frame or `ctx$features_wide()` contract; the public wide
   current-pulse inspection API is `ledgr_pulse_wide()`.
+- The pulse context is the inspection helpers' only data source. An optional
+  explicit feature map selects names from that context; the helpers do not
+  seal, hash, authorize, query a store, or construct provenance.
+- Contexts returned by either `ledgr_pulse_snapshot()` form carry no public or
+  private `feature_params`, active-alias-map, alias-map JSON, alias-map hash, or
+  alias-map-version metadata. Feature resolution is prepared behind the same
+  private pulse lookup used by execution.
 - `ledgr_pulse_snapshot()` is an external development and inspection helper;
   no strategy callback calls it, receives an experiment or supplies a history
   policy. Called with a `ledgr_experiment`, its concrete

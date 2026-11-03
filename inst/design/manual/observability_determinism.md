@@ -194,11 +194,11 @@ caches, or parallel execution. This enumeration is adapted from
 | `.ledgr_backtest_lifecycle_registry` | `R/backtest-handle.R:1`, writes at `R/backtest-handle.R:83` | `auto_checkpoint_message_emitted` -\> `TRUE` | Console-message rate limiter only. |
 
 The strategy-visible per-pulse object is the fold context. It exposes
-identity, the decision axis, cash/equity, seeds, strategy state, and flat
-named current bar, portfolio, availability, and declared-feature columns.
-Those columns are materialized lazily from one private primitive lookup;
-no current-pulse frame is retained on the context. `ctx$pulse_seed` is
-assigned in the decide stage.
+identity, the decision axis, cash/equity, seeds, strategy state, and
+flat named current bar, portfolio, availability, and declared-feature
+columns. Those columns are materialized lazily from one private
+primitive lookup; no current-pulse frame is retained on the context.
+`ctx$pulse_seed` is assigned in the decide stage.
 
 ### Code Anchors
 

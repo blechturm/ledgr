@@ -29,3 +29,23 @@ Reproduction:
 Rscript tools/run-test-profile.R --profile=fast --mode=ordinary --records=dev/bench/v0_2_3_context_frame_retirement/evidence/fast_profile_correction_376ae796 --run-index=1
 Rscript tools/run-test-profile.R --profile=review --mode=ordinary --records=dev/bench/v0_2_3_context_frame_retirement/evidence/review_profile_correction_376ae796 --run-index=1
 ```
+
+## Workstream 21 migration and closure
+
+The durable WS21 profile records are:
+
+- `evidence/fast-ws21-ae289ce0-{census,summary}.csv`: 635/635 blocks,
+  zero skips and zero failures in 364.830 seconds;
+- `evidence/review-ws21-ae289ce0-{census,summary}.csv`: 524/524 blocks,
+  one registered optional-package skip and zero failures in 780.030 seconds.
+
+Both passing records used the explicit supported Windows locale
+`English_United States.utf8`. The first review-profile attempt under the
+process's default locale passed 520 blocks, failed three inherited UTF-8
+decoding blocks and skipped one optional-package block. It is retained as an
+environmental observation, not reported as a passing profile.
+
+The exact commands, locale and source identities are in
+`evidence/ws21-provenance.yml`. The response probe's after-clock calls the
+small list construction the **hand-copied primitive list bind**. It is a
+descriptive comparison, not a P2 implementation or a timing gate.

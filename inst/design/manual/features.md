@@ -146,6 +146,12 @@ colnames(x) <- ids
 Missing feature IDs fail loudly. Warmup values are legitimate `NA`
 values and are left for strategy logic to handle.
 
+For the same reason, `is.na(ctx$close)` means only that no bar was
+observed for that instrument at the current pulse. It does not say why
+the observation is absent. Expected-session and carried-input evidence
+come from the causal history readers, not from the flat current-pulse
+column.
+
 ## Implementation Trace
 
 This section follows the two-layer manual standard in the active

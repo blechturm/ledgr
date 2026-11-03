@@ -47,6 +47,10 @@ columns for decisions, use \code{ledgr_pulse_features()} or
 windows.
 Use \code{ctx$buyable & is.finite(ctx$close) & ctx$close > 0} for an explicit
 current-close sizing predicate; it does not promise execution at the next open.
+\code{is.na(ctx$close)} means that no bar was observed for that instrument at
+this pulse; it does not identify why the observation is absent. Expected-session
+and carried-input evidence belong to the causal history readers, not the flat
+current-pulse column.
 
 Declare typed defaults with \code{asset_state=} and \code{portfolio_state=}
 when constructing the experiment. Read the complete pulse-frozen state through

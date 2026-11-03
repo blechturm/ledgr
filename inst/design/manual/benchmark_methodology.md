@@ -343,11 +343,57 @@ pins the affinity first. Call `Rscript` by its full path; a bare
   --protocol=dev/bench/timing/protocols/<id> --record=dev/bench/timing/records/<id>/<name>/attempt-1
 ```
 
+`--cells=<a,b,...>` times only the named protocol cells. A gate that
+covers only some cells uses it, so it does not spend the window on cells
+it does not gate. The runner records the subset in `session.csv`. The
+checker applies the same subset and lists the other cells as not
+measured; it never reports them as passing.
+
 `dev/bench/timing/demo/check_demo.R` shows the checker failing on each
 invalid case and passing its controls.
 `dev/bench/timing/demo/frozen_inputs_demo.R` edits the live harness
 during a smoke window and shows that later slots are unchanged, and that
 an edit to a frozen copy invalidates the attempt.
+
+## Attributing A Change With Profile Samples
+
+Rule 16 of the v0.2.3 macro plan checks performance at milestones, not
+per workstream. A cut that removes or adds hot-path work still reports
+what it did to that work (maintainer, 2026-11-03). It reports profiler
+sample counts for the functions it touches, not a wall-time verdict.
+
+Wall time answers “is the run faster?” and folds every change into one
+number. A saving and a new cost of the same size cancel and read as
+noise. Per-function sample counts separate them. In the WS20 case:
+
+- the first measurement was a 2% whole-run difference, inside the noise,
+  which read as “the context-frame retirement did nothing”;
+- the per-function diff of the decide stage showed what happened: 53
+  samples of frame building were gone, and 58 samples of a new per-pulse
+  `ledgr_utc()` parse had appeared;
+- between the two measurement sessions the base build’s wall median
+  moved by 0.4 s while its frame-building counts stayed at 25 to 32
+  samples.
+
+The method:
+
+- Base and candidate are installed from pinned commits into separate
+  libraries, as in the regression gates above.
+- Each arm runs the same workload in fresh processes, alternating arms,
+  with one `Rprof()` rep at a 10 ms interval per process and at least
+  two processes per arm.
+- Samples are assigned to the innermost fold stage on the stack, and
+  within a stage counted per function on the callee side of the stage
+  frame (`dev/bench/v0_2_3_fill_heavy_profile/classify.R` does the stage
+  split).
+- The report names each removed or added function with its before and
+  after count, and the stage totals. A removal claim needs the removed
+  functions at zero samples and a smaller stage total. If the total did
+  not shrink, find what grew.
+
+Sample counts are a decomposition, not a clock. They compare two arms on
+one workload, interval and host. They support no whole-run or public
+speed claim; those stay with the milestone measurements.
 
 ## Release-Gate Checks
 
@@ -545,6 +591,9 @@ Before closing a benchmark-sensitive ticket:
   when a reusable snapshot is part of the workflow.
 - Treat an unavailable phase as unavailable; do not estimate or
   zero-fill it.
+- When the ticket removes or adds hot-path work, report before/after
+  profiler sample counts for the functions it touches and the stage
+  totals.
 - Keep raw results local unless the packet explicitly asks to track a
   report.
 - Avoid public-speed-claim language.

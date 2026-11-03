@@ -268,6 +268,11 @@ shape is flat; current bar and feature values are named vectors aligned to
 | `state` | prior strategy-state view | fold state |
 | `.safety_state` | private scalar risk-state label | fold context boundary |
 
+`is.na(ctx$close)` means that no bar was observed for that instrument at the
+current pulse. It does not classify the reason for the absence. Expected-session
+and carried-input evidence come from the causal history readers, not from the
+flat current-pulse column.
+
 Current-pulse inspection is explicit: `ledgr_pulse_features(ctx)` returns a
 long table and `ledgr_pulse_wide(ctx)` returns a wide table. These helpers
 materialize ordinary R objects for inspection and promise neither hot-path

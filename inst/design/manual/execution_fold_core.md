@@ -91,7 +91,7 @@ remove the entry guard to gain speed.
 
 A normal pulse has this shape:
 
-1.  Bind the current pulse's accepted primitive columns, positions,
+1.  Bind the current pulse’s accepted primitive columns, positions,
     cash, equity, seeds, and strategy state to the flat strategy
     context.
 2.  Attach the small target and scheduling helpers, including
@@ -262,10 +262,10 @@ validator keeps these shapes strict across `R/execution-spec.R:120`,
 `R/execution-spec.R:241`.
 
 At each pulse, `R/fold-engine.R:510` constructs the strategy context as
-a list with class `ledgr_pulse_context` in the decide stage. The
+a plain list with class `ledgr_pulse_context` in the decide stage. The
 author-facing shape is flat; current bar and feature values are named
-vectors aligned to `ctx$universe` and materialize lazily from one private
-primitive lookup:
+vectors aligned to `ctx$universe` and materialize lazily from one
+private primitive lookup:
 
 | Slot | Type / shape | Source anchor |
 |----|----|----|
@@ -281,11 +281,16 @@ primitive lookup:
 | `state` | prior strategy-state view | fold state |
 | `.safety_state` | private scalar risk-state label | fold context boundary |
 
-Current-pulse inspection is explicit: `ledgr_pulse_features(ctx)` returns
-a long table and `ledgr_pulse_wide(ctx)` returns a wide table. These
-helpers materialize ordinary R objects for inspection and promise neither
-hot-path cost nor persistence. Causal multi-pulse data comes from
-`ledgr_history_frame()`, not from the current-pulse context.
+`is.na(ctx$close)` means that no bar was observed for that instrument at
+the current pulse. It does not classify the reason for the absence.
+Expected-session and carried-input evidence come from the causal history
+readers, not from the flat current-pulse column.
+
+Current-pulse inspection is explicit: `ledgr_pulse_features(ctx)`
+returns a long table and `ledgr_pulse_wide(ctx)` returns a wide table.
+These helpers materialize ordinary R objects for inspection and promise
+neither hot-path cost nor persistence. Causal multi-pulse data comes
+from `ledgr_history_frame()`, not from the current-pulse context.
 
 Strategy state is carried separately from portfolio state. On committed
 resume, the previous strategy state is read before execution at

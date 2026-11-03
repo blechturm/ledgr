@@ -1,0 +1,39 @@
+record: ws21_context_frame_migration
+source_commit: ae289ce011a0639a55bf8d2fbbb65e5acd2dc3d2
+environment:
+  os: Windows 11 x64
+  r: 4.6.1
+  testthat: 3.3.2
+  collapse: 2.1.8
+  locale: English_United States.utf8
+  power_plan: High performance
+  process_affinity: 0xFFFFFF
+profiles:
+  fast:
+    census: fast-ws21-ae289ce0-census.csv
+    summary: fast-ws21-ae289ce0-summary.csv
+    command: >-
+      Rscript tools/run-test-profile.R --root=. --profile=fast
+      --mode=ordinary
+      --census=dev/bench/v0_2_3_context_frame_retirement/evidence/fast-ws21-ae289ce0-census.csv
+      --summary=dev/bench/v0_2_3_context_frame_retirement/evidence/fast-ws21-ae289ce0-summary.csv
+  review:
+    census: review-ws21-ae289ce0-census.csv
+    summary: review-ws21-ae289ce0-summary.csv
+    command: >-
+      Rscript tools/run-test-profile.R --root=. --profile=review
+      --mode=ordinary
+      --census=dev/bench/v0_2_3_context_frame_retirement/evidence/review-ws21-ae289ce0-census.csv
+      --summary=dev/bench/v0_2_3_context_frame_retirement/evidence/review-ws21-ae289ce0-summary.csv
+  default_locale_attempt:
+    status: environmental_failure_not_a_pass
+    expected_blocks: 524
+    passed_blocks: 520
+    failed_blocks: 3
+    skipped_blocks: 1
+probe:
+  path: dev/spikes/ctx_frame_views/response_probe.R
+  source_commit: ae289ce011a0639a55bf8d2fbbb65e5acd2dc3d2
+  command: Rscript dev/spikes/ctx_frame_views/response_probe.R .
+  label: hand-copied primitive list bind
+  status: descriptive_only
