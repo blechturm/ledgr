@@ -68,14 +68,78 @@ variant stays identical, and `check.R` would fail on them.
 
 Nothing in the package was changed, demoted or deleted.
 
+## Stage 2: the price of each guarantee
+
+**Question.** What does each of ledgr's per-pulse guarantees cost when it is
+added back to the floor in lean form? Kill condition as in stage 1: a layer
+counts only if fills, equity and cash stay bit-identical to ledgr, and a
+trace layer only if its trace equals `ledgr_results(bt, "diagnostics")`.
+
+**Outcome: green.** Every layer on every shape is bit-identical
+(`evidence/parity_layers.csv`).
+
+`layers.R` adds, cumulatively: boundary validation of the strategy's targets;
+a rich context (ISO timestamp, cash, equity, positions, OHLCV); fixed-basket
+availability (eligibility mask, mark source and age, restricted targets
+held); then either ledgr's full logical decision trace built every pulse, or
+the WS15 design, which keeps only requests that did not end in the requested
+position and rebuilds the full trace after the run from the fills, the
+prepared planes and that residual, with no strategy call.
+
+| layer (cumulative), us per pulse | 10 x 7,200 | 20 x 23,400 | 500 x 1,260 |
+| --- | ---: | ---: | ---: |
+| base (stage 1 floor in this harness) | 15 | 18 | 48 |
+| + target validation | 17 | 18 | 48 |
+| + rich context | 19 | 21 | 64 |
+| + fixed-basket availability | 26 | 29 | 103 |
+| + full trace, built every pulse | 64 | 68 | 222 |
+| or + trace difference only (WS15) | 26 | 29 | 103 |
+| ledgr at `0d6c0b11` | 2,790 | 3,135 | 8,320 |
+
+After the run (seconds): the WS15 rebuild of the full trace takes 0.18,
+0.71 and 0.28, most of it one canonical JSON encode per pulse for the
+reconciliation detail; one batched DuckDB write of fills and equity takes
+0.08 to 0.10, and 0.20 to 0.69 with the full trace. The ledgr reference
+writes and reads the same trace inside its 2.8 to 8.3 ms pulse.
+
+What the layers taught about ledgr, all found by failed parity first:
+
+- a decision row's `quantity` is the current holding, not zero;
+- a final-pulse request that differs from the holding writes an
+  `execution / no_fill / final_pulse_no_execution` row with the request in
+  `target` and the holding in `quantity`;
+- the reconciliation detail books recorded cash fill by fill in event order,
+  and expected (virtual) cash fill by fill with sells before buys, so the
+  two can differ in the last digit on busy pulses;
+- `cumsum()` accumulates in long double and differs from that booking in the
+  last digit; exact rebuilds need plain double additions.
+
+The WS15 residual on these shapes is the unmet final-pulse requests only
+(1, 3 and 54 rows). Everything else rebuilt exactly.
+
+## Fixed cost per run
+
+`fixed_cost.R` profiles 20 warm 12 x 90 runs (`evidence/fixed_cost*.csv`).
+ledgr takes 625 ms per run including fills and equity reads and `close()`;
+the floor does the same run with a batched DuckDB write in 84 ms, most of it
+DuckDB connect and shutdown. Of ledgr's 625 ms, the fold loop is 283 ms (90
+pulses at about 3 ms), so the per-pulse premium is half of the "fixed" cost
+of a small run. The rest: run setup and finalisation outside the loop
+138 ms, result reads 80 ms, close 28 ms, snapshot metadata 27 ms, snapshot
+connection 26 ms, provider data 10 ms, strategy spec 9 ms.
+
 ## What the spec may consume, and what is open
 
-The spec may cite the floor as a lower bound for this workload shape. Open,
-as a second stage: add ledgr's guarantees back one layer at a time (durable
-batched write, the decision-trace difference, declared-session availability,
-boundary validation) and price each, so WS14a and WS14 can separate the cost
-of a guarantee from waste.
+The spec may cite the floor and the layer prices as lower bounds for this
+workload shape: with every guarantee priced here, a lean ledgr pulse costs
+about 30 us on narrow books and about 100 us on 500 instruments, against
+2.8 to 8.3 ms today. The WS15 design rebuilds ledgr's full trace exactly on
+these shapes. Not priced here: declared sessions with real gaps,
+restrictions and terminals, schedules, corporate actions, sizing helpers,
+costs, risk and RNG. Those layers need fixtures that exercise them.
 
 Reproduce: `Rscript dev/spikes/r_floor/run.R <lib> <out dir>
-10x7200,20x23400,500x1260`, then `Rscript dev/spikes/r_floor/check.R <lib>
-<scratch dir>`.
+10x7200,20x23400,500x1260`, `Rscript dev/spikes/r_floor/run2.R <lib> <out
+dir> 10x7200,20x23400,500x1260`, `Rscript dev/spikes/r_floor/fixed_cost.R
+<lib> <out dir> 20`, then `Rscript dev/spikes/r_floor/check.R <lib> <scratch
+dir>`.
