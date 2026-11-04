@@ -600,6 +600,24 @@ CRAN release.
   before the editorial pass. This is not hot-path work: per-pulse, per-fill
   and per-event code still never calls `ledgr_utc()` or any other POSIXct
   conversion (optimization manual, "No POSIXct in the hot loop").
+- **Post-warmup `NA` in indicator output (maintainer, 2026-11-04).** A
+  custom indicator that returns `NA` after warmup behaves differently by
+  path. Through `fn` alone the run continues, the strategy reads `NA` and
+  history evidence reports `calculation_non_finite` (v0.2.2 Cut 16 decision
+  21; registered test in `test-indicator-evidence.R`). The same values
+  through `series_fn` refuse the run with `ledgr_invalid_feature_output`
+  (`ledgr_normalize_feature_series_output()`), as the Indicator Computation
+  rule group and `vignettes/custom-indicators.qmd` state. Claude confirmed
+  both by probe in both modes on 2026-11-04; the observable-data RFC
+  response (finding 4) surfaced it. The maintainer chose to accept
+  post-warmup `NA` in both paths: `series_fn` output follows the `fn` path,
+  `NaN` and infinite values still refuse in both, and the contract sentence
+  and the vignette's three passages say so. A small chore cut owns it, with
+  tests for both paths in both modes; registered tests are not weakened.
+  Identity: none (fingerprints, config and store format unchanged); runs
+  that refused now complete. One NEWS line. If it lands after the WS16
+  reference pin, the lean core records it as a deliberate oracle
+  difference in the rules ledger.
 - **WS4b close note, 2026-11-01:** refresh the `ledgr_pulse_snapshot()` help
   so its experiment form teaches both bar-native fixed baskets and declared
   sessions; only the snapshot-and-universe form lacks causal history.
@@ -1074,6 +1092,11 @@ defined there.
   logical decision trace and every explanation stay exactly as today, rows
   are omitted physically only when rebuilt exactly, and no read executes
   strategy code. Routed as WS15 into the ordered WS7/WS8 cut.
+- **Post-warmup `NA` in indicator output, 2026-11-04:** an indicator that
+  is undefined at a cell says so with `NA`; ledgr discloses it with
+  `calculation_non_finite` rather than refusing the run, so authors are not
+  pushed toward sentinel values. `NaN` and infinite values still refuse.
+  `series_fn` output follows the `fn` path. Routed as a WS12 chore cut.
 
 A, B and the scope answers were accepted with this plan on 2026-10-28. The
 typed-accounting and typed-fold-carrier amendments were accepted on

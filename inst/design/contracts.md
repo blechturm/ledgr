@@ -2539,6 +2539,9 @@ and `AAA` a held nonmember, each holding 5:
 <a id="contract-context-indicator-computation"></a>
 ### Indicator Computation And Identity
 
+Accepted change pending:
+[post-warmup `NA` in indicator output](decisions.md#post-warmup-na-indicator-output).
+
 - Every indicator definition is `bounded` or `history_dependent`.
   `gap_contract = "strict_window"` declares a bounded window; combined with
   `history_class = "history_dependent"` it refuses with
