@@ -121,7 +121,7 @@ ledgr_run_registration <- function(con,
     }
     stored_snapshot_id <- run_row$snapshot_id[[1]]
     stored_metric_context_hash <- run_row$metric_context_hash[[1]]
-    # Metric context is not execution identity, but a resume call that supplies a
+    # Metric context is not execution identity, but a repeated call that supplies a
     # conflicting context is ambiguous. Fail loudly rather than silently ignoring it.
     if (is.character(stored_metric_context_hash) && length(stored_metric_context_hash) == 1L &&
       !is.na(stored_metric_context_hash) && nzchar(stored_metric_context_hash) &&

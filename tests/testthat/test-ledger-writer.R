@@ -171,6 +171,24 @@ testthat::test_that("[LTB-0138] exception diagnostics continue the durable seque
     execution_mode = "audit_log"
   )
   handler <- ledgr:::ledgr_output_handler(sink)
+  # A failed pulse has already advanced the handler's in-memory counter, but
+  # its staged diagnostic block was rolled back with the pulse transaction.
+  # The exception write must therefore refresh from the seven durable rows.
+  staged <- ledgr:::ledgr_availability_diagnostic_row(
+    run_id = run_id,
+    diagnostic_seq = 20L,
+    ts_utc = as.POSIXct("2020-01-02", tz = "UTC"),
+    stage = "decision",
+    outcome = "recorded",
+    reason_code = "rolled_back"
+  )
+  testthat::expect_error(
+    DBI::dbWithTransaction(con, {
+      handler$write_run_diagnostics(staged)
+      stop("roll back staged pulse", call. = FALSE)
+    }),
+    "roll back staged pulse"
+  )
   exception <- ledgr:::ledgr_availability_diagnostic_row(
     run_id = run_id,
     diagnostic_seq = 1L,

@@ -97,7 +97,8 @@ ledgr_diagnostic_implicit_block <- function(run_id,
     decision_seq = as.integer(decision_seq),
     execution_seq = as.integer(execution_seq),
     # One exact pair of context ordinal and run-axis position. The decoder
-    # derives both components from the stored run universe, so a coordinated
+    # anchors the axis half to the stored run universe and the context half to
+    # fixed-axis identity or the sealed membership facts, so a coordinated
     # rewrite of this value and decision_seq cannot silently reorder a pulse.
     decision_order = as.numeric(
       (fill$k[fill_rows] - 1) * axis_size + fill$pos[fill_rows]

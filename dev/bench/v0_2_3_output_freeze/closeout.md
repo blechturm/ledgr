@@ -105,7 +105,7 @@ must not change in WS1.
 
 `record.R` followed by `check.R` on the final code gave byte-identical
 manifests (committed manifest SHA-256
-`5f1a698744a28d81a4acbcdebd746d240ef34dbe7ff7c55e9ec1714509c31`). The
+`5f1a698744a28d81a4acbcdebd746d240ef0bf34dbe7ff7c55e9ec1714509c31`). The
 varying fields found earlier are handled by declaration:
 
 - the random `sweep_id`, which is excluded;

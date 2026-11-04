@@ -2,7 +2,7 @@
 #
 # Carrier contract: inst/design/rfc/rfc_typed_fold_carrier_v0_2_3_synthesis.md
 # Section 4, groups "book", "lot input" and "applied row"; the operations are
-# Section 3.4. Every consumer (fold, replay, readers, opening and resume,
+# Section 3.4. Every consumer (fold, replay, readers, opening publication,
 # walk-forward carry, dispositions, terminal recovery, the handler's accounting
 # fact and the compiled boundary) uses these functions; there is no second
 # FIFO. Instruments are integer positions on the book's axis (the run axis

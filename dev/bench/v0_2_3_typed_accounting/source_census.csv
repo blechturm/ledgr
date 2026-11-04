@@ -50,7 +50,7 @@
 "diagnostics_table","R/availability-results.R",1
 "diagnostics_table","R/db-schema-current.R",2
 "diagnostics_table","R/diagnostic-codec.R",1
-"diagnostics_table","R/diagnostic-decoder.R",2
+"diagnostics_table","R/diagnostic-decoder.R",3
 "diagnostics_table","R/fold-engine.R",2
 "diagnostics_table","R/output-handler.R",3
 "diagnostics_table","R/run-resume.R",1

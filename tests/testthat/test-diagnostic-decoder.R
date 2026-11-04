@@ -557,4 +557,130 @@ testthat::test_that("[LTB-0558] in-pulse implicit sequence order is exact", {
     "decision-order evidence is corrupt for run `implicit-sequence-order`",
     class = "ledgr_diagnostic_corrupt"
   )
+
+  # The validator is a bounded SQL query, not an R reconstruction of the
+  # implicit plane. Its result boundary is one offending run at most.
+  validator_source <- paste(deparse(ledgr:::ledgr_diagnostic_decision_order_bad),
+                            collapse = "\n")
+  testthat::expect_match(validator_source, "duckdb_register")
+  testthat::expect_match(validator_source, "duckdb_unregister")
+  testthat::expect_match(validator_source, "snapshot_membership_sets")
+  testthat::expect_match(validator_source, "LIMIT 1")
+  testthat::expect_false(grepl("format(", validator_source, fixed = TRUE))
+  testthat::expect_false(grepl("order(", validator_source, fixed = TRUE))
+})
+
+testthat::test_that("[LTB-0560] dynamic context order has an independent anchor", {
+  dates <- as.Date("2020-01-01") + 0:2
+  sessions <- ledgr_facts_sessions(
+    data.frame(
+      session_date = dates,
+      status = "open",
+      session_open = "09:30:00",
+      session_close = "16:00:00",
+      knowledge_time = as.POSIXct(dates, tz = "UTC") - 1,
+      stringsAsFactors = FALSE
+    ),
+    venue_id = "XNYS"
+  )
+  membership <- ledgr_facts_membership_snapshots(
+    data.frame(
+      instrument_id = "BBB",
+      effective_from = as.POSIXct(dates[[1L]], tz = "UTC"),
+      knowledge_time = as.POSIXct(dates[[1L]], tz = "UTC") - 1,
+      set_id = "complete_set",
+      stringsAsFactors = FALSE
+    ),
+    universe_id = "dynamic-order",
+    complete = TRUE
+  )
+  bars <- expand.grid(
+    ts_utc = as.POSIXct(paste(dates, "16:00:00"), tz = "UTC"),
+    instrument_id = c("AAA", "BBB"),
+    KEEP.OUT.ATTRS = FALSE,
+    stringsAsFactors = FALSE
+  )
+  bars$open <- bars$high <- bars$low <- bars$close <- 10
+  bars$volume <- 1000
+  snapshot <- ledgr_snapshot_from_df(
+    bars,
+    instruments_df = data.frame(instrument_id = c("AAA", "BBB")),
+    facts = ledgr_facts(sessions, membership),
+    price_basis = "split_adjusted"
+  )
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  experiment <- ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$hold(),
+    universe = ledgr_universe_members("dynamic-order"),
+    opening = ledgr_opening(
+      cash = 1000,
+      positions = c(AAA = 1),
+      cost_basis = c(AAA = 10)
+    ),
+    valuation_policy = ledgr_valuation_stale(1),
+    cost_model = ledgr_cost_zero()
+  )
+  bt <- ledgr_run(experiment, run_id = "dynamic-context-order")
+  on.exit(close(bt), add = TRUE)
+  opened <- ledgr:::ledgr_backtest_read_connection(bt)
+  on.exit(opened$close(), add = TRUE)
+  rows <- DBI::dbGetQuery(
+    opened$con,
+    paste(
+      "SELECT decision_seq, decision_order, instrument_id, ts_utc",
+      "FROM run_diagnostic_implicit WHERE run_id = ?",
+      "ORDER BY ts_utc, decision_seq"
+    ),
+    params = list(bt$run_id)
+  )
+  pulse <- rows[rows$ts_utc == rows$ts_utc[[1L]], , drop = FALSE]
+  testthat::expect_identical(pulse$instrument_id, c("BBB", "AAA"))
+  testthat::expect_silent(
+    ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id)
+  )
+
+  first <- pulse[1L, ]
+  second <- pulse[2L, ]
+  axis_size <- 2
+  context_half <- function(value) ((value - 1) %/% axis_size) + 1
+  axis_half <- function(value) ((value - 1) %% axis_size) + 1
+  first_reordered <-
+    (context_half(second$decision_order) - 1) * axis_size +
+    axis_half(first$decision_order)
+  second_reordered <-
+    (context_half(first$decision_order) - 1) * axis_size +
+    axis_half(second$decision_order)
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_seq = -1, decision_order = -1",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(bt$run_id, first$decision_seq)
+  )
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_seq = ?, decision_order = ?",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(
+      first$decision_seq, second_reordered,
+      bt$run_id, second$decision_seq
+    )
+  )
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_seq = ?, decision_order = ?",
+      "WHERE run_id = ? AND decision_seq = -1"
+    ),
+    params = list(second$decision_seq, first_reordered, bt$run_id)
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id),
+    "decision-order evidence is corrupt for run `dynamic-context-order`",
+    class = "ledgr_diagnostic_corrupt"
+  )
 })

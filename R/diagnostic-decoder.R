@@ -34,6 +34,185 @@ ledgr_diagnostic_logical_sql <- function() {
   )
 }
 
+# Validate the compact decision order wholly inside DuckDB. The only R-side
+# inputs are one run's already-authoritative configuration axis and universe
+# rule; the query returns at most one offending run/issue row. In particular,
+# no implicit diagnostic row or per-row timestamp/string key crosses the DBI
+# boundary.
+ledgr_diagnostic_decision_order_bad <- function(con,
+                                                run_ids,
+                                                instrument_id = NULL,
+                                                explain_ts_utc = NULL) {
+  if (length(run_ids) == 0L) {
+    return(data.frame(run_id = character(), issue = character()))
+  }
+  marks <- paste(rep("?", length(run_ids)), collapse = ", ")
+  metadata <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT run_id, snapshot_id, config_json FROM runs WHERE run_id IN (",
+      marks, ")"
+    ),
+    params = as.list(run_ids)
+  )
+  metadata <- metadata[match(run_ids, metadata$run_id), , drop = FALSE]
+  if (nrow(metadata) != length(run_ids) || anyNA(metadata$run_id)) {
+    missing <- run_ids[is.na(match(run_ids, metadata$run_id))]
+    affected <- if (length(missing) > 0L) missing[[1L]] else run_ids[[1L]]
+    return(data.frame(
+      run_id = affected,
+      issue = "decision_order",
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  axis_rows <- lapply(seq_len(nrow(metadata)), function(row) {
+    config <- ledgr_json_read_config(metadata$config_json[[row]])
+    axis <- as.character(config$universe$instrument_ids)
+    universe_rule <- config$availability$universe_rule %||% NULL
+    availability_active <- isTRUE(config$availability$active) &&
+      !is.null(universe_rule)
+    n <- max(1L, length(axis))
+    data.frame(
+      run_id = rep(as.character(metadata$run_id[[row]]), n),
+      snapshot_id = rep(as.character(metadata$snapshot_id[[row]]), n),
+      universe_id = rep(
+        if (availability_active) as.character(universe_rule$universe_id) else NA_character_,
+        n
+      ),
+      availability_active = rep(availability_active, n),
+      instrument_id = if (length(axis) > 0L) axis else NA_character_,
+      axis_pos = if (length(axis) > 0L) seq_along(axis) else NA_integer_,
+      axis_size = rep(length(axis), n),
+      stringsAsFactors = FALSE
+    )
+  })
+  axis_rows <- do.call(rbind, axis_rows)
+  relation_name <- basename(tempfile(pattern = "ledgr_diagnostic_axis_"))
+  duckdb::duckdb_register(con, relation_name, axis_rows)
+  on.exit(
+    try(duckdb::duckdb_unregister(con, relation_name), silent = TRUE),
+    add = TRUE
+  )
+  relation <- as.character(DBI::dbQuoteIdentifier(con, relation_name))
+
+  target_where <- character()
+  target_params <- list()
+  if (!is.null(instrument_id)) {
+    target_where <- c(target_where, "instrument_id = ?")
+    target_params <- c(target_params, list(as.character(instrument_id)))
+  }
+  if (!is.null(explain_ts_utc)) {
+    target_where <- c(target_where, "ts_utc = ?")
+    target_params <- c(
+      target_params,
+      list(as.POSIXct(explain_ts_utc, tz = "UTC"))
+    )
+  }
+  target_sql <- if (length(target_where) > 0L) {
+    paste("WHERE", paste(target_where, collapse = " AND "))
+  } else {
+    ""
+  }
+
+  query <- paste0(
+    "WITH run_meta AS (SELECT DISTINCT run_id, snapshot_id, universe_id, ",
+    "availability_active, CAST(axis_size AS BIGINT) AS axis_size FROM ", relation,
+    "), axis AS (SELECT run_id, instrument_id, CAST(axis_pos AS BIGINT) AS axis_pos, ",
+    "CAST(axis_size AS BIGINT) AS axis_size FROM ", relation,
+    " WHERE instrument_id IS NOT NULL), logical_decisions AS (",
+    "SELECT run_id, ts_utc, instrument_id, diagnostic_seq AS decision_seq, ",
+    "NULL::BIGINT AS decision_order, FALSE AS is_implicit FROM run_diagnostics ",
+    "WHERE run_id IN (", marks,
+    ") AND stage = 'decision' AND instrument_id <> '' UNION ALL ",
+    "SELECT run_id, ts_utc, instrument_id, decision_seq, decision_order, TRUE ",
+    "FROM run_diagnostic_implicit WHERE run_id IN (", marks,
+    ")), target_pulses AS (SELECT DISTINCT run_id, ts_utc FROM logical_decisions ",
+    target_sql, "), decision_rows AS (SELECT d.* FROM logical_decisions d ",
+    "JOIN target_pulses p USING (run_id, ts_utc)), header_ranked AS (",
+    "SELECT rm.run_id, rm.snapshot_id, rm.universe_id, h.set_id, h.complete, ",
+    "h.effective_from, h.knowledge_time, ROW_NUMBER() OVER (PARTITION BY rm.run_id ",
+    "ORDER BY h.effective_from, h.knowledge_time, h.set_id) AS header_rank ",
+    "FROM run_meta rm JOIN snapshot_membership_sets h ON ",
+    "h.snapshot_id = rm.snapshot_id AND h.universe_id = rm.universe_id ",
+    "WHERE rm.availability_active), headers AS (SELECT *, ",
+    "GREATEST(effective_from, knowledge_time) AS available_from ",
+    "FROM header_ranked WHERE knowledge_time IS NOT NULL), ",
+    "member_event_points AS (SELECT h.run_id, m.instrument_id, h.available_from, ",
+    "MAX(h.header_rank) AS event_rank FROM headers h JOIN snapshot_membership m ",
+    "ON m.snapshot_id = h.snapshot_id AND m.universe_id = h.universe_id ",
+    "AND m.set_id = h.set_id GROUP BY h.run_id, m.instrument_id, h.available_from), ",
+    "member_states AS (SELECT run_id, instrument_id, available_from, ",
+    "MAX(event_rank) OVER (PARTITION BY run_id, instrument_id ORDER BY available_from ",
+    "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS member_rank ",
+    "FROM member_event_points), complete_event_points AS (SELECT run_id, ",
+    "available_from, MAX(header_rank) AS event_rank FROM headers WHERE complete ",
+    "GROUP BY run_id, available_from), complete_states AS (SELECT run_id, ",
+    "available_from, MAX(event_rank) OVER (PARTITION BY run_id ORDER BY available_from ",
+    "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS complete_rank ",
+    "FROM complete_event_points), decision_header AS (SELECT d.*, rm.snapshot_id, ",
+    "rm.universe_id, COALESCE((SELECT member_rank FROM member_states m WHERE ",
+    "m.run_id = d.run_id AND m.instrument_id = d.instrument_id AND ",
+    "m.available_from <= d.ts_utc ORDER BY m.available_from DESC LIMIT 1), 0) ",
+    "AS member_rank, COALESCE((SELECT complete_rank FROM complete_states c WHERE ",
+    "c.run_id = d.run_id AND c.available_from <= d.ts_utc ",
+    "ORDER BY c.available_from DESC LIMIT 1), 0) AS complete_rank ",
+    "FROM decision_rows d JOIN run_meta rm USING (run_id) ",
+    "WHERE rm.availability_active), interval_ranked AS (SELECT d.*, ",
+    "m.fact_id AS interval_fact_id, m.member AS interval_member, ROW_NUMBER() OVER ",
+    "(PARTITION BY d.run_id, d.ts_utc, d.instrument_id ORDER BY ",
+    "m.effective_from DESC NULLS LAST, m.knowledge_time DESC NULLS LAST, ",
+    "m.fact_id DESC NULLS LAST) AS interval_rank FROM decision_header d ",
+    "LEFT JOIN snapshot_membership m ON m.snapshot_id = d.snapshot_id ",
+    "AND m.universe_id = d.universe_id AND m.set_id IS NULL ",
+    "AND m.instrument_id = d.instrument_id AND m.effective_from <= d.ts_utc ",
+    "AND m.knowledge_time <= d.ts_utc AND ",
+    "(m.effective_to IS NULL OR d.ts_utc < m.effective_to)), ",
+    "dynamic_classified AS (SELECT *, CASE WHEN interval_rank = 1 ",
+    "AND interval_fact_id IS NOT NULL THEN interval_member ELSE ",
+    "member_rank > 0 AND member_rank >= complete_rank END AS is_member ",
+    "FROM interval_ranked WHERE interval_rank = 1), dynamic_expected AS (",
+    "SELECT run_id, ts_utc, instrument_id, decision_seq, decision_order, is_implicit, ",
+    "ROW_NUMBER() OVER (PARTITION BY run_id, ts_utc ORDER BY ",
+    "CASE WHEN is_member THEN 0 ELSE 1 END, instrument_id) AS expected_context ",
+    "FROM dynamic_classified), fixed_expected AS (SELECT d.run_id, d.ts_utc, ",
+    "d.instrument_id, d.decision_seq, d.decision_order, d.is_implicit, ",
+    "a.axis_pos AS expected_context FROM decision_rows d JOIN run_meta rm ",
+    "USING (run_id) LEFT JOIN axis a USING (run_id, instrument_id) ",
+    "WHERE NOT rm.availability_active), expected_rows AS (",
+    "SELECT * FROM dynamic_expected UNION ALL SELECT * FROM fixed_expected), ",
+    "decoded AS (SELECT i.*, e.expected_context, a.axis_pos, rm.axis_size, ",
+    "CASE WHEN i.decision_order BETWEEN 1 AND rm.axis_size * rm.axis_size ",
+    "THEN ((i.decision_order - 1) // rm.axis_size) + 1 END AS context_order, ",
+    "CASE WHEN i.decision_order BETWEEN 1 AND rm.axis_size * rm.axis_size ",
+    "THEN ((i.decision_order - 1) % rm.axis_size) + 1 END AS decoded_axis, ",
+    "EXISTS (SELECT 1 FROM snapshot_sessions s WHERE ",
+    "s.snapshot_id = rm.snapshot_id AND s.status = 'open' ",
+    "AND s.session_close = i.ts_utc) OR EXISTS (SELECT 1 FROM snapshot_bars b ",
+    "WHERE b.snapshot_id = rm.snapshot_id AND b.ts_utc = i.ts_utc) AS session_ok ",
+    "FROM decision_rows i JOIN run_meta rm USING (run_id) LEFT JOIN expected_rows e ",
+    "USING (run_id, ts_utc, instrument_id, decision_seq, decision_order, is_implicit) ",
+    "LEFT JOIN axis a USING (run_id, instrument_id) WHERE i.is_implicit), ",
+    "neighbors AS (SELECT *, COUNT(*) OVER ",
+    "(PARTITION BY run_id, ts_utc, context_order) AS order_n, ",
+    "LAG(decision_seq) OVER (PARTITION BY run_id, ts_utc ORDER BY context_order) ",
+    "AS prior_seq FROM decoded), issues AS (SELECT *, CASE WHEN ",
+    "axis_pos IS NULL OR expected_context IS NULL OR context_order IS NULL OR ",
+    "decoded_axis IS NULL OR decoded_axis <> axis_pos OR ",
+    "context_order <> expected_context OR order_n <> 1 OR NOT session_ok ",
+    "THEN 'decision_order' WHEN prior_seq IS NOT NULL AND ",
+    "decision_seq <= prior_seq THEN 'sequence' END AS issue FROM neighbors) ",
+    "SELECT run_id, issue FROM issues WHERE issue IS NOT NULL ",
+    "ORDER BY run_id, issue LIMIT 1"
+  )
+  bad <- DBI::dbGetQuery(
+    con,
+    query,
+    params = c(as.list(run_ids), as.list(run_ids), target_params)
+  )
+  bad[seq_len(min(1L, nrow(bad))), c("run_id", "issue"), drop = FALSE]
+}
+
 ledgr_diagnostic_require_coverage <- function(con,
                                               run_ids,
                                               instrument_id = NULL,
@@ -164,101 +343,26 @@ ledgr_diagnostic_require_coverage <- function(con,
       class = "ledgr_diagnostic_corrupt"
     )
   }
-  # decision_order pairs the context ordinal with the run-axis ordinal.
-  # Reconstruct both components from the immutable stored universe so a
-  # coordinated rewrite of decision_seq and decision_order cannot reorder a
-  # logical pulse silently.
-  implicit_order <- DBI::dbGetQuery(
+  order_bad <- ledgr_diagnostic_decision_order_bad(
     con,
-    paste0(
-      "SELECT run_id, ts_utc, instrument_id, decision_seq, decision_order, event_seq ",
-      "FROM run_diagnostic_implicit WHERE run_id IN (", marks, ")"
-    ),
-    params = as.list(run_ids)
+    run_ids,
+    instrument_id = instrument_id,
+    explain_ts_utc = explain_ts_utc
   )
-  if (nrow(implicit_order) > 0L) {
-    configs <- DBI::dbGetQuery(
-      con,
-      paste0("SELECT run_id, config_json FROM runs WHERE run_id IN (", marks, ")"),
-      params = as.list(run_ids)
+  if (nrow(order_bad) > 0L) {
+    label <- if (identical(order_bad$issue[[1L]], "sequence")) {
+      "sequence"
+    } else {
+      "decision-order"
+    }
+    rlang::abort(
+      sprintf(
+        "Diagnostic codec %s evidence is corrupt for run `%s`.",
+        label,
+        as.character(order_bad$run_id[[1L]])
+      ),
+      class = "ledgr_diagnostic_corrupt"
     )
-    axes <- lapply(configs$config_json, function(value) {
-      as.character(unlist(
-        ledgr_json_read_config(value)$universe$instrument_ids,
-        use.names = FALSE
-      ))
-    })
-    names(axes) <- as.character(configs$run_id)
-    expected_axis <- rep(NA_integer_, nrow(implicit_order))
-    context_order <- rep(NA_integer_, nrow(implicit_order))
-    row_order <- order(implicit_order$run_id, method = "radix")
-    grouped <- rle(as.character(implicit_order$run_id[row_order]))
-    group_end <- cumsum(grouped$lengths)
-    group_start <- c(1L, utils::head(group_end, -1L) + 1L)
-    for (group_i in seq_along(grouped$values)) {
-      rows <- row_order[seq.int(group_start[[group_i]], group_end[[group_i]])]
-      axis <- axes[[grouped$values[[group_i]]]]
-      if (!is.null(axis)) {
-        axis_size <- length(axis)
-        encoded <- as.numeric(implicit_order$decision_order[rows])
-        whole <- is.finite(encoded) & encoded == floor(encoded) &
-          encoded >= 1 & encoded <= axis_size * axis_size
-        expected_axis[rows] <- match(
-          as.character(implicit_order$instrument_id[rows]),
-          axis
-        )
-        context_order[rows[whole]] <- as.integer(
-          floor((encoded[whole] - 1) / axis_size) + 1
-        )
-        decoded_axis <- rep(NA_integer_, length(rows))
-        decoded_axis[whole] <- as.integer((encoded[whole] - 1) %% axis_size + 1)
-        mismatch <- is.na(decoded_axis) | is.na(expected_axis[rows]) |
-          decoded_axis != expected_axis[rows]
-        expected_axis[rows[mismatch]] <- NA_integer_
-      }
-    }
-    bad <- which(is.na(expected_axis) | is.na(context_order))
-    sequence_bad <- integer()
-    if (length(bad) == 0L) {
-      pulse_key <- paste(
-        implicit_order$run_id,
-        format(as.POSIXct(implicit_order$ts_utc, tz = "UTC"), "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC"),
-        sep = "\r"
-      )
-      row_order <- order(pulse_key, context_order, method = "radix")
-      ordered_pulse <- pulse_key[row_order]
-      ordered_context <- context_order[row_order]
-      ordered_sequence <- as.integer(implicit_order$decision_seq[row_order])
-      prior_same_pulse <- c(
-        FALSE,
-        ordered_pulse[-1L] == ordered_pulse[-length(ordered_pulse)]
-      )
-      invalid <- prior_same_pulse & (
-        ordered_context <= c(NA_integer_, ordered_context[-length(ordered_context)]) |
-          ordered_sequence <= c(NA_integer_, ordered_sequence[-length(ordered_sequence)])
-      )
-      if (any(invalid)) {
-        sequence_bad <- row_order[which(invalid)[[1L]]]
-      }
-    }
-    if (length(sequence_bad) > 0L) {
-      rlang::abort(
-        sprintf(
-          "Diagnostic codec sequence evidence is corrupt for run `%s`.",
-          as.character(implicit_order$run_id[[sequence_bad]])
-        ),
-        class = "ledgr_diagnostic_corrupt"
-      )
-    }
-    if (length(bad) > 0L) {
-      rlang::abort(
-        sprintf(
-          "Diagnostic codec decision-order evidence is corrupt for run `%s`.",
-          as.character(implicit_order$run_id[[bad[[1L]]]])
-        ),
-        class = "ledgr_diagnostic_corrupt"
-      )
-    }
   }
   invisible(TRUE)
 }
