@@ -151,12 +151,15 @@ zero, all 207 compared tables are byte-identical, and the checker prints
 vendor rows and logs remain private.
 
 The paired observations are descriptive, not a workstream performance gate.
-The W2 run medians are modestly slower (minimum-variance 190.00 to 191.25
-seconds; article 132.28 to 135.18 seconds), while several post-run readers are
-roughly 3x to 11x slower because schema 124 must decode and validate the full
-metadata block. This is preserved as a non-gating signal for LDG-3209's
-planned final milestone, where schema 125 has removed the temporary JSON
-boundary. It does not weaken the exact semantic pass.
+The concurrent-host end-to-end launcher medians provide the rough slowdown
+signal: minimum-variance rises from 368.41 to 416.26 seconds and the article
+from 185.16 to 233.84 seconds. Inside those launchers, the run itself is nearly
+flat to modestly slower (190.00 to 191.25 seconds and 132.28 to 135.18
+seconds). Several public post-run readers are roughly 3x to 11x slower because
+schema 124 must decode and validate the full metadata block. Both timing
+boundaries and the reader attribution are preserved as non-gating signals for
+LDG-3209's planned final milestone, where schema 125 has removed the temporary
+JSON boundary. They do not weaken the exact semantic pass.
 
 The registered timing protocol now uses the public run-info signature, pins
 event/fill counts and a ledger digest, and makes the fill-heavy arm genuinely
