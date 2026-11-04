@@ -1,7 +1,7 @@
 # Data Layout Probe: Dense, Ragged And Compact Tiles
 
-Probe for the lean core skeleton brief
-(`inst/design/ledgr_v0_2_3_spec_packet/lean_core_skeleton_brief.md`).
+Probe for the lean core skeleton RFC
+(`inst/design/rfc/rfc_lean_core_skeleton_v0_2_3_seed.md` and later stages).
 Question: how should prepared instrument x session data be stored so that
 pulse reads and history windows are fast and memory stays bounded?
 

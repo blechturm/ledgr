@@ -555,7 +555,8 @@ freezes behavior (synthesis Section 6).
   `dev/spikes/pulse-first-batch/` (batching helped; pulse-first did not).
 - **Lean core (2026-11-03).** WS9b measures parent and worker peak memory
   on the WS16 lean core before the switch, including whether sweep workers
-  share prepared tiles (lean core skeleton brief, Section 6 item 4).
+  share prepared tiles ([lean core skeleton RFC](../rfc/README.md#lean-core-skeleton),
+  memory checkpoint).
 
 ### WS10. Economics (C11, C12a, U2, X2): design and implementation
 
@@ -653,7 +654,7 @@ against the current core and switched in one cut.
 - **Skeleton first (A1).** The skeleton and the first family are written by
   the maintainer or under a tight maintainer brief with line-by-line
   review, from the
-  [lean core skeleton brief](lean_core_skeleton_brief.md), before agents
+  accepted [lean core skeleton RFC](../rfc/README.md#lean-core-skeleton), before agents
   extend them.
 - **Family order (synthesis Q1).** The first checkpoint is two workstreams:
   memory-bounded preparation, and the complete lean FIFO kernel (openings,
@@ -932,8 +933,8 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
   instruments costs 12.6 ms, against 750 us for the same bar window
   (`dev/spikes/data_layout/q7_history_read.R`). A strategy reading one
   feature window per pulse pays more for that read than the whole lean
-  pulse budget. The lean core replaces this path (lean core skeleton brief,
-  history reads); until the switch, the feature-window growth is a known
+  pulse budget. The lean core replaces this path (lean core skeleton RFC,
+  history admission); until the switch, the feature-window growth is a known
   cost of the current core.
 
 ## 4. Cut strategy

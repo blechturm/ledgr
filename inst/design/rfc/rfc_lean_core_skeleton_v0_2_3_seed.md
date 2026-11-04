@@ -1,4 +1,8 @@
-# Lean Core Skeleton Brief
+# RFC: Lean Core Skeleton (v0.2.3), Seed v1
+
+- Renamed 2026-11-04: this is the packet file `lean_core_skeleton_brief.md` as
+  committed at `267d2405`, kept unchanged below as seed v1. **Historical after
+  [seed v2](rfc_lean_core_skeleton_v0_2_3_seed_v2.md).**
 
 - Status: **maintainer draft**, written under the lean fold core synthesis
   acceptance amendment A1. Not binding until the maintainer accepts it.
