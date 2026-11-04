@@ -90,12 +90,14 @@ while detecting a coordinated rewrite of the token and diagnostic sequence.
 Instrument and timestamp reads restrict the checked pulse set before the
 window, and no implicit row or per-row string key is materialized in R.
 
-LTB-0554, LTB-0556 and LTB-0558 (LCL-0543/LCL-0545) own logical parity,
-physical omission, typed certification, lazy allocation, writer order and the
-corruption matrix. The codec is store-format authority only: schema stays 125,
-the new codec-rule binding changes the store fingerprint, and run/snapshot
-identity rules do not change. An otherwise current schema-125 store carrying
-the WS24-close fingerprint refuses with `fingerprint_mismatch`.
+LTB-0554, LTB-0556, LTB-0558 and LTB-0560 (LCL-0543/LCL-0545) own logical
+parity, physical omission, typed certification, lazy allocation, writer order
+and the corruption matrix. LTB-0558 mutates the fixed-context and run-axis
+halves independently; LTB-0560 owns the dynamically reordered membership
+context. The codec is store-format authority only: schema stays 125, the new
+codec-rule binding changes the store fingerprint, and run/snapshot identity
+rules do not change. An otherwise current schema-125 store carrying the
+WS24-close fingerprint refuses with `fingerprint_mismatch`.
 
 ## Retired and migrated tests
 
@@ -175,8 +177,8 @@ The focused decision-order shape probe under
 rows entirely in DuckDB. A clean full check returns zero rows (840 bytes) to R
 in 0.36 seconds; the one-instrument, one-pulse check returns the same bounded
 result in 0.11 seconds. These clocks are descriptive. LTB-0558 owns the
-failure-sensitive SQL/no-materialization shape and fixed-context corruption;
-LTB-0560 owns the dynamic-membership context anchor.
+failure-sensitive SQL/no-materialization shape plus independent fixed-context
+and run-axis corruption; LTB-0560 owns the dynamic-membership context anchor.
 
 The first R CMD check exposed one metadata error in the newly registered
 session-association shape detector: LTB-0559 promised the `review` profile but
@@ -191,6 +193,14 @@ diagnostic-sequence detector and removes the final stale continuation
 comments. The final public A0 run remains byte-identical (204 checks and two
 declared differences), all registered A0 corruptions fail at their named
 surface, and the typed-accounting and codebase censuses above pass.
+
+The final `PASS_AFTER_PATCHES` correction `cf83d77c` changes no behavior. The
+decoder keys its membership path from the already-bound non-NULL universe rule
+rather than introducing a new `availability_active` mode branch, so the four
+transient census rows disappear. The WS4b checker reports no WS25-owned
+unclassified row; its sole remaining unowned row is the pre-existing
+`ledgr_strategy_schedule_sessions` entry. Separate fixed-context-half and
+run-axis-half mutations fail LTB-0558, and the public A0 remains byte-identical.
 
 ## Gates still open under LDG-3209
 
