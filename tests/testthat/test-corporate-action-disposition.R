@@ -128,17 +128,16 @@ testthat::test_that("[LTB-0050] DISPOSITION is prepared, constrained and replays
     0L
   )
   testthat::expect_identical(result$state$lot_state$realized_pnl, -20)
-  testthat::expect_identical(emitted[[1L]]$event_type, "DISPOSITION")
-  meta <- ledgr:::ledgr_json_read_nested(emitted[[1L]]$meta_json[[1L]])
-  testthat::expect_identical(meta$source_fact_id, "acquisition-1")
-  testthat::expect_identical(meta$quantity, 2)
-  testthat::expect_identical(meta$mark, 90)
-  testthat::expect_identical(meta$position_before, 2)
-  testthat::expect_identical(meta$position_after, 0)
-  testthat::expect_identical(meta$realized_model_pnl, -20)
+  event <- emitted[[1L]]
+  testthat::expect_identical(event$event_type, "DISPOSITION")
+  testthat::expect_identical(event$source_fact_id, "acquisition-1")
+  testthat::expect_identical(event$qty, 2)
+  testthat::expect_identical(event$price, 90)
+  testthat::expect_identical(event$position_before, 2)
+  testthat::expect_identical(event$realized_model_pnl, -20)
   testthat::expect_false(any(c(
     "subtype", "equity_subtype", "vendor_subtype"
-  ) %in% names(meta)))
+  ) %in% names(event)))
 
   prepared <- ledgr:::ledgr_prepare_accounting_events(emitted[[1L]], "AAA")
   replay <- ledgr:::ledgr_replay_accounting_events(
@@ -156,12 +155,10 @@ testthat::test_that("[LTB-0050] DISPOSITION is prepared, constrained and replays
   testthat::expect_identical(replay$lot_state$realized_pnl, -20)
 
   forbidden <- emitted[[1L]]
-  forbidden_meta <- meta
-  forbidden_meta$vendor_subtype <- "MERGER"
-  forbidden$meta_json <- ledgr:::canonical_json(forbidden_meta)
+  forbidden$vendor_subtype <- "MERGER"
   testthat::expect_error(
     ledgr:::ledgr_prepare_accounting_events(forbidden, "AAA"),
-    class = "ledgr_invalid_ledger_meta"
+    class = "ledgr_invalid_accounting_event"
   )
 
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
@@ -198,9 +195,8 @@ testthat::test_that("[LTB-0051] terminal mark policy disposes or refuses without
     )
   )
   testthat::expect_identical(expired_result$state$cash, 1160)
-  expired_meta <- ledgr:::ledgr_json_read_nested(emitted[[1L]]$meta_json[[1L]])
-  testthat::expect_identical(expired_meta$mark_age, 3L)
-  testthat::expect_identical(expired_meta$mark_source, "expired_close")
+  testthat::expect_identical(emitted[[1L]]$mark_age, 3L)
+  testthat::expect_identical(emitted[[1L]]$mark_source, "expired_close")
 
   stale <- corporate_action_disposition_plan()
   stale_result <- stale$plan$post_disposition(
@@ -217,9 +213,8 @@ testthat::test_that("[LTB-0051] terminal mark policy disposes or refuses without
     )
   )
   testthat::expect_identical(stale_result$state$cash, 1170)
-  stale_meta <- ledgr:::ledgr_json_read_nested(emitted[[2L]]$meta_json[[1L]])
-  testthat::expect_identical(stale_meta$mark_age, 1L)
-  testthat::expect_identical(stale_meta$mark_source, "stale_close")
+  testthat::expect_identical(emitted[[2L]]$mark_age, 1L)
+  testthat::expect_identical(emitted[[2L]]$mark_source, "stale_close")
 
   unavailable <- corporate_action_disposition_plan()
   untouched <- corporate_action_disposition_state()

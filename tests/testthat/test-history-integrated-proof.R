@@ -468,11 +468,17 @@ testthat::test_that("[LTB-0411] a cash dividend is credited per split-adjusted s
     )
     bt <- ledgr_run(exp, run_id = run_id)
     ledger <- as.data.frame(ledgr_results(bt, "ledger"))
-    cash <- ledger[ledger$event_type == "CASHFLOW" & grepl("corporate_action_cash", ledger$meta_json, fixed = TRUE), ]
+    cash <- ledger[ledger$event_type == "CASHFLOW" & ledger$source == "corporate_action_cash", ]
     out <- list(
       equity = as.data.frame(ledgr_results(bt, "equity"))[, c("cash", "positions_value", "equity")],
       cash_ts = as.numeric(cash$ts_utc),
-      meta = lapply(cash$meta_json, ledgr:::ledgr_json_read_nested),
+      meta = lapply(seq_len(nrow(cash)), function(i) {
+        as.list(cash[i, c(
+          "source", "source_fact_id", "cash_delta", "entitled_quantity",
+          "gross_cash_per_parent_unit", "amount_policy_id",
+          "posting_policy_id", "late_arrival", "affected_marked_exposure"
+        ), drop = FALSE])
+      }),
       fills = nrow(ledgr_results(bt, "fills"))
     )
     close(bt)

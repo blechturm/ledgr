@@ -1125,7 +1125,7 @@ testthat::test_that("[LTB-0292] history treatment is causal, bounded and disclos
     paste(
       "SELECT ts_utc FROM ledger_events",
       "WHERE run_id = ? AND event_type = 'CASHFLOW'",
-      "AND meta_json LIKE '%corporate_action_cash%'"
+      "AND source = 'corporate_action_cash'"
     ),
     params = list(action_run$run_id)
   )

@@ -8,46 +8,58 @@ ledgr_accounting_event_error <- function(message, class = "ledgr_invalid_ledger_
 ledgr_accounting_event_columns <- function() {
   c(
     "event_id", "run_id", "ts_utc", "event_type", "instrument_id",
-    "side", "qty", "price", "fee", "meta_json", "event_seq"
+    "side", "qty", "price", "fee", "event_seq", "cash_delta",
+    "position_delta", "source", "source_fact_id", "entitled_quantity",
+    "gross_cash_per_parent_unit", "amount_policy_id", "posting_policy_id",
+    "late_arrival", "affected_marked_exposure", "terminal_event",
+    "matched_label", "disposition_policy_id", "disposition_choice",
+    "disposition_basis", "mark_source", "mark_source_ts_utc", "mark_age",
+    "haircut_fraction", "position_before", "realized_model_pnl"
   )
 }
 
-ledgr_accounting_meta_frame <- function(meta_json) {
-  payload <- as.character(meta_json)
-  payload[is.na(payload) | !nzchar(payload)] <- "{}"
-  parsed <- tryCatch(
-    # yyjsonr probes only the first 100 rows by default. Accounting blocks are
-    # heterogeneous, so evidence fields that first appear later would be
-    # omitted from the rectangular result. Probe the full block while keeping
-    # one bulk decode boundary and one final frame.
-    yyjsonr::read_ndjson_str(
-      paste(payload, collapse = "\n"),
-      nprobe = length(payload)
-    ),
-    error = function(e) {
-      ledgr_accounting_event_error(
-        "Accounting event meta_json is malformed.",
-        "ledgr_invalid_ledger_meta"
-      )
-    }
+ledgr_accounting_empty_columns <- function(n = 0L) {
+  n <- as.integer(n)
+  list(
+    event_id = rep(NA_character_, n), run_id = rep(NA_character_, n),
+    ts_utc = .POSIXct(rep(NA_real_, n), tz = "UTC"),
+    event_type = rep(NA_character_, n), instrument_id = rep(NA_character_, n),
+    side = rep(NA_character_, n), qty = rep(NA_real_, n),
+    price = rep(NA_real_, n), fee = rep(NA_real_, n),
+    event_seq = rep(NA_integer_, n), cash_delta = rep(NA_real_, n),
+    position_delta = rep(NA_real_, n), source = rep(NA_character_, n),
+    source_fact_id = rep(NA_character_, n),
+    entitled_quantity = rep(NA_real_, n),
+    gross_cash_per_parent_unit = rep(NA_real_, n),
+    amount_policy_id = rep(NA_character_, n),
+    posting_policy_id = rep(NA_character_, n),
+    late_arrival = rep(NA, n), affected_marked_exposure = rep(NA_real_, n),
+    terminal_event = rep(NA_character_, n), matched_label = rep(NA_character_, n),
+    disposition_policy_id = rep(NA_character_, n),
+    disposition_choice = rep(NA_character_, n),
+    disposition_basis = rep(NA_character_, n),
+    mark_source = rep(NA_character_, n),
+    mark_source_ts_utc = .POSIXct(rep(NA_real_, n), tz = "UTC"),
+    mark_age = rep(NA_integer_, n), haircut_fraction = rep(NA_real_, n),
+    position_before = rep(NA_real_, n), realized_model_pnl = rep(NA_real_, n)
   )
-  if (!is.data.frame(parsed)) parsed <- as.data.frame(parsed, stringsAsFactors = FALSE)
-  parsed
 }
 
-ledgr_accounting_meta_field <- function(meta, name, n, default, type) {
-  if (!name %in% names(meta)) return(rep(default, n))
-  value <- meta[[name]]
-  if (is.list(value)) {
-    return(vapply(value, function(x) {
-      if (is.null(x) || length(x) != 1L) default else type(x)
-    }, type(default)))
+ledgr_accounting_rows <- function(..., .n = NULL) {
+  supplied <- list(...)
+  if (is.null(.n)) {
+    lengths <- vapply(supplied, length, integer(1))
+    .n <- if (length(lengths) == 0L) 0L else max(lengths)
   }
-  value <- rep_len(value, n)
-  missing <- is.na(value)
-  value <- type(value)
-  value[missing] <- default
-  value
+  out <- ledgr_accounting_empty_columns(.n)
+  unknown <- setdiff(names(supplied), names(out))
+  if (length(unknown) > 0L) {
+    ledgr_accounting_event_error(sprintf(
+      "Unknown typed accounting columns: %s.", paste(unknown, collapse = ", ")
+    ))
+  }
+  for (name in names(supplied)) out[[name]] <- supplied[[name]]
+  as.data.frame(out[ledgr_accounting_event_columns()], stringsAsFactors = FALSE)
 }
 
 ledgr_empty_prepared_accounting_events <- function(instrument_ids = character()) {
@@ -75,22 +87,8 @@ ledgr_empty_prepared_accounting_events <- function(instrument_ids = character())
 
 ledgr_validate_accounting_append <- function(rows,
                                              instrument_ids = character(),
-                                             cash_delta = NULL,
-                                             position_delta = NULL,
                                              prior_event_seq = NULL,
                                              prior_ts_utc = NULL) {
-  if (!is.null(cash_delta) || !is.null(position_delta)) {
-    if (any(!is.finite(c(cash_delta, position_delta)))) {
-      # Durable fill publication formerly reached canonical JSON first; keep
-      # that public refusal precedence for every sink while schema 124 is live.
-      rlang::abort(
-        "canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN).",
-        class = "ledgr_config_non_finite"
-      )
-    }
-    attr(rows, "ledgr_event_cash_delta") <- cash_delta
-    attr(rows, "ledgr_event_position_delta") <- position_delta
-  }
   ledgr_prepare_accounting_events(
     rows,
     instrument_ids = instrument_ids,
@@ -115,6 +113,13 @@ ledgr_prepare_accounting_events <- function(columns,
     ledgr_accounting_event_error(sprintf(
       "Accounting events are missing required columns: %s.",
       paste(missing, collapse = ", ")
+    ))
+  }
+  unknown <- setdiff(names(columns), required)
+  if (length(unknown) > 0L) {
+    ledgr_accounting_event_error(sprintf(
+      "Accounting events contain unknown columns: %s.",
+      paste(unknown, collapse = ", ")
     ))
   }
 
@@ -162,60 +167,9 @@ ledgr_prepare_accounting_events <- function(columns,
     anyNA(instrument_id) || any(!nzchar(instrument_id)) || anyNA(fee) || any(!is.finite(fee))) {
     ledgr_accounting_event_error("Accounting events require non-empty identities and finite fees.")
   }
-  meta_json <- as.character(columns$meta_json)
-  source_cash <- attr(columns, "ledgr_event_cash_delta", exact = TRUE)
-  source_position <- attr(columns, "ledgr_event_position_delta", exact = TRUE)
-  has_cash <- length(source_cash) == n
-  has_position <- length(source_position) == n
-  if (!identical(has_cash, has_position)) {
-    ledgr_accounting_event_error(
-      "Accounting event cash and position auxiliaries must be supplied together.",
-      "ledgr_invalid_ledger_meta"
-    )
-  }
-  if (has_cash) {
-    cash_delta <- as.numeric(source_cash)
-    position_delta <- as.numeric(source_position)
-  }
-
-  meta <- ledgr_accounting_meta_frame(meta_json)
-  known_meta <- c(
-    "fee", "cash_delta", "position_delta", "realized_pnl",
-    "source", "source_fact_id", "entitled_quantity",
-    "gross_cash_per_parent_unit", "amount_policy_id", "posting_policy_id",
-    "late_arrival", "affected_marked_exposure", "terminal_event",
-    "matched_label", "disposition_policy_id", "disposition_choice",
-    "disposition_basis", "mark_source", "mark_source_ts_utc", "mark_age",
-    "haircut_fraction", "position_before", "position_after", "quantity",
-    "mark", "realized_model_pnl", "cost_basis", "opening_position", "subtype", "equity_subtype",
-    "vendor_subtype"
-  )
-  unknown_meta <- setdiff(names(meta), known_meta)
-  if (length(unknown_meta) > 0L) {
-    ledgr_accounting_event_error(
-      sprintf("Accounting event metadata contains unknown fields: %s.", paste(unknown_meta, collapse = ", ")),
-      "ledgr_invalid_ledger_meta"
-    )
-  }
-  field_value <- function(name, rows, default, type) {
-    out <- rep(default, n)
-    if (length(rows) > 0L) {
-      out[rows] <- ledgr_accounting_meta_field(
-        meta[rows, , drop = FALSE], name, length(rows), default, type
-      )
-    }
-    out
-  }
-  all_rows <- seq_len(n)
-  field_chr <- function(name, rows = all_rows) field_value(name, rows, NA_character_, as.character)
-  field_num <- function(name, rows = all_rows) field_value(name, rows, NA_real_, as.numeric)
-  field_lgl <- function(name, rows = all_rows) field_value(name, rows, NA, as.logical)
-
-  source <- field_chr("source")
-  if (!has_cash) {
-    cash_delta <- field_num("cash_delta")
-    position_delta <- field_num("position_delta")
-  }
+  cash_delta <- suppressWarnings(as.numeric(columns$cash_delta))
+  position_delta <- suppressWarnings(as.numeric(columns$position_delta))
+  source <- as.character(columns$source)
   fill <- event_type == "FILL"
   if (anyNA(cash_delta) || any(!is.finite(cash_delta)) ||
     anyNA(position_delta) || any(!is.finite(position_delta))) {
@@ -273,7 +227,7 @@ ledgr_prepare_accounting_events <- function(columns,
   opening_rows <- which(opening)
   cashflow_rows <- which(cashflow)
   disposition_rows <- which(disposition)
-  cost_basis <- field_num("cost_basis", opening_rows)
+  cost_basis <- price
   invalid_opening <- opening & (
     is.na(instrument_id) | !nzchar(instrument_id) |
       !is.na(side) | !is.finite(qty) | qty == 0 | !is.finite(price) |
@@ -288,29 +242,23 @@ ledgr_prepare_accounting_events <- function(columns,
   }
 
   cash_or_disposition <- c(cashflow_rows, disposition_rows)
-  source_fact_id <- field_chr("source_fact_id", cash_or_disposition)
-  entitled_quantity <- field_num("entitled_quantity", cashflow_rows)
-  gross_cash_per_parent_unit <- field_num("gross_cash_per_parent_unit", cashflow_rows)
-  amount_policy_id <- field_chr("amount_policy_id", cashflow_rows)
-  posting_policy_id <- field_chr("posting_policy_id", cashflow_rows)
-  late_arrival <- field_lgl("late_arrival", cashflow_rows)
-  affected_marked_exposure <- field_num("affected_marked_exposure", cash_or_disposition)
-  terminal_event <- field_chr("terminal_event", disposition_rows)
-  matched_label <- field_chr("matched_label", disposition_rows)
-  disposition_policy_id <- field_chr("disposition_policy_id", disposition_rows)
-  disposition_choice <- field_chr("disposition_choice", disposition_rows)
-  disposition_basis <- field_chr("disposition_basis", disposition_rows)
-  mark_source <- field_chr("mark_source", disposition_rows)
-  mark_source_raw <- field_chr("mark_source_ts_utc", disposition_rows)
-  mark_source_ts_utc <- .POSIXct(rep(NA_real_, n), tz = "UTC")
-  if (length(disposition_rows) > 0L) {
-    mark_source_ts_utc[disposition_rows] <- suppressWarnings(as.POSIXct(
-      mark_source_raw[disposition_rows],
-      format = "%Y-%m-%dT%H:%M:%OSZ",
-      tz = "UTC"
-    ))
-  }
-  mark_age_value <- field_num("mark_age", disposition_rows)
+  source_fact_id <- as.character(columns$source_fact_id)
+  entitled_quantity <- suppressWarnings(as.numeric(columns$entitled_quantity))
+  gross_cash_per_parent_unit <- suppressWarnings(as.numeric(columns$gross_cash_per_parent_unit))
+  amount_policy_id <- as.character(columns$amount_policy_id)
+  posting_policy_id <- as.character(columns$posting_policy_id)
+  late_arrival <- as.logical(columns$late_arrival)
+  affected_marked_exposure <- suppressWarnings(as.numeric(columns$affected_marked_exposure))
+  terminal_event <- as.character(columns$terminal_event)
+  matched_label <- as.character(columns$matched_label)
+  disposition_policy_id <- as.character(columns$disposition_policy_id)
+  disposition_choice <- as.character(columns$disposition_choice)
+  disposition_basis <- as.character(columns$disposition_basis)
+  mark_source <- as.character(columns$mark_source)
+  mark_source_ts_utc <- suppressWarnings(as.POSIXct(columns$mark_source_ts_utc, tz = "UTC"))
+  mark_source_raw <- ifelse(is.na(mark_source_ts_utc), NA_character_,
+    format(mark_source_ts_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
+  mark_age_value <- suppressWarnings(as.numeric(columns$mark_age))
   mark_age_present <- mark_age_value[disposition_rows]
   invalid_mark_age <- !is.na(mark_age_present) & (
     !is.finite(mark_age_present) |
@@ -326,12 +274,11 @@ ledgr_prepare_accounting_events <- function(columns,
   }
   mark_age <- rep(NA_integer_, n)
   mark_age[disposition_rows] <- as.integer(mark_age_value[disposition_rows])
-  haircut_fraction <- field_num("haircut_fraction", disposition_rows)
-  position_before <- field_num("position_before", disposition_rows)
-  position_after <- field_num("position_after", disposition_rows)
-  realized_model_pnl <- field_num("realized_model_pnl", disposition_rows)
-  quantity <- field_num("quantity", disposition_rows)
-  mark <- field_num("mark", disposition_rows)
+  haircut_fraction <- suppressWarnings(as.numeric(columns$haircut_fraction))
+  position_before <- suppressWarnings(as.numeric(columns$position_before))
+  realized_model_pnl <- suppressWarnings(as.numeric(columns$realized_model_pnl))
+  quantity <- qty
+  mark <- price
   invalid_cashflow <- cashflow & (
     !is.na(side) | !is.na(qty) | !is.na(price) | fee != 0 |
       is.na(source_fact_id) | !nzchar(source_fact_id) |
@@ -348,71 +295,46 @@ ledgr_prepare_accounting_events <- function(columns,
       "ledgr_invalid_ledger_meta"
     )
   }
-  meta_present <- function(name, type) {
-    if (!name %in% names(meta)) return(rep(FALSE, n))
-    !is.na(ledgr_accounting_meta_field(meta, name, n, type(NA), type))
-  }
-  any_present <- function(fields, type) {
-    Reduce(`|`, lapply(fields, meta_present, type = type), init = rep(FALSE, n))
-  }
-  source_fact_present <- meta_present("source_fact_id", as.character)
-  cash_only <- any_present(
-    c("entitled_quantity", "gross_cash_per_parent_unit"), as.numeric
-  ) | any_present(c("amount_policy_id", "posting_policy_id"), as.character) |
-    meta_present("late_arrival", as.logical)
-  disposition_only <- any_present(
-    c(
-      "disposition_policy_id", "disposition_choice", "disposition_basis",
-      "mark_source", "mark_source_ts_utc"
-    ),
-    as.character
-  ) | any_present(
-    c("mark_age", "position_before", "realized_model_pnl", "quantity", "mark"),
-    as.numeric
-  )
-  lifetime_only <- any_present(c("terminal_event", "matched_label"), as.character) |
-    meta_present("haircut_fraction", as.numeric)
-  auxiliary_only <- meta_present("opening_position", as.logical) |
-    any_present(c("fee", "realized_pnl"), as.numeric)
-  affected_present <- meta_present("affected_marked_exposure", as.numeric)
-  cost_basis_present <- meta_present("cost_basis", as.numeric)
+  present <- function(x) !is.na(x)
+  source_fact_present <- present(source_fact_id)
+  cash_only <- present(entitled_quantity) | present(gross_cash_per_parent_unit) |
+    present(amount_policy_id) | present(posting_policy_id) | present(late_arrival)
+  disposition_only <- present(disposition_policy_id) | present(disposition_choice) |
+    present(disposition_basis) | present(mark_source) | present(mark_source_ts_utc) |
+    present(mark_age) | present(position_before) | present(realized_model_pnl)
+  lifetime_only <- present(terminal_event) | present(matched_label) |
+    present(haircut_fraction)
+  affected_present <- present(affected_marked_exposure)
   irrelevant <- (fill & (!is.na(source) | source_fact_present | cash_only |
-    disposition_only | lifetime_only | affected_present | cost_basis_present)) |
+    disposition_only | lifetime_only | affected_present)) |
     (opening & (source_fact_present | cash_only | disposition_only |
       lifetime_only | affected_present)) |
-    (cashflow & (disposition_only | lifetime_only | cost_basis_present | auxiliary_only)) |
-    (disposition & (cash_only | cost_basis_present | auxiliary_only))
+    (cashflow & (disposition_only | lifetime_only)) |
+    (disposition & cash_only)
   if (any(irrelevant)) {
     ledgr_accounting_event_error(
       "Accounting event metadata contains fields forbidden for its event kind.",
       "ledgr_invalid_ledger_meta"
     )
   }
-  # yyjsonr forms one rectangular frame for the whole event block. A subtype
-  # used by another event therefore creates an all-missing subtype cell on a
-  # DISPOSITION row. Refuse the cell, not the block-wide column name.
-  forbidden_subtype <- any_present(
-    c("subtype", "equity_subtype", "vendor_subtype"),
-    as.character
-  )
   scheduled <- disposition & !is.na(source) & source == "corporate_action_disposition"
   lifetime <- disposition & !is.na(source) & source == "lifetime_terminal_disposition"
   scheduled_zero <- scheduled & mark <= 0
   lifetime_zero <- lifetime &
     mark == 0 & disposition_choice == "write_off"
   invalid_disposition <- disposition & (
-    forbidden_subtype | !(source %in% ledgr_disposition_sources()) |
+    !(source %in% ledgr_disposition_sources()) |
       is.na(instrument_id) | !nzchar(instrument_id) |
       !is.na(side) | fee != 0 | !is.finite(qty) | !is.finite(price) |
       !is.finite(quantity) | quantity <= 0 | !is.finite(mark) | mark < 0 |
       scheduled_zero | (mark == 0 & !lifetime_zero) |
-      !is.finite(position_before) | !is.finite(position_after) | position_after != 0 |
+      !is.finite(position_before) |
       !is.finite(realized_model_pnl) | is.na(source_fact_id) | !nzchar(source_fact_id) |
       is.na(disposition_policy_id) | !nzchar(disposition_policy_id)
   )
   if (any(invalid_disposition)) {
     ledgr_accounting_event_error(
-      "DISPOSITION metadata is malformed or carries a forbidden subtype.",
+      "DISPOSITION typed fields are malformed.",
       "ledgr_invalid_ledger_meta"
     )
   }

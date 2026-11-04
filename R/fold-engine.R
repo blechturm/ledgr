@@ -462,28 +462,22 @@ ledgr_fold_stage_observe_settle <- function(
       }
       mark_meta <- ledgr_terminal_mark_meta(resolved, decision$valuation, ts)
       fact_ids <- as.character(decision$view$lifetime_fact_id[inactive_ids])
-      meta <- lapply(seq_along(inactive_ids), function(k) {
-        out <- list(
-          source = "lifetime_terminal_disposition",
-          source_fact_id = fact_ids[[k]],
-          terminal_event = labels[[k]],
-          matched_label = resolved$matched_label[[k]],
-          disposition_policy_id = resolved$policy_id[[k]],
-          disposition_choice = resolved$choice[[k]],
-          disposition_basis = resolved$basis[[k]],
-          mark_source = mark_meta$source[[k]],
-          mark_source_ts_utc = mark_meta$source_ts[[k]],
-          mark_age = mark_meta$age[[k]]
-        )
-        if (identical(resolved$choice[[k]], "haircut")) {
-          out$haircut_fraction <- resolved$haircut
-        }
-        out
-      })
       posted <- ledgr_disposition_post(
         ids = inactive_ids,
         price = resolved$price,
-        meta = meta,
+        source = rep("lifetime_terminal_disposition", length(inactive_ids)),
+        source_fact_id = fact_ids,
+        terminal_event = labels,
+        matched_label = resolved$matched_label,
+        disposition_policy_id = resolved$policy_id,
+        disposition_choice = resolved$choice,
+        disposition_basis = resolved$basis,
+        mark_source = mark_meta$source,
+        mark_source_ts_utc = mark_meta$source_ts,
+        mark_age = mark_meta$age,
+        haircut_fraction = ifelse(
+          resolved$choice == "haircut", resolved$haircut, NA_real_
+        ),
         ts = ts,
         run_id = services$run_id,
         event_seq = fold_state$event_seq,

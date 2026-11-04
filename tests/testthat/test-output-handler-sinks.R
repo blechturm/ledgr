@@ -141,20 +141,14 @@ testthat::test_that("[LTB-0519] a worker-executed memory sink delivers the in-pr
     testthat::expect_false(is.null(local[[id]]$completion))
   }
 
-  # Witness: native event columns, typed attributes, retained diagnostics and
+  # Witness: native typed event columns, retained diagnostics and
   # numbering, and completion are identical in the worker.
   for (id in names(local)) {
     testthat::expect_identical(worker[[id]]$events, local[[id]]$events, info = id)
-    for (attribute in c(
-      "ledgr_event_cash_delta", "ledgr_event_position_delta", "ledgr_event_realized",
-      "ledgr_event_cost_basis", "ledgr_event_meta"
-    )) {
-      testthat::expect_identical(
-        attr(worker[[id]]$events, attribute),
-        attr(local[[id]]$events, attribute),
-        info = paste(id, attribute)
-      )
-    }
+    testthat::expect_identical(
+      names(worker[[id]]$events), ledgr:::ledgr_accounting_event_columns(),
+      info = id
+    )
     testthat::expect_identical(worker[[id]]$diagnostics, local[[id]]$diagnostics, info = id)
     testthat::expect_identical(
       worker[[id]]$diagnostics$diagnostic_seq,
@@ -207,7 +201,9 @@ testthat::test_that("[LTB-0520] a persisted run and a sweep candidate publish th
     events <- native[[id]]$events
     testthat::expect_gt(sum(ledger$event_type == "FILL"), 0L)
     testthat::expect_identical(nrow(events), nrow(ledger), info = id)
-    for (column in c("event_type", "instrument_id", "side", "qty", "price", "fee", "event_seq")) {
+    for (column in setdiff(ledgr:::ledgr_accounting_event_columns(), c(
+      "event_id", "run_id", "ts_utc", "mark_source_ts_utc"
+    ))) {
       testthat::expect_identical(events[[column]], ledger[[column]], info = paste(id, column))
     }
     testthat::expect_identical(
@@ -215,16 +211,9 @@ testthat::test_that("[LTB-0520] a persisted run and a sweep candidate publish th
       as.numeric(as.POSIXct(ledger$ts_utc, tz = "UTC")),
       info = id
     )
-    fill <- ledger$event_type == "FILL"
-    meta <- lapply(ledger$meta_json[fill], ledgr:::ledgr_json_read_config)
     testthat::expect_identical(
-      attr(events, "ledgr_event_cash_delta")[fill],
-      vapply(meta, function(m) as.numeric(m$cash_delta), numeric(1)),
-      info = id
-    )
-    testthat::expect_identical(
-      attr(events, "ledgr_event_position_delta")[fill],
-      vapply(meta, function(m) as.numeric(m$position_delta), numeric(1)),
+      as.numeric(events$mark_source_ts_utc),
+      as.numeric(as.POSIXct(ledger$mark_source_ts_utc, tz = "UTC")),
       info = id
     )
   }

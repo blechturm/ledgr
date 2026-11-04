@@ -87,15 +87,13 @@ ledgr_time_elapsed <- function(start, end) {
 # with contiguous sequences from `event_seq`. Columns are built once per
 # block, event IDs formatted for the whole block; the effects are reused,
 # never recomputed. The execution epoch stays a double (UTC seconds) and
-# becomes POSIXct where the handler writes its buffer. `meta` holds one list
-# per row and `meta_json` its encoding: the routed fill metadata (WS7/WS8),
-# kept byte for byte. A zero-length `i` is the no-op.
+# becomes POSIXct where the handler writes its buffer. Evidence columns are
+# typed and missing on fills. A zero-length `i` is the no-op.
 ledgr_fill_event_payload <- function(run_id,
                                      fill,
                                      i,
                                      instrument_id,
-                                     event_seq,
-                                     serialize_meta_json = TRUE) {
+                                     event_seq) {
   n <- length(i)
   if (n > 0L) ledgr_fill_input_check(fill, i)
   if (!is.numeric(event_seq) || length(event_seq) != 1 || is.na(event_seq) || !is.finite(event_seq) ||
@@ -104,12 +102,12 @@ ledgr_fill_event_payload <- function(run_id,
   }
   if (n == 0L) {
     # The typed empty block, validated at construction like a written one.
-    return(ledgr_carrier_new(list(
-      status = "NO_OP", next_event_seq = as.integer(event_seq),
-      event_id = character(), run_id = character(), ts_utc = numeric(), event_type = character(),
-      instrument_id = character(), side = character(), qty = numeric(), price = numeric(),
-      fee = numeric(), meta_json = character(), event_seq = integer(), cash_delta = numeric(),
-      position_delta = numeric(), meta = list()
+    empty <- ledgr_accounting_empty_columns()
+    empty$ts_utc <- numeric()
+    empty$mark_source_ts_utc <- numeric()
+    return(ledgr_carrier_new(c(
+      list(status = "NO_OP", next_event_seq = as.integer(event_seq)),
+      empty
     ), "publication", NA_integer_))
   }
 
@@ -121,39 +119,27 @@ ledgr_fill_event_payload <- function(run_id,
   fee <- fill$fee[i]
   cash_delta <- fill$cash_delta[i]
   position_delta <- fill$position_delta[i]
-  meta <- ledgr_fill_meta_rows(fee, cash_delta, position_delta)
-  meta_json <- if (isTRUE(serialize_meta_json)) {
-    vapply(meta, ledgr_canonical_json_encode, character(1))
-  } else {
-    rep(NA_character_, n)
-  }
   seq <- as.integer(event_seq) + seq_len(n) - 1L
-  ledgr_carrier_new(list(
-    status = "WROTE",
-    next_event_seq = seq[[n]] + 1L,
+  rows <- ledgr_accounting_rows(
     event_id = paste0(run_id, "_", sprintf("%08d", seq)),
     run_id = rep(run_id, n),
-    ts_utc = as.numeric(ts_exec),
+    ts_utc = ts_exec,
     event_type = rep("FILL", n),
     instrument_id = as.character(instrument_id),
     side = c("SELL", "BUY")[(fill$side[i] > 0L) + 1L],
     qty = fill$qty[i],
     price = fill$price[i],
     fee = fee,
-    meta_json = meta_json,
     event_seq = seq,
     cash_delta = cash_delta,
-    position_delta = position_delta,
-    meta = meta
+    position_delta = position_delta
+  )
+  rows$ts_utc <- as.numeric(rows$ts_utc)
+  rows$mark_source_ts_utc <- as.numeric(rows$mark_source_ts_utc)
+  ledgr_carrier_new(c(
+    list(status = "WROTE", next_event_seq = seq[[n]] + 1L),
+    as.list(rows)
   ), "publication", NA_integer_)
-}
-
-# The routed fill metadata (WS7/WS8): one list per row, in the canonical
-# field order, which the memory sink retains and the durable sink encodes.
-ledgr_fill_meta_rows <- function(fee, cash_delta, position_delta) {
-  Map(function(fee, cash_delta, position_delta) {
-    list(fee = fee, cash_delta = cash_delta, position_delta = position_delta, realized_pnl = NULL)
-  }, fee, cash_delta, position_delta, USE.NAMES = FALSE)
 }
 
 ledgr_store_run_telemetry <- function(run_id, telemetry) {
@@ -863,6 +849,7 @@ ledgr_run_fold_impl <- function(config,
     pulses_posix = pulses_posix,
     instrument_ids = instrument_ids,
     existing_events = ledgr_corporate_action_existing_events(con, run_id),
+    existing_postings = ledgr_corporate_action_existing_postings(con, run_id),
     start_idx = start_idx,
     dispositions_active = TRUE,
     carried = opening_carried$pending
@@ -1077,7 +1064,7 @@ ledgr_state_asof <- function(con, run_id, initial_cash, ts_utc,
   rows <- DBI::dbGetQuery(
     con,
     "
-    SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json, event_seq
+    SELECT *
     FROM ledger_events
     WHERE run_id = ? AND ts_utc <= ?
     ORDER BY event_seq

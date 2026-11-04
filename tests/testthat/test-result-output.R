@@ -173,16 +173,7 @@ testthat::test_that("[LTB-0107] backtest print is a one-screen result", {
   testthat::expect_match(prefix_output, "Total Return (achieved prefix):", fixed = TRUE)
   testthat::expect_match(prefix_output, "Max Drawdown (achieved prefix):", fixed = TRUE)
 
-  opening_meta <- canonical_json(list(
-    source = "opening_position",
-    cash_delta = 0,
-    position_delta = 4,
-    cost_basis = 10,
-    opening_position = TRUE
-  ))
-  sell_meta <- canonical_json(list(cash_delta = 120, position_delta = -10))
-  buy_meta <- canonical_json(list(cash_delta = -99, position_delta = 9))
-  events <- data.frame(
+  events <- ledgr:::ledgr_accounting_rows(
     event_id = paste0("headline_", 1:3),
     run_id = "headline",
     ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 1:3,
@@ -192,9 +183,11 @@ testthat::test_that("[LTB-0107] backtest print is a one-screen result", {
     qty = c(4, 10, 9),
     price = c(10, 12, 11),
     fee = 0,
-    meta_json = c(opening_meta, sell_meta, buy_meta),
     event_seq = 1:3,
-    stringsAsFactors = FALSE
+    cash_delta = c(0, 120, -99),
+    position_delta = c(4, -10, 9),
+    source = c("opening_position", NA, NA),
+    .n = 3L
   )
   replay <- ledgr:::ledgr_replay_accounting_events(
     ledgr:::ledgr_prepare_accounting_events(events)

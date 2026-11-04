@@ -941,7 +941,7 @@ testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan st
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0506] schema 124 persists, reopens and discloses schedules", {
+testthat::test_that("[LTB-0506] current schema persists, reopens and discloses schedules", {
   strategy <- function(ctx, params) {
     list(targets = ctx$hold(), intent_reason = "rebalanced")
   }
@@ -1242,7 +1242,7 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
     DBI::dbGetQuery(
       opened$con,
       paste(
-        "SELECT event_seq, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json",
+        "SELECT * EXCLUDE (event_id, run_id)",
         "FROM ledger_events WHERE run_id = ? ORDER BY event_seq"
       ),
       params = list(run_id)
@@ -1311,7 +1311,7 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
     DBI::dbGetQuery(
       opened$con,
       paste(
-        "SELECT event_id, run_id, event_seq, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json",
+        "SELECT *",
         "FROM ledger_events WHERE run_id = ? ORDER BY event_seq"
       ),
       params = list(run_id)

@@ -6,7 +6,7 @@ testthat::test_that("FIFO lot engine handles stress sequences", {
   run_id <- "run_fifo_torture"
   base_ts <- as.POSIXct("2020-01-01T00:00:00Z", tz = "UTC")
 
-  rows <- data.frame(
+  rows <- ledgr_test_complete_fill_rows(data.frame(
     event_id = sprintf("ev_%02d", 1:10),
     run_id = run_id,
     ts_utc = base_ts + seq_len(10),
@@ -32,18 +32,9 @@ testthat::test_that("FIFO lot engine handles stress sequences", {
       100, 50, 110
     ),
     fee = c(0, 10, rep(0, 8)),
-    meta_json = ledgr_test_fill_meta_json(
-      c(
-        "BUY", "SELL", "BUY", "BUY", "BUY", "BUY", "SELL",
-        "BUY", "BUY", "SELL"
-      ),
-      c(100, 250, 150, 10, 10, 10, 25, 1, 2, 1),
-      c(10, 12, 11, 10, 11, 12, 13, 100, 50, 110),
-      c(0, 10, rep(0, 8))
-    ),
     event_seq = seq_len(10),
     stringsAsFactors = FALSE
-  )
+  ))
 
   DBI::dbAppendTable(test_con$con, "ledger_events", rows)
 

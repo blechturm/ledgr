@@ -441,32 +441,30 @@ testthat::test_that("[LTB-0053] quantity refusal and transaction identity fail c
     recipient_quantity_validated = TRUE,
     stringsAsFactors = FALSE
   )
-  events <- data.frame(
-    event_id = c("cash", "disposition"), run_id = "r",
-    ts_utc = as.POSIXct(
-      c("2020-01-01 16:00:00", "2020-01-02 16:00:00"),
-      tz = "UTC"
+  events <- rbind(
+    ledgr:::ledgr_accounting_rows(
+      event_id = "cash", run_id = "r",
+      ts_utc = as.POSIXct("2020-01-01 16:00:00", tz = "UTC"),
+      event_type = "CASHFLOW", instrument_id = "AAA", side = NA_character_,
+      qty = NA_real_, price = NA_real_, fee = 0, event_seq = 1L,
+      cash_delta = 1, position_delta = 0, source = "corporate_action_cash",
+      source_fact_id = "acquisition-1", entitled_quantity = 1,
+      gross_cash_per_parent_unit = 1, amount_policy_id = "gross",
+      posting_policy_id = "effective_close", late_arrival = FALSE,
+      affected_marked_exposure = 0
     ),
-    event_type = c("CASHFLOW", "DISPOSITION"), instrument_id = "AAA",
-    side = NA_character_, qty = c(NA_real_, 1), price = c(NA_real_, 10),
-    fee = 0, event_seq = 1:2, stringsAsFactors = FALSE,
-    meta_json = c(
-      ledgr:::canonical_json(list(
-        source = "corporate_action_cash", source_fact_id = "acquisition-1",
-        cash_delta = 1, position_delta = 0, entitled_quantity = 1,
-        gross_cash_per_parent_unit = 1, amount_policy_id = "gross",
-        posting_policy_id = "effective_close", late_arrival = FALSE,
-        affected_marked_exposure = 0
-      )),
-      ledgr:::canonical_json(list(
-        source = "corporate_action_disposition", source_fact_id = "acquisition-1",
-        cash_delta = 10, position_delta = -1, quantity = 1, mark = 10,
-        mark_source = "current_close",
-        mark_source_ts_utc = "2020-01-02T16:00:00Z", mark_age = 0,
-        position_before = 1, position_after = 0, realized_model_pnl = 0,
-        disposition_policy_id = "p", disposition_choice = "last_mark",
-        disposition_basis = "evidence", affected_marked_exposure = 10
-      ))
+    ledgr:::ledgr_accounting_rows(
+      event_id = "disposition", run_id = "r",
+      ts_utc = as.POSIXct("2020-01-02 16:00:00", tz = "UTC"),
+      event_type = "DISPOSITION", instrument_id = "AAA", side = NA_character_,
+      qty = 1, price = 10, fee = 0, event_seq = 2L,
+      cash_delta = 10, position_delta = -1,
+      source = "corporate_action_disposition", source_fact_id = "acquisition-1",
+      disposition_policy_id = "p", disposition_choice = "last_mark",
+      disposition_basis = "evidence", mark_source = "current_close",
+      mark_source_ts_utc = as.POSIXct("2020-01-02 16:00:00", tz = "UTC"),
+      mark_age = 0L, affected_marked_exposure = 10,
+      position_before = 1, realized_model_pnl = 0
     )
   )
   testthat::expect_error(

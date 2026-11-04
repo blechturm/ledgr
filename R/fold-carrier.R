@@ -113,14 +113,23 @@
   ),
   # P4 (LDG-3167, Synthesis 3.5): one published fill block and its legs; the
   # row axis is the block's events or legs. `cash_delta` admits the overflow
-  # the fill carried (`inf`); `meta` is the routed per-row metadata list.
+  # the fill carried (`inf`); evidence fields are typed and missing on fills.
   publication = c(
     status = "character:scalar:none", next_event_seq = "integer:scalar:none",
     event_id = "character:row:none", run_id = "character:row:none", ts_utc = "double:row:none",
     event_type = "character:row:none", instrument_id = "character:row:none", side = "character:row:none",
     qty = "double:row:none", price = "double:row:none", fee = "double:row:none",
-    meta_json = "character:row:na", event_seq = "integer:row:none",
-    cash_delta = "double:row:inf", position_delta = "double:row:none", meta = "opaque:any:-"
+    event_seq = "integer:row:none", cash_delta = "double:row:inf",
+    position_delta = "double:row:none", source = "character:row:na",
+    source_fact_id = "character:row:na", entitled_quantity = "double:row:na",
+    gross_cash_per_parent_unit = "double:row:na", amount_policy_id = "character:row:na",
+    posting_policy_id = "character:row:na", late_arrival = "logical:row:na",
+    affected_marked_exposure = "double:row:na", terminal_event = "character:row:na",
+    matched_label = "character:row:na", disposition_policy_id = "character:row:na",
+    disposition_choice = "character:row:na", disposition_basis = "character:row:na",
+    mark_source = "character:row:na", mark_source_ts_utc = "double:row:na",
+    mark_age = "integer:row:na", haircut_fraction = "double:row:na",
+    position_before = "double:row:na", realized_model_pnl = "double:row:na"
   ),
   leg = c(
     event_seq = "integer:row:none", instrument_id = "character:row:none", side = "character:row:none",
@@ -397,8 +406,16 @@ ledgr_carrier_problem <- function(x, group, n_run, plan_axis = NULL) {
       if (!identical(x$position_delta, signed)) {
         return("`position_delta` is not the signed event quantity")
       }
-      if (!is.list(x$meta) || !is.null(attributes(x$meta)) || length(x$meta) != n || !all(vapply(x$meta, is.list, NA))) {
-        return("`meta` is not one metadata list per event")
+      evidence <- c(
+        "source", "source_fact_id", "entitled_quantity",
+        "gross_cash_per_parent_unit", "amount_policy_id", "posting_policy_id",
+        "late_arrival", "affected_marked_exposure", "terminal_event",
+        "matched_label", "disposition_policy_id", "disposition_choice",
+        "disposition_basis", "mark_source", "mark_source_ts_utc", "mark_age",
+        "haircut_fraction", "position_before", "realized_model_pnl"
+      )
+      if (any(vapply(x[evidence], function(value) any(!is.na(value)), logical(1)))) {
+        return("fill publication carries non-fill evidence")
       }
       NULL
     },

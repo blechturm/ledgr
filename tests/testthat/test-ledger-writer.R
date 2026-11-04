@@ -24,12 +24,8 @@ insert_test_run <- function(con, run_id) {
   )
 }
 
-parse_meta <- function(x) {
-  ledgr:::ledgr_json_read_config(x)
-}
-
 fake_write_result <- function(run_id, i) {
-  row <- data.frame(
+  row <- ledgr:::ledgr_accounting_rows(
     event_id = sprintf("%s_%08d", run_id, i),
     run_id = run_id,
     ts_utc = as.POSIXct("2020-01-01 00:00:00", tz = "UTC") + i,
@@ -39,17 +35,16 @@ fake_write_result <- function(run_id, i) {
     qty = as.numeric(i),
     price = 100,
     fee = 0,
-    meta_json = canonical_json(list(cash_delta = -100 * i, position_delta = i, realized_pnl = NULL)),
     event_seq = as.integer(i),
-    stringsAsFactors = FALSE
+    cash_delta = -100 * i,
+    position_delta = as.numeric(i)
   )
   structure(
     list(
       status = "WROTE",
       row = row,
       cash_delta = -100 * i,
-      position_delta = i,
-      meta = list(cash_delta = -100 * i, position_delta = i, realized_pnl = NULL)
+      position_delta = as.numeric(i)
     ),
     class = "ledgr_ledger_write_result"
   )
@@ -94,10 +89,8 @@ testthat::test_that("BUY fill writes a correct FILL ledger event", {
   testthat::expect_equal(row$price[[1]], round(100 * (1 + 10 / 20000), 8))
   testthat::expect_equal(row$fee[[1]], 1.25)
 
-  meta <- parse_meta(row$meta_json[[1]])
-  testthat::expect_equal(meta$fee, 1.25)
-  testthat::expect_equal(meta$position_delta, 2)
-  testthat::expect_equal(meta$cash_delta, -(2 * row$price[[1]] + 1.25))
+  testthat::expect_equal(row$position_delta[[1]], 2)
+  testthat::expect_equal(row$cash_delta[[1]], -(2 * row$price[[1]] + 1.25))
 })
 
 testthat::test_that("persistent output handler preserves buffered fill writes", {
@@ -249,6 +242,7 @@ testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact o
   expected_row <- function(run_id, i) {
     one <- ledgr:::ledgr_fill_event_payload(run_id, fills[[i]]$fill, fills[[i]]$i, fills[[i]]$instrument_id, i)
     one$ts_utc <- .POSIXct(one$ts_utc, tz = "UTC")
+    one$mark_source_ts_utc <- .POSIXct(one$mark_source_ts_utc, tz = "UTC")
     ledgr:::ledgr_event_row_df(one)
   }
   memory <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("pulse-memory"), .event_initial_capacity = 1L)
@@ -293,7 +287,6 @@ testthat::test_that("[LTB-0135] pulse fill rows stay hidden and flush in exact o
     params = list("pulse-durable")
   )
   expected_durable <- do.call(rbind, lapply(seq_along(fills), function(i) expected_row("pulse-durable", i)))
-  expected_durable$meta_json <- as.character(expected_durable$meta_json)
   for (name in names(expected_durable)) {
     testthat::expect_identical(durable_rows[[name]], expected_durable[[name]])
   }
@@ -394,7 +387,8 @@ testthat::test_that("persistent output handler grows event buffer without changi
   testthat::expect_identical(rows$event_id[[n_events]], "run-ledger-buffered-grow_00001025")
   testthat::expect_s3_class(rows$ts_utc, "POSIXct")
   testthat::expect_identical(attr(rows$ts_utc, "tzone"), "UTC")
-  testthat::expect_true(all(grepl("^\\{", rows$meta_json)))
+  testthat::expect_equal(rows$cash_delta, -100 * seq_len(n_events))
+  testthat::expect_equal(rows$position_delta, as.numeric(seq_len(n_events)))
 })
 
 testthat::test_that("persistent output handler preserves all pending event columns", {
@@ -422,8 +416,7 @@ testthat::test_that("persistent output handler preserves all pending event colum
   rows <- DBI::dbGetQuery(
     con,
     "
-    SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,
-           qty, price, fee, meta_json, event_seq
+    SELECT *
     FROM ledger_events
     WHERE run_id = ?
     ORDER BY event_seq
@@ -443,7 +436,8 @@ testthat::test_that("persistent output handler preserves all pending event colum
   testthat::expect_equal(rows$qty, expected$qty)
   testthat::expect_equal(rows$price, expected$price)
   testthat::expect_equal(rows$fee, expected$fee)
-  testthat::expect_identical(rows$meta_json, as.character(expected$meta_json))
+  testthat::expect_identical(rows$cash_delta, expected$cash_delta)
+  testthat::expect_identical(rows$position_delta, expected$position_delta)
   testthat::expect_identical(as.integer(rows$event_seq), expected$event_seq)
 })
 
@@ -492,8 +486,7 @@ testthat::test_that("persistent output handler preserves full columns across gro
   rows <- DBI::dbGetQuery(
     con,
     "
-    SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,
-           qty, price, fee, meta_json, event_seq
+    SELECT *
     FROM ledger_events
     WHERE run_id = ?
     ORDER BY event_seq
@@ -513,7 +506,8 @@ testthat::test_that("persistent output handler preserves full columns across gro
   testthat::expect_equal(rows$qty, expected$qty)
   testthat::expect_equal(rows$price, expected$price)
   testthat::expect_equal(rows$fee, expected$fee)
-  testthat::expect_identical(rows$meta_json, as.character(expected$meta_json))
+  testthat::expect_identical(rows$cash_delta, expected$cash_delta)
+  testthat::expect_identical(rows$position_delta, expected$position_delta)
   testthat::expect_identical(as.integer(rows$event_seq), expected$event_seq)
 })
 
@@ -550,9 +544,8 @@ testthat::test_that("memory output handler grows event buffer and preserves even
   testthat::expect_identical(events$event_id[[n_events]], "run-memory-buffered-grow_00001025")
   testthat::expect_s3_class(events$ts_utc, "POSIXct")
   testthat::expect_identical(attr(events$ts_utc, "tzone"), "UTC")
-  testthat::expect_true(all(grepl("^\\{", events$meta_json)))
-  testthat::expect_identical(attr(events, "ledgr_event_cash_delta")[[n_events]], -100 * n_events)
-  testthat::expect_identical(attr(events, "ledgr_event_position_delta")[[n_events]], as.numeric(n_events))
+  testthat::expect_identical(events$cash_delta[[n_events]], -100 * n_events)
+  testthat::expect_identical(events$position_delta[[n_events]], as.numeric(n_events))
 })
 
 # ledgr-test-profile: heavy_protocol
@@ -605,30 +598,9 @@ testthat::test_that("both event handlers preserve rows across two injected growt
     testthat::expect_true(memory$buffer_event(fake_write_result("linear-memory", i)))
   }
   memory_rows <- memory$events()
-  expected$meta_json <- as.character(expected$meta_json)
   for (name in names(expected)) {
     testthat::expect_identical(memory_rows[[name]], expected[[name]])
   }
-  testthat::expect_identical(
-    attr(memory_rows, "ledgr_event_cash_delta"),
-    vapply(expected_writes, `[[`, numeric(1), "cash_delta")
-  )
-  testthat::expect_identical(
-    attr(memory_rows, "ledgr_event_position_delta"),
-    vapply(expected_writes, `[[`, numeric(1), "position_delta")
-  )
-  testthat::expect_identical(
-    attr(memory_rows, "ledgr_event_meta"),
-    lapply(expected_writes, `[[`, "meta")
-  )
-  testthat::expect_identical(
-    attr(memory_rows, "ledgr_event_realized"),
-    rep(NA_real_, n_events)
-  )
-  testthat::expect_identical(
-    attr(memory_rows, "ledgr_event_cost_basis"),
-    rep(NA_real_, n_events)
-  )
 
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -656,7 +628,6 @@ testthat::test_that("both event handlers preserve rows across two injected growt
   durable_expected <- do.call(rbind, lapply(seq_len(n_events), function(i) {
     fake_write_result("linear-durable", i)$row
   }))
-  durable_expected$meta_json <- as.character(durable_expected$meta_json)
   for (name in names(durable_expected)) {
     testthat::expect_identical(durable_rows[[name]], durable_expected[[name]])
   }
@@ -785,9 +756,8 @@ testthat::test_that("SELL fill writes correct deltas", {
   testthat::expect_equal(row$qty[[1]], 3)
   testthat::expect_equal(row$fee[[1]], 2)
 
-  meta <- parse_meta(row$meta_json[[1]])
-  testthat::expect_equal(meta$position_delta, -3)
-  testthat::expect_equal(meta$cash_delta, +(3 * row$price[[1]] - 2))
+  testthat::expect_equal(row$position_delta[[1]], -3)
+  testthat::expect_equal(row$cash_delta[[1]], +(3 * row$price[[1]] - 2))
 })
 
 testthat::test_that("event_seq increments across multiple writes", {
@@ -989,19 +959,21 @@ testthat::test_that("[LTB-0515] fill-row publication deltas are computed once fo
     durable$flush_pulse_events()
     durable$flush_pending()
     memory$flush_pulse_events()
-    read_meta <- function(run_id) {
-      rows <- DBI::dbGetQuery(
+    read_effects <- function(run_id) {
+      DBI::dbGetQuery(
         con,
-        "SELECT meta_json FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
+        paste(
+          "SELECT cash_delta, position_delta, fee FROM ledger_events",
+          "WHERE run_id = ? ORDER BY event_seq"
+        ),
         params = list(run_id)
       )
-      lapply(rows$meta_json, parse_meta)
     }
-    out$durable_meta <- read_meta("r3-durable")
-    out$live_meta <- read_meta("r3-live")
+    out$durable_effects <- read_effects("r3-durable")
+    out$live_effects <- read_effects("r3-live")
     events <- memory$typed_events()
-    out$memory_cash <- attr(events, "ledgr_event_cash_delta")
-    out$memory_position <- attr(events, "ledgr_event_position_delta")
+    out$memory_cash <- events$cash_delta
+    out$memory_position <- events$position_delta
     out
   }
 
@@ -1016,11 +988,11 @@ testthat::test_that("[LTB-0515] fill-row publication deltas are computed once fo
         testthat::expect_identical(res$cash_delta, want$cash_delta, info = paste(path, name))
         testthat::expect_identical(res$position_delta, want$position_delta, info = paste(path, name))
       }
-      for (path in c("durable_meta", "live_meta")) {
-        meta <- out[[path]][[k]]
-        testthat::expect_identical(as.numeric(meta$cash_delta), want$cash_delta, info = paste(path, name))
-        testthat::expect_identical(as.numeric(meta$position_delta), want$position_delta, info = paste(path, name))
-        testthat::expect_identical(as.numeric(meta$fee), as.numeric(fills[[name]]$fill$fee), info = paste(path, name))
+      for (path in c("durable_effects", "live_effects")) {
+        effects <- out[[path]]
+        testthat::expect_identical(effects$cash_delta[[k]], want$cash_delta, info = paste(path, name))
+        testthat::expect_identical(effects$position_delta[[k]], want$position_delta, info = paste(path, name))
+        testthat::expect_identical(effects$fee[[k]], as.numeric(fills[[name]]$fill$fee), info = paste(path, name))
       }
       testthat::expect_identical(out$memory_cash[[k]], want$cash_delta, info = paste("memory", name))
       testthat::expect_identical(out$memory_position[[k]], want$position_delta, info = paste("memory", name))
@@ -1029,8 +1001,8 @@ testthat::test_that("[LTB-0515] fill-row publication deltas are computed once fo
       testthat::expect_identical(out[[path]]$status, "NO_OP", info = path)
       testthat::expect_identical(out[[path]]$next_event_seq, 4L, info = path)
     }
-    testthat::expect_length(out$durable_meta, 3L)
-    testthat::expect_length(out$live_meta, 3L)
+    testthat::expect_identical(nrow(out$durable_effects), 3L)
+    testthat::expect_identical(nrow(out$live_effects), 3L)
     testthat::expect_length(out$memory_cash, 3L)
   }
 
@@ -1127,16 +1099,19 @@ testthat::test_that("[LTB-0516] the db_live writer keeps its validation and tran
   testthat::expect_identical(second$event_seq, 2L)
   testthat::expect_identical(calls, 0L)
   testthat::expect_identical(count(), 2L)
-  meta <- parse_meta(DBI::dbGetQuery(
+  effects <- DBI::dbGetQuery(
     con,
-    "SELECT meta_json FROM ledger_events WHERE run_id = ? AND event_seq = 1",
+    paste(
+      "SELECT cash_delta, position_delta FROM ledger_events",
+      "WHERE run_id = ? AND event_seq = 1"
+    ),
     params = list(run_id)
-  )$meta_json[[1L]])
+  )
   testthat::expect_identical(
-    as.numeric(meta$cash_delta),
+    effects$cash_delta[[1L]],
     -(as.numeric(fill$fill$qty) * as.numeric(fill$fill$price) + as.numeric(fill$fill$fee))
   )
-  testthat::expect_identical(as.numeric(meta$position_delta), as.numeric(fill$fill$qty))
+  testthat::expect_identical(effects$position_delta[[1L]], as.numeric(fill$fill$qty))
 
   # A failed transactional insert leaves no partial row.
   testthat::expect_error(

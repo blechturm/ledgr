@@ -614,15 +614,12 @@ testthat::test_that("[LTB-0006] compiled spot FIFO path matches canonical R fold
     as.data.frame(r_path$events),
     ignore_attr = TRUE
   )
-  for (attr_name in c(
-    "ledgr_event_cash_delta",
-    "ledgr_event_position_delta",
-    "ledgr_event_realized",
-    "ledgr_event_cost_basis"
+  for (column in c(
+    "fee", "cash_delta", "position_delta", "realized_model_pnl"
   )) {
     testthat::expect_equal(
-      attr(compiled_path$events, attr_name),
-      attr(r_path$events, attr_name)
+      compiled_path$events[[column]],
+      r_path$events[[column]]
     )
   }
   testthat::expect_equal(
@@ -769,15 +766,12 @@ testthat::test_that("[LTB-0013] compiled spot FIFO batches preserve multi-instru
     as.data.frame(r_path$events),
     ignore_attr = TRUE
   )
-  for (attr_name in c(
-    "ledgr_event_cash_delta",
-    "ledgr_event_position_delta",
-    "ledgr_event_realized",
-    "ledgr_event_cost_basis"
+  for (column in c(
+    "fee", "cash_delta", "position_delta", "realized_model_pnl"
   )) {
     testthat::expect_equal(
-      attr(compiled_path$events, attr_name),
-      attr(r_path$events, attr_name)
+      compiled_path$events[[column]],
+      r_path$events[[column]]
     )
   }
   testthat::expect_equal(compiled_path$inline_summary, r_path$inline_summary)

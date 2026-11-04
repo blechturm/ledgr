@@ -1269,8 +1269,7 @@ ledgr_walk_forward_carried_opening <- function(exp, run_id, window, history_subs
   events <- DBI::dbGetQuery(
     opened$con,
     paste(
-      "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty,",
-      "price, fee, meta_json, event_seq FROM ledger_events WHERE run_id = ?",
+      "SELECT * FROM ledger_events WHERE run_id = ?",
       "ORDER BY event_seq"
     ),
     params = list(run_id)

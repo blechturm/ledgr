@@ -36,18 +36,14 @@ testthat::test_that("[LTB-0551] accounting readers converge on one typed replay"
 
   # The forward projection is exact on an event/pulse ladder; increasing the
   # ladder adds rows, not replay calls or prefix replays.
-  rows <- data.frame(
+  rows <- ledgr_test_complete_fill_rows(data.frame(
     event_id = paste0("linear-", 1:200), run_id = "linear",
     ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 1:200,
     event_type = "FILL", instrument_id = "AAA",
     side = rep(c("BUY", "SELL"), 100), qty = 1, price = 10, fee = 0,
-    meta_json = rep(c(
-      '{"cash_delta":-10,"position_delta":1}',
-      '{"cash_delta":10,"position_delta":-1}'
-    ), 100),
     event_seq = 1:200,
     stringsAsFactors = FALSE
-  )
+  ))
   replay <- ledgr:::ledgr_replay_accounting_events(
     ledgr:::ledgr_prepare_accounting_events(rows, "AAA"),
     initial_cash = 1000

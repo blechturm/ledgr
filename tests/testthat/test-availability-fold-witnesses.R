@@ -149,7 +149,7 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       # changed corporate-action knowledge provenance). The frozen evidence remains unchanged; all other persisted
       # identity fields stay under exact comparison below.
       testthat::expect_identical(expected$schema_version, "118")
-      testthat::expect_identical(actual$schema_version, "124")
+      testthat::expect_identical(actual$schema_version, "125")
       actual$schema_version <- NULL
       expected$schema_version <- NULL
       # LDG-2851 renamed `ctx$positions` to `ctx$position` after the

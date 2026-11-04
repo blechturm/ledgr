@@ -73,6 +73,8 @@ ledgr_event_buffer_setv <- function(columns, name, index, value) {
     as.character(value)
   } else if (is.integer(column)) {
     as.integer(value)
+  } else if (is.logical(column)) {
+    as.logical(value)
   } else {
     as.numeric(value)
   }
@@ -100,55 +102,43 @@ ledgr_opening_position_event_rows <- function(run_id,
   if (length(positions) == 0L) {
     return(data.frame())
   }
-  rows <- vector("list", length(positions))
-  idx <- 0L
-  event_seq <- event_seq_start
-  for (k in seq_along(positions)) {
-    instrument_id <- names(positions)[[k]]
-    qty <- as.numeric(positions[[k]])
-    if (!is.finite(qty) || qty == 0) {
-      next
-    }
-    cb <- if (is.null(lots)) {
-      as.numeric(cost_basis[[instrument_id]] %||% NA_real_)
-    } else {
-      as.numeric(cost_basis[[k]])
-    }
-    if (!is.finite(cb)) {
-      rlang::abort(
-        paste0(
-          "Opening position for instrument '", instrument_id,
-          "' requires a finite cost basis."
-        ),
-        class = "ledgr_opening_cost_basis_missing"
-      )
-    }
-    idx <- idx + 1L
-    meta <- list(
-      source = "opening_position",
-      cash_delta = 0,
-      position_delta = qty,
-      cost_basis = cb,
-      opening_position = TRUE
-    )
-    rows[[idx]] <- data.frame(
-      event_id = paste0(run_id, "_", sprintf("%08d", event_seq)),
-      run_id = run_id,
-      ts_utc = as.POSIXct(ledgr_normalize_ts_utc(ts_utc), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ"),
-      event_type = "CASHFLOW",
-      instrument_id = instrument_id,
-      side = NA_character_,
-      qty = qty,
-      price = cb,
-      fee = 0,
-      meta_json = canonical_json(meta),
-      event_seq = event_seq,
-      stringsAsFactors = FALSE
-    )
-    event_seq <- event_seq + 1L
-  }
-  if (idx == 0L) {
+  qty <- as.numeric(positions)
+  keep <- is.finite(qty) & qty != 0
+  if (!any(keep)) {
     return(data.frame())
   }
-  do.call(rbind, rows[seq_len(idx)])
+  instrument_id <- names(positions)[keep]
+  qty <- qty[keep]
+  cb <- if (is.null(lots)) {
+    as.numeric(cost_basis[instrument_id])
+  } else {
+    as.numeric(cost_basis[keep])
+  }
+  bad <- which(!is.finite(cb))
+  if (length(bad) > 0L) {
+    rlang::abort(
+      paste0(
+        "Opening position for instrument '", instrument_id[[bad[[1L]]]],
+        "' requires a finite cost basis."
+      ),
+      class = "ledgr_opening_cost_basis_missing"
+    )
+  }
+  event_seq <- as.integer(event_seq_start) + seq_along(qty) - 1L
+  ledgr_accounting_rows(
+    event_id = paste0(run_id, "_", sprintf("%08d", event_seq)),
+    run_id = rep(run_id, length(qty)),
+    ts_utc = rep(as.POSIXct(
+      ledgr_normalize_ts_utc(ts_utc), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ"
+    ), length(qty)),
+    event_type = rep("CASHFLOW", length(qty)),
+    instrument_id = instrument_id,
+    qty = qty,
+    price = cb,
+    fee = rep(0, length(qty)),
+    event_seq = event_seq,
+    cash_delta = rep(0, length(qty)),
+    position_delta = qty,
+    source = rep("opening_position", length(qty))
+  )
 }

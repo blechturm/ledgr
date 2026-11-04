@@ -618,8 +618,8 @@ testthat::test_that("no-op feasibility hook does not sequentially reject same-pu
 
   testthat::expect_identical(as.character(events$instrument_id), c("BBB", "AAA"))
   testthat::expect_identical(as.character(events$side), c("BUY", "SELL"))
-  testthat::expect_equal(sum(attr(events, "ledgr_event_cash_delta")), 2)
-  position_delta <- attr(events, "ledgr_event_position_delta")
+  testthat::expect_equal(sum(events$cash_delta), 2)
+  position_delta <- events$position_delta
   final_position <- c(BBB = 0, AAA = 2)
   final_position[names(tapply(position_delta, events$instrument_id, sum))] <-
     final_position[names(tapply(position_delta, events$instrument_id, sum))] +

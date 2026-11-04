@@ -434,8 +434,13 @@ testthat::test_that("ledger_events enforces uniqueness of (run_id, event_seq)", 
   DBI::dbExecute(
     con,
     "
-    INSERT INTO ledger_events (event_id, run_id, ts_utc, event_type, event_seq)
-    VALUES ('run-1_00000001', 'run-1', TIMESTAMP '2020-01-02 00:00:00', 'FILL', 1)
+    INSERT INTO ledger_events (
+      event_id, run_id, ts_utc, event_type, instrument_id, side,
+      qty, price, fee, event_seq, cash_delta, position_delta
+    ) VALUES (
+      'run-1_00000001', 'run-1', TIMESTAMP '2020-01-02 00:00:00',
+      'FILL', 'AAA', 'BUY', 1, 100, 0, 1, -100, 1
+    )
     "
   )
 
@@ -443,8 +448,13 @@ testthat::test_that("ledger_events enforces uniqueness of (run_id, event_seq)", 
     DBI::dbExecute(
       con,
       "
-      INSERT INTO ledger_events (event_id, run_id, ts_utc, event_type, event_seq)
-      VALUES ('run-1_00000002', 'run-1', TIMESTAMP '2020-01-02 00:00:00', 'FILL', 1)
+      INSERT INTO ledger_events (
+        event_id, run_id, ts_utc, event_type, instrument_id, side,
+        qty, price, fee, event_seq, cash_delta, position_delta
+      ) VALUES (
+        'run-1_00000002', 'run-1', TIMESTAMP '2020-01-02 00:00:00',
+        'FILL', 'AAA', 'BUY', 1, 100, 0, 1, -100, 1
+      )
       "
     )
   )

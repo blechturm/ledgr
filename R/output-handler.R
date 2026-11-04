@@ -10,14 +10,7 @@
 # ledgr_require_compiled_spot_fifo_dispatch() see the true capability set.
 # Design: inst/design/ledgr_v0_2_3_spec_packet/ws1_output_handler_design.md.
 
-ledgr_output_event_columns <- c(
-  "event_id", "run_id", "ts_utc", "event_type", "instrument_id", "side",
-  "qty", "price", "fee", "meta_json", "event_seq"
-)
-
-ledgr_output_typed_columns <- c(
-  "cash_delta", "position_delta", "event_realized", "event_cost_basis", "meta"
-)
+ledgr_output_event_columns <- ledgr_accounting_event_columns()
 
 ledgr_memory_diagnostic_keep <- function(diagnostics, n = NULL) {
   if (is.null(n)) {
@@ -91,8 +84,6 @@ ledgr_output_sink_duckdb <- function(con, run_id, run_wall_start, execution_mode
   sink <- list(run_id = run_id)
   sink$drains <- TRUE
   sink$requires_init <- TRUE
-  sink$serialize_meta_json <- TRUE
-  sink$typed_columns <- character(0)
   sink$nonwrote_buffer_result <- FALSE
   sink$refresh_seq_on_exception <- TRUE
   sink$preserve_diagnostic_seq <- FALSE
@@ -139,8 +130,8 @@ ledgr_output_sink_duckdb <- function(con, run_id, run_wall_start, execution_mode
   }
   # db_live publishes the rows `i` of a fill block at once: one INSERT per
   # fill, in event order, through the db_live writer with its own validation
-  # and sequence (one statement per fill is the immediate-write contract; its
-  # fill JSON is routed to WS7/WS8). The fold is already inside
+  # and sequence (one statement per fill is the immediate-write contract).
+  # The fold is already inside
   # run_transaction(), so no nested DuckDB transaction is opened. Returns the
   # writer's result for the last row, or its no-op for an empty block.
   sink$write_fill_live <- function(publication) {
@@ -253,8 +244,6 @@ ledgr_output_sink_memory <- function(run_id) {
   sink <- list(run_id = run_id)
   sink$drains <- FALSE
   sink$requires_init <- FALSE
-  sink$serialize_meta_json <- FALSE
-  sink$typed_columns <- ledgr_output_typed_columns
   sink$nonwrote_buffer_result <- TRUE
   sink$refresh_seq_on_exception <- FALSE
   sink$preserve_diagnostic_seq <- TRUE
@@ -393,7 +382,6 @@ ledgr_output_sink_memory <- function(run_id) {
 
 ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   run_id <- sink$run_id
-  typed <- length(sink$typed_columns) > 0L
   state <- new.env(parent = emptyenv())
   state$event_cols <- NULL
   state$event_count <- 0L
@@ -412,11 +400,8 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   state$next_diagnostic_seq <- NULL
   # The pulse's published fill block (publication columns), held
   # closure-local until flush_pulse_events() writes it by index into the
-  # event buffer; NULL when none is pending. Typed sinks keep the block's
-  # aggregate facts beside it.
+  # event buffer; NULL when none is pending.
   pending_fills <- NULL
-  pending_realized <- numeric()
-  pending_cost_basis <- numeric()
   handler <- list()
   handler$diagnostic_keep <- sink$diagnostic_keep
   handler$persists_strategy_state <- isTRUE(sink$drains)
@@ -451,24 +436,8 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     capacity <- as.integer(max(0L, capacity))
     state$event_capacity <- capacity
     cols <- new.env(parent = emptyenv())
-    cols$event_id <- character(capacity)
-    cols$run_id <- character(capacity)
-    cols$ts_utc <- as.POSIXct(rep(NA_character_, capacity), tz = "UTC")
-    cols$event_type <- character(capacity)
-    cols$instrument_id <- character(capacity)
-    cols$side <- character(capacity)
-    cols$qty <- numeric(capacity)
-    cols$price <- numeric(capacity)
-    cols$fee <- numeric(capacity)
-    cols$meta_json <- character(capacity)
-    cols$event_seq <- integer(capacity)
-    if (typed) {
-      cols$cash_delta <- numeric(capacity)
-      cols$position_delta <- numeric(capacity)
-      cols$event_realized <- numeric(capacity)
-      cols$event_cost_basis <- numeric(capacity)
-      cols$meta <- vector("list", capacity)
-    }
+    template <- ledgr_accounting_empty_columns(capacity)
+    for (name in names(template)) cols[[name]] <- template[[name]]
     state$event_cols <- cols
     invisible(TRUE)
   }
@@ -525,13 +494,9 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   }
 
   validate_append <- function(rows,
-                              cash_delta = NULL,
-                              position_delta = NULL,
                               commit_boundary = TRUE) {
     prepared <- ledgr_validate_accounting_append(
       rows,
-      cash_delta = cash_delta,
-      position_delta = position_delta,
       prior_event_seq = state$last_event_seq,
       prior_ts_utc = state$last_event_ts_utc
     )
@@ -556,8 +521,6 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     )
     ensure_event_capacity(state$event_count + 1L)
     pending_fills <<- NULL
-    pending_realized <<- numeric()
-    pending_cost_basis <<- numeric()
     if (is.function(sink$reset_legs)) sink$reset_legs()
     invisible(TRUE)
   }
@@ -571,13 +534,6 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     ensure_event_capacity(i)
     row <- write_res$row
     for (name in ledgr_output_event_columns) set_event_value(name, i, row[[name]])
-    if (typed) {
-      set_event_value("cash_delta", i, write_res$cash_delta)
-      set_event_value("position_delta", i, write_res$position_delta)
-      set_event_value("event_realized", i, NA_real_)
-      set_event_value("event_cost_basis", i, NA_real_)
-      set_event_value("meta", i, write_res$meta)
-    }
     state$event_count <- i
     invisible(TRUE)
   }
@@ -591,7 +547,6 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       return(invisible(FALSE))
     }
     require_initialized()
-    n <- length(block$event_seq)
     if (is.null(pending_fills)) {
       pending_fills <<- block
     } else {
@@ -599,10 +554,6 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
         pending_fills[[name]] <<- c(pending_fills[[name]], block[[name]])
       }
       pending_fills$next_event_seq <<- block$next_event_seq
-    }
-    if (typed) {
-      pending_realized <<- c(pending_realized, rep(NA_real_, n))
-      pending_cost_basis <<- c(pending_cost_basis, rep(NA_real_, n))
     }
     invisible(TRUE)
   }
@@ -619,19 +570,13 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       fill = fill,
       i = i,
       instrument_id = instrument_id,
-      event_seq = event_seq,
-      serialize_meta_json = sink$serialize_meta_json
+      event_seq = event_seq
     )
     if (isTRUE(stage) && isTRUE(use_transaction) && is.function(sink$write_fill_live)) {
       if (identical(block$status, "WROTE")) {
-        rows <- block[ledgr_output_event_columns]
-        rows$ts_utc <- .POSIXct(block$ts_utc, tz = "UTC")
-        validate_append(
-          rows,
-          cash_delta = block$cash_delta,
-          position_delta = block$position_delta,
-          commit_boundary = FALSE
-        )
+        rows <- as.data.frame(block[ledgr_output_event_columns], stringsAsFactors = FALSE)
+        rows$ts_utc <- as.POSIXct(rows$ts_utc, tz = "UTC")
+        validate_append(rows, commit_boundary = FALSE)
       }
       result <- sink$write_fill_live(block)
       if (identical(block$status, "WROTE")) {
@@ -641,14 +586,9 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       return(result)
     }
     if (identical(block$status, "WROTE")) {
-      rows <- block[ledgr_output_event_columns]
-      rows$ts_utc <- .POSIXct(block$ts_utc, tz = "UTC")
-      validate_append(
-        rows,
-        cash_delta = block$cash_delta,
-        position_delta = block$position_delta,
-        commit_boundary = isTRUE(stage)
-      )
+      rows <- as.data.frame(block[ledgr_output_event_columns], stringsAsFactors = FALSE)
+      rows$ts_utc <- as.POSIXct(rows$ts_utc, tz = "UTC")
+      validate_append(rows, commit_boundary = isTRUE(stage))
     }
     if (isTRUE(stage)) stage_fill_block(block)
     block
@@ -669,17 +609,8 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
         ledgr_event_buffer_setv(cols, name, index, block[[name]])
       }
       ledgr_event_buffer_setv(cols, "ts_utc", index, .POSIXct(block$ts_utc, tz = "UTC"))
-      if (typed) {
-        ledgr_event_buffer_setv(cols, "cash_delta", index, block$cash_delta)
-        ledgr_event_buffer_setv(cols, "position_delta", index, block$position_delta)
-        ledgr_event_buffer_setv(cols, "event_realized", index, pending_realized)
-        ledgr_event_buffer_setv(cols, "event_cost_basis", index, pending_cost_basis)
-        ledgr_event_buffer_setv(cols, "meta", index, block$meta)
-      }
       state$event_count <- end
       pending_fills <<- NULL
-      pending_realized <<- numeric()
-      pending_cost_basis <<- numeric()
     }
     if (is.function(sink$flush_legs)) sink$flush_legs()
     invisible(TRUE)
@@ -763,20 +694,9 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       if (n > 0L) {
         keep <- seq_len(n)
         cols <- state$event_cols
-        sink$append_events(data.frame(
-          event_id = cols$event_id[keep],
-          run_id = cols$run_id[keep],
-          ts_utc = cols$ts_utc[keep],
-          event_type = cols$event_type[keep],
-          instrument_id = cols$instrument_id[keep],
-          side = cols$side[keep],
-          qty = cols$qty[keep],
-          price = cols$price[keep],
-          fee = cols$fee[keep],
-          meta_json = cols$meta_json[keep],
-          event_seq = cols$event_seq[keep],
-          stringsAsFactors = FALSE
-        ))
+        values <- lapply(ledgr_output_event_columns, function(name) cols[[name]][keep])
+        names(values) <- ledgr_output_event_columns
+        sink$append_events(as.data.frame(values, stringsAsFactors = FALSE))
         state$event_count <- 0L
       }
       sink$flush_states()
@@ -801,7 +721,7 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
 
   handler$append_event_rows <- function(rows) {
     if (!is.null(rows) && nrow(rows) > 0L) {
-      prepared <- validate_append(rows)
+      validate_append(rows)
       n <- nrow(rows)
       start <- state$event_count + 1L
       end <- state$event_count + n
@@ -810,17 +730,6 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       for (name in ledgr_output_event_columns) {
         ledgr_event_buffer_setv(state$event_cols, name, idx, rows[[name]])
       }
-      # The builders' rows adapt once into the indexed buffer (E6): each
-      # row's metadata is parsed once (the routed memory meta, WS8) and the
-      # typed columns are written by index.
-      meta <- lapply(rows$meta_json, ledgr_lot_parse_meta)
-      cash_delta <- prepared$cash_delta
-      position_delta <- prepared$position_delta
-      ledgr_event_buffer_setv(state$event_cols, "meta", idx, meta)
-      ledgr_event_buffer_setv(state$event_cols, "cash_delta", idx, cash_delta)
-      ledgr_event_buffer_setv(state$event_cols, "position_delta", idx, position_delta)
-      ledgr_event_buffer_setv(state$event_cols, "event_realized", idx, rep(NA_real_, n))
-      ledgr_event_buffer_setv(state$event_cols, "event_cost_basis", idx, rep(NA_real_, n))
       state$event_count <- end
     }
     invisible(TRUE)
@@ -831,7 +740,7 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     if (n == 0L) {
       return(invisible(TRUE))
     }
-    rows <- data.frame(
+    rows <- ledgr_accounting_rows(
       event_id = batch$event_id,
       run_id = batch$event_run_id,
       ts_utc = .POSIXct(batch$event_ts_utc, tz = "UTC"),
@@ -841,15 +750,11 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       qty = batch$event_qty,
       price = batch$event_price,
       fee = batch$event_fee,
-      meta_json = NA_character_,
       event_seq = batch$event_seq,
-      stringsAsFactors = FALSE
-    )
-    validate_append(
-      rows,
       cash_delta = batch$cash_delta,
       position_delta = batch$position_delta
     )
+    validate_append(rows)
     start <- state$event_count + 1L
     end <- state$event_count + n
     ensure_event_capacity(end)
@@ -868,106 +773,40 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     ledgr_event_buffer_setv(cols, "qty", idx, batch$event_qty)
     ledgr_event_buffer_setv(cols, "price", idx, batch$event_price)
     ledgr_event_buffer_setv(cols, "fee", idx, batch$event_fee)
-    ledgr_event_buffer_setv(cols, "meta_json", idx, rep(NA_character_, n))
     ledgr_event_buffer_setv(cols, "event_seq", idx, batch$event_seq)
     ledgr_event_buffer_setv(cols, "cash_delta", idx, batch$cash_delta)
     ledgr_event_buffer_setv(cols, "position_delta", idx, batch$position_delta)
-    ledgr_event_buffer_setv(cols, "event_realized", idx, batch$event_realized)
-    ledgr_event_buffer_setv(cols, "event_cost_basis", idx, batch$event_cost_basis)
-    # Keep field order aligned with ledgr_fill_event_payload(); meta_json
-    # materialization is byte-compared against the canonical R path.
-    ledgr_event_buffer_setv(cols, "meta", idx, Map(
-      function(fee, cash_delta, position_delta) {
-        list(
-          fee = as.numeric(fee),
-          cash_delta = as.numeric(cash_delta),
-          position_delta = as.numeric(position_delta),
-          realized_pnl = NULL
-        )
-      },
-      as.numeric(batch$event_fee),
-      as.numeric(batch$cash_delta),
-      as.numeric(batch$position_delta)
-    ))
     state$event_count <- end
     sink$add_legs_many(batch)
     invisible(TRUE)
   }
 
-  # The accounting facts of the most recently published `block`: `applied`
-  # holds its applied lot rows in block order (typed lot kernel). Each row's
-  # event-order realized P&L and total cost basis are written by index beside
-  # the block's rows, and its legs (ledgr_fill_leg_block()) are staged with
-  # the pulse, or added at once when the block was written unstaged.
+  # The accounting facts of the most recently published `block`: durable
+  # effects already live in the typed block. Only the fill-leg projection is
+  # retained for the memory candidate's inline summary.
   handler$record_accounting_fact <- function(block, applied) {
     staged <- !is.null(pending_fills)
     if (!identical(block$status, "WROTE") || (!staged && state$event_count == 0L)) {
       return(invisible(FALSE))
-    }
-    m <- length(block$event_seq)
-    if (staged) {
-      idx <- length(pending_realized) - m + seq_len(m)
-      pending_realized[idx] <<- applied$event_realized
-      pending_cost_basis[idx] <<- applied$event_cost_basis
-    } else {
-      idx <- state$event_count - m + seq_len(m)
-      ledgr_event_buffer_setv(state$event_cols, "event_realized", idx, applied$event_realized)
-      ledgr_event_buffer_setv(state$event_cols, "event_cost_basis", idx, applied$event_cost_basis)
     }
     legs <- ledgr_fill_leg_block(block, applied)
     if (staged) sink$stage_legs(legs) else sink$add_legs(legs)
     invisible(TRUE)
   }
 
-  event_meta_json <- function(i, include_meta_json) {
-    value <- state$event_cols$meta_json[[i]]
-    # Typed consumers keep fill metadata as parsed lists; rows serialize those
-    # lists only when a caller asks for them.
-    if (!isTRUE(include_meta_json) || (is.character(value) && length(value) == 1L && !is.na(value) && nzchar(value))) {
-      return(value)
-    }
-    meta <- state$event_cols$meta[[i]]
-    if (is.null(meta)) {
-      meta <- list(
-        fee = as.numeric(state$event_cols$fee[[i]]),
-        cash_delta = as.numeric(state$event_cols$cash_delta[[i]]),
-        position_delta = as.numeric(state$event_cols$position_delta[[i]]),
-        realized_pnl = NULL
-      )
-    }
-    canonical_json(meta)
-  }
-
-  materialize_events <- function(include_meta_json = TRUE) {
+  materialize_events <- function() {
     if (is.null(state$event_cols) || state$event_count == 0L) {
       return(ledgr_empty_event_table())
     }
     idx <- seq_len(state$event_count)
     cols <- state$event_cols
-    meta_json <- vapply(idx, event_meta_json, character(1), include_meta_json = include_meta_json)
-    out <- tibble::as_tibble(data.frame(
-      event_id = cols$event_id[idx],
-      run_id = cols$run_id[idx],
-      ts_utc = cols$ts_utc[idx],
-      event_type = cols$event_type[idx],
-      instrument_id = cols$instrument_id[idx],
-      side = cols$side[idx],
-      qty = cols$qty[idx],
-      price = cols$price[idx],
-      fee = cols$fee[idx],
-      meta_json = meta_json,
-      event_seq = cols$event_seq[idx],
-      stringsAsFactors = FALSE
-    ))
-    attr(out, "ledgr_event_cash_delta") <- cols$cash_delta[idx]
-    attr(out, "ledgr_event_position_delta") <- cols$position_delta[idx]
-    attr(out, "ledgr_event_meta") <- cols$meta[idx]
-    attr(out, "ledgr_event_realized") <- cols$event_realized[idx]
-    attr(out, "ledgr_event_cost_basis") <- cols$event_cost_basis[idx]
+    values <- lapply(ledgr_output_event_columns, function(name) cols[[name]][idx])
+    names(values) <- ledgr_output_event_columns
+    out <- tibble::as_tibble(as.data.frame(values, stringsAsFactors = FALSE))
     class(out) <- unique(c("ledgr_memory_events", class(out)))
     out
   }
-  handler$typed_events <- function() materialize_events(include_meta_json = FALSE)
-  handler$events <- function() materialize_events(include_meta_json = TRUE)
+  handler$typed_events <- materialize_events
+  handler$events <- materialize_events
   structure(handler, class = "ledgr_output_handler")
 }

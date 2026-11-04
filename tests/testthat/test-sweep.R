@@ -78,7 +78,8 @@ testthat::test_that("memory output handler stores typed events equivalent to led
   testthat::expect_identical(events$event_seq, c(1L, 2L))
   testthat::expect_identical(events$event_type, c("CASHFLOW", "FILL"))
   testthat::expect_s3_class(typed_events, "ledgr_memory_events")
-  testthat::expect_true(is.na(typed_events$meta_json[[2L]]))
+  testthat::expect_false("meta_json" %in% names(typed_events))
+  testthat::expect_identical(typed_events$source, c("opening_position", NA_character_))
   pulses <- as.POSIXct(c("2020-01-01", "2020-01-02"), tz = "UTC")
   testthat::expect_equal(
     ledgr:::ledgr_fills_from_events(typed_events, pulses),
@@ -92,9 +93,6 @@ testthat::test_that("memory output handler preserves full event columns across g
   n_events <- 1025L
   handler$init_buffers(n_events)
   expected <- vector("list", n_events)
-  expected_cash_delta <- numeric(n_events)
-  expected_position_delta <- numeric(n_events)
-  expected_meta <- vector("list", n_events)
   for (i in seq_len(n_events)) {
     fill <- ledgr_test_next_open_fill(
       desired_qty_delta = i,
@@ -110,10 +108,8 @@ testthat::test_that("memory output handler preserves full event columns across g
     # the expected row is the durable builder's one-row block.
     block <- ledgr:::ledgr_fill_event_payload(run_id, fill$fill, fill$i, fill$instrument_id, i)
     block$ts_utc <- .POSIXct(block$ts_utc, tz = "UTC")
+    block$mark_source_ts_utc <- .POSIXct(block$mark_source_ts_utc, tz = "UTC")
     expected[[i]] <- block[ledgr:::ledgr_output_event_columns]
-    expected_cash_delta[[i]] <- block$cash_delta
-    expected_position_delta[[i]] <- block$position_delta
-    expected_meta[[i]] <- block$meta[[1L]]
     handler$write_fill_events(fill$fill, fill$i, fill$instrument_id, i)
     handler$flush_pulse_events()
   }
@@ -132,17 +128,17 @@ testthat::test_that("memory output handler preserves full event columns across g
   testthat::expect_equal(events$qty, expected$qty)
   testthat::expect_equal(events$price, expected$price)
   testthat::expect_equal(events$fee, expected$fee)
-  testthat::expect_identical(events$meta_json, as.character(expected$meta_json))
   testthat::expect_identical(as.integer(events$event_seq), expected$event_seq)
-  testthat::expect_equal(
-    attr(events, "ledgr_event_cash_delta"),
-    expected_cash_delta
-  )
-  testthat::expect_equal(attr(events, "ledgr_event_position_delta"), expected_position_delta)
-  testthat::expect_identical(length(attr(events, "ledgr_event_meta")), n_events)
-  for (i in c(1L, 1024L, 1025L)) {
-    testthat::expect_equal(attr(events, "ledgr_event_meta")[[i]], expected_meta[[i]])
+  for (name in setdiff(ledgr:::ledgr_accounting_event_columns(), c(
+    "event_id", "run_id", "ts_utc", "event_type", "instrument_id", "side",
+    "qty", "price", "fee", "event_seq", "mark_source_ts_utc"
+  ))) {
+    testthat::expect_identical(events[[name]], expected[[name]], info = name)
   }
+  testthat::expect_identical(
+    as.numeric(events$mark_source_ts_utc),
+    as.numeric(expected$mark_source_ts_utc)
+  )
 })
 
 testthat::test_that("single-pass sweep summary matches separate reconstruction helpers", {
@@ -292,8 +288,8 @@ testthat::test_that("inline accounting summary matches reconstruction with openi
   testthat::expect_equal(inline$fills, reconstructed$fills)
   testthat::expect_equal(inline$metrics, reconstructed$metrics)
   testthat::expect_equal(inline$final_equity, reconstructed$final_equity)
-  testthat::expect_equal(attr(events, "ledgr_event_realized")[[2L]], lot_state$realized_pnl)
-  testthat::expect_equal(attr(events, "ledgr_event_cost_basis")[[2L]], lot_state$total_cost_basis)
+  testthat::expect_null(attr(events, "ledgr_event_realized"))
+  testthat::expect_null(attr(events, "ledgr_event_cost_basis"))
   testthat::expect_equal(inline$fills$action, c("CLOSE", "OPEN"))
   testthat::expect_equal(inline$fills$qty, c(2, 1))
 })
@@ -430,7 +426,7 @@ testthat::test_that("sweep public compiled accounting preserves risk parity", {
 })
 
 testthat::test_that("fills reconstruction is invariant under hostile collapse settings", {
-  events <- data.frame(
+  events <- ledgr:::ledgr_accounting_rows(
     event_id = sprintf("event_%02d", 1:4),
     run_id = "hostile-collapse-fills",
     ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -440,18 +436,9 @@ testthat::test_that("fills reconstruction is invariant under hostile collapse se
     qty = c(2, 1, 3, 1),
     price = c(10, 12, 11, 9),
     fee = c(0, 0.1, 0.2, 0),
-    meta_json = vapply(
-      list(
-        list(cash_delta = -20, position_delta = 2, realized_pnl = NULL),
-        list(cash_delta = 11.9, position_delta = -1, realized_pnl = NULL),
-        list(cash_delta = 32.8, position_delta = -3, realized_pnl = NULL),
-        list(cash_delta = -9, position_delta = 1, realized_pnl = NULL)
-      ),
-      ledgr:::canonical_json,
-      character(1)
-    ),
     event_seq = 1:4,
-    stringsAsFactors = FALSE
+    cash_delta = c(-20, 11.9, 32.8, -9),
+    position_delta = c(2, -1, -3, 1)
   )
 
   pulses <- as.POSIXct(events$ts_utc, tz = "UTC")

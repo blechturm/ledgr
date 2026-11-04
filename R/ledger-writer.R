@@ -48,27 +48,19 @@ ledgr_write_fill_publication_row <- function(con, publication, row, use_transact
   }
 
   do_write <- function() {
+    columns <- ledgr_accounting_event_columns()
+    values <- lapply(columns, function(name) publication[[name]][[row]])
+    names(values) <- columns
+    values$ts_utc <- as.POSIXct(values$ts_utc, tz = "UTC")
+    values$mark_source_ts_utc <- as.POSIXct(values$mark_source_ts_utc, tz = "UTC")
     DBI::dbExecute(
       con,
-      paste(
-        "INSERT INTO ledger_events (",
-        "event_id, run_id, ts_utc, event_type, instrument_id, side,",
-        "qty, price, fee, meta_json, event_seq",
-        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      sprintf(
+        "INSERT INTO ledger_events (%s) VALUES (%s)",
+        paste(columns, collapse = ", "),
+        paste(rep("?", length(columns)), collapse = ", ")
       ),
-      params = list(
-        publication$event_id[[row]],
-        run_id,
-        .POSIXct(publication$ts_utc[[row]], tz = "UTC"),
-        publication$event_type[[row]],
-        publication$instrument_id[[row]],
-        publication$side[[row]],
-        publication$qty[[row]],
-        publication$price[[row]],
-        publication$fee[[row]],
-        publication$meta_json[[row]],
-        publication$event_seq[[row]]
-      )
+      params = unname(values)
     )
     structure(
       list(
@@ -152,9 +144,15 @@ ledgr_write_fill_events <- function(con, run_id, fill, i, instrument_id, event_s
     fill = fill,
     i = i,
     instrument_id = instrument_id,
-    event_seq = as.integer(event_seq_start),
-    serialize_meta_json = TRUE
+    event_seq = as.integer(event_seq_start)
   )
+  rows <- as.data.frame(
+    publication[ledgr_accounting_event_columns()],
+    stringsAsFactors = FALSE
+  )
+  rows$ts_utc <- as.POSIXct(rows$ts_utc, tz = "UTC")
+  rows$mark_source_ts_utc <- as.POSIXct(rows$mark_source_ts_utc, tz = "UTC")
+  ledgr_validate_accounting_append(rows)
   ledgr_write_fill_publication_row(con, publication, 1L, use_transaction)
 }
 

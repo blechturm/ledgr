@@ -388,24 +388,10 @@ testthat::test_that("[LTB-0553] run readers retain late heterogeneous dispositio
     "UPDATE ledger_events SET event_seq = 102 WHERE run_id = ? AND event_seq = ?",
     params = list(bt$run_id, disposition$event_seq[[1L]])
   )
-  meta_json <- vapply(2:101, function(event_seq) {
-    ledgr:::canonical_json(list(
-      source = "corporate_action_cash",
-      source_fact_id = paste0("late-probe-cash-", event_seq),
-      cash_delta = 0,
-      position_delta = 0,
-      entitled_quantity = 0,
-      gross_cash_per_parent_unit = 1,
-      amount_policy_id = "amount-policy",
-      posting_policy_id = "posting-policy",
-      late_arrival = FALSE,
-      affected_marked_exposure = 0
-    ))
-  }, character(1))
   DBI::dbAppendTable(
     opened$con,
     "ledger_events",
-    data.frame(
+    ledgr:::ledgr_accounting_rows(
       event_id = paste0("late-probe-event-", 2:101),
       run_id = bt$run_id,
       ts_utc = as.POSIXct(
@@ -417,10 +403,13 @@ testthat::test_that("[LTB-0553] run readers retain late heterogeneous dispositio
       side = NA_character_,
       qty = NA_real_,
       price = NA_real_,
-      fee = 0,
-      meta_json = meta_json,
-      event_seq = 2:101,
-      stringsAsFactors = FALSE
+      fee = 0, cash_delta = 0, position_delta = 0,
+      source = "corporate_action_cash",
+      source_fact_id = paste0("late-probe-cash-", 2:101),
+      entitled_quantity = 0, gross_cash_per_parent_unit = 1,
+      amount_policy_id = "amount-policy", posting_policy_id = "posting-policy",
+      late_arrival = FALSE, affected_marked_exposure = 0,
+      event_seq = 2:101
     )
   )
   testthat::expect_no_error(ledgr_run_info(snapshot, bt$run_id))

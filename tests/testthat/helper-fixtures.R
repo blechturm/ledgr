@@ -60,7 +60,7 @@ get_ledger_events <- function(con, run_id) {
   DBI::dbGetQuery(
     con,
     "
-    SELECT event_seq, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json
+    SELECT * EXCLUDE (event_id, run_id)
     FROM ledger_events
     WHERE run_id = ?
     ORDER BY event_seq
@@ -313,10 +313,10 @@ ledgr_test_fetch_ledger_core <- function(con, run_id) {
   df <- DBI::dbGetQuery(
     con,
     "
-    SELECT ts_utc, instrument_id, side, qty, price, fee, meta_json, event_seq
+    SELECT * EXCLUDE (event_id, run_id)
     FROM ledger_events
     WHERE run_id = ?
-    ORDER BY ts_utc, instrument_id, side, qty, price, fee, meta_json, event_seq
+    ORDER BY event_seq
     ",
     params = list(run_id)
   )
@@ -439,10 +439,10 @@ ledgr_test_run <- function(snapshot = NULL,
   ledgr_run(exp, params = strategy_params, run_id = run_id)
 }
 
-# Complete fill metadata for hand-built ledger fixtures. These fixtures test
+# Complete fill effects for hand-built ledger fixtures. These fixtures test
 # readers rather than publication, so they use the literal accounting formula
 # without calling the product helper whose behavior they are meant to expose.
-ledgr_test_fill_meta_json <- function(side, qty, price, fee) {
+ledgr_test_fill_effects <- function(side, qty, price, fee) {
   n <- max(length(side), length(qty), length(price), length(fee))
   side <- rep_len(side, n)
   qty <- rep_len(as.numeric(qty), n)
@@ -453,9 +453,16 @@ ledgr_test_fill_meta_json <- function(side, qty, price, fee) {
   cash_delta[buy] <- -(qty[buy] * price[buy] + fee[buy])
   position_delta <- -qty
   position_delta[buy] <- qty[buy]
-  vapply(seq_len(n), function(i) canonical_json(list(
-    cash_delta = cash_delta[[i]],
-    position_delta = position_delta[[i]],
-    realized_pnl = NULL
-  )), character(1))
+  list(cash_delta = cash_delta, position_delta = position_delta)
+}
+
+ledgr_test_complete_fill_rows <- function(rows) {
+  stopifnot(is.data.frame(rows), all(rows$event_type == "FILL"))
+  effects <- ledgr_test_fill_effects(rows$side, rows$qty, rows$price, rows$fee)
+  rows$cash_delta <- effects$cash_delta
+  rows$position_delta <- effects$position_delta
+  do.call(
+    ledgr:::ledgr_accounting_rows,
+    c(as.list(rows), list(.n = nrow(rows)))
+  )
 }

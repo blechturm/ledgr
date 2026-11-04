@@ -112,7 +112,7 @@ ledgr_extract_fills_impl <- function(bt, con = NULL, recording_pulse = TRUE) {
   ledger_res <- DBI::dbSendQuery(
     con,
     "
-    SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json, event_seq
+    SELECT *
     FROM ledger_events
     WHERE run_id = ?
       AND event_type IN ('CASHFLOW', 'DISPOSITION', 'FILL')

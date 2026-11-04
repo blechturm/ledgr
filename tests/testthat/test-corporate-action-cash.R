@@ -70,18 +70,18 @@ testthat::test_that("[LTB-0035] cash plan fixes entitlement and posts before use
   testthat::expect_identical(result$state$cash, 1002.5)
   testthat::expect_identical(result$next_event_seq, 2L)
   testthat::expect_length(rows, 1L)
-  meta <- ledgr:::ledgr_json_read_nested(rows[[1L]]$meta_json[[1L]])
-  testthat::expect_identical(meta$source_fact_id, "dividend-1")
-  testthat::expect_identical(meta$entitled_quantity, 2)
-  testthat::expect_identical(meta$cash_delta, 2.5)
-  testthat::expect_identical(meta$affected_marked_exposure, 180)
-  testthat::expect_false(meta$late_arrival)
+  event <- rows[[1L]]
+  testthat::expect_identical(event$source_fact_id[[1L]], "dividend-1")
+  testthat::expect_identical(event$entitled_quantity[[1L]], 2)
+  testthat::expect_identical(event$cash_delta[[1L]], 2.5)
+  testthat::expect_identical(event$affected_marked_exposure[[1L]], 180)
+  testthat::expect_false(event$late_arrival[[1L]])
   testthat::expect_identical(
-    meta$amount_policy_id,
+    event$amount_policy_id[[1L]],
     "ledgr.corporate_action.cash_amount.gross.v001"
   )
   testthat::expect_identical(
-    meta$posting_policy_id,
+    event$posting_policy_id[[1L]],
     "ledgr.corporate_action.cash_posting.effective_close.v001"
   )
 
@@ -97,9 +97,8 @@ testthat::test_that("[LTB-0035] cash plan fixes entitlement and posts before use
   no_post <- delayed$plan$post(2L, "late-run", 1L, handler, state)
   testthat::expect_identical(no_post$next_event_seq, 1L)
   late <- delayed$plan$post(3L, "late-run", 1L, handler, state)
-  late_meta <- ledgr:::ledgr_json_read_nested(rows[[2L]]$meta_json[[1L]])
   testthat::expect_identical(late$state$cash, 1002.5)
-  testthat::expect_true(late_meta$late_arrival)
+  testthat::expect_true(rows[[2L]]$late_arrival[[1L]])
 
   next_open <- corporate_action_cash_plan_fixture(posting = "next_open")
   next_open$plan$bind_boundary(2L, c(AAA = 2))
@@ -125,14 +124,9 @@ testthat::test_that("[LTB-0035] cash plan fixes entitlement and posts before use
   testthat::expect_identical(refused$next_event_seq, 1L)
 
   duplicate_row <- rows[[1L]]
-  duplicate_meta <- ledgr:::ledgr_json_read_nested(duplicate_row$meta_json[[1L]])
   duplicate_events <- rbind(duplicate_row, duplicate_row)
   duplicate_events$event_id <- c("duplicate-1", "duplicate-2")
   duplicate_events$event_seq <- 1:2
-  duplicate_events$meta_json <- rep(
-    ledgr:::canonical_json(duplicate_meta),
-    2L
-  )
   testthat::expect_error(
     ledgr:::ledgr_corporate_action_plan(
       rows = corporate_action_cash_plan_fixture()$plan$state$rows,
@@ -150,14 +144,11 @@ testthat::test_that("[LTB-0035] cash plan fixes entitlement and posts before use
     origin = "1970-01-01",
     tz = "UTC"
   )
-  straddling <- data.frame(
+  straddling <- ledgr:::ledgr_accounting_rows(
     event_id = paste0("s", 1:3), run_id = "s", ts_utc = straddling_times,
     event_type = "FILL", instrument_id = "AAA", side = "BUY", qty = c(1, 2, 4),
-    price = 10, fee = 0,
-    meta_json = vapply(c(1, 2, 4), function(qty) canonical_json(list(
-      cash_delta = -(qty * 10), position_delta = qty
-    )), character(1)),
-    event_seq = 1:3, stringsAsFactors = FALSE
+    price = 10, fee = 0, event_seq = 1:3,
+    cash_delta = -(c(1, 2, 4) * 10), position_delta = c(1, 2, 4)
   )
   straddling_replay <- ledgr:::ledgr_replay_accounting_events(
     ledgr:::ledgr_prepare_accounting_events(straddling)
@@ -182,14 +173,12 @@ testthat::test_that("[LTB-0217] a resumed plan binds past entitlements like the 
   open <- day + 14.5 * 3600
   fill <- function(seq, ts, side, qty) {
     sign <- if (identical(side, "BUY")) 1 else -1
-    data.frame(
+    ledgr:::ledgr_accounting_rows(
       event_id = paste0("r_", seq), run_id = "r", ts_utc = ts, event_type = "FILL",
       instrument_id = "AAA", side = side, qty = qty, price = 50, fee = 0,
-      meta_json = canonical_json(list(
-        cash_delta = if (sign > 0) -(qty * 50) else qty * 50,
-        position_delta = sign * qty
-      )),
-      event_seq = seq, stringsAsFactors = FALSE
+      event_seq = seq,
+      cash_delta = if (sign > 0) -(qty * 50) else qty * 50,
+      position_delta = sign * qty
     )
   }
   bound <- function(events, entitlement_pulse) {
@@ -229,31 +218,21 @@ testthat::test_that("[LTB-0217] a resumed plan binds past entitlements like the 
     bound(rbind(fill(1L, open[[3L]], "BUY", 10), fill(2L, open[[2L]], "BUY", 0.1), fill(3L, open[[2L]], "BUY", 0.2)), 3L),
     class = "ledgr_invalid_accounting_event"
   )
-  # A fill whose meta records its position delta, as the fold writes it, and a
+  # A fill whose typed row records its position delta, as the fold writes it, and a
   # disposition that closes the holding before the boundary.
   bought <- fill(1L, open[[2L]], "BUY", 10)
-  bought$meta_json <- '{"position_delta":10,"cash_delta":-500}'
-  disposed <- fill(2L, close[[2L]], "SELL", 10)
-  disposed$event_type <- "DISPOSITION"
-  disposed$side <- NA_character_
-  disposed$meta_json <- canonical_json(list(
-    source = "corporate_action_disposition",
+  disposed <- ledgr:::ledgr_accounting_rows(
+    event_id = "r_2", run_id = "r", ts_utc = close[[2L]],
+    event_type = "DISPOSITION", instrument_id = "AAA", qty = 10,
+    price = 50, fee = 0, event_seq = 2L, cash_delta = 500,
+    position_delta = -10, source = "corporate_action_disposition",
     source_fact_id = "entitlement-disposition",
     disposition_policy_id = "entitlement-policy",
-    disposition_choice = "last_mark",
-    disposition_basis = "evidence",
-    mark_source = "current_close",
-    mark_source_ts_utc = format(close[[2L]], "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC"),
-    mark_age = 0L,
-    quantity = 10,
-    mark = 50,
-    position_before = 10,
-    position_after = 0,
-    position_delta = -10,
-    cash_delta = 500,
-    realized_model_pnl = 0,
+    disposition_choice = "last_mark", disposition_basis = "evidence",
+    mark_source = "current_close", mark_source_ts_utc = close[[2L]],
+    mark_age = 0L, position_before = 10, realized_model_pnl = 0,
     affected_marked_exposure = 500
-  ))
+  )
   testthat::expect_identical(bound(bought, 3L), 10)
   testthat::expect_identical(bound(rbind(bought, disposed), 3L), 0)
   # The entitlement recount agrees with canonical replay for interleaved
@@ -316,12 +295,7 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     ),
     params = list(run$run_id)
   )
-  event_meta <- lapply(cash_events$meta_json, ledgr:::ledgr_json_read_nested)
-  corporate <- which(vapply(
-    event_meta,
-    function(value) identical(value$source, "corporate_action_cash"),
-    logical(1)
-  ))
+  corporate <- which(cash_events$source == "corporate_action_cash")
   testthat::expect_length(corporate, 1L)
   state_rows <- DBI::dbGetQuery(
     opened$con,
@@ -436,7 +410,7 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     paste(
       "SELECT COUNT(*) AS n FROM ledger_events",
       "WHERE run_id = ? AND event_type = 'CASHFLOW'",
-      "AND meta_json LIKE '%corporate_action_cash%'"
+      "AND source = 'corporate_action_cash'"
     ),
     params = list(reopened$run_id)
   )$n[[1L]]

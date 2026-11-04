@@ -125,7 +125,17 @@ ledgr_terminal_mark_meta <- function(resolved, valuation, ts) {
 # append leaves the caller's state untouched.
 ledgr_disposition_post <- function(ids,
                                    price,
-                                   meta,
+                                   source,
+                                   source_fact_id,
+                                   disposition_policy_id,
+                                   disposition_choice,
+                                   disposition_basis,
+                                   mark_source,
+                                   mark_source_ts_utc,
+                                   mark_age,
+                                   terminal_event = rep(NA_character_, length(ids)),
+                                   matched_label = rep(NA_character_, length(ids)),
+                                   haircut_fraction = rep(NA_real_, length(ids)),
                                    ts,
                                    run_id,
                                    event_seq,
@@ -173,32 +183,33 @@ ledgr_disposition_post <- function(ids,
   if (length(cash_after) > 0L) candidate$cash <- cash_after[[length(cash_after)]]
 
   exposure <- abs(before * ifelse(is.finite(exposure_mark), exposure_mark, price))
-  meta_json <- vapply(seq_along(ids), function(k) {
-    canonical_json(c(meta[[k]], list(
-      quantity = abs(before[[k]]),
-      mark = price[[k]],
-      position_before = before[[k]],
-      position_after = 0,
-      position_delta = -before[[k]],
-      cash_delta = cash_delta[[k]],
-      realized_model_pnl = realized[[k]],
-      affected_marked_exposure = exposure[[k]]
-    )))
-  }, character(1))
   seq_value <- as.integer(event_seq) + seq_along(ids) - 1L
-  event_rows <- data.frame(
+  event_rows <- ledgr_accounting_rows(
     event_id = paste0(run_id, "_", sprintf("%08d", seq_value)),
     run_id = rep(run_id, length(ids)),
     ts_utc = rep(ts, length(ids)),
     event_type = rep("DISPOSITION", length(ids)),
     instrument_id = ids,
-    side = rep(NA_character_, length(ids)),
     qty = abs(before),
     price = price,
     fee = rep(0, length(ids)),
-    meta_json = meta_json,
     event_seq = seq_value,
-    stringsAsFactors = FALSE
+    cash_delta = cash_delta,
+    position_delta = -before,
+    source = as.character(source),
+    source_fact_id = as.character(source_fact_id),
+    affected_marked_exposure = exposure,
+    terminal_event = as.character(terminal_event),
+    matched_label = as.character(matched_label),
+    disposition_policy_id = as.character(disposition_policy_id),
+    disposition_choice = as.character(disposition_choice),
+    disposition_basis = as.character(disposition_basis),
+    mark_source = as.character(mark_source),
+    mark_source_ts_utc = as.POSIXct(mark_source_ts_utc, tz = "UTC"),
+    mark_age = as.integer(mark_age),
+    haircut_fraction = as.numeric(haircut_fraction),
+    position_before = before,
+    realized_model_pnl = realized
   )
   output_handler$append_event_rows(event_rows)
   list(

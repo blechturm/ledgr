@@ -117,15 +117,15 @@ terminal_outcome_dispositions <- function(tables) {
   events <- tables$events[tables$events$event_type == "DISPOSITION", , drop = FALSE]
   if (nrow(events) == 0L) return(list())
   lapply(seq_len(nrow(events)), function(i) {
-    c(
-      list(
-        ts_utc = as.POSIXct(events$ts_utc[[i]], tz = "UTC"),
-        instrument_id = events$instrument_id[[i]],
-        price = events$price[[i]],
-        qty = events$qty[[i]]
-      ),
-      ledgr:::ledgr_json_read_nested(events$meta_json[[i]])
-    )
+    row <- as.list(events[i, , drop = FALSE])
+    row$ts_utc <- as.POSIXct(row$ts_utc, tz = "UTC")
+    absent <- vapply(row, function(value) {
+      length(value) == 1L && is.atomic(value) && is.na(value)
+    }, logical(1))
+    row <- row[!absent]
+    row$quantity <- row$qty
+    row$mark <- row$price
+    row
   })
 }
 

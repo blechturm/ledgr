@@ -369,7 +369,7 @@ ledgr_compare_runs_fill_stats <- function(con, run_ids) {
     con,
     sprintf(
       "
-      SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json, event_seq
+      SELECT *
       FROM ledger_events
       WHERE run_id IN (%s) AND event_type IN ('CASHFLOW', 'DISPOSITION', 'FILL')
       ORDER BY run_id, event_seq

@@ -164,8 +164,7 @@ ledgr_run_terminal_recovery_equity <- function(con,
   events <- DBI::dbGetQuery(
     con,
     paste(
-      "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,",
-      "qty, price, fee, meta_json, event_seq FROM ledger_events",
+      "SELECT * FROM ledger_events",
       "WHERE run_id = ? ORDER BY event_seq"
     ),
     params = list(run_id)

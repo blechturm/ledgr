@@ -9,8 +9,7 @@ scale_test_reference_positions_asof <- function(con,
   events <- DBI::dbGetQuery(
     con,
     paste(
-      "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,",
-      "qty, price, fee, meta_json, event_seq FROM ledger_events",
+      "SELECT * FROM ledger_events",
       "WHERE run_id = ? AND ts_utc <= ? ORDER BY event_seq"
     ),
     params = list(run_id, as.POSIXct(time, tz = "UTC"))
@@ -63,9 +62,11 @@ testthat::test_that("[LTB-0209] the positions timeline equals replaying the ledg
   synthetic$qty <- c(rep(0.1, 10L), 1)
   synthetic$price <- 10
   synthetic$fee <- 0
-  synthetic$meta_json <- ledgr_test_fill_meta_json(
+  effects <- ledgr_test_fill_effects(
     synthetic$side, synthetic$qty, synthetic$price, synthetic$fee
   )
+  synthetic$cash_delta <- effects$cash_delta
+  synthetic$position_delta <- effects$position_delta
   DBI::dbAppendTable(con, "ledger_events", synthetic)
   at <- as.POSIXct("2021-02-01 21:00", tz = "UTC") + 86400 * c(-1, 0:9)
   fractional <- ledgr:::ledgr_availability_positions_timeline(con, "synthetic", at)

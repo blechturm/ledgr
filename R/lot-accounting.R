@@ -834,7 +834,7 @@ ledgr_lot_book_asof <- function(con, run_id, instrument_ids, ts_utc) {
   rows <- DBI::dbGetQuery(
     con,
     "
-    SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json, event_seq
+    SELECT *
     FROM ledger_events
     WHERE run_id = ? AND ts_utc <= ?
       AND event_type IN ('CASHFLOW', 'DISPOSITION', 'FILL')
@@ -843,13 +843,4 @@ ledgr_lot_book_asof <- function(con, run_id, instrument_ids, ts_utc) {
     params = list(run_id, ts_utc)
   )
   ledgr_lot_book_from_events(rows, instrument_ids = instrument_ids)
-}
-
-ledgr_lot_parse_meta <- function(meta_json) {
-  if (is.null(meta_json) ||
-    (is.atomic(meta_json) && length(meta_json) == 1L && is.na(meta_json)) ||
-    (is.character(meta_json) && length(meta_json) == 1L && !nzchar(meta_json))) {
-    return(NULL)
-  }
-  tryCatch(ledgr_json_read_nested(meta_json), error = function(e) NULL)
 }

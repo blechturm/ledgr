@@ -1932,36 +1932,13 @@ ledgr_sweep_run_candidate <- function(exp,
 }
 
 ledgr_event_row_df <- function(row) {
-  data.frame(
-    event_id = row$event_id,
-    run_id = row$run_id,
-    ts_utc = row$ts_utc,
-    event_type = row$event_type,
-    instrument_id = row$instrument_id,
-    side = row$side,
-    qty = row$qty,
-    price = row$price,
-    fee = row$fee,
-    meta_json = row$meta_json,
-    event_seq = row$event_seq,
-    stringsAsFactors = FALSE
-  )
+  as.data.frame(row[ledgr_accounting_event_columns()], stringsAsFactors = FALSE)
 }
 
 ledgr_empty_event_table <- function() {
-  tibble::tibble(
-    event_id = character(),
-    run_id = character(),
-    ts_utc = as.POSIXct(character(), tz = "UTC"),
-    event_type = character(),
-    instrument_id = character(),
-    side = character(),
-    qty = numeric(),
-    price = numeric(),
-    fee = numeric(),
-    meta_json = character(),
-    event_seq = integer()
-  )
+  tibble::as_tibble(as.data.frame(
+    ledgr_accounting_empty_columns(), stringsAsFactors = FALSE
+  ))
 }
 
 ledgr_sweep_success_row <- function(candidate_id,

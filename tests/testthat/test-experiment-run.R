@@ -353,8 +353,7 @@ testthat::test_that("ledgr_run records opening positions as ledger events", {
   testthat::expect_equal(nrow(opening), 1L)
   testthat::expect_identical(as.character(opening$instrument_id[[1]]), "AAA")
   testthat::expect_equal(as.numeric(opening$qty[[1]]), 1)
-  meta <- ledgr:::ledgr_json_read_nested(opening$meta_json[[1]])
-  testthat::expect_identical(meta$source, "opening_position")
+  testthat::expect_identical(opening$source[[1]], "opening_position")
 
   opened <- ledgr_test_open_duckdb(db_path)
   on.exit(ledgr_test_close_duckdb(opened$con, opened$drv), add = TRUE)

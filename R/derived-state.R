@@ -65,18 +65,7 @@ ledgr_rebuild_derived_state <- function(con, run_id, initial_cash, use_transacti
   events <- DBI::dbGetQuery(
     con,
     "
-    SELECT
-      event_id,
-      run_id,
-      event_seq,
-      ts_utc,
-      event_type,
-      instrument_id,
-      side,
-      qty,
-      price,
-      fee,
-      meta_json
+    SELECT *
     FROM ledger_events
     WHERE run_id = ?
     ORDER BY event_seq

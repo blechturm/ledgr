@@ -469,14 +469,14 @@ testthat::test_that("[LTB-0356] one known-when-effective rule follows decisions 
   )
   on.exit(close(run), add = TRUE)
   ledger <- as.data.frame(ledgr_results(run, "ledger"))
-  cash <- ledger[grepl("corporate_action_cash", ledger$meta_json, fixed = TRUE), , drop = FALSE]
+  cash <- ledger[ledger$source == "corporate_action_cash", , drop = FALSE]
   testthat::expect_identical(nrow(cash), 1L)
   testthat::expect_identical(
     as.numeric(cash$ts_utc),
     as.numeric(ws45_utc("2021-01-06 21:00:00"))
   )
-  testthat::expect_true(grepl('"late_arrival":false', cash$meta_json, fixed = TRUE))
-  testthat::expect_true(grepl('"cash_delta":2', cash$meta_json, fixed = TRUE))
+  testthat::expect_identical(cash$late_arrival, FALSE)
+  testthat::expect_identical(cash$cash_delta, 2)
 })
 
 # Two instruments over eight sessions (2021-01-04..08, 11..13; close 21:00

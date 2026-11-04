@@ -125,8 +125,7 @@ ledgr_corporate_action_result_events <- function(con,
   DBI::dbGetQuery(
     con,
     paste0(
-      "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side, qty, ",
-      "price, fee, meta_json, event_seq FROM ledger_events WHERE run_id = ? ",
+      "SELECT * FROM ledger_events WHERE run_id = ? ",
       "AND event_type IN ('FILL','CASHFLOW','DISPOSITION') ",
       "AND instrument_id IN (", placeholders, ") ORDER BY event_seq"
     ),

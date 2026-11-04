@@ -194,17 +194,17 @@ testthat::test_that("rebuild failure does not delete existing equity_curve rows"
   insert_bars_for_ts(con, "AAA", "2020-01-02 00:00:00", close = 10)
   insert_bars_for_ts(con, "AAA", "2020-01-03 00:00:00", close = 10)
 
-  # Insert an otherwise complete fill whose effect metadata is absent, so the
-  # typed accounting boundary fails before replacing existing derived rows.
+  # Insert a structurally complete fill whose typed effects are wrong, so the
+  # accounting boundary fails before replacing existing derived rows.
   DBI::dbExecute(
     con,
     "
     INSERT INTO ledger_events (
       event_id, run_id, ts_utc, event_type, instrument_id,
-      side, qty, price, fee, meta_json, event_seq
+      side, qty, price, fee, event_seq, cash_delta, position_delta
     ) VALUES (
       'bad_00000001', ?, TIMESTAMP '2020-01-02 00:00:00', 'FILL', 'AAA',
-      'BUY', 1, 10, 0, '{}', 1
+      'BUY', 1, 10, 0, 1, 0, 0
     )
     ",
     params = list(run_id)

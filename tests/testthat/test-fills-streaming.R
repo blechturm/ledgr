@@ -4,7 +4,7 @@ testthat::test_that("ledgr_run_fills is an eager one-argument reader", {
 
   run_id <- "run_eager_fills"
   n <- 6L
-  rows <- data.frame(
+  rows <- ledgr_test_complete_fill_rows(data.frame(
     event_id = sprintf("ev_eager_%02d", seq_len(n)),
     run_id = run_id,
     ts_utc = as.POSIXct("2020-01-01T00:00:00Z", tz = "UTC") + seq_len(n),
@@ -14,10 +14,9 @@ testthat::test_that("ledgr_run_fills is an eager one-argument reader", {
     qty = rep(1, n),
     price = rep(100, n),
     fee = rep(0, n),
-    meta_json = ledgr_test_fill_meta_json("BUY", 1, 100, 0),
     event_seq = seq_len(n),
     stringsAsFactors = FALSE
-  )
+  ))
   DBI::dbAppendTable(test_con$con, "ledger_events", rows)
 
   bt <- ledgr:::new_ledgr_backtest(
@@ -59,7 +58,7 @@ testthat::test_that("fill extraction is eager for empty and borrowed reads", {
 
   run_id <- "run_eager_borrowed"
   n <- 6L
-  rows <- data.frame(
+  rows <- ledgr_test_complete_fill_rows(data.frame(
     event_id = sprintf("ev_borrowed_%02d", seq_len(n)),
     run_id = run_id,
     ts_utc = as.POSIXct("2020-01-01T00:00:00Z", tz = "UTC") + seq_len(n),
@@ -69,10 +68,9 @@ testthat::test_that("fill extraction is eager for empty and borrowed reads", {
     qty = rep(1, n),
     price = rep(100, n),
     fee = rep(0, n),
-    meta_json = ledgr_test_fill_meta_json("BUY", 1, 100, 0),
     event_seq = seq_len(n),
     stringsAsFactors = FALSE
-  )
+  ))
   DBI::dbAppendTable(test_con$con, "ledger_events", rows)
 
   bt <- ledgr:::new_ledgr_backtest(
@@ -135,7 +133,7 @@ testthat::test_that("large fill extraction remains eager and ordered", {
   run_id <- "run_streaming_threshold_parity"
   n <- 220L
   base_ts <- as.POSIXct("2020-01-01T00:00:00Z", tz = "UTC")
-  rows <- data.frame(
+  rows <- ledgr_test_complete_fill_rows(data.frame(
     event_id = sprintf("ev_threshold_%03d", seq_len(n)),
     run_id = run_id,
     ts_utc = base_ts + seq_len(n),
@@ -145,13 +143,9 @@ testthat::test_that("large fill extraction remains eager and ordered", {
     qty = rep(1, n),
     price = 100 + seq_len(n) * 0.01,
     fee = rep(0, n),
-    meta_json = ledgr_test_fill_meta_json(
-      rep(c("BUY", "SELL"), length.out = n), 1,
-      100 + seq_len(n) * 0.01, 0
-    ),
     event_seq = seq_len(n),
     stringsAsFactors = FALSE
-  )
+  ))
   DBI::dbAppendTable(test_con$con, "ledger_events", rows)
 
   bt <- ledgr:::new_ledgr_backtest(

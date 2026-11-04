@@ -246,21 +246,23 @@ testthat::test_that("AT5/AT6/AT7: ledger-derived state satisfies accounting iden
 
   testthat::expect_true(all.equal(eq$equity, eq$cash + eq$positions_value, tolerance = 1e-10))
 
-  meta <- DBI::dbGetQuery(
+  events <- DBI::dbGetQuery(
     h$con,
-    "SELECT meta_json, instrument_id FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
+    paste(
+      "SELECT cash_delta, position_delta, instrument_id FROM ledger_events",
+      "WHERE run_id = ? ORDER BY event_seq"
+    ),
     params = list(run_id)
   )
-  if (nrow(meta) > 0) {
+  if (nrow(events) > 0) {
     pos_by_id <- numeric(0)
     cash_delta_sum <- 0
-    for (i in seq_len(nrow(meta))) {
-      m <- ledgr:::ledgr_json_read_nested(meta$meta_json[[i]])
-      cash_delta_sum <- cash_delta_sum + as.numeric(m$cash_delta)
-      id <- meta$instrument_id[[i]]
+    for (i in seq_len(nrow(events))) {
+      cash_delta_sum <- cash_delta_sum + as.numeric(events$cash_delta[[i]])
+      id <- events$instrument_id[[i]]
       if (!is.na(id) && nzchar(id)) {
         if (is.null(names(pos_by_id)) || !(id %in% names(pos_by_id))) pos_by_id[id] <- 0
-        pos_by_id[id] <- pos_by_id[id] + as.numeric(m$position_delta)
+        pos_by_id[id] <- pos_by_id[id] + as.numeric(events$position_delta[[i]])
       }
     }
     testthat::expect_equal(eq$cash[[nrow(eq)]], 1000 + cash_delta_sum)

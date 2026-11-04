@@ -21,7 +21,7 @@ pit_consistency_stored <- function(con, run_id) {
     ledger = DBI::dbGetQuery(
       con,
       paste(
-        "SELECT event_seq, ts_utc, event_type, instrument_id, side, qty, price, fee, meta_json",
+        "SELECT * EXCLUDE (event_id, run_id)",
         "FROM ledger_events WHERE run_id = ? ORDER BY event_seq"
       ),
       params = list(run_id)

@@ -553,8 +553,7 @@ ledgr_backtest_headline_metrics <- function(con, run_id) {
   events <- DBI::dbGetQuery(
     con,
     "
-    SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,
-           qty, price, fee, meta_json, event_seq
+    SELECT *
     FROM ledger_events
     WHERE run_id = ?
       AND event_type IN ('CASHFLOW', 'DISPOSITION', 'FILL')
@@ -1162,6 +1161,14 @@ ledgr_print_warmup_diagnostics <- function(diagnostics, max_rows = 5L) {
 #' `NA_real_`; later rows use the same adjacent-equity return formula as
 #' ledgr-owned metrics and retained sweep returns.
 #'
+#' `what = "ledger"` returns the complete ordered typed accounting table. Its
+#' common columns identify the event and execution terms; `cash_delta` and
+#' `position_delta` are the published effects; `source` and `source_fact_id`
+#' identify non-fill postings; and the remaining columns hold typed
+#' corporate-action and disposition evidence. Fields that do not apply to an
+#' event kind are typed missing values. The table is the direct `SELECT *`
+#' ledger surface and contains no JSON accounting envelope.
+#'
 #' `ledgr_results()` does not support `what = "metrics"`. Metrics are derived
 #' from the public result tables; use `summary(bt)` for printed interpretation
 #' or `ledgr_compute_metrics(bt)` for a named list.
@@ -1268,6 +1275,14 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ...) {
 #' columns `ts_utc`, `equity`, and `period_return`. The first period return is
 #' `NA_real_`; later rows use the same adjacent-equity return formula as
 #' ledgr-owned metrics and retained sweep returns.
+#'
+#' `what = "ledger"` returns the complete ordered typed accounting table. Its
+#' common columns identify the event and execution terms; `cash_delta` and
+#' `position_delta` are the published effects; `source` and `source_fact_id`
+#' identify non-fill postings; and the remaining columns hold typed
+#' corporate-action and disposition evidence. Fields that do not apply to an
+#' event kind are typed missing values. The table is the direct `SELECT *`
+#' ledger surface and contains no JSON accounting envelope.
 #'
 #' `what = "diagnostics"` returns ordered durable decision, risk, execution,
 #' reconciliation, and stop evidence. A structured strategy result may add

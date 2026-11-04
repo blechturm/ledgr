@@ -1,9 +1,5 @@
-ledgr_accounting_test_meta <- function(...) {
-  as.character(canonical_json(list(...)))
-}
-
 ledgr_accounting_test_events <- function() {
-  data.frame(
+  ledgr:::ledgr_accounting_rows(
     event_id = paste0("accounting-", 1:4),
     run_id = rep("accounting-core", 4),
     ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 0:3,
@@ -13,23 +9,17 @@ ledgr_accounting_test_events <- function() {
     qty = c(10, 15, 5, NA_real_),
     price = c(100, 120, 110, NA_real_),
     fee = c(0, 5, 1, 0),
-    meta_json = c(
-      ledgr_accounting_test_meta(
-        source = "opening_position", cash_delta = 0,
-        position_delta = 10, cost_basis = 100
-      ),
-      ledgr_accounting_test_meta(cash_delta = 1795, position_delta = -15),
-      ledgr_accounting_test_meta(cash_delta = -551, position_delta = 5),
-      ledgr_accounting_test_meta(
-        source = "corporate_action_cash", source_fact_id = "fact-cash-1",
-        cash_delta = 500, position_delta = 0, entitled_quantity = 10,
-        gross_cash_per_parent_unit = 50, amount_policy_id = "cash_amount.v002",
-        posting_policy_id = "cash_posting.v002", late_arrival = FALSE,
-        affected_marked_exposure = 0
-      )
-    ),
     event_seq = 1:4,
-    stringsAsFactors = FALSE
+    cash_delta = c(0, 1795, -551, 500),
+    position_delta = c(10, -15, 5, 0),
+    source = c("opening_position", NA_character_, NA_character_, "corporate_action_cash"),
+    source_fact_id = c(NA_character_, NA_character_, NA_character_, "fact-cash-1"),
+    entitled_quantity = c(NA_real_, NA_real_, NA_real_, 10),
+    gross_cash_per_parent_unit = c(NA_real_, NA_real_, NA_real_, 50),
+    amount_policy_id = c(NA_character_, NA_character_, NA_character_, "cash_amount.v002"),
+    posting_policy_id = c(NA_character_, NA_character_, NA_character_, "cash_posting.v002"),
+    late_arrival = c(NA, NA, NA, FALSE),
+    affected_marked_exposure = c(NA_real_, NA_real_, NA_real_, 0)
   )
 }
 
@@ -118,13 +108,7 @@ testthat::test_that("[LTB-0019] flat lot carrier preserves independent FIFO arit
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0020] one preparer gives memory and table sources one block", {
   table_rows <- ledgr_accounting_test_events()
-  memory_rows <- table_rows
-  meta <- lapply(table_rows$meta_json, ledgr:::ledgr_json_read_nested)
-  attr(memory_rows, "ledgr_event_cash_delta") <- vapply(meta, `[[`, numeric(1), "cash_delta")
-  attr(memory_rows, "ledgr_event_position_delta") <- vapply(meta, `[[`, numeric(1), "position_delta")
-  attr(memory_rows, "ledgr_event_meta") <- rep(list(list(wrong = TRUE)), nrow(memory_rows))
-  attr(memory_rows, "ledgr_event_realized") <- rep(999, nrow(memory_rows))
-  attr(memory_rows, "ledgr_event_cost_basis") <- rep(999, nrow(memory_rows))
+  memory_rows <- tibble::as_tibble(table_rows)
 
   testthat::expect_identical(
     ledgr:::ledgr_prepare_accounting_events(memory_rows, "AAA"),
@@ -152,9 +136,7 @@ testthat::test_that("[LTB-0020] one preparer gives memory and table sources one 
     )
   }
   bad <- table_rows[1, , drop = FALSE]
-  bad$meta_json <- ledgr_accounting_test_meta(
-    source = "opening_position", cash_delta = 0, position_delta = 1
-  )
+  bad$position_delta <- 1
   testthat::expect_error(
     ledgr:::ledgr_prepare_accounting_events(bad),
     class = "ledgr_invalid_ledger_meta"
@@ -163,10 +145,7 @@ testthat::test_that("[LTB-0020] one preparer gives memory and table sources one 
     valid <- table_rows[1, , drop = FALSE]
     valid$qty <- 1
     valid$price <- opening_basis
-    valid$meta_json <- ledgr_accounting_test_meta(
-      source = "opening_position", cash_delta = 0,
-      position_delta = 1, cost_basis = opening_basis
-    )
+    valid$position_delta <- 1
     testthat::expect_identical(
       ledgr:::ledgr_prepare_accounting_events(valid)$operation,
       3L
@@ -185,7 +164,7 @@ testthat::test_that("[LTB-0021] chunked reader is identical across its fetch bou
   prices <- 100 + event_seq * 1e-6
   cash_delta <- ifelse(sides == "BUY", -prices, prices)
   position_delta <- ifelse(sides == "BUY", 1L, -1L)
-  rows <- data.frame(
+  rows <- ledgr:::ledgr_accounting_rows(
     event_id = sprintf("ev_chunk_%05d", event_seq),
     run_id = "run_accounting_chunk_boundary",
     ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + event_seq,
@@ -195,13 +174,9 @@ testthat::test_that("[LTB-0021] chunked reader is identical across its fetch bou
     qty = 1,
     price = prices,
     fee = 0,
-    meta_json = paste0(
-      '{"cash_delta":',
-      format(cash_delta, scientific = FALSE, trim = TRUE, digits = 17L),
-      ',"position_delta":', position_delta, "}"
-    ),
     event_seq = event_seq,
-    stringsAsFactors = FALSE
+    cash_delta = cash_delta,
+    position_delta = position_delta
   )
   DBI::dbAppendTable(test_con$con, "ledger_events", rows)
   bt <- ledgr:::new_ledgr_backtest(

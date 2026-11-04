@@ -13,9 +13,22 @@ ledgr_corporate_action_existing_events <- function(con, run_id) {
   DBI::dbGetQuery(
     con,
     paste(
-      "SELECT event_id, run_id, ts_utc, event_type, instrument_id, side,",
-      "qty, price, fee, meta_json, event_seq FROM ledger_events",
+      "SELECT * FROM ledger_events",
       "WHERE run_id = ? ORDER BY event_seq"
+    ),
+    params = list(run_id)
+  )
+}
+
+# Resume dedupe reads only typed posting identity. It deliberately excludes
+# fills and derives no cash, position or lot state.
+ledgr_corporate_action_existing_postings <- function(con, run_id) {
+  DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT source, source_fact_id FROM ledger_events",
+      "WHERE run_id = ? AND source_fact_id IS NOT NULL",
+      "ORDER BY event_seq"
     ),
     params = list(run_id)
   )
@@ -133,6 +146,7 @@ ledgr_corporate_action_plan <- function(rows,
                                         pulses_posix,
                                         instrument_ids,
                                         existing_events = data.frame(),
+                                        existing_postings = NULL,
                                         start_idx = 1L,
                                         dispositions_active = TRUE,
                                         carried = NULL) {
@@ -291,16 +305,23 @@ ledgr_corporate_action_plan <- function(rows,
   )
   state$quantity_due_by_pulse <- split(seq_len(nrow(rows)), quantity_due_idx)
 
-  prepared_existing <- ledgr_prepare_accounting_events(existing_events, instrument_ids)
+  if (is.null(existing_postings)) {
+    existing_postings <- if (all(c("source", "source_fact_id") %in% names(existing_events))) {
+      keep <- !is.na(existing_events$source_fact_id)
+      existing_events[keep, c("source", "source_fact_id"), drop = FALSE]
+    } else {
+      data.frame(source = character(), source_fact_id = character())
+    }
+  }
   cash_fact_ids <- ifelse(
-    prepared_existing$source == "corporate_action_cash",
-    prepared_existing$source_fact_id,
+    existing_postings$source == "corporate_action_cash",
+    existing_postings$source_fact_id,
     ""
   )
   cash_fact_ids <- cash_fact_ids[!is.na(cash_fact_ids) & nzchar(cash_fact_ids)]
   disposition_fact_ids <- ifelse(
-    prepared_existing$source == "corporate_action_disposition",
-    prepared_existing$source_fact_id,
+    existing_postings$source == "corporate_action_disposition",
+    existing_postings$source_fact_id,
     ""
   )
   disposition_fact_ids <- disposition_fact_ids[
@@ -326,6 +347,7 @@ ledgr_corporate_action_plan <- function(rows,
       class = c("ledgr_duplicate_corporate_action_event", "ledgr_invalid_state")
     )
   }
+  prepared_existing <- ledgr_prepare_accounting_events(existing_events, instrument_ids)
   replay_existing <- ledgr_replay_accounting_events(prepared_existing)
   state$cash_posted <- rows$fact_id %in% cash_fact_ids
   state$disposition_posted <- rows$fact_id %in% disposition_fact_ids
@@ -469,34 +491,25 @@ ledgr_corporate_action_plan <- function(rows,
     mark <- rep(NA_real_, length(held))
     if (!is.null(marks)) mark <- as.numeric(marks[match(ids, names(marks))])
     affected_exposure <- ifelse(is.finite(mark), abs(quantity * mark), 0)
-    meta_json <- vapply(seq_along(held), function(k) {
-      canonical_json(list(
-        source = "corporate_action_cash",
-        source_fact_id = as.character(source_rows$fact_id[[k]]),
-        cash_delta = cash_delta[[k]],
-        position_delta = 0,
-        entitled_quantity = quantity[[k]],
-        gross_cash_per_parent_unit = as.numeric(source_rows$gross_cash_per_parent_unit[[k]]),
-        amount_policy_id = state$identity$cash_amount,
-        posting_policy_id = state$identity$cash_posting,
-        late_arrival = isTRUE(state$late[[held[[k]]]]),
-        affected_marked_exposure = affected_exposure[[k]]
-      ))
-    }, character(1))
     seq_value <- as.integer(event_seq) + seq_along(held) - 1L
-    event_rows <- data.frame(
+    event_rows <- ledgr_accounting_rows(
       event_id = paste0(run_id, "_", sprintf("%08d", seq_value)),
       run_id = rep(run_id, length(held)),
       ts_utc = rep(pulses_posix[[index]], length(held)),
       event_type = rep("CASHFLOW", length(held)),
       instrument_id = ids,
-      side = rep(NA_character_, length(held)),
-      qty = rep(NA_real_, length(held)),
-      price = rep(NA_real_, length(held)),
       fee = rep(0, length(held)),
-      meta_json = meta_json,
       event_seq = seq_value,
-      stringsAsFactors = FALSE
+      cash_delta = cash_delta,
+      position_delta = rep(0, length(held)),
+      source = rep("corporate_action_cash", length(held)),
+      source_fact_id = as.character(source_rows$fact_id),
+      entitled_quantity = quantity,
+      gross_cash_per_parent_unit = as.numeric(source_rows$gross_cash_per_parent_unit),
+      amount_policy_id = rep(state$identity$cash_amount, length(held)),
+      posting_policy_id = rep(state$identity$cash_posting, length(held)),
+      late_arrival = as.logical(state$late[held]),
+      affected_marked_exposure = affected_exposure
     )
     output_handler$append_event_rows(event_rows)
     state_value$cash <- as.numeric(state_value$cash) + sum(cash_delta)
@@ -578,26 +591,17 @@ ledgr_corporate_action_plan <- function(rows,
       pulses_posix[[index]]
     )
     source_rows <- state$rows[selected, , drop = FALSE]
-    meta <- lapply(seq_along(ids), function(k) {
-      out <- list(
-        source = "corporate_action_disposition",
-        source_fact_id = as.character(source_rows$fact_id[[k]]),
-        disposition_policy_id = resolved$policy_id[[k]],
-        disposition_choice = resolved$choice[[k]],
-        disposition_basis = resolved$basis[[k]],
-        mark_source = mark_meta$source[[k]],
-        mark_source_ts_utc = mark_meta$source_ts[[k]],
-        mark_age = mark_meta$age[[k]]
-      )
-      if (identical(resolved$choice[[k]], "haircut")) {
-        out$haircut_fraction <- resolved$haircut
-      }
-      out
-    })
     posted <- ledgr_disposition_post(
       ids = ids,
       price = resolved$price,
-      meta = meta,
+      source = rep("corporate_action_disposition", length(ids)),
+      source_fact_id = as.character(source_rows$fact_id),
+      disposition_policy_id = resolved$policy_id,
+      disposition_choice = resolved$choice,
+      disposition_basis = resolved$basis,
+      mark_source = mark_meta$source,
+      mark_source_ts_utc = mark_meta$source_ts,
+      mark_age = mark_meta$age,
       ts = pulses_posix[[index]],
       run_id = run_id,
       event_seq = event_seq,

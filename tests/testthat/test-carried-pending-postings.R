@@ -105,11 +105,11 @@ testthat::test_that("[LTB-0471] a walk-forward carries two pending dividend post
   dividends <- function(bt) {
     ledger <- as.data.frame(ledgr_results(bt, "ledger"))
     ledger <- ledger[ledger$event_type == "CASHFLOW" &
-      grepl("corporate_action_cash", ledger$meta_json, fixed = TRUE), ]
+      ledger$source == "corporate_action_cash", ]
     ledger <- ledger[order(ledger$instrument_id), ]
     data.frame(
       instrument_id = ledger$instrument_id, ts_utc = as.numeric(ledger$ts_utc),
-      meta = ledger$meta_json, stringsAsFactors = FALSE
+      entitled_quantity = ledger$entitled_quantity, stringsAsFactors = FALSE
     )
   }
   cash <- dividends(chain$test_runs[[2L]])
@@ -119,8 +119,7 @@ testthat::test_that("[LTB-0471] a walk-forward carries two pending dividend post
     cash$ts_utc,
     rep(as.numeric(as.POSIXct("2021-01-12 21:00:00", tz = "UTC")), 2L)
   )
-  testthat::expect_true(grepl('"entitled_quantity":2', cash$meta[[1L]], fixed = TRUE))
-  testthat::expect_true(grepl('"entitled_quantity":1', cash$meta[[2L]], fixed = TRUE))
+  testthat::expect_identical(cash$entitled_quantity, c(2, 1))
   single <- ledgr:::ledgr_run_window(
     fixture$exp,
     params = list(x = 1),

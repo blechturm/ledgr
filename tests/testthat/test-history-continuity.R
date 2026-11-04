@@ -120,7 +120,7 @@ ws42_late_action_fixture <- function(subtype, policy, effective = 4L, known = 7L
 # test runs concatenated.
 ws42_chain_record <- function(runs) {
   events <- ws42_rows(runs, "ledger", c("event_id", "run_id", "event_seq"))
-  events <- events[!grepl("opening", events$meta_json, fixed = TRUE), ]
+  events <- events[events$source != "opening_position" | is.na(events$source), ]
   rownames(events) <- NULL
   list(
     events = events,
@@ -179,13 +179,17 @@ testthat::test_that("[LTB-0303] carry_test_state windows are one economic chain 
   # boundary fill and posts 1.0 at session 6 in the next window's run.
   dividend <- function(bt) {
     ledger <- ws42_frame(ledgr_results(bt, "ledger"))
-    ledger <- ledger[ledger$event_type == "CASHFLOW" & grepl("corporate_action_cash", ledger$meta_json, fixed = TRUE), ]
-    data.frame(ts_utc = as.numeric(ledger$ts_utc), meta = ledger$meta_json, stringsAsFactors = FALSE)
+    ledger <- ledger[ledger$event_type == "CASHFLOW" & ledger$source == "corporate_action_cash", ]
+    data.frame(
+      ts_utc = as.numeric(ledger$ts_utc),
+      entitled_quantity = ledger$entitled_quantity,
+      stringsAsFactors = FALSE
+    )
   }
   testthat::expect_identical(nrow(dividend(chain$test_runs[[1L]])), 0L)
   posted <- dividend(chain$test_runs[[2L]])
   testthat::expect_identical(posted$ts_utc, as.numeric(as.POSIXct("2021-01-11 21:00:00", tz = "UTC")))
-  testthat::expect_true(grepl('"entitled_quantity":2', posted$meta, fixed = TRUE))
+  testthat::expect_identical(posted$entitled_quantity, 2)
   testthat::expect_identical(posted, dividend(single))
 
   # Equity and marks: BBB's last print is session 3 (23), stale at session 4,
@@ -325,7 +329,7 @@ testthat::test_that("[LTB-0303] carry_test_state windows are one economic chain 
     testthat::expect_identical(late_chain$status, case$status, info = name)
     testthat::expect_identical(ws42_chain_record(late_chain$test_runs), expected, info = name)
     testthat::expect_identical(expected$equity$equity[[nrow(expected$equity)]], case$final, info = name)
-    action <- expected$events[grepl("corporate_action", expected$events$meta_json, fixed = TRUE), ]
+    action <- expected$events[grepl("corporate_action", expected$events$source, fixed = TRUE), ]
     if (is.null(case$event)) {
       testthat::expect_identical(nrow(action), 0L, info = name)
       testthat::expect_true(case$reason %in% expected$diagnostics$reason_code, info = name)
