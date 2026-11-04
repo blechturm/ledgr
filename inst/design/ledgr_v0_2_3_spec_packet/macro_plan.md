@@ -742,6 +742,15 @@ execution-sensitive economics cuts are held to rule 17 instead.
   reference. Structural tests that only detect old helper shapes may be
   remapped individually under synthesis Q3, each approved by the
   maintainer. The test cut follows as below.
+- **Old-code citations (maintainer, 2026-11-04).** Before the switch cut
+  deletes the current fold, it tags the last commit with the old core as
+  `pre-lean-core` and adds one sentence to `inst/design/README.md`: code
+  citations in RFCs, packets and reviews dated before the switch refer to
+  that tag. Historical artifacts stay where they are; nothing is archived.
+  Living indexes such as `decisions.md` are repointed in the switch cut.
+  The design manual (`inst/design/manual/`) is not repointed; it is
+  rewritten against the new core after the switch, as its own
+  documentation workstream.
 - **Subtraction cut.** One cut implements the accepted deletions. It adds
   no behavior and changes no registered test, fixture or oracle. Its
   evidence is the removed line count, the rule-17 baseline after the cut
