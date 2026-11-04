@@ -50,10 +50,6 @@
 "R/derived-state.R","ledgr_rebuild_derived_state","branch","availability_active","if: availability_active && anyNA(close_by_id[ids])",1
 "R/derived-state.R","ledgr_rebuild_derived_state","flow","availability_active","assign_target",1
 "R/derived-state.R","ledgr_rebuild_derived_state","flow","ledgr_availability_config_active()","assign:availability_active",1
-"R/diagnostic-decoder.R","ledgr_diagnostic_decision_order_bad","branch","availability_active","if: availability_active",1
-"R/diagnostic-decoder.R","ledgr_diagnostic_decision_order_bad","flow","availability$active","assign:availability_active",1
-"R/diagnostic-decoder.R","ledgr_diagnostic_decision_order_bad","flow","availability_active","arg:rep:1",1
-"R/diagnostic-decoder.R","ledgr_diagnostic_decision_order_bad","flow","availability_active","assign_target",1
 "R/execution-timing.R","ledgr_execution_timing_provenance","branch","availability$active","if: !is.list(availability) || !isTRUE(availability$active)",1
 "R/execution-timing.R","ledgr_execution_timing_require_current","branch","ledgr_availability_config_active()","if: !ledgr_availability_config_active(config)",1
 "R/experiment.R","ledgr_experiment","branch","availability$active","if: !is.null(schedule) && !isTRUE(availability$active)",1

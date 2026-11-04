@@ -70,17 +70,16 @@ ledgr_diagnostic_decision_order_bad <- function(con,
     config <- ledgr_json_read_config(metadata$config_json[[row]])
     axis <- as.character(config$universe$instrument_ids)
     universe_rule <- config$availability$universe_rule %||% NULL
-    availability_active <- isTRUE(config$availability$active) &&
-      !is.null(universe_rule)
+    uses_membership <- !is.null(universe_rule)
     n <- max(1L, length(axis))
     data.frame(
       run_id = rep(as.character(metadata$run_id[[row]]), n),
       snapshot_id = rep(as.character(metadata$snapshot_id[[row]]), n),
       universe_id = rep(
-        if (availability_active) as.character(universe_rule$universe_id) else NA_character_,
+        if (uses_membership) as.character(universe_rule$universe_id) else NA_character_,
         n
       ),
-      availability_active = rep(availability_active, n),
+      uses_membership = rep(uses_membership, n),
       instrument_id = if (length(axis) > 0L) axis else NA_character_,
       axis_pos = if (length(axis) > 0L) seq_along(axis) else NA_integer_,
       axis_size = rep(length(axis), n),
@@ -117,7 +116,7 @@ ledgr_diagnostic_decision_order_bad <- function(con,
 
   query <- paste0(
     "WITH run_meta AS (SELECT DISTINCT run_id, snapshot_id, universe_id, ",
-    "availability_active, CAST(axis_size AS BIGINT) AS axis_size FROM ", relation,
+    "uses_membership, CAST(axis_size AS BIGINT) AS axis_size FROM ", relation,
     "), axis AS (SELECT run_id, instrument_id, CAST(axis_pos AS BIGINT) AS axis_pos, ",
     "CAST(axis_size AS BIGINT) AS axis_size FROM ", relation,
     " WHERE instrument_id IS NOT NULL), logical_decisions AS (",
@@ -135,7 +134,7 @@ ledgr_diagnostic_decision_order_bad <- function(con,
     "ORDER BY h.effective_from, h.knowledge_time, h.set_id) AS header_rank ",
     "FROM run_meta rm JOIN snapshot_membership_sets h ON ",
     "h.snapshot_id = rm.snapshot_id AND h.universe_id = rm.universe_id ",
-    "WHERE rm.availability_active), headers AS (SELECT *, ",
+    "WHERE rm.uses_membership), headers AS (SELECT *, ",
     "GREATEST(effective_from, knowledge_time) AS available_from ",
     "FROM header_ranked WHERE knowledge_time IS NOT NULL), ",
     "member_event_points AS (SELECT h.run_id, m.instrument_id, h.available_from, ",
@@ -158,7 +157,7 @@ ledgr_diagnostic_decision_order_bad <- function(con,
     "c.run_id = d.run_id AND c.available_from <= d.ts_utc ",
     "ORDER BY c.available_from DESC LIMIT 1), 0) AS complete_rank ",
     "FROM decision_rows d JOIN run_meta rm USING (run_id) ",
-    "WHERE rm.availability_active), interval_ranked AS (SELECT d.*, ",
+    "WHERE rm.uses_membership), interval_ranked AS (SELECT d.*, ",
     "m.fact_id AS interval_fact_id, m.member AS interval_member, ROW_NUMBER() OVER ",
     "(PARTITION BY d.run_id, d.ts_utc, d.instrument_id ORDER BY ",
     "m.effective_from DESC NULLS LAST, m.knowledge_time DESC NULLS LAST, ",
@@ -179,7 +178,7 @@ ledgr_diagnostic_decision_order_bad <- function(con,
     "d.instrument_id, d.decision_seq, d.decision_order, d.is_implicit, ",
     "a.axis_pos AS expected_context FROM decision_rows d JOIN run_meta rm ",
     "USING (run_id) LEFT JOIN axis a USING (run_id, instrument_id) ",
-    "WHERE NOT rm.availability_active), expected_rows AS (",
+    "WHERE NOT rm.uses_membership), expected_rows AS (",
     "SELECT * FROM dynamic_expected UNION ALL SELECT * FROM fixed_expected), ",
     "decoded AS (SELECT i.*, e.expected_context, a.axis_pos, rm.axis_size, ",
     "CASE WHEN i.decision_order BETWEEN 1 AND rm.axis_size * rm.axis_size ",

@@ -428,6 +428,98 @@ testthat::test_that("[LTB-0558] in-pulse implicit sequence order is exact", {
   two <- group[2L, ]
   testthat::expect_silent(ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id))
 
+  # Each half of the order token has an authority outside the token itself.
+  # Mutate them independently before the coordinated-rewrite cases below.
+  axis_size <- 2L
+  context_half <- function(value) ((value - 1) %/% axis_size) + 1
+  axis_half <- function(value) ((value - 1) %% axis_size) + 1
+  one_context_bad <- (context_half(two$decision_order) - 1L) * axis_size +
+    axis_half(one$decision_order)
+  two_context_bad <- (context_half(one$decision_order) - 1L) * axis_size +
+    axis_half(two$decision_order)
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_seq = -1, decision_order = -1",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(bt$run_id, one$decision_seq)
+  )
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_seq = ?, decision_order = ?",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(
+      one$decision_seq, two_context_bad, bt$run_id, two$decision_seq
+    )
+  )
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_seq = ?, decision_order = ?",
+      "WHERE run_id = ? AND decision_seq = -1"
+    ),
+    params = list(two$decision_seq, one_context_bad, bt$run_id)
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id),
+    "decision-order evidence is corrupt for run `implicit-sequence-order`",
+    class = "ledgr_diagnostic_corrupt"
+  )
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_seq = -1, decision_order = -1",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(bt$run_id, two$decision_seq)
+  )
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_seq = ?, decision_order = ?",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(
+      two$decision_seq, two$decision_order, bt$run_id, one$decision_seq
+    )
+  )
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_seq = ?, decision_order = ?",
+      "WHERE run_id = ? AND decision_seq = -1"
+    ),
+    params = list(one$decision_seq, one$decision_order, bt$run_id)
+  )
+
+  other_axis <- if (axis_half(one$decision_order) == 1L) 2L else 1L
+  axis_bad <- (context_half(one$decision_order) - 1L) * axis_size + other_axis
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_order = ?",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(axis_bad, bt$run_id, one$decision_seq)
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id),
+    "decision-order evidence is corrupt for run `implicit-sequence-order`",
+    class = "ledgr_diagnostic_corrupt"
+  )
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_order = ?",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(one$decision_order, bt$run_id, one$decision_seq)
+  )
+  testthat::expect_silent(ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id))
+
   second <- ledgr_run(ledgr_experiment(
     snapshot,
     function(ctx, params) {
