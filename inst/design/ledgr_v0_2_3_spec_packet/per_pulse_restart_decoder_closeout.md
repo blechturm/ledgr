@@ -81,12 +81,14 @@ JSON expansion; the P2 next-bar witness pins the no-lookahead boundary; exact
 documentation searches reject a restored one-physical-row-per-axis claim.
 
 Each compact decision-order token pairs its context ordinal with its run-axis
-ordinal in one exact BIGINT. The independent validator recovers both from the
-stored run universe, sorts implicit rows once, allocates one result vector and
-matches instrument IDs in groups by run. It therefore accepts availability
-contexts whose order differs from the run axis while detecting a coordinated
-rewrite of the token and diagnostic sequence. It never scans the run axis once
-per diagnostic row or grows an accumulator.
+ordinal in one exact BIGINT. The independent DuckDB validator anchors the axis
+half to the stored run universe and the context half to fixed-axis identity or
+the sealed membership facts. Integer arithmetic, joins and one `LAG` window
+remain inside DuckDB; the R boundary receives at most one offending run. It
+therefore accepts availability contexts whose order differs from the run axis
+while detecting a coordinated rewrite of the token and diagnostic sequence.
+Instrument and timestamp reads restrict the checked pulse set before the
+window, and no implicit row or per-row string key is materialized in R.
 
 LTB-0554, LTB-0556 and LTB-0558 (LCL-0543/LCL-0545) own logical parity,
 physical omission, typed certification, lazy allocation, writer order and the
@@ -121,8 +123,10 @@ where their old observation seam or contract disappeared:
 - terminal-outcome helpers read logical diagnostics, never the physical
   residual table.
 - LTB-0138 no longer forces the dead non-preserving diagnostic writer branch;
-  it now pins the production-reachable exception row after rollback, whose
-  sequence is re-read once from the committed store;
+  it stages a diagnostic block inside a rolled-back pulse transaction, then
+  pins the production-reachable exception row whose sequence is re-read once
+  from the committed store. Replacing the refresh with `FALSE` fails because
+  it reuses the rolled-back handler counter;
 - LTB-0190's grouped-reader count first moved from three to seven because
   current listing reads persisted summary/coverage plus the logical decoder
   and one grouped equity projection, then to nine when the correction anchored
@@ -146,7 +150,12 @@ where their old observation seam or contract disappeared:
 
 ## Public verification on the correction candidate
 
-- package suite: 1,347 blocks, no failure;
+- source profiles exercise every registered block: fast is 633/633; review
+  reaches 532 blocks with only the three established Windows C-locale
+  encoding failures, each of whose complete files passes under the supported
+  UTF-8 locale; heavy reaches its end with only the five established native-
+  encoding assertions in `test-sweep-retention.R`, whose complete file also
+  passes under the supported locale;
 - focused decoder, restart, writer, session-association, split-store and
   control-plane suites: pass, including registered mutations;
 - A0: 300 canonical files (634,264 bytes), byte-identical on re-record;
@@ -154,16 +163,34 @@ where their old observation seam or contract disappeared:
   corruption fails with its named surface;
 - typed-accounting checker: 86 seams, 30 accounting fields and 22 diagnostic
   fields, pass; its private gate remains open;
-- codebase census checker: 2,006 helpers, 2,487 conditions and 89 findings,
+- codebase census checker: 2,007 helpers, 2,486 conditions and 89 findings,
   pass;
-- R CMD build and `R CMD check --no-manual --no-build-vignettes`: pass on the
-  final candidate.
+- `R CMD build --no-build-vignettes` succeeds; supported-locale
+  `R CMD check --no-manual --no-build-vignettes` passes installation,
+  examples, installed-package tests and all executable vignette code with the
+  two established missing-`inst/doc` warnings.
+
+The focused decision-order shape probe under
+`dev/bench/v0_2_3_diagnostic_order_validation/` validates 630,000 implicit
+rows entirely in DuckDB. A clean full check returns zero rows (840 bytes) to R
+in 0.36 seconds; the one-instrument, one-pulse check returns the same bounded
+result in 0.11 seconds. These clocks are descriptive. LTB-0558 owns the
+failure-sensitive SQL/no-materialization shape and fixed-context corruption;
+LTB-0560 owns the dynamic-membership context anchor.
 
 The first R CMD check exposed one metadata error in the newly registered
 session-association shape detector: LTB-0559 promised the `review` profile but
 lacked its immediately adjacent block-profile marker. The marker was added,
 the static claim checker passed and a fresh source tarball completed R CMD
 check with status OK.
+
+Final confirmation correction `4fc1dedd` moves the compact decision-order
+check wholly into one grouped DuckDB query, independently anchors dynamic
+context order to sealed membership facts, strengthens the rolled-back
+diagnostic-sequence detector and removes the final stale continuation
+comments. The final public A0 run remains byte-identical (204 checks and two
+declared differences), all registered A0 corruptions fail at their named
+surface, and the typed-accounting and codebase censuses above pass.
 
 ## Gates still open under LDG-3209
 
