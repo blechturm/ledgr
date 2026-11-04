@@ -29,6 +29,39 @@ an architecture note, or a spec packet.
 
 ## Open
 
+<a id="2026-11-04-research-snapshot-trial-accounting"></a>
+### 2026-11-04 [research] Snapshot-scoped trial accounting and snapshot-chain holdout
+
+Maintainer direction (2026-11-04): extend selection-integrity evidence from one
+sweep or walk-forward family to all experiments on a snapshot, and later across
+a chain of snapshots. This extends the parked
+[selection-session archive](#2026-06-09-research-selection-session-archive--evaluation-registry-is-parked-not-committed)
+entry; its warnings still apply.
+
+- The diagnostics scale differently. `ledgr_pbo()` (CSCV) needs one candidate
+  family on a common return grid, so it stays family-scoped; experiments across
+  a snapshot differ in window, universe and frequency and do not form one
+  panel. Trial counting and `ledgr_dsr()` pool naturally: "how many things were
+  tried on this data" is the honest deflation input, and
+  `ledgr_effective_trials()` already collapses correlated near-copies, which
+  answers most of the archive entry's overcounting concern.
+- A snapshot chain adds holdout accounting. If snapshot B extends snapshot A
+  with later data, the chain shows which periods any experiment had seen
+  before a promotion, so a result can state that a stretch of data was never
+  touched by selection. Comparing the overlap of A and B also exposes vendor
+  restatements.
+- Needs, none of which exist today: (1) snapshot lineage, a declared parent
+  plus a checked description of how the overlap differs, since identity is
+  content hash only; (2) every evaluation leaving a trace, including unsaved
+  interactive runs, which changes the side-effect model (the archive entry's
+  main cost); (3) counts keyed on `snapshot_hash`, not `snapshot_id`, so a
+  reseal in one store does not reset them.
+- It is evidence, not a lock: a fresh store with copied data starts from zero.
+  The trail makes the honest path easy; it cannot enforce it.
+
+Entry point is an RFC after the lean core and CRAN, starting from the archive
+entry's session-identity framing.
+
 <a id="2026-11-03-execution-quickr-kernel-generator"></a>
 ### 2026-11-03 [execution] quickr as a build-time generator for numerical kernels
 
