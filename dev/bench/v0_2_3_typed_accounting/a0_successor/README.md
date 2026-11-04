@@ -8,11 +8,14 @@ only the `avail_incomplete` and `failures` fixtures, which omitted `opening`
 before Cut 7 made it mandatory, receive the former default explicitly as
 `ledgr_opening(cash = 100000)`. No product call is otherwise changed.
 
-The immutable before record is produced from `0d6c0b11`. `compare.R` requires
-the candidate to have the same 281-file set and byte-identical content except
-for exactly four accepted cells: the two candidates in each of
+The immutable before record is produced from `0d6c0b11`. The current candidate
+is schema-125 product `14d48de7`. `compare.R` requires the same 281-file set,
+normalizes the old accounting JSON and new typed event columns to one semantic
+ledger, and allows only the atomic 124-to-125 run marker plus exactly four
+accepted cells: the two candidates in each of
 `avail_incomplete/sweep_w1/sweep.csv` and `sweep_w2/sweep.csv` change
-`annualized_return` from `"0"` to typed missing.
+`annualized_return` from `"0"` to typed missing. The walk-forward selection
+timestamp is a documented wall-clock field; every other fold cell is exact.
 
 `record_identities.csv` binds both record arms to their exact commits and
 product-tree identities. The record was regenerated at `7361951e`. Correction
@@ -20,5 +23,6 @@ product-tree identities. The record was regenerated at `7361951e`. Correction
 byte for byte. The later row-scoped subtype reader correction at `01cc546d`
 changes no recorded A0 output; the committed pair still passes `compare.R`.
 The complete-block metadata probe correction at `b0c54217` likewise changes
-no A0 output; `compare.R` still reports only the four accepted typed-missing
-cells.
+no schema-124 A0 output. The schema-125 record at `14d48de7` passes the
+typed-vs-JSON comparison across 22 event files and 13 run-table markers; the
+four typed-missing cells remain the only economic correction.

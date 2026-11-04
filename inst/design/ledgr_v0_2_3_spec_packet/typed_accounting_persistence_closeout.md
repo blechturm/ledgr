@@ -2,6 +2,21 @@
 
 Status: implementation complete; awaiting the independent Type 1 close review.
 
+The independent review returned `CHANGES_REQUIRED` in `close_review_24.md`.
+Correction `14d48de7` preserves non-midnight disposition provenance as
+`POSIXct`, removes redundant fill-path frame construction and mark formatting,
+migrates the A0 memory attachment to typed columns, exhausts the producer and
+write-site census, and removes the remaining schema-124 publication teaching.
+The non-midnight mutation fails the registered terminal-reporting block. A
+fresh 281-file A0 record at `14d48de7` passes the typed-vs-JSON semantic
+comparison against immutable base `0d6c0b11`: 22 event files, 13 schema-marker
+tables and the four already accepted INCOMPLETE annualized-return cells.
+The attachment refuses a typed row with either accounting effect missing
+(`A0_TYPED_MISSING_REFUSED`). A post-correction source build succeeds and the
+supported-C-locale `R CMD check --no-manual --no-build-vignettes` runs the
+installed tests and all vignette code, reporting only the same two
+pre-rendered-vignette warnings.
+
 Workstream 24 completes the schema-125 half of the accepted typed-accounting
 boundary. Product commit `8055fa29` changes the store and every accounting
 producer atomically. There is no schema-124 reader, migration, missing-marker
@@ -44,7 +59,7 @@ dispatch are unchanged.
 LTB-0550/LCL-0539 owns the literal schema version, ordered column catalogue,
 DDL source vocabulary, producer census, absence of accounting JSON, grouped
 typed validation, cross-block order state, formula checks and replay arithmetic.
-The schema golden files pin all 2,583 normalized schema rows on DuckDB 2.0.0.
+The schema golden files pin all 2,647 normalized schema rows on DuckDB 2.0.0.
 LTB-0553/LCL-0542 keeps the heterogeneous late-disposition witness on typed
 columns. Existing LTB-0035 and LTB-0053 detect within-source and cross-source
 cash/disposition dedupe. Wrong-effect rows refuse before a durable append.

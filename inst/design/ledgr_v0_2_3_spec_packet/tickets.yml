@@ -1584,7 +1584,7 @@ workstreams:
     cut: 11
     status: "pending"
     accepted: null
-    close_review: null
+    close_review: "CHANGES_REQUIRED in close_review_24.md (independent clean-context Claude Type 1): F1 found a real Windows character timestamp truncation, F2 found the unmigrated A0 memory attachment, F3 found stale schema-124 publication teaching, and F4-F6 required bounded hot-path, census and record corrections. Product correction 14d48de7 passes focused product/documentation suites; its non-midnight mutation fails the registered detector. The fresh 281-file schema-125 A0 candidate is semantically exact against immutable base 0d6c0b11 after typed-vs-JSON normalization (22 event files, 13 schema markers and only the four accepted INCOMPLETE annualized-return cells). Awaiting focused independent confirmation; not yet accepted."
     depends_on_workstream: 23
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 24, after LDG-3205", reason: "One claim joins LDG-3204 and LDG-3205: one atomic switch introduces schema 125 and the typed ledger while every producer and all three durable paths publish validated typed effects/evidence directly; every older/unmarked/mismatched store refuses; the temporary extraction, meta_json and every accounting JSON encode/decode are absent; typed dedupe and exempt bookkeeping queries derive no accounting state; compiled dispatch is unchanged; documentation describes SELECT * accurately; and the seven-shape/cold-read review finds no red intermediate tree, row loop, repeated preparation or hidden compatibility path."}
@@ -3707,6 +3707,7 @@ tickets:
       - "Every named producer and durable path constructs ledgr_accounting_rows() directly and ledgr_validate_accounting_append() guards the append boundary; audit_log retains the typed block/flush path, db_live appends the validated pulse block immediately, and memory carries the same columns. spot_fifo.cpp and compiled dispatch are unchanged."
       - "LTB-0550/LCL-0539 pins the literal version/catalogue/DDL, producer census, absence of accounting JSON, typed field matrix, cross-block ordering, formulas and replay; LTB-0553/LCL-0542 pins complete late disposition evidence; LTB-0035 and LTB-0053 pin within-source and cross-source typed dedupe. Focused schema, writer, output-sink, cash, disposition, terminal, availability and WS4a suites pass."
       - "The schema-124 extraction/meta path, accounting meta list, event accounting attributes, superseded handler auxiliary vectors and ledgr_lot_parse_meta() are deleted. Exact source census finds no accounting meta_json/canonical_json/nested-reader path; remaining meta_json sites are snapshot, configuration or walk-forward records."
+      - "Close-review correction 14d48de7 carries disposition mark timestamps as POSIXct without an ISO character round trip, validates fill publication lists without redundant per-pulse data frames, removes repeated mark formatting and expands LTB-0550 to the compiled/resume/db-live boundary and literal ledger_events write-site census. Restoring the character round trip fails the terminal-reporting suite on the non-midnight fixture."
   - id: "LDG-3205"
     title: "Close typed accounting persistence and public ledger teaching"
     workstream: 24
@@ -3732,6 +3733,7 @@ tickets:
       - "The complete package suite reaches every WS24-owned block successfully. Its eight failures are the unchanged baseline groups: historical malformed v0.2.2 YAML (LTB-0408/LTB-0416), Windows latin1 (LTB-0247) and five native-encoding sweep-retention assertions; the optional quantmod missing-package path is the unchanged skip."
       - "The batching decision reuses the registered WS4a typed pulse block and audit-log flush mechanism, with db_live immediate block visibility; the C13c fault matrix, event-buffer growth and compiled parity witnesses settle rollback, ordering, fees and effects. The record is rule-16 design evidence, not a timing gate."
       - "R CMD build succeeds. Full supported-C-locale R CMD check executes installed-package tests and every vignette successfully; correction ac991cbd removes its one new unqualified-tail code NOTE, and the rebuilt post-correction check reports only the two established pre-rendered-vignette warnings."
+      - "Review correction evidence: dev/bench/v0_2_3_typed_accounting/a0_successor records schema-125 candidate 14d48de7 and compare.R reports PASS for all 281 files after exact typed-vs-JSON ledger normalization; 22 event files and 13 run schema markers agree, with only the four previously accepted INCOMPLETE annualized-return cells. Contracts and the execution-fold manual now contain no current schema-124 accounting publication wording, and the documentation detector refuses its restoration."
   - id: "LDG-3206"
     title: "Retire pulse-level resume and restart nonterminal attempts"
     workstream: 25
