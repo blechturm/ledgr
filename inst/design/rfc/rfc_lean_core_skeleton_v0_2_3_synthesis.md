@@ -1,9 +1,11 @@
 # Lean Core Skeleton: Decision Synthesis
 
 - Role: record; RFC cycle stage 7, **Decision synthesis**. Codex, 2026-11-04.
-- Status: proposed for maintainer acceptance and independent Type 1 final
-  review. The decisions below bind their stated pending scope once accepted;
-  this record claims no implementation or checkpoint completion.
+- Status: **accepted** by the maintainer on 2026-11-04, after the independent
+  Type 1 final review (PASS_AFTER_PATCHES, P1-P3 applied). The decisions below
+  bind their stated pending scope; this record claims no implementation or
+  checkpoint completion. Coding waits for the core extension architecture RFC
+  (D2).
 - Brief: drafted by Claude, approved by the maintainer on 2026-11-04.
 - Parent: the accepted [lean fold core synthesis](rfc_lean_fold_core_v0_2_3_synthesis.md),
   especially Sections 2-5 and amendment A1.

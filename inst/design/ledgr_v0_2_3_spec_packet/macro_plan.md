@@ -654,7 +654,7 @@ against the current core and switched in one cut.
 - **Skeleton first (A1).** The skeleton and the first family are written by
   the maintainer or under a tight maintainer brief with line-by-line
   review, from the
-  accepted [lean core skeleton RFC](../rfc/README.md#lean-core-skeleton), before agents
+  accepted [lean core skeleton synthesis](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md), before agents
   extend them.
 - **Family order (synthesis Q1).** The first checkpoint is two workstreams:
   memory-bounded preparation, and the complete lean FIFO kernel (openings,
