@@ -3668,7 +3668,7 @@ tickets:
   - id: "LDG-3204"
     title: "Switch atomically to schema 125 and direct typed publication"
     workstream: 24
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3202"]
@@ -3702,11 +3702,15 @@ tickets:
       - "a wrong-effect producer block refuses before any durable write and removing the append-boundary validator fails; typed dedupe retains its walk-forward consumer after resume retirement"
       - "compiled parity compares typed effects/fees and dispatch/envelope source is byte-identical; transaction, failure and recovery witnesses pass for the one chosen append batching shape"
       - "the A0 attachment and test-accounting-core-consolidation, test-execution-spec, test-ledger-writer, test-output-handler-sinks and test-sweep migrate only their attachment points and reproduce frozen records except the explicitly recorded memory-event column shape"
-    evidence: []
+    evidence:
+      - "Product 8055fa29 is the atomic schema-125 transition: ledger_events is the accepted ordered 31-column typed table, experiment-store schema is 125, the normalized golden catalogue is re-pinned, and the existing store gate refuses schema 124, unmarked and fingerprint-mismatched stores; no migration or compatibility reader exists."
+      - "Every named producer and durable path constructs ledgr_accounting_rows() directly and ledgr_validate_accounting_append() guards the append boundary; audit_log retains the typed block/flush path, db_live appends the validated pulse block immediately, and memory carries the same columns. spot_fifo.cpp and compiled dispatch are unchanged."
+      - "LTB-0550/LCL-0539 pins the literal version/catalogue/DDL, producer census, absence of accounting JSON, typed field matrix, cross-block ordering, formulas and replay; LTB-0553/LCL-0542 pins complete late disposition evidence; LTB-0035 and LTB-0053 pin within-source and cross-source typed dedupe. Focused schema, writer, output-sink, cash, disposition, terminal, availability and WS4a suites pass."
+      - "The schema-124 extraction/meta path, accounting meta list, event accounting attributes, superseded handler auxiliary vectors and ledgr_lot_parse_meta() are deleted. Exact source census finds no accounting meta_json/canonical_json/nested-reader path; remaining meta_json sites are snapshot, configuration or walk-forward records."
   - id: "LDG-3205"
     title: "Close typed accounting persistence and public ledger teaching"
     workstream: 24
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3204"]
@@ -3722,7 +3726,11 @@ tickets:
       - "contracts, help, vignette, NEWS and source contain no accounting meta_json or schema-124 current-format teaching; exact-name searches and documentation-contract blocks detect restoration"
       - "all WS23/WS24 registered mutations, focused profiles, full package tests, source build and R CMD check pass; the seven-shape and cold-read records find no unexplained stage or antipattern"
       - "the batching decision cites the bounded measurement that settled it as rule-16 design evidence, not a workstream timing/memory gate"
-    evidence: []
+    evidence:
+      - "inst/design/ledgr_v0_2_3_spec_packet/typed_accounting_persistence_closeout.md records the schema boundary, producer/writer/reader census, append-batching decision, seven optimization shapes, cold typed-read boundary, test attribution and public teaching."
+      - "Contracts, ledgr_results()/as_tibble help, the accounting vignette and rendered markdown, the internal snapshot manual and NEWS teach one wide typed SELECT * ledger with typed missing evidence and no JSON accounting envelope; test-documentation-contracts.R passes and detects the current schema-125 wording."
+      - "The complete package suite reaches every WS24-owned block successfully. Its eight failures are the unchanged baseline groups: historical malformed v0.2.2 YAML (LTB-0408/LTB-0416), Windows latin1 (LTB-0247) and five native-encoding sweep-retention assertions; the optional quantmod missing-package path is the unchanged skip."
+      - "The batching decision reuses the registered WS4a typed pulse block and audit-log flush mechanism, with db_live immediate block visibility; the C13c fault matrix, event-buffer growth and compiled parity witnesses settle rollback, ordering, fees and effects. The record is rule-16 design evidence, not a timing gate."
   - id: "LDG-3206"
     title: "Retire pulse-level resume and restart nonterminal attempts"
     workstream: 25

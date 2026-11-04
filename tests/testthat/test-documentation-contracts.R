@@ -610,6 +610,8 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(metrics_doc, "Use the narrowest inspection surface", fixed = TRUE)
     testthat::expect_match(metrics_doc, "append-only accounting record", fixed = TRUE)
     testthat::expect_match(metrics_doc, "A \\*\\*ledger event\\*\\* is the append-only accounting record")
+    testthat::expect_match(metrics_doc, "one wide typed table", fixed = TRUE)
+    testthat::expect_match(metrics_doc, "no JSON accounting envelope", fixed = TRUE)
     testthat::expect_match(metrics_doc, "A \\*\\*fill\\*\\* is an execution row")
     testthat::expect_match(metrics_doc, "An \\*\\*equity row\\*\\* values the portfolio")
     testthat::expect_match(metrics_doc, "what = \"metrics\"", fixed = TRUE)
@@ -682,6 +684,9 @@ testthat::test_that("public result and helper documentation states current seman
     testthat::expect_match(summary_help, "closed trade rows", fixed = TRUE)
     testthat::expect_match(summary_help, "Warmup Diagnostics", fixed = TRUE)
     testthat::expect_match(summary_help, "metrics-and-accounting.html", fixed = TRUE)
+    results_help <- paste(readLines(file.path(root, "man", "ledgr_results.Rd"), warn = FALSE), collapse = "\n")
+    testthat::expect_match(results_help, "complete ordered typed accounting table", fixed = TRUE)
+    testthat::expect_match(results_help, "contains no JSON accounting envelope", fixed = TRUE)
     testthat::expect_match(compute_help, "list-like \\code{ledgr_metrics} object", fixed = TRUE)
     testthat::expect_match(compute_help, "metric context stored with the run", fixed = TRUE)
     testthat::expect_match(compute_help, "Supply either", fixed = TRUE)
@@ -2246,6 +2251,7 @@ testthat::test_that("[LTB-0509] scheduler teaching uses the declared public surf
   testthat::expect_match(news_flat, "ledgr_schedule_weekday()", fixed = TRUE)
   testthat::expect_match(news_flat, "ledgr_schedule_month_day()", fixed = TRUE)
   testthat::expect_match(news_flat, "schema 124", fixed = TRUE)
+  testthat::expect_match(news_flat, "schema 125", fixed = TRUE)
   for (version in c(
     "saved-sweep format 6", "provenance format 2",
     "reproduction-key format 2", "walk-forward candidate and inspection formats 2",

@@ -169,7 +169,7 @@ Run artifacts live in these tables:
 | Table | Source | Key / constraint shape |
 | --- | --- | --- |
 | `runs` | `R/db-schema-create.R:136` | `run_id` primary key; status constrained to `CREATED`, `RUNNING`, `DONE`, or `FAILED`; stores `config_json`, `config_hash`, `snapshot_id`, metric context fields, and execution mode. |
-| `ledger_events` | `R/db-schema-create.R:193` | `event_id` primary key; `UNIQUE(run_id, event_seq)`; event type constrained to `FILL`, `FEE`, or `CASHFLOW`. |
+| `ledger_events` | `R/db-schema-current.R` | `event_id` primary key; `UNIQUE(run_id, event_seq)`; one wide typed row for `FILL`, `CASHFLOW`, or `DISPOSITION`, with direct effects and per-kind evidence and no JSON accounting payload. |
 | `equity_curve` | `R/db-schema-create.R:210` | primary key `(run_id, ts_utc)`; stores cash, positions value, equity, and realized/unrealized P&L. |
 | `features` | `R/db-schema-create.R:182` | primary key `(run_id, instrument_id, ts_utc, feature_name)`. |
 | `strategy_state` | `R/db-schema-create.R:223` | primary key `(run_id, ts_utc)` with canonical JSON state payload. |

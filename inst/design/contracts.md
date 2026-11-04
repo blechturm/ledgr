@@ -547,12 +547,20 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   no fill timing or cost model. The event, its lot close, its cash change and
   its policy summary commit together: an error raised before the append
   leaves none of them. The event's quantity and price equal those recorded in
-  its canonical `meta_json`, which also names the source
-  (`corporate_action_disposition` or `lifetime_terminal_disposition`), source
-  fact, terminal event, matched label, choice, basis (`label`, `default`,
-  `frozen_fallback` or `evidence`), policy identity, haircut fraction, mark
-  provenance, cash delta and realized P&L. Replay rejects a disposition whose
-  event fields disagree with that record.
+  its common typed `qty` and `price` columns. Typed source and evidence columns
+  name the source (`corporate_action_disposition` or
+  `lifetime_terminal_disposition`), source fact, terminal event, matched label,
+  choice, basis (`label`, `default`, `frozen_fallback` or `evidence`), policy
+  identity, haircut fraction, mark provenance, cash delta and realized model
+  P&L. Replay validates those columns directly before append; accounting events
+  have no JSON evidence envelope or compatibility decoder.
+- `ledger_events` is one ordered wide typed table. Every producer publishes the
+  common columns, finite `cash_delta` and `position_delta`, a bound source when
+  the event kind requires one, and only the evidence columns permitted for
+  that kind. Durable and memory sinks carry the same columns; public ledger
+  reads are `SELECT *` in event-sequence order. Resume deduplication uses the
+  typed `(source, source_fact_id)` pair and never derives accounting state by
+  parsing persisted payloads.
 
 <a id="contract-execution-compiled-accounting"></a>
 ### Compiled Accounting Dispatch
@@ -1474,14 +1482,16 @@ Accepted change pending:
 <a id="contract-persistence-current-format"></a>
 ### Current Store Format
 
-- Experiment-store schema 124 is the sole current store schema. It adds the
-  canonical strategy-schedule declaration and hash to `run_provenance`, and
+- Experiment-store schema 125 is the sole current store schema. It replaces
+  the accounting event JSON envelope with the typed `ledger_events` columns
+  bound by the accounting contract, and retains the canonical
+  strategy-schedule declaration and hash in `run_provenance` and
   the compiled decision-pulse and scheduled-skip counts to `run_telemetry`;
   readers recover and verify the declaration rather than inferring it from
   diagnostics. It stores no
   `walk_forward_folds.hydration_start_utc` column, and its sealed
   corporate-action provenance distinguishes assumed from evidenced knowledge
-  (Cut 17 LDG-3085). Schema-120 through schema-123 stores are older
+  (Cut 17 LDG-3085). Schema-120 through schema-124 stores are older
   stores. One opener and
   one gate compare its version and canonical format fingerprint before any
   package-owned persistent read or write. `mode = "create"` may initialize an
@@ -1711,8 +1721,8 @@ Accepted change pending:
   `ledgr_canonical_json_rule_version = 1L` in the store format fingerprint.
   Stores written without that rule marker are rebuilt; there is no
   compatibility fallback.
-- Config hashes, strategy-state JSON, snapshot metadata JSON, and ledger
-  `meta_json` must use this canonical path when deterministic identity matters.
+- Config hashes, strategy-state JSON, and snapshot metadata JSON must use this
+  canonical path when deterministic identity matters.
 
 <a id="contract-json-session-local-keys"></a>
 ### Session-Local Keys
@@ -1721,8 +1731,7 @@ Accepted change pending:
   and are not required to use canonical JSON or cryptographic hashes. They must
   remain deterministic and unambiguous within the session, and this exemption
   must not weaken snapshot hashes, config hashes, strategy-state JSON,
-  snapshot metadata JSON, ledger `meta_json`, or any other persisted provenance
-  surface.
+  snapshot metadata JSON, or any other persisted provenance surface.
 
 <a id="contract-json-feature-map-objects"></a>
 ### Feature-Map Authoring Objects

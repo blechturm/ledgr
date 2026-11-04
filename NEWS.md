@@ -1,5 +1,11 @@
 # ledgr (development version)
 
+- Experiment-store schema 125 stores every accounting event as one direct
+  typed row. `ledgr_results(bt, "ledger")` returns that complete ordered table:
+  common event terms, cash and position effects, posting source, and typed
+  corporate-action or disposition evidence. The former accounting JSON
+  envelope and its compatibility decoder are removed. Schema-124 and older
+  stores refuse; rebuild them from source inputs.
 - An availability sweep that stops `INCOMPLETE` at valuation-horizon
   exhaustion now reports `annualized_return = NA_real_` in memory and after
   reopening. The achieved prefix is not presented as a complete-horizon

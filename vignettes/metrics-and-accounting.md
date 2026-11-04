@@ -159,15 +159,30 @@ and metrics are derived views over ledger-backed evidence. The ledger is
 the most literal view; the friendlier result tables below are derived
 from these events.
 
+The ledger is one wide typed table, returned exactly as stored. Common
+columns identify the event and its execution terms. `cash_delta` and
+`position_delta` are the effects that accounting applies. `source` and
+`source_fact_id` identify opening, corporate-action, and terminal
+postings. The remaining evidence columns describe cash entitlements and
+disposition policy or mark provenance; they are typed missing values
+when they do not apply to that event kind. There is no JSON accounting
+envelope to unpack.
+
 ``` r
 ledger <- ledgr_results(bt, what = "ledger")
 ledger
-#> # A tibble: 2 x 11
-#>   event_id    run_id ts_utc     event_type instrument_id side    qty price   fee meta_json
-#>   <chr>       <chr>  <date>     <chr>      <chr>         <chr> <dbl> <dbl> <dbl> <chr>
-#> 1 accounting~ accou~ 2020-01-02 FILL       AAA           BUY       1   101     0 "{\"cash~
-#> 2 accounting~ accou~ 2020-01-03 FILL       AAA           SELL      1   105     0 "{\"cash~
-#> # i 1 more variable: event_seq <int>
+#> # A tibble: 2 x 31
+#>   event_id    run_id ts_utc     event_type instrument_id side    qty price   fee event_seq
+#>   <chr>       <chr>  <date>     <chr>      <chr>         <chr> <dbl> <dbl> <dbl>     <int>
+#> 1 accounting~ accou~ 2020-01-02 FILL       AAA           BUY       1   101     0         1
+#> 2 accounting~ accou~ 2020-01-03 FILL       AAA           SELL      1   105     0         2
+#> # i 21 more variables: cash_delta <dbl>, position_delta <dbl>, source <chr>,
+#> #   source_fact_id <chr>, entitled_quantity <dbl>, gross_cash_per_parent_unit <dbl>,
+#> #   amount_policy_id <chr>, posting_policy_id <chr>, late_arrival <lgl>,
+#> #   affected_marked_exposure <dbl>, terminal_event <chr>, matched_label <chr>,
+#> #   disposition_policy_id <chr>, disposition_choice <chr>, disposition_basis <chr>,
+#> #   mark_source <chr>, mark_source_ts_utc <dttm>, mark_age <int>, haircut_fraction <dbl>,
+#> #   position_before <dbl>, realized_model_pnl <dbl>
 ```
 
 ## Fills And Trades
@@ -437,20 +452,21 @@ ledgr_results(final_bar_bt, what = "fills")
 #> #   instrument_id <chr>, side <chr>, qty <dbl>, price <dbl>, fee <dbl>,
 #> #   realized_pnl <dbl>, action <chr>
 ledgr_results(final_bar_bt, what = "diagnostics")
-#> # A tibble: 11 x 22
+#> # A tibble: 12 x 22
 #>    run_id diagnostic_seq ts_utc     instrument_id stage outcome reason_code reasons target
 #>    <chr>           <int> <date>     <chr>         <chr> <chr>   <chr>       <chr>    <dbl>
-#>  1 final~              1 2020-01-01 "AAA"         deci~ record~ decision_r~ decisi~      0
-#>  2 final~              2 2020-01-01 ""            reco~ reconc~ affordabil~ afford~     NA
-#>  3 final~              3 2020-01-02 "AAA"         deci~ record~ decision_r~ decisi~      0
-#>  4 final~              4 2020-01-02 ""            reco~ reconc~ affordabil~ afford~     NA
-#>  5 final~              5 2020-01-03 "AAA"         deci~ record~ decision_r~ decisi~      0
-#>  6 final~              6 2020-01-03 ""            reco~ reconc~ affordabil~ afford~     NA
-#>  7 final~              7 2020-01-04 "AAA"         deci~ record~ decision_r~ decisi~      0
-#>  8 final~              8 2020-01-04 ""            reco~ reconc~ affordabil~ afford~     NA
-#>  9 final~              9 2020-01-05 "AAA"         deci~ record~ decision_r~ decisi~      1
-#> 10 final~             10 2020-01-05 "AAA"         exec~ no_fill final_puls~ final_~      1
-#> 11 final~             11 2020-01-05 ""            reco~ reconc~ affordabil~ afford~     NA
+#>  1 final~              1 2020-01-01 ""            sizi~ unavai~ sizing_int~ raw_qu~     NA
+#>  2 final~              2 2020-01-01 "AAA"         deci~ record~ decision_r~ decisi~      0
+#>  3 final~              3 2020-01-01 ""            reco~ reconc~ affordabil~ afford~     NA
+#>  4 final~              4 2020-01-02 "AAA"         deci~ record~ decision_r~ decisi~      0
+#>  5 final~              5 2020-01-02 ""            reco~ reconc~ affordabil~ afford~     NA
+#>  6 final~              6 2020-01-03 "AAA"         deci~ record~ decision_r~ decisi~      0
+#>  7 final~              7 2020-01-03 ""            reco~ reconc~ affordabil~ afford~     NA
+#>  8 final~              8 2020-01-04 "AAA"         deci~ record~ decision_r~ decisi~      0
+#>  9 final~              9 2020-01-04 ""            reco~ reconc~ affordabil~ afford~     NA
+#> 10 final~             10 2020-01-05 "AAA"         deci~ record~ decision_r~ decisi~      1
+#> 11 final~             11 2020-01-05 "AAA"         exec~ no_fill final_puls~ final_~      1
+#> 12 final~             12 2020-01-05 ""            reco~ reconc~ affordabil~ afford~     NA
 #> # i 13 more variables: quantity <dbl>, price <dbl>, mark_source <chr>, mark_age <int>,
 #> #   decision_ts_utc <dttm>, execution_ts_utc <dttm>, event_seq <int>,
 #> #   target_before_risk <dbl>, target_after_risk <dbl>, position_before <dbl>,

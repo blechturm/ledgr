@@ -49,6 +49,14 @@ columns \code{ts_utc}, \code{equity}, and \code{period_return}. The first period
 \code{NA_real_}; later rows use the same adjacent-equity return formula as
 ledgr-owned metrics and retained sweep returns.
 
+\code{what = "ledger"} returns the complete ordered typed accounting table. Its
+common columns identify the event and execution terms; \code{cash_delta} and
+\code{position_delta} are the published effects; \code{source} and \code{source_fact_id}
+identify non-fill postings; and the remaining columns hold typed
+corporate-action and disposition evidence. Fields that do not apply to an
+event kind are typed missing values. The table is the direct \verb{SELECT *}
+ledger surface and contains no JSON accounting envelope.
+
 \code{what = "diagnostics"} returns ordered durable decision, risk, execution,
 reconciliation, and stop evidence. A structured strategy result may add
 \code{intent_reason}, one non-empty character scalar; when supplied it is

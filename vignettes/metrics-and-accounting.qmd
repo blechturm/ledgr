@@ -197,6 +197,14 @@ changes cash, positions, or run state. Fills, trades, equity, and metrics are
 derived views over ledger-backed evidence. The ledger is the most literal view;
 the friendlier result tables below are derived from these events.
 
+The ledger is one wide typed table, returned exactly as stored. Common columns
+identify the event and its execution terms. `cash_delta` and `position_delta`
+are the effects that accounting applies. `source` and `source_fact_id` identify
+opening, corporate-action, and terminal postings. The remaining evidence
+columns describe cash entitlements and disposition policy or mark provenance;
+they are typed missing values when they do not apply to that event kind. There
+is no JSON accounting envelope to unpack.
+
 ```{r}
 #| label: ledger
 
