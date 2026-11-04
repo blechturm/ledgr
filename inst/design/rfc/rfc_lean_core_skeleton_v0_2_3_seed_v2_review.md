@@ -3,8 +3,8 @@
 > Renamed 2026-11-04 from `inst/design/ledgr_v0_2_3_spec_packet/lean_core_skeleton_brief_rereview_1.md` when the
 > skeleton brief became the lean core skeleton RFC. "B" and the brief paths
 > below refer to the seed v2 text. The review prompt was drafted by Claude, a seed
-> co-author; this review stays provisional until the maintainer rereads prompt
-> and review together (`rfc_cycle.md`, Briefs).
+> co-author; the maintainer reread prompt and review together and accepted the
+> framing on 2026-11-04 ([response review](rfc_lean_core_skeleton_v0_2_3_response_review.md)).
 
 - Mode: **Type 2, round 2**, 2026-11-04.
 - Reviewed: the complete working-tree revision 2 of `inst/design/ledgr_v0_2_3_spec_packet/lean_core_skeleton_brief.md` against **1b69c7e9**, the round-1 review, WS16, the accepted synthesis/amendment, relevant contracts, enclosing source functions and cited evidence. Brief SHA-256: `A8460B8D744C83F33475A5C2A64FF03A8C5B807EFE5B6D466AE0F80724664423`.

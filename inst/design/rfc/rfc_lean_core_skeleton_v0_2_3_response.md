@@ -3,8 +3,8 @@
 > Renamed 2026-11-04 from `inst/design/ledgr_v0_2_3_spec_packet/lean_core_skeleton_brief_review.md` when the
 > skeleton brief became the lean core skeleton RFC. "B" and the brief paths
 > below refer to the seed v1 text at 1b69c7e9. The review prompt was drafted by Claude, a seed
-> co-author; this review stays provisional until the maintainer rereads prompt
-> and review together (`rfc_cycle.md`, Briefs).
+> co-author; the maintainer reread prompt and review together and accepted the
+> framing on 2026-11-04 ([response review](rfc_lean_core_skeleton_v0_2_3_response_review.md)).
 
 - Mode: **Type 2**, independent peer review requested by the maintainer.
 - Reviewed: `inst/design/ledgr_v0_2_3_spec_packet/lean_core_skeleton_brief.md` at **1b69c7e9** (`1b69c7e98c626d960cf251c8b80e5870b4c1e5bf`), with the accepted synthesis, amendment, final review, WS16/WS14a, rules ledger, contracts, source and cited probes.
