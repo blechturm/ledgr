@@ -8,10 +8,22 @@
   kept D1 as the skeleton's minimal guard on 2026-11-04 and moved the full
   extension design into its own cycle (D2).
 
+> Observable-data amendment (2026-11-04): the addressed passages below are
+> amended by the accepted
+> [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md#4-exact-amendments-for-acceptance);
+> see the [amendment](#amendment-2026-11-04-observable-data) in this record
+> for the exact replacement scope. Other accepted rules remain in force.
+
 ## D1. Built for what comes next, without building it
 
 **Amended 2026-11-04:** the locality claim and the Check below are replaced
 by the [amendment](#amendment-maintainer-2026-11-04-core-extension-architecture); the statement and the table remain.
+
+> Observable-data amendment (2026-11-04): the addressed passages below are
+> amended by the accepted
+> [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md#4-exact-amendments-for-acceptance);
+> see the [amendment](#amendment-2026-11-04-observable-data) in this record
+> for the exact replacement scope. Other accepted rules remain in force.
 
 Maintainer statement: "we have to rewrite the core with a future OMS in mind
 and it needs to be extensible for future order types, short selling, etc and
@@ -58,6 +70,12 @@ need to plan how to extend the core as well."
 
 ## Amendment (maintainer, 2026-11-04): core extension architecture
 
+> Observable-data amendment (2026-11-04): the addressed passages below are
+> amended by the accepted
+> [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md#4-exact-amendments-for-acceptance);
+> see the [amendment](#amendment-2026-11-04-observable-data) in this record
+> for the exact replacement scope. Other accepted rules remain in force.
+
 The maintainer accepted the [core extension architecture synthesis](rfc_core_extension_architecture_v0_2_3_synthesis.md)
 Section 6 on 2026-11-04. It replaces two passages of D1; the maintainer
 statement, the four-row table and D2 are unchanged.
@@ -66,3 +84,30 @@ statement, the four-row table and D2 are unchanged.
 | --- | --- | --- |
 | D1 locality claim, from "It must not foreclose them either" to "without reshaping the others" | Amended | It must not foreclose these capabilities. For each, name the smallest coherent set of affected stages and structures and preserve the fixed semantic boundaries of the core extension architecture synthesis Section 2. |
 | D1 Check | Superseded | The synthesis and every family close answer the four scenarios with a complete affected-owner map, including scheduling, publication, reconstruction, identity and failure ordering. A second engine, an execution-mode branch or a duplicated kernel is a finding. Reuse shared primitives wherever their arithmetic applies. A proposed strategy-boundary or lot-kernel change needs its own contract, explicit disposition of any conflicting accepted boundary and parity for unchanged behavior; it is never made silently. |
+
+## Amendment (2026-11-04): observable data
+
+The maintainer accepted the
+[lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md)
+on 2026-11-04, after its independent Type 1 final review
+(ACCEPT_AFTER_PATCHES, patches applied). Its Section 4.1 amends D1 as
+follows; the supersession table is in that synthesis's Section 4.
+
+Add the following fifth row to D1's scenario table. Its four existing rows
+remain subject to the core-extension amendment and are unchanged here.
+
+| Future capability | Existing authority | What the lean core keeps open |
+| --- | --- | --- |
+| New observable data kinds: filed values, market-level series, coded categories and sparse dated events | [Observable-data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md) Sections 1-3; [External Data And Point-In-Time Regressors route](README.md#instrument-master-data), after CRAN | Preparation, P1's cutoff-bound read service and P2's adapter remain the access owners. Assess further consumers by intended use under that synthesis's Section 3. Preserve its Section 4.2 guard; implement no future-data mechanism now. |
+
+Replace the operative D1 Check with:
+
+The synthesis and every family close answer the five scenarios with a
+complete affected-owner map, including scheduling, publication,
+reconstruction, identity and failure ordering. For new observable data
+kinds apply the observable-data synthesis Sections 2-3. A second engine,
+an execution-mode branch or a duplicated kernel is a finding. Reuse shared
+primitives wherever their arithmetic applies. A proposed strategy-boundary
+or lot-kernel change needs its own contract, explicit disposition of any
+conflicting accepted boundary and parity for unchanged behavior; it is
+never made silently. D2 and the other D1 constraints are unchanged.

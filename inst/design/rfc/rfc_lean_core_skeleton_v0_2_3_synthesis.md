@@ -34,6 +34,12 @@
   the target-axis correction of seed v2 is stated, D1's OMS Section 5 is
   retained, and the shorting row names P3's short-exposure check.
 
+> Observable-data amendment (2026-11-04): the addressed passages below are
+> amended by the accepted
+> [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md#4-exact-amendments-for-acceptance);
+> see the [amendment](#amendment-2026-11-04-observable-data) in this record
+> for the exact replacement scope. Other accepted rules remain in force.
+
 ## 1. Decision And Authority
 
 **Adopt the corrected v2 direction:** named small stages over positional typed
@@ -78,6 +84,12 @@ history-bearing decision data before planning (`R/fold-engine.R:1878`,
 the guarantees is not the optimization.
 
 ## 2. Skeleton Shape And Interfaces
+
+> Observable-data amendment (2026-11-04): the addressed passages below are
+> amended by the accepted
+> [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md#4-exact-amendments-for-acceptance);
+> see the [amendment](#amendment-2026-11-04-observable-data) in this record
+> for the exact replacement scope. Other accepted rules remain in force.
 
 Keep preparation, the envelope E, and P1-P5 as named functions with explicit
 inputs and outputs. Reuse snapshot creation, sealing and verification,
@@ -140,6 +152,12 @@ logical rows or instruction/sizing witnesses.
 
 **Superseded 2026-11-04** by the [amendment](#amendment-maintainer-2026-11-04-core-extension-architecture);
 the text below is kept as the accepted original.
+
+> Observable-data amendment (2026-11-04): the addressed passages below are
+> amended by the accepted
+> [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md#4-exact-amendments-for-acceptance);
+> see the [amendment](#amendment-2026-11-04-observable-data) in this record
+> for the exact replacement scope. Other accepted rules remain in force.
 
 Bind D1 as a constraint on the skeleton and its first checkpoint, not a
 request for unused code. The interface table must preserve the following
@@ -451,6 +469,12 @@ record.
 
 ## Amendment (maintainer, 2026-11-04): core extension architecture
 
+> Observable-data amendment (2026-11-04): the addressed passages below are
+> amended by the accepted
+> [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md#4-exact-amendments-for-acceptance);
+> see the [amendment](#amendment-2026-11-04-observable-data) in this record
+> for the exact replacement scope. Other accepted rules remain in force.
+
 The maintainer accepted the [core extension architecture synthesis](rfc_core_extension_architecture_v0_2_3_synthesis.md)
 on 2026-11-04. Its Section 6 supersedes Section 2.1 with the block below.
 Sections 1, 2 outside 2.1, and 3 to 7 are unchanged.
@@ -461,6 +485,12 @@ Sections 1, 2 outside 2.1, and 3 to 7 are unchanged.
 | This synthesis | Sections 1, 2 outside 2.1, 3-7 | Unchanged | Those sections |
 
 ### 2.1 (amended) D1: Affected-Owner Check
+
+> Observable-data amendment (2026-11-04): the addressed passages below are
+> amended by the accepted
+> [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md#4-exact-amendments-for-acceptance);
+> see the [amendment](#amendment-2026-11-04-observable-data) in this record
+> for the exact replacement scope. Other accepted rules remain in force.
 
 Bind [D1](rfc_lean_core_skeleton_v0_2_3_maintainer_decisions.md#d1-built-for-what-comes-next-without-building-it)
 as a constraint on the skeleton, its first checkpoint and every family
@@ -483,3 +513,54 @@ A second engine, execution-mode branch or duplicated kernel fails the check.
 A strategy-boundary or lot-kernel change requires explicit contract disposition
 and parity for unchanged behavior. No future capability or speculative field
 is implemented here. D2's acceptance and amendment gate remains in force.
+
+## Amendment (2026-11-04): observable data
+
+The maintainer accepted the
+[lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md)
+on 2026-11-04, after its independent Type 1 final review
+(ACCEPT_AFTER_PATCHES, patches applied). Its Section 4.2 amends Section 2
+and the amended Section 2.1 as follows. The core-extension amendment's
+statement that Section 2 outside 2.1 is unchanged is amended to that extent;
+Sections 1 and 3 to 7 remain unchanged. The supersession table is in that
+synthesis's Section 4.
+
+Add the following to Section 2 immediately after its interface-table rule:
+
+Later contracted observable data enters through preparation, P1's
+cutoff-bound read service and the P2 adapter. P1 remains the sole
+fold-stage substrate reader; a strategy history call uses the read service
+of its P1-issued view, not an independent causal reader. P3-P5 receive
+contracted typed values and no substrate or history handle. Preserve one
+execution path, snapshot creation, sealing and verification, exclusive
+mutable ownership and frozen retained views. A non-tradable source series
+must not acquire membership, target, position, lot or fill semantics merely
+to fit the instrument axis. Preserve existing numeric-history admission
+and bar/feature public semantics, subject to separately accepted decisions;
+this guard does not supersede the settled post-warmup NA decision. Resolve
+stable names and indexes during preparation; resolve and validate dynamic
+public requests at their existing boundaries. Add no future-data fields,
+descriptors, dispatch, accessors, clocks or absence semantics now.
+
+Attach the observable-data synthesis Section 2's six extension-point notes
+to the interface table's relevant preparation, P1 and P2-view entries,
+with references to any other affected existing services. Describe current
+fields with the already required type, axis, unit, invariant, producer,
+validator and owner. The notes reserve later contract work; they are not
+placeholder fields or a runtime descriptor. A later data kind may change
+representation within its named owners under its own contract.
+
+In amended Section 2.1 replace "The four scenarios below name affected
+owners; they do not freeze every future stage or the current event grammar."
+with "The five scenarios below name affected owners; they do not freeze
+every future stage or the current event grammar."
+
+Add this fifth row to that table:
+
+| Future capability | Affected owners and preserved boundary |
+| --- | --- |
+| New observable data kinds: filed values, market-level series, coded categories and sparse dated events | Ingest/seal and identity mapping; preparation and feature services; P1 cutoff-bound observation and P2's adapter. Assess E scheduling, P1 valuation/settlement, P2 risk, P3/P4 consumers, publication, reconstruction, identity and failure ordering by intended use under the observable-data synthesis Section 3. Preserve the Section 2 observable-data guard. No second causal reader or execution path, no source series given execution semantics to fit an axis, and no future-data mechanism now. |
+
+Other Section 2.1 text and its four existing rows are unchanged. Section 3
+is unchanged: this amendment neither generalizes numeric tiles/admission
+to future data nor requires every later data kind to use that shape.

@@ -36,6 +36,12 @@ change no public behavior. WS11 retains the core-versus-sister decision.
   `rfc_lean_fold_core_v0_2_3_synthesis.md`, and **Records** =
   `rfc_per_pulse_durable_records_v0_2_3_synthesis.md`.
 
+> Observable-data amendment (2026-11-04): the addressed passages below are
+> amended by the accepted
+> [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md#4-exact-amendments-for-acceptance);
+> see the [amendment](#amendment-2026-11-04-observable-data) in this record
+> for the exact replacement scope. Other accepted rules remain in force.
+
 ## 1. Decision And Scope
 
 An extension is a package-owned, reviewed addition through the common fold.
@@ -160,6 +166,12 @@ promising delivery.
 
 ## 4. Procedure For Adding A Capability
 
+> Observable-data amendment (2026-11-04): the addressed passages below are
+> amended by the accepted
+> [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md#4-exact-amendments-for-acceptance);
+> see the [amendment](#amendment-2026-11-04-observable-data) in this record
+> for the exact replacement scope. Other accepted rules remain in force.
+
 1. **Route the semantics.** A vocabulary entry is a direct ticket only under
    already accepted semantics. Public behavior, timing, economic models or
    evidence-boundary changes require an RFC. A new kind/source for another
@@ -223,6 +235,12 @@ work, not a claim that notices were installed by this single-file task
 `inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md:118-141`).
 
 ## 6. D1 And Skeleton Amendment
+
+> Observable-data amendment (2026-11-04): the addressed passages below are
+> amended by the accepted
+> [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md#4-exact-amendments-for-acceptance);
+> see the [amendment](#amendment-2026-11-04-observable-data) in this record
+> for the exact replacement scope. Other accepted rules remain in force.
 
 **Q1: adopt the amendment, with a complete owner-map check (maintainer
 decision, 2026-11-04).** V2's last-sentence replacement alone leaves the
@@ -309,3 +327,29 @@ check were run. The maintainer waived external research for this corpus-based
 cycle (`D:39-43`); the response review accepted the Claude-drafted framing
 (`rfc_core_extension_architecture_v0_2_3_response_review.md:9-26`). This synthesis
 does not substitute its own checks for independent final review.
+
+## Amendment (2026-11-04): observable data
+
+The maintainer accepted the
+[lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md)
+on 2026-11-04, after its independent Type 1 final review
+(ACCEPT_AFTER_PATCHES, patches applied). Its Section 4.3 amends Section 4
+as follows. Section 6's embedded four-scenario text remains the historical
+accepted version, superseded only in its scenario count. The supersession
+table is in that synthesis's Section 4.
+
+Replace Section 4 step 2 with:
+
+2. **Name all owners.** Cover production, scheduling, application,
+   publication, reconstruction, identity and failure ordering. For each
+   changed field name type, axis, unit, producer, validator and owner; show
+   how Section 2 survives. Check the five skeleton scenarios at every
+   family close: OMS, other order types, short selling and leverage, other
+   asset classes, and new observable data kinds. The first four retain
+   Section 6's accepted treatment. For observable data apply the
+   [observable-data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md)
+   Sections 2-3 and its Section 4.2 guard. Its Section 4 amendments extend
+   D1 and skeleton Section 2.1; Section 6's earlier four-scenario text is
+   superseded only to that extent.
+
+The remaining procedure, fixed boundaries and mechanisms are unchanged.

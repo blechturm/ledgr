@@ -699,14 +699,15 @@ against the current core and switched in one cut.
   [synthesis](../rfc/rfc_core_extension_architecture_v0_2_3_synthesis.md) was accepted and amended skeleton
   Section 2.1 and D1. Its Section 4 procedure, including the
   affected-owner check, applies at every family close.
-- **Observable data guard (maintainer, 2026-11-04).** The
-  [lean core observable data RFC](../rfc/README.md#lean-core-observable-data)
-  decides what preparation, P1 and the P2 view keep open for later
-  fundamentals, market-level series and coded categories. Until it is
-  accepted, the first-checkpoint cut does not write memory-preparation code
-  or the interface table's preparation, P1 and P2-view rows; the FIFO
-  family and stage recorder are not held. The accepted synthesis may adjust
-  this gate.
+- **Observable data guard (2026-11-04).** Acceptance of the
+  [observable-data synthesis](../rfc/rfc_lean_core_observable_data_v0_2_3_synthesis.md)
+  clears this RFC's hold on memory-preparation code and the interface
+  table's preparation, P1 and P2-view rows. Install its Section 4 design
+  amendments at acceptance before coding those interfaces. Its written
+  guard and fifth scenario apply at every family close through the existing
+  affected-owner procedure. No hold remains until the External Data RFC;
+  that RFC owns the later data design after CRAN. FIFO and the stage
+  recorder were not held. Other WS16 prerequisites remain in force.
 - **One family per cut (maintainer, 2026-11-04).** Each family after the
   first checkpoint is its own cut (measure, cut, Codex cut review,
   implement), so each closes with its own budgets and review before the

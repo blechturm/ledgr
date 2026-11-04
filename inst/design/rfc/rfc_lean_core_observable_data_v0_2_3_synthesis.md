@@ -1,8 +1,11 @@
 # Lean Core Observable Data: Decision Synthesis
 
-- Status: **not binding until accepted by the maintainer**. Independent
-  Type 1 final review is pending. Acceptance would bind the pending design
-  constraints below; it would not claim implementation.
+- Status: **accepted** by the maintainer on 2026-11-04, after the independent
+  Type 1 [final review](rfc_lean_core_observable_data_v0_2_3_final_review.md)
+  (ACCEPT_AFTER_PATCHES, all seven patches applied). Acceptance installed
+  the Section 4 amendments in D, K, X, M, `decisions.md` and the pipeline,
+  and cleared the WS16 partial hold. It binds the design constraints below;
+  it claims no implementation.
 - Mode: **Decision synthesis**, RFC cycle stage 7. Codex, 2026-11-04;
   different author from seed v2. Brief drafted by Claude and approved by the
   maintainer.
