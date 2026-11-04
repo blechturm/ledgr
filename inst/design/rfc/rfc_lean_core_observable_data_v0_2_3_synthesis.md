@@ -14,6 +14,15 @@
   `C:/Users/maxth/ledgr-wt/observable-data-synthesis`, initially clean.
   Citations refer to this baseline, not the response's earlier head or the
   lean core's eventual reference pin.
+- Final review at `044193dc`: the only intervening change to a cited input
+  is seed v2 line 42 (see Section 1).
+- Revision note (2026-11-04): the seven patches of the
+  [Type 1 final review](rfc_lean_core_observable_data_v0_2_3_final_review.md)
+  (ACCEPT_AFTER_PATCHES) are applied in place: the seed v2 line 42 remark
+  (Sections 1 and 6), the Section 4 supersession table, the installed notice
+  text, routing of the amended records' own rows and the replacement pipeline
+  row (Section 4.5), the `X:173` citation (Section 3) and the `M:1029`
+  citation (Section 1).
 - Citation aliases: **C** = `inst/design/contracts.md`; **K** =
   `inst/design/rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md`; **D** =
   `inst/design/rfc/rfc_lean_core_skeleton_v0_2_3_maintainer_decisions.md`;
@@ -44,6 +53,8 @@ They are subcases of the fifth scenario, not four new type tags or delivery
 commitments. The External Data And Point-In-Time Regressors RFC after CRAN
 owns their design, under the existing
 [instrument master, PIT regressors](README.md#instrument-master-data) route.
+The macro plan already lists PIT fundamentals as an explicit non-goal, after
+CRAN (`M:1029`).
 
 The response's central correction is sound: preserve owners and causal
 boundaries rather than install machinery for unknown payloads
@@ -53,8 +64,10 @@ Seed v2 implements it substantially; the remaining changes here make the
 guard checkable and remove claims broader than the evidence.
 
 The post-warmup `NA` decision is settled and outside this cycle
-(`inst/design/decisions.md:34`; `M:1095`). Seed v2's Section 2 description of
-that decision as pending is stale; its Section 8 correctly excludes it.
+(`inst/design/decisions.md:34`; `M:1095`). At this synthesis's baseline, seed v2's
+Section 2 called that decision "pending", which could be read as undecided.
+Commit `044193dc` reworded it in place to "accepted, pending
+implementation". Its Section 8 correctly excludes it.
 Preserving indicator semantics here does not supersede or delay that
 separately accepted decision or its WS12 route. No new investigation or
 disposition of the scalar/series difference is required by this synthesis.
@@ -128,7 +141,7 @@ execution-mode branch, a second causal reader, a generic metadata escape,
 or execution semantics fabricated for a source series. A representation
 change inside an affected owner is not itself a failure. A change to an
 accepted boundary needs an explicit contract and supersession before code,
-as X Section 4 already requires (`X:168`). No current family must prove a
+as X Section 4 already requires (`X:173`). No current family must prove a
 future capability works. It must show that its own design preserves these
 boundaries and does not implement the future capability prematurely.
 
@@ -141,13 +154,26 @@ the maintainer's actual acceptance provenance in this synthesis's header.
 The date in the amendment title identifies this decision text. Historical
 four-scenario passages remain historical, not competing instructions.
 
+| Target artifact and addressed section | Disposition | Replacement |
+| --- | --- | --- |
+| D, D1 scenario table (`D:26-31`) | Amended | Section 4.1 fifth row; the four existing rows are unchanged |
+| D, operative D1 Check in the core-extension amendment (`D:68`) | Superseded | Section 4.1 replacement Check |
+| K Section 2, interface-table rule (`K:105-113`) | Amended | Section 4.2 guard and extension-point notes, added after the rule |
+| K amended Section 2.1 (`K:463-485`) | Amended | Section 4.2 "five scenarios" sentence and fifth row |
+| K, core-extension amendment's "Sections 1, 2 outside 2.1, and 3 to 7 are unchanged" (`K:456`, `:461`) | Amended | Section 2 is amended as above; Sections 1 and 3 to 7 remain unchanged |
+| X Section 4 step 2 (`X:168-172`) | Superseded | Section 4.3 replacement step |
+| X Section 6, embedded four-scenario text (`X:233-262`) | Superseded in part | Scenario count only, through Sections 4.1-4.3; otherwise historical accepted text |
+| M WS16 "Observable data guard" bullet (`M:702-709`) | Superseded | Section 4.4 bullet |
+| D1 statement and locality amendment (`D:67`), D2; K original 2.1, K Section 2 outside the interface-table rule, K Sections 3-7; X Sections 1-3, 4 outside step 2, 5 and 7 | Unchanged | Those sections |
+
 For each of D, K and X, add this exact header notice and repeat it at the
 affected section headings named below:
 
 > Observable-data amendment (2026-11-04): the addressed passages below are
-> amended by the [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md#4-exact-amendments-for-acceptance)
-> upon its acceptance. The dated observable-data amendment gives the exact
-> replacement scope; other accepted rules remain in force.
+> amended by the accepted
+> [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md#4-exact-amendments-for-acceptance);
+> see the [amendment](#amendment-2026-11-04-observable-data) in this record
+> for the exact replacement scope. Other accepted rules remain in force.
 
 ### 4.1 D1
 
@@ -272,7 +298,7 @@ In `inst/design/decisions.md`, add this row to the existing five-column table:
 
 In Pipeline replace the `lean-core-observable-data` row (`Pipeline:112`) with:
 
-> | <a id="lean-core-observable-data"></a>Lean core observable data | **Obligations open** | [Accepted synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md) Sections 1-5 and 8 | **Trigger:** WS16 preparation/interface cut and every lean-core family close. **Route:** the Section 4 amendments install the written guard and fifth scenario in D1, the skeleton and the extension procedure; acceptance clears this RFC's partial hold. The WS16 ticket cut takes ownership of these current-release obligations. Later data design stays with [instrument master, PIT regressors](#instrument-master-data) after CRAN. |
+> | <a id="lean-core-observable-data"></a>Lean core observable data | **Obligations open** | [Accepted synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md) Sections 1-5 and 8 (Codex, gpt-6.1-sol; maintainer acceptance on the recorded date); [Type 1 final review](rfc_lean_core_observable_data_v0_2_3_final_review.md) (independent Claude session, ACCEPT_AFTER_PATCHES); inputs: [seed v2](rfc_lean_core_observable_data_v0_2_3_seed_v2.md) (maintainer with Claude), [response](rfc_lean_core_observable_data_v0_2_3_response.md) (Codex, Type 2, REVISE), [response review](rfc_lean_core_observable_data_v0_2_3_response_review.md) (maintainer, framing accepted); [seed v1](rfc_lean_core_observable_data_v0_2_3_seed.md) historical | **Trigger:** WS16 preparation/interface cut and every lean-core family close. **Route:** the Section 4 amendments install the written guard and fifth scenario in D1, the skeleton and the extension procedure; acceptance clears this RFC's partial hold. The WS16 ticket cut takes ownership of these current-release obligations. Later data design stays with [instrument master, PIT regressors](#instrument-master-data) after CRAN. |
 
 In Pipeline's existing `instrument-master-data` row (`Pipeline:99`), append
 this exact source link to the accepted-source cell:
@@ -285,6 +311,27 @@ existing obligations and `Obligations open` state:
 > For observable data, the External Data And Point-In-Time Regressors RFC
 > after CRAN owns Section 8's conditional design obligations. These create
 > no hold on the current lean core and no delivery date for a data capability.
+
+Append to the "Current owner" cell of `decisions.md` row `lean-core-skeleton`:
+
+> ; D1, Section 2 and amended Section 2.1 further amended by the
+> [lean core observable data](#lean-core-observable-data) synthesis
+
+Append to the "Current owner" cell of `decisions.md` row
+`core-extension-architecture`:
+
+> ; Section 4 step 2 amended by the
+> [lean core observable data](#lean-core-observable-data) synthesis (five scenarios)
+
+Append to the route cell of Pipeline row `lean-core-skeleton`:
+
+> Acceptance of the [lean core observable data](#lean-core-observable-data)
+> synthesis amended D1, Section 2 and amended Section 2.1.
+
+Append to the route cell of Pipeline row `core-extension-architecture`:
+
+> Acceptance of the [lean core observable data](#lean-core-observable-data)
+> synthesis amended Section 4 step 2.
 
 No shipped contract rule is amended. K Section 3, D2, X's other sections,
 the roadmap and tickets retain their current authority. Acceptance routing
@@ -319,7 +366,7 @@ survive. This document does not declare those gates passed or coding begun.
 | New missingness codes or a blanket non-refusal guarantee | Would decide public semantics without a data contract. Later typed evidence can live beside values; the settled indicator NA decision remains separate. |
 | Dense repetition as a measured defect, or value segments as a required optimization | The withdrawn 63-copy figure is illustrative arithmetic. No memory/performance evidence was produced here; choose and measure physical storage when contracted. |
 | Retain the preparation hold until the External Data RFC, or hold all FIFO/recorder work | No demonstrated dependency warrants either. The written guard resolves the present structural question; later data is outside current scope. |
-| Reopen the response's scalar/series discrepancy as an open question | Already decided by the maintainer and routed to WS12. Seed v2's stale pending label supplies no authority to reopen it. |
+| Reopen the response's scalar/series discrepancy as an open question | Already decided by the maintainer and routed to WS12. Seed v2's former "pending" wording, corrected in `044193dc`, supplied no authority to reopen it. |
 
 ## 7. Open Questions Promoted To Spec-Cut
 
