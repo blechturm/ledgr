@@ -501,8 +501,8 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       prior_ts_utc = state$last_event_ts_utc
     )
     if (isTRUE(commit_boundary) && length(prepared$event_seq) > 0L) {
-      state$last_event_seq <- tail(prepared$event_seq, 1L)
-      state$last_event_ts_utc <- tail(prepared$ts_utc, 1L)
+      state$last_event_seq <- utils::tail(prepared$event_seq, 1L)
+      state$last_event_ts_utc <- utils::tail(prepared$ts_utc, 1L)
     }
     prepared
   }
@@ -580,8 +580,11 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       }
       result <- sink$write_fill_live(block)
       if (identical(block$status, "WROTE")) {
-        state$last_event_seq <- tail(block$event_seq, 1L)
-        state$last_event_ts_utc <- .POSIXct(tail(block$ts_utc, 1L), tz = "UTC")
+        state$last_event_seq <- utils::tail(block$event_seq, 1L)
+        state$last_event_ts_utc <- .POSIXct(
+          utils::tail(block$ts_utc, 1L),
+          tz = "UTC"
+        )
       }
       return(result)
     }
