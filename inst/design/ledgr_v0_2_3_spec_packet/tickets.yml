@@ -1573,9 +1573,9 @@ workstreams:
   - id: 23
     name: "One typed accounting reader (macro WS7)"
     cut: 11
-    status: "pending"
-    accepted: null
-    close_review: "CHANGES_REQUIRED in close_review_23.md (independent Type 1): seven implementation/evidence findings required a current-base A0 oracle, complete field/append validation, fallback deletion, narrower replay work and corrected protocol/records. Focused re-review close_review_23_rereview_1.md returned CHANGES_REQUIRED: public terminal reporting, stale full-suite fixtures/callers, residual timestamp/payload work and durable boundary seeding required a second correction. Final bounded confirmation close_review_23_rereview_2.md returned PASS_AFTER_PATCHES; its three exact seam-contract/evidence patches are applied without another review. The first private aggregate run exposed a reader regression. Product 01cc546d correctly scopes subtype prohibitions by row, but an exact rerun remained red. A non-reconstructive predicate census found the true cause: yyjsonr's default 100-row schema probe omitted every disposition field that first appeared later in the heterogeneous block. Product b0c54217 probes the complete block in the same single bulk decode; LTB-0550 and LTB-0553 fail when the default probe is restored. Focused suites, source census and A0 are green. The private Sharadar aggregate remains OPEN for Claude's exact-candidate rerun and is a mandatory pre-WS24 gate."
+    status: "complete"
+    accepted: "2026-11-04 after the final private aggregate gate passed against exact product candidate b0c54217; ledgr-research e8ff0bd records 14 successful runs per arm, 207 byte-identical tables and WS23_PRIVATE_GATE_CHECK_OK."
+    close_review: "CHANGES_REQUIRED in close_review_23.md (independent Type 1): seven implementation/evidence findings required a current-base A0 oracle, complete field/append validation, fallback deletion, narrower replay work and corrected protocol/records. Focused re-review close_review_23_rereview_1.md returned CHANGES_REQUIRED: public terminal reporting, stale full-suite fixtures/callers, residual timestamp/payload work and durable boundary seeding required a second correction. Final bounded confirmation close_review_23_rereview_2.md returned PASS_AFTER_PATCHES; its three exact seam-contract/evidence patches are applied without another review. The first private aggregate run exposed a reader regression. Product 01cc546d correctly scopes subtype prohibitions by row, but an exact rerun remained red. A non-reconstructive predicate census found the true cause: yyjsonr's default 100-row schema probe omitted every disposition field that first appeared later in the heterogeneous block. Product b0c54217 probes the complete block in the same single bulk decode; LTB-0550 and LTB-0553 fail when the default probe is restored. Focused suites, source census and A0 are green. The final private aggregate gate passes at ledgr-research e8ff0bd: all 14 runs per arm exit zero, all 207 tables are byte-identical and the checker prints WS23_PRIVATE_GATE_CHECK_OK. The rough W2 read slowdown is non-gating and routed to LDG-3209's final milestone."
     depends_on_workstream: 22
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 23, after LDG-3202", reason: "One claim joins LDG-3200 through LDG-3202: the frozen trace predates every reader change; one vectorized validator, prepared typed carrier and chunk-stable replay own every accounting-semantic durable/reconstruction read; terminal recovery is one forward replay rather than pulse-by-pulse replay; inline_summary remains the detected live exception; every public table/print is exact except the decided ledger shape and INCOMPLETE annualized_return row; every field/null/formula and boundary mutation fails; and a clean-context reviewer can explain the carrier, replay and projections from code and contract without a second authority."}
@@ -3572,7 +3572,7 @@ tickets:
   - id: "LDG-3200"
     title: "Freeze the logical trace and accounting boundary map"
     workstream: 23
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
@@ -3598,11 +3598,11 @@ tickets:
       - "frozen records cover all seven Section 6 proof families, full and filtered reads, point/history explanation, summaries, public economics and close/reopen; the private aggregate record holds canonical per-table digests and row counts for full/filtered diagnostics, point/history explanations, D8/valuation summaries and economics, and missing private evidence is an open gate, never a pass"
       - "records name exact source/input identities, package/runtime versions, one-thread settings where applicable, raw repetitions, rows/bytes, latency and peak-memory boundaries; all current-tree checkers pass"
     evidence:
-      - "Commit 16b64066 adds dev/bench/v0_2_3_typed_accounting/: a literal 93-seam source census, 30-field accounting map, 22-field diagnostic map and a checker over the 290-file frozen A0 manifest. The checker passes on the WS23 candidate and reports the private gate OPEN."
+      - "Commit 16b64066 adds dev/bench/v0_2_3_typed_accounting/: a literal 93-seam source census, 30-field accounting map, 22-field diagnostic map and a checker over the 290-file frozen A0 manifest. The structural checker passes on the WS23 candidate; its external private-gate marker is closed by the aggregate record below."
       - "The separately named a0_successor recorder carries the former opening default only for omitted-opening fixtures. Immutable base 0d6c0b11 and the corrected candidate have the same 281-file set; compare.R passes with only the four accepted avail_incomplete annualized_return cells changing from 0 to typed missing. The older 290-file corpus remains a historical integrity check, not the WS23 before arm."
       - "accounting_surface_census.csv classifies the mechanically reconciled producer, writer, reader, test, doc and storage-reference seams; adding, deleting or reclassifying a matched seam fails check.R."
       - "dev/bench/timing/protocols/cut11-accounting-1 now uses the public run-info API, pins event/fill counts and a ledger digest, and changes every instrument on every fill-heavy pulse. protocol_smoke.csv records one non-gating candidate execution at product commit 7361951e; clocks remain descriptive under macro-plan rule 16."
-      - "typed_accounting_reader_closeout.md and close_review_23.md record the unavailable private Sharadar aggregate as an OPEN gate that must be taken from immutable base 0d6c0b11 and the final WS23 candidate before the first WS24 product commit."
+      - "ledgr-research commit e8ff0bd closes the private Sharadar aggregate gate from immutable base 0d6c0b11 to exact product candidate b0c54217 on the same schema-124 snapshot/source identities: 14 runs per arm exit zero, all 207 compared tables are byte-identical and check.R prints WS23_PRIVATE_GATE_CHECK_OK. Only aggregate evidence is committed."
   - id: "LDG-3201"
     title: "Build the typed accounting carrier, validator and replay"
     workstream: 23
@@ -3637,7 +3637,7 @@ tickets:
   - id: "LDG-3202"
     title: "Route accounting-semantic readers through one replay"
     workstream: 23
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3201"]
@@ -3664,7 +3664,7 @@ tickets:
       - "Commits 29b6dd1e and d3b8dfef route headline trades, corporate-action entitlement/composition/summary, terminal outcomes and terminal recovery through one preparation/replay family; terminal recovery queries/replays once and projects forward. The focused correction keeps composition's parent-only query and gives the public summary one instrument-scoped replay that includes fills for terminally disposed positions; LTB-0172 pins the fill-acquired terminal print path."
       - "LTB-0551/LCL-0540 pins the reader census, deleted JSON parser, one terminal replay, one exact 200-event projection and the live inline_summary exception. The close-review corrections delete the unsorted/per-time availability fallback and dead helper, preserve the narrow corporate-action composition query, route walk-forward through the prepared timeline and replace stale test callers with an independent prefix oracle."
       - "LTB-0552/LCL-0541 pins typed NA_real_ for the in-memory and reopened INCOMPLETE availability sweep annualized return. Availability parity passes."
-      - "NEWS records the user-visible INCOMPLETE sweep correction. typed_accounting_reader_closeout.md records the corrected seven-shape walk, the full-suite attribution and exact open evidence boundary. Every WS23-owned block passes; eight failures reproduce unchanged on immutable base 0d6c0b11 (two historical YAML, one latin1 and five native-encoding assertions). LDG-3202 remains pending until the private aggregate is recorded or the maintainer explicitly carves it out; WS24 may not begin product implementation first."
+      - "NEWS records the user-visible INCOMPLETE sweep correction. typed_accounting_reader_closeout.md records the corrected seven-shape walk and full-suite attribution. Every WS23-owned block passes; eight failures reproduce unchanged on immutable base 0d6c0b11 (two historical YAML, one latin1 and five native-encoding assertions). ledgr-research e8ff0bd closes the private gate with 207 byte-identical tables. W2 run medians are about 0.7% and 2.2% slower and several temporary schema-124 JSON-backed result readers are roughly 3x-11x slower; these are non-gating signals routed to LDG-3209's final schema-125 milestone."
   - id: "LDG-3204"
     title: "Switch atomically to schema 125 and direct typed publication"
     workstream: 24

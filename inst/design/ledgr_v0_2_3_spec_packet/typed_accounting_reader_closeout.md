@@ -1,9 +1,8 @@
 # Workstream 23 implementation closeout
 
-Status: two close-review correction rounds complete; final bounded independent
-confirmation is PASS_AFTER_PATCHES and its exact record patches are applied.
-The private Sharadar aggregate remains an explicit open gate before Workstream
-24 product implementation.
+Status: complete and accepted. Two close-review correction rounds and the
+bounded independent confirmation are closed, and the private Sharadar
+aggregate gate passes against the exact final product candidate.
 
 Workstream 23 implements the schema-124 half of the accepted typed-accounting
 boundary. It does not change the ledger DDL or publish schema 125. The product
@@ -13,7 +12,9 @@ commits are:
   replay;
 - `29b6dd1e`: accounting-semantic readers and terminal recovery converge on
   that replay; the accepted INCOMPLETE annualized-return correction lands;
-- `d3b8dfef`: the corporate-action summary reuses one prepared replay.
+- `d3b8dfef`: the corporate-action summary reuses one prepared replay;
+- `b0c54217`: the single bulk metadata decode probes the complete heterogeneous
+  block, retaining evidence fields that first appear after row 100.
 
 The focused re-review found that the narrowed corporate-action query omitted
 FILL history for a position acquired during the run and later disposed at a
@@ -137,22 +138,25 @@ summary and metrics. Restoring the default probe makes both blocks fail.
 
 Focused typed-boundary, terminal-reporting, corporate-action, result-output,
 run-store and run-compare suites pass. The source and A0 checkers pass after
-the new test seams are registered. The private gate remains open for an
-independent exact-candidate rerun; no private value was copied into this tree.
+the new test seams are registered. No private row or log was copied into this
+tree.
 
-## Open evidence gates
+## Private aggregate gate
 
-The private Sharadar aggregate record is **OPEN**. Its first candidate arm and
-predicate census found the bulk schema-probe defect above before producing an
-accepted comparison; Claude must resume the aggregate comparison on product
-candidate `b0c54217` plus these record-only changes. No digest, count, latency
-or peak-memory pass is claimed yet.
+The private Sharadar aggregate record is **PASS**. In ledgr-research commit
+`e8ff0bd`, immutable base `0d6c0b11` and product candidate `b0c54217` use the
+same schema-124 snapshot and source identities. All 14 runs in each arm exit
+zero, all 207 compared tables are byte-identical, and the checker prints
+`WS23_PRIVATE_GATE_CHECK_OK`. The checked-in evidence is aggregate-only; raw
+vendor rows and logs remain private.
 
-The private record is routed as a mandatory precondition before Workstream 24
-changes the store: take it from immutable base `0d6c0b11`, compare it with the
-final WS23 candidate, and commit only the permitted aggregate evidence. Until
-then LDG-3200, LDG-3202 and Workstream 23 remain pending rather than claiming a
-pass.
+The paired observations are descriptive, not a workstream performance gate.
+The W2 run medians are modestly slower (minimum-variance 190.00 to 191.25
+seconds; article 132.28 to 135.18 seconds), while several post-run readers are
+roughly 3x to 11x slower because schema 124 must decode and validate the full
+metadata block. This is preserved as a non-gating signal for LDG-3209's
+planned final milestone, where schema 125 has removed the temporary JSON
+boundary. It does not weaken the exact semantic pass.
 
 The registered timing protocol now uses the public run-info signature, pins
 event/fill counts and a ledger digest, and makes the fill-heavy arm genuinely
