@@ -271,7 +271,8 @@ ledgr_fold_flush_pulse_block <- function(
     run_id,
     ts) {
   n <- fold_state$pending_segments$n
-  if (n == 0L) {
+  logical_n <- fold_state$pending_segments$logical_n
+  if (logical_n == 0L) {
     return(invisible(NULL))
   }
   keep <- diagnostic_writer$keep(fold_state$pending_segments, n)
@@ -283,10 +284,12 @@ ledgr_fold_flush_pulse_block <- function(
     keep = keep
   )
   fold_state$pending_segments$n <- 0L
-  fold_state$diagnostic_seq <- fold_state$diagnostic_seq + n
+  fold_state$pending_segments$logical_n <- 0L
+  fold_state$diagnostic_seq <- fold_state$diagnostic_seq + logical_n
   if (length(block$diagnostic_seq) > 0L) {
     diagnostic_writer$append_block(block)
   }
+  diagnostic_writer$record_coverage(fold_state$diagnostic_seq)
   invisible(NULL)
 }
 
@@ -923,13 +926,12 @@ ledgr_fold_stage_decide <- function(
   }
   append_decision_trace <- function(target_after = NULL) {
     if (length(context_ids) == 0L) {
-      add_segment(list(
+      return(ledgr_fold_diagnostic_segment(list(
         n = 1L,
         stage = "decision",
         outcome = "recorded",
         reason_code = "empty_public_domain"
-      ))
-      return(invisible(NULL))
+      ), ts))
     }
     restriction <- p2$restriction$reason
     restrictions <- p2$restriction$reasons
@@ -944,7 +946,7 @@ ledgr_fold_stage_decide <- function(
         "sizing_unavailable"
       )
     }
-    add_segment(list(
+    ledgr_fold_diagnostic_segment(list(
       n = length(context_ids),
       instrument_id = context_ids,
       stage = "decision",
@@ -960,8 +962,7 @@ ledgr_fold_stage_decide <- function(
       target_after_risk = if (is.null(target_after)) NA_real_ else target_after,
       position_before = position,
       position_after = position
-    ))
-    invisible(NULL)
+    ), ts)
   }
   if (length(targets) > 0L) {
     ledgr_availability_validate_strategy_targets(
@@ -971,7 +972,12 @@ ledgr_fold_stage_decide <- function(
     )
     new_positive <- strategy_qty > position & strategy_qty > 0 & !packet$permissible
     if (any(new_positive)) {
-        append_decision_trace()
+        decision_diagnostic <- append_decision_trace()
+        ledgr_fold_staging_add_residual(
+          fold_state,
+          decision_diagnostic,
+          seq_len(decision_diagnostic$n)
+        )
         stopped <- which(new_positive)
         stopped_ids <- context_ids[stopped]
         affected <- ledgr_availability_affected_exposure(
@@ -1016,19 +1022,20 @@ ledgr_fold_stage_decide <- function(
     ledgr_availability_validate_short_exposure(risked, positions_snapshot)
   }
   {
-    append_decision_trace(target_qty)
+    decision_diagnostic <- append_decision_trace(target_qty)
     stale <- which(
       packet$permissible &
         !is.na(packet$mark_age) &
         packet$mark_age > 0L &
         (position != 0 | target_qty != 0)
     )
+    risk_diagnostic <- NULL
     if (length(stale) > 0L) {
       reduced <- ledgr_fold_target_changed(
         target_qty[stale],
         strategy_qty[stale]
       )
-      add_segment(list(
+      risk_diagnostic <- ledgr_fold_diagnostic_segment(list(
         n = length(stale), instrument_id = context_ids[stale], stage = "risk",
         outcome = ifelse(reduced, "reduced", "passed"),
         reason_code = ifelse(
@@ -1045,7 +1052,7 @@ ledgr_fold_stage_decide <- function(
         target_after_risk = target_qty[stale],
         position_before = position[stale],
         position_after = position[stale]
-      ))
+      ), ts)
     }
   }
   if (sample_telemetry) {
@@ -1067,6 +1074,8 @@ ledgr_fold_stage_decide <- function(
     intent_reason = intent_reason
   ), length(services$instrument_ids))
   c(decision, list(
+    diagnostic_decision = decision_diagnostic,
+    diagnostic_risk = risk_diagnostic,
     sample_start = sample_start,
     t_ctx = t_ctx,
     t_strat = t_strat,
@@ -1143,11 +1152,29 @@ ledgr_fold_stage_plan <- function(
     t_fill <- 0
   }
 
-  # P3's diagnostic rows are staged in emission order; a stop carries its row.
+  # P3 owns the first outcome-aware diagnostic decision. P2 carries only typed
+  # unexpanded segments, so no next-bar result is exposed to strategy or risk.
   add_segment <- function(segment) ledgr_fold_staging_add(fold_state, segment, ts)
   {
     fill <- batch$fill
     rejection <- batch$rejection
+    decision_diagnostic <- decision$diagnostic_decision
+    risk_diagnostic <- decision$diagnostic_risk
+    stage_deferred_all <- function() {
+      ledgr_fold_staging_add_residual(
+        fold_state,
+        decision_diagnostic,
+        seq_len(decision_diagnostic$n)
+      )
+      if (!is.null(risk_diagnostic)) {
+        ledgr_fold_staging_add_residual(
+          fold_state,
+          risk_diagnostic,
+          seq_len(risk_diagnostic$n)
+        )
+      }
+      invisible(NULL)
+    }
     # The reconciliation sum reuses the fills' computed cash effects.
     recorded_final_cash <- fold_state$cash + sum(fill$cash_delta)
     if (!isTRUE(all.equal(
@@ -1155,6 +1182,7 @@ ledgr_fold_stage_plan <- function(
       as.numeric(batch$expected_final_cash),
       tolerance = ledgr_availability_cash_tolerance
     ))) {
+      stage_deferred_all()
       affordability_detail <- canonical_json(list(
         cash_before = fold_state$cash,
         virtual_final_cash = batch$expected_final_cash,
@@ -1175,15 +1203,18 @@ ledgr_fold_stage_plan <- function(
         counts_processed = TRUE
       ))
     }
-    # The reason text is built here, at the diagnostic boundary.
+    # Build the typed execution segments without expanding their rows. Exact
+    # clean decision/fill pairs are selected by context ordinal below.
+    rejection_reasons <- NULL
+    rejection_diagnostic <- NULL
     if (length(rejection$k) > 0L) {
-      reasons <- ledgr_carrier_segment_text(rejection$reason_offset, rejection$reason_count,
+      rejection_reasons <- ledgr_carrier_segment_text(rejection$reason_offset, rejection$reason_count,
         rejection$reason_code, .ledgr_plan_reason_levels)
-      add_segment(list(
+      rejection_diagnostic <- ledgr_fold_diagnostic_segment(list(
         n = length(rejection$k), instrument_id = instrument_ids[rejection$pos],
         stage = "execution", outcome = "no_fill",
         reason_code = .ledgr_plan_reason_levels[rejection$primary],
-        reasons = reasons$reasons,
+        reasons = rejection_reasons$reasons,
         target = target_qty[rejection$k],
         quantity = rejection$position,
         price = rejection$resolved_price,
@@ -1193,17 +1224,19 @@ ledgr_fold_stage_plan <- function(
         target_after_risk = target_qty[rejection$k],
         position_before = rejection$position,
         position_after = rejection$position
-      ))
+      ), ts)
     }
+    fill_reasons <- NULL
+    fill_diagnostic <- NULL
     if (length(fill$k) > 0L) {
       # The primary of a fill row is its first informational reason or "".
-      reasons <- ledgr_carrier_segment_text(fill$info_offset, fill$info_count,
+      fill_reasons <- ledgr_carrier_segment_text(fill$info_offset, fill$info_count,
         fill$info_code, .ledgr_plan_reason_levels)
-      add_segment(list(
+      fill_diagnostic <- ledgr_fold_diagnostic_segment(list(
         n = length(fill$k), instrument_id = instrument_ids[fill$pos],
         stage = "execution", outcome = "filled",
-        reason_code = reasons$reason,
-        reasons = reasons$reasons,
+        reason_code = fill_reasons$reason,
+        reasons = fill_reasons$reasons,
         target = target_qty[fill$k],
         quantity = fill$qty,
         price = fill$price,
@@ -1215,7 +1248,86 @@ ledgr_fold_stage_plan <- function(
         position_before = fill$position_before,
         # The planned after-position: diagnostic evidence, not authority.
         position_after = fill$planned_position_after
-      ))
+      ), ts)
+    }
+
+    encode <- isTRUE(services$diagnostic_writer$can_encode)
+    clean <- if (encode && !is.null(fill_diagnostic)) {
+      ledgr_diagnostic_clean_fill(
+        decision_diagnostic,
+        risk_diagnostic,
+        fill,
+        fill_reasons
+      )
+    } else {
+      rep(FALSE, length(fill$k))
+    }
+    clean[is.na(clean)] <- FALSE
+    clean_rows <- which(clean)
+    clean_k <- if (length(clean_rows) > 0L) fill$k[clean_rows] else integer()
+    clean_hold <- if (encode) {
+      ledgr_diagnostic_clean_hold(
+        decision_diagnostic,
+        risk_diagnostic,
+        excluded_k = c(fill$k, rejection$k)
+      )
+    } else {
+      rep(FALSE, decision_diagnostic$n)
+    }
+    clean_hold_k <- which(clean_hold)
+    implicit_decision_k <- sort(c(clean_k, clean_hold_k), method = "radix")
+
+    decision_offsets <- ledgr_fold_staging_add_residual(
+      fold_state,
+      decision_diagnostic,
+      setdiff(seq_len(decision_diagnostic$n), implicit_decision_k)
+    )
+    if (!is.null(risk_diagnostic)) {
+      ledgr_fold_staging_add_residual(
+        fold_state,
+        risk_diagnostic,
+        seq_len(risk_diagnostic$n)
+      )
+    }
+    if (!is.null(rejection_diagnostic)) {
+      ledgr_fold_staging_add_residual(
+        fold_state,
+        rejection_diagnostic,
+        seq_len(rejection_diagnostic$n)
+      )
+    }
+    execution_offsets <- integer()
+    if (!is.null(fill_diagnostic)) {
+      execution_offsets <- ledgr_fold_staging_add_residual(
+        fold_state,
+        fill_diagnostic,
+        which(!clean)
+      )
+    }
+    if (length(clean_rows) > 0L) {
+      base <- fold_state$diagnostic_seq
+      services$diagnostic_writer$append_implicit(
+        ledgr_diagnostic_implicit_block(
+          run_id = services$run_id,
+          decision = decision_diagnostic,
+          fill = fill,
+          fill_rows = clean_rows,
+          decision_seq = base + decision_offsets[clean_k],
+          execution_seq = base + execution_offsets[clean_rows],
+          event_seq = fold_state$event_seq + clean_rows - 1L
+        )
+      )
+    }
+    if (length(clean_hold_k) > 0L) {
+      base <- fold_state$diagnostic_seq
+      services$diagnostic_writer$append_implicit(
+        ledgr_diagnostic_implicit_hold_block(
+          run_id = services$run_id,
+          decision = decision_diagnostic,
+          rows = clean_hold_k,
+          decision_seq = base + decision_offsets[clean_hold_k]
+        )
+      )
     }
   }
   list(

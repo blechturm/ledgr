@@ -332,6 +332,36 @@ ledgr_current_schema_definition <- function() {
         "position_after DOUBLE, feature_identity_json VARCHAR,",
         "detail_json VARCHAR NOT NULL,",
         "PRIMARY KEY(run_id, diagnostic_seq))"
+      ),
+      run_diagnostic_implicit = sql(
+        "CREATE TABLE run_diagnostic_implicit(",
+        "run_id VARCHAR, decision_seq INTEGER, execution_seq INTEGER,",
+        "ts_utc TIMESTAMP NOT NULL, instrument_id VARCHAR NOT NULL,",
+        "\"target\" DOUBLE NOT NULL, position_before DOUBLE NOT NULL,",
+        "decision_price DOUBLE, decision_mark_source VARCHAR NOT NULL,",
+        "decision_mark_age INTEGER, fill_quantity DOUBLE,",
+        "fill_price DOUBLE, execution_ts_utc TIMESTAMP,",
+        "event_seq INTEGER, position_after DOUBLE NOT NULL,",
+        "PRIMARY KEY(run_id, decision_seq),",
+        "UNIQUE(run_id, execution_seq))"
+      ),
+      run_diagnostic_coverage = sql(
+        "CREATE TABLE run_diagnostic_coverage(",
+        "run_id VARCHAR PRIMARY KEY, logical_count INTEGER NOT NULL,",
+        "codec_rule_version INTEGER NOT NULL)"
+      ),
+      run_diagnostic_summary = sql(
+        "CREATE TABLE run_diagnostic_summary(",
+        "run_id VARCHAR PRIMARY KEY, decisions INTEGER NOT NULL,",
+        "stale INTEGER NOT NULL, frozen INTEGER NOT NULL, assumed INTEGER NOT NULL,",
+        "sizing_available BOOLEAN NOT NULL, evidenced_decisions INTEGER NOT NULL,",
+        "unavailable_decisions INTEGER NOT NULL, no_instruction_decisions INTEGER NOT NULL,",
+        "raw_intent_unavailable BOOLEAN NOT NULL,",
+        "rounded_to_zero_instructions INTEGER NOT NULL,",
+        "pooled_numerator DOUBLE, pooled_denominator DOUBLE,",
+        "minimum_decision_coverage DOUBLE, last_decision_coverage DOUBLE,",
+        "requested_value_diagnostic DOUBLE, post_guard_value_diagnostic DOUBLE,",
+        "rounded_value_diagnostic DOUBLE, summary_hash VARCHAR NOT NULL)"
       )
     ),
     indexes = c(
@@ -371,6 +401,10 @@ ledgr_current_schema_definition <- function() {
       idx_snapshot_bars_ts = paste(
         "CREATE INDEX idx_snapshot_bars_ts ON snapshot_bars",
         "(snapshot_id, ts_utc)"
+      ),
+      idx_run_diagnostic_implicit_instrument = paste(
+        "CREATE INDEX idx_run_diagnostic_implicit_instrument",
+        "ON run_diagnostic_implicit(run_id, instrument_id, decision_seq)"
       )
     )
   )

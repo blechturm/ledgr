@@ -144,7 +144,8 @@
   # persisted schema's (instrument_id "", stage and outcome NA, reasons the
   # reason_code, decision time the pulse, detail "{}").
   diagnostics = c(
-    n = "integer:scalar:none", capacity = "integer:scalar:none",
+    n = "integer:scalar:none", logical_n = "integer:scalar:none",
+    capacity = "integer:scalar:none", logical_offset = "integer:row:none",
     instrument_id = "character:row:none", stage = "character:row:na", outcome = "character:row:na",
     reason_code = "character:row:none", reasons = "character:row:none",
     target = "double:row:na", quantity = "double:row:na", price = "double:row:na",
@@ -774,7 +775,10 @@ ledgr_carrier_p2_valuation <- function(packet, context_ids) {
 # (Synthesis 3.6 and Section 4; design note Sections 2.4 and 3.2.)
 
 # The per-row staging columns, their defaults and the epoch columns.
-.ledgr_diagnostic_row_fields <- names(.ledgr_carrier_fields$diagnostics)[-(1:2)]
+.ledgr_diagnostic_row_fields <- setdiff(
+  names(.ledgr_carrier_fields$diagnostics),
+  c("n", "logical_n", "capacity", "logical_offset")
+)
 .ledgr_diagnostic_defaults <- list(
   instrument_id = "", stage = NA_character_, outcome = NA_character_, reason_code = "",
   reasons = "", target = NA_real_, quantity = NA_real_, price = NA_real_, mark_source = "",
@@ -795,7 +799,12 @@ ledgr_carrier_p2_valuation <- function(packet, context_ids) {
 ledgr_fold_diagnostic_staging <- function(capacity) {
   capacity <- as.integer(capacity)
   columns <- lapply(.ledgr_diagnostic_storage, vector, length = capacity)
-  ledgr_carrier_new(c(list(n = 0L, capacity = capacity), columns), "diagnostics", NA_integer_)
+  ledgr_carrier_new(c(list(
+    n = 0L,
+    logical_n = 0L,
+    capacity = capacity,
+    logical_offset = integer(capacity)
+  ), columns), "diagnostics", NA_integer_)
 }
 
 # The WS5 sizing rows add at most N rows to design note 2.4's bound:
@@ -809,11 +818,11 @@ ledgr_fold_diagnostic_capacity <- function(n_inst, corporate_action_plan) {
 # One producer segment as a fully used block of the staging schema: each
 # field has length 1 or n (absent fields take the defaults), coerced as the
 # persisted diagnostic schema stores it; times are UTC epoch seconds.
-ledgr_fold_diagnostic_rows <- function(segment, ts) {
+ledgr_fold_diagnostic_segment <- function(segment, ts) {
   m <- as.integer(segment$n)
   if (is.null(segment$reasons)) segment$reasons <- if (is.null(segment$reason_code)) "" else segment$reason_code
   ts_num <- as.numeric(as.POSIXct(ts, tz = "UTC"))
-  out <- list(n = m, capacity = m)
+  out <- list(n = m, ts = ts_num)
   # A fixed census of the 19 row fields, not a data-sized loop.
   for (name in .ledgr_diagnostic_row_fields) {
     v <- segment[[name]]
@@ -833,15 +842,38 @@ ledgr_fold_diagnostic_rows <- function(segment, ts) {
         as.numeric(v)
       }
     )
-    out[[name]] <- rep_len(v, m)
+    out[[name]] <- v
   }
-  # The segment is validated once where it enters production (U-3168).
+  structure(out, class = "ledgr_fold_diagnostic_segment")
+}
+
+# Expand only the explicit residual indices of one already validated segment.
+# A scalar field stays scalar until this boundary; an omitted implicit row is
+# therefore never manifested as a general diagnostic row or data frame.
+ledgr_fold_diagnostic_rows <- function(segment, ts = NULL, index = NULL) {
+  if (!inherits(segment, "ledgr_fold_diagnostic_segment")) {
+    segment <- ledgr_fold_diagnostic_segment(segment, ts)
+  }
+  logical_n <- segment$n
+  if (is.null(index)) index <- seq_len(logical_n)
+  index <- as.integer(index)
+  m <- length(index)
+  out <- list(
+    n = m,
+    logical_n = m,
+    capacity = m,
+    logical_offset = seq_len(m)
+  )
+  for (name in .ledgr_diagnostic_row_fields) {
+    v <- segment[[name]]
+    out[[name]] <- if (length(v) == 1L) rep_len(v, m) else v[index]
+  }
   ledgr_carrier_new(out, "diagnostics", NA_integer_)
 }
 
 # Stages a fully used block after the staging's used rows, by index into its
 # preallocated columns. A row beyond the pinned capacity is a bug.
-ledgr_fold_staging_write <- function(fold_state, rows) {
+ledgr_fold_staging_write <- function(fold_state, rows, logical_offset) {
   m <- rows$n
   if (m == 0L) return(invisible(NULL))
   used <- fold_state$pending_segments$n
@@ -849,6 +881,12 @@ ledgr_fold_staging_write <- function(fold_state, rows) {
     rlang::abort("Pulse diagnostic staging exceeded its capacity.", class = "ledgr_invalid_fold_execution")
   }
   dest <- seq.int(used + 1L, length.out = m)
+  collapse::setv(
+    fold_state$pending_segments$logical_offset,
+    dest,
+    as.integer(logical_offset),
+    vind1 = TRUE
+  )
   for (name in .ledgr_diagnostic_row_fields) {
     collapse::setv(fold_state$pending_segments[[name]], dest, rows[[name]], vind1 = TRUE)
   }
@@ -857,7 +895,33 @@ ledgr_fold_staging_write <- function(fold_state, rows) {
 }
 
 ledgr_fold_staging_add <- function(fold_state, segment, ts) {
-  ledgr_fold_staging_write(fold_state, ledgr_fold_diagnostic_rows(segment, ts))
+  segment <- ledgr_fold_diagnostic_segment(segment, ts)
+  start <- fold_state$pending_segments$logical_n
+  index <- seq_len(segment$n)
+  ledgr_fold_staging_write(
+    fold_state,
+    ledgr_fold_diagnostic_rows(segment, index = index),
+    start + index
+  )
+  fold_state$pending_segments$logical_n <- start + segment$n
+  invisible(start + index)
+}
+
+# Reserve every logical sequence position in a segment, while expanding only
+# the residual positions which cannot be represented by the certified codec.
+ledgr_fold_staging_add_residual <- function(fold_state, segment, index) {
+  stopifnot(inherits(segment, "ledgr_fold_diagnostic_segment"))
+  start <- fold_state$pending_segments$logical_n
+  index <- as.integer(index)
+  if (length(index) > 0L) {
+    ledgr_fold_staging_write(
+      fold_state,
+      ledgr_fold_diagnostic_rows(segment, index = index),
+      start + index
+    )
+  }
+  fold_state$pending_segments$logical_n <- start + segment$n
+  invisible(start + seq_len(segment$n))
 }
 
 # The writer block of a staging-schema object's used prefix: the run ID,
@@ -888,7 +952,7 @@ ledgr_fold_diagnostic_block <- function(rows, run_id, ts, first_seq, keep = NULL
   }
   list(
     run_id = rep_len(as.character(run_id), n),
-    diagnostic_seq = as.integer(first_seq) + used - 1L,
+    diagnostic_seq = as.integer(first_seq) + rows$logical_offset[used] - 1L,
     ts_utc = .POSIXct(rep_len(ts_num, n), tz = "UTC"),
     instrument_id = col("instrument_id"), stage = col("stage"), outcome = col("outcome"),
     reason_code = col("reason_code"), reasons = col("reasons"), target = col("target"),

@@ -66,23 +66,6 @@ corporate_action_axis_snapshot <- function(closed) {
   )
 }
 
-corporate_action_axis_state <- function(bt) {
-  opened <- ledgr:::ledgr_backtest_read_connection(bt)
-  on.exit(opened$close(), add = TRUE)
-  rows <- DBI::dbGetQuery(
-    opened$con,
-    "SELECT ts_utc, state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
-    params = list(bt$run_id)
-  )
-  values <- availability_state_values(bt)
-  data.frame(
-    ts_utc = as.POSIXct(rows$ts_utc, tz = "UTC"),
-    axis = vapply(values, `[[`, character(1L), "axis"),
-    cross_mean = vapply(values, `[[`, character(1L), "cross_mean"),
-    stringsAsFactors = FALSE
-  )
-}
-
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0056] physical recipient closure does not leak before settlement", {
   fixtures <- list(
@@ -96,14 +79,17 @@ testthat::test_that("[LTB-0056] physical recipient closure does not leak before 
     targets <- ctx$hold()
     if (identical(ctx$ts_utc, params$first_pulse)) targets[["AAA"]] <- 2
     values <- ctx[["sma_2"]]
+    cross_mean <- if (all(is.na(values))) {
+      "unavailable"
+    } else {
+      format(mean(values, na.rm = TRUE), scientific = FALSE)
+    }
+    axis <- paste(ctx$universe, collapse = "|")
     ledgr_strategy_result(
       targets,
-      axis = paste(ctx$universe, collapse = "|"),
-      cross_mean = if (all(is.na(values))) {
-          "unavailable"
-        } else {
-          format(mean(values, na.rm = TRUE), scientific = FALSE)
-        }
+      axis = axis,
+      cross_mean = cross_mean,
+      intent_reason = paste(axis, cross_mean, sep = "::")
     )
   }
   runs <- lapply(names(fixtures), function(name) {
@@ -146,7 +132,21 @@ testthat::test_that("[LTB-0056] physical recipient closure does not leak before 
     value
   })
   state <- lapply(runs, function(bt) {
-    value <- corporate_action_axis_state(bt)
+    opened <- ledgr:::ledgr_backtest_read_connection(bt)
+    on.exit(opened$close(), add = TRUE)
+    rows <- ledgr:::ledgr_diagnostic_decode(
+      opened$con,
+      bt$run_id,
+      stage = "decision",
+      reason_code = "strategy_intent"
+    )
+    parts <- strsplit(rows$reasons, "::", fixed = TRUE)
+    value <- data.frame(
+      ts_utc = as.POSIXct(rows$ts_utc, tz = "UTC"),
+      axis = vapply(parts, `[[`, character(1L), 1L),
+      cross_mean = vapply(parts, `[[`, character(1L), 2L),
+      stringsAsFactors = FALSE
+    )
     value[value$ts_utc <= pre_settlement, , drop = FALSE]
   })
   fills <- lapply(runs, function(bt) {

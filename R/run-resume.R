@@ -15,6 +15,9 @@ ledgr_run_restart_nonterminal <- function(con,
       for (table in c(
         "run_completion",
         "run_telemetry",
+        "run_diagnostic_coverage",
+        "run_diagnostic_implicit",
+        "run_diagnostic_summary",
         "run_diagnostics",
         "equity_curve",
         "ledger_events"

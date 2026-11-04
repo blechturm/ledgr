@@ -109,6 +109,56 @@ testthat::test_that("runner can use separate snapshot artifact and run ledger da
 
   out <- ledgr_run_config(cfg, run_id = "run-snapshot-split-db")
   testthat::expect_identical(out$db_path, run_path)
+  bt <- ledgr:::new_ledgr_backtest(
+    run_id = out$run_id,
+    db_path = out$db_path,
+    config = cfg
+  )
+  close(bt)
+  # A fresh run-store connection must re-attach the sealed snapshot source
+  # before the logical decoder validates compact current-close evidence.
+  reopened <- ledgr:::ledgr_backtest_read_connection(bt)
+  on.exit(reopened$close(), add = TRUE)
+  ledgr:::ledgr_backtest_ensure_snapshot(bt, reopened$con)
+  decoded <- ledgr:::ledgr_diagnostic_decode(
+    reopened$con,
+    "run-snapshot-split-db"
+  )
+  testthat::expect_gt(nrow(decoded), 0L)
+  implicit <- DBI::dbGetQuery(
+    reopened$con,
+    paste(
+      "SELECT decision_seq, decision_price FROM run_diagnostic_implicit",
+      "WHERE run_id = ? ORDER BY decision_seq LIMIT 1"
+    ),
+    params = list("run-snapshot-split-db")
+  )
+  testthat::expect_equal(nrow(implicit), 1L)
+  DBI::dbExecute(
+    reopened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_price = decision_price + 1",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list("run-snapshot-split-db", implicit$decision_seq[[1L]])
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_diagnostic_decode(reopened$con, "run-snapshot-split-db"),
+    class = "ledgr_diagnostic_corrupt"
+  )
+  DBI::dbExecute(
+    reopened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_price = ?",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(
+      implicit$decision_price[[1L]],
+      "run-snapshot-split-db",
+      implicit$decision_seq[[1L]]
+    )
+  )
+  reopened$close()
   gc()
   Sys.sleep(0.05)
 

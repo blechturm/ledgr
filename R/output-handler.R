@@ -83,7 +83,9 @@ ledgr_output_sink_duckdb <- function(con, run_id, run_wall_start, execution_mode
   sink$requires_init <- TRUE
   sink$nonwrote_buffer_result <- FALSE
   sink$refresh_seq_on_exception <- TRUE
-  sink$preserve_diagnostic_seq <- FALSE
+  # Physical rows retain their logical sequence positions; the codec may
+  # leave certified holes which the decoder fills from implicit evidence.
+  sink$preserve_diagnostic_seq <- TRUE
   sink$diagnostic_keep <- function(diagnostics, n = NULL) {
     if (is.null(n)) n <- if (is.data.frame(diagnostics)) nrow(diagnostics) else length(diagnostics$stage)
     rep(TRUE, n)
@@ -119,6 +121,31 @@ ledgr_output_sink_duckdb <- function(con, run_id, run_wall_start, execution_mode
   sink$seed_diagnostic_seq <- function() ledgr_next_diagnostic_seq(con, run_id)
   sink$keep_diagnostics <- function(diagnostics) {
     ledgr_store_append(con, "run_diagnostics", diagnostics)
+    invisible(TRUE)
+  }
+  sink$keep_diagnostic_implicit <- function(rows) {
+    ledgr_store_append(con, "run_diagnostic_implicit", rows)
+    invisible(TRUE)
+  }
+  sink$write_diagnostic_coverage <- function(logical_count) {
+    DBI::dbExecute(
+      con,
+      paste(
+        "INSERT INTO run_diagnostic_coverage",
+        "(run_id, logical_count, codec_rule_version) VALUES (?, ?, ?)",
+        "ON CONFLICT(run_id) DO UPDATE SET",
+        "logical_count = excluded.logical_count,",
+        "codec_rule_version = excluded.codec_rule_version"
+      ),
+      params = list(run_id, as.integer(logical_count), ledgr_diagnostic_codec_rule_version)
+    )
+    invisible(TRUE)
+  }
+  sink$write_diagnostic_summary <- function() {
+    row <- ledgr_diagnostic_summary_from_store(con, run_id)
+    row$summary_hash <- ledgr_diagnostic_summary_hash(row)
+    DBI::dbExecute(con, "DELETE FROM run_diagnostic_summary WHERE run_id = ?", params = list(run_id))
+    ledgr_store_append(con, "run_diagnostic_summary", row)
     invisible(TRUE)
   }
   sink$append_events <- function(rows) {
@@ -604,6 +631,18 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     }
     invisible(TRUE)
   }
+  if (is.function(sink$keep_diagnostic_implicit)) {
+    handler$write_run_diagnostic_implicit <- function(rows) {
+      if (!is.null(rows) && nrow(rows) > 0L) sink$keep_diagnostic_implicit(rows)
+      invisible(TRUE)
+    }
+  }
+  if (is.function(sink$write_diagnostic_coverage)) {
+    handler$write_diagnostic_coverage <- sink$write_diagnostic_coverage
+  }
+  if (is.function(sink$write_diagnostic_summary)) {
+    handler$write_diagnostic_summary <- sink$write_diagnostic_summary
+  }
   handler$write_run_evidence <- function(completion, diagnostics) {
     state$completion <- completion
     if (is.function(sink$write_completion)) sink$write_completion(completion)
@@ -614,6 +653,12 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     refresh <- isTRUE(sink$refresh_seq_on_exception)
     diagnostic$diagnostic_seq <- next_diagnostic_seq(refresh = refresh)
     sink$keep_diagnostics(diagnostic)
+    if (is.function(sink$write_diagnostic_coverage)) {
+      sink$write_diagnostic_coverage(diagnostic$diagnostic_seq[[1L]])
+    }
+    if (is.function(sink$write_diagnostic_summary)) {
+      sink$write_diagnostic_summary()
+    }
     if (!refresh) state$next_diagnostic_seq <- state$next_diagnostic_seq + 1L
     invisible(TRUE)
   }

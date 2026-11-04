@@ -193,24 +193,11 @@ ws5_run_semantic_ports <- function(snapshot = ws5_port_snapshot()) {
   on.exit(close(turtle_run), add = TRUE)
   trailing_fills <- as.data.frame(ledgr_results(trailing_run, "fills"))
   turtle_fills <- as.data.frame(ledgr_results(turtle_run, "fills"))
-  con <- ledgr:::get_connection(snapshot)
-  state_rows <- lapply(
-    c(trailing = "ws5_trailing_port", turtle = "ws5_turtle_port"),
-    function(run_id) DBI::dbGetQuery(
-      con,
-      paste(
-        "SELECT ts_utc, state_json FROM strategy_state",
-        "WHERE run_id = ? ORDER BY ts_utc"
-      ),
-      params = list(run_id)
-    )
-  )
   stopifnot(nrow(trailing_fills) == 58L, nrow(turtle_fills) == 741L)
   list(
     trailing = trailing_fills,
     turtle = turtle_fills,
     turtle_fill_digest = ws5_fill_digest(turtle_fills),
-    state = state_rows,
     trailing_experiment = trailing,
     turtle_experiment = turtle
   )

@@ -170,18 +170,17 @@ availability_v201_read_store <- function(path, run_id) {
   identity <- query("SELECT * FROM runs WHERE run_id = ?")
   list(
     identity = availability_v201_normalize_identity(identity),
-    diagnostics = query(
-      "SELECT * FROM run_diagnostics WHERE run_id = ? ORDER BY diagnostic_seq"
-    ),
+    diagnostics = as.data.frame(ledgr:::ledgr_diagnostic_decode(
+      opened$con,
+      run_id
+    )),
     events = query(
       "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq"
     ),
     equity = query(
       "SELECT * FROM equity_curve WHERE run_id = ? ORDER BY ts_utc"
     ),
-    state = query(
-      "SELECT * FROM strategy_state WHERE run_id = ? ORDER BY ts_utc"
-    ),
+    state = data.frame(),
     completion = query("SELECT * FROM run_completion WHERE run_id = ?")
   )
 }
@@ -318,7 +317,7 @@ availability_v201_fold_fixture <- function() {
 
 availability_v201_fold_strategy <- function(ctx, params) {
   if (identical(ctx$ts_utc, getOption("ledgr.v201.interrupt_at", ""))) {
-    options(ledgr.interrupt = TRUE)
+    rlang::interrupt()
   }
   if (identical(ctx$ts_utc, getOption("ledgr.v201.fail_at", ""))) {
     stop("injected v0.2.0.1 witness failure")
@@ -358,7 +357,8 @@ availability_v201_run_invocation <- function(experiment, run_id) {
       handle <- ledgr_run(experiment, run_id = run_id)
       NULL
     },
-    error = identity
+    error = identity,
+    interrupt = identity
   )
   if (!is.null(handle)) close(handle)
   error
@@ -414,7 +414,6 @@ availability_v201_run_case <- function(arm,
     }
   }
   prior <- options(
-    ledgr.interrupt = FALSE,
     ledgr.v201.interrupt_at = timestamp(interrupt_day),
     ledgr.v201.fail_at = timestamp(fail_day),
     ledgr.v201.increase_nonmember_at = timestamp(increase_day),
@@ -435,12 +434,16 @@ availability_v201_run_case <- function(arm,
   )
   run_id <- paste0("availability-v201-", scenario)
   first_error <- availability_v201_run_invocation(experiment, run_id)
+  if (!is.null(first_error) && !run_id %in% DBI::dbGetQuery(
+    ledgr:::get_connection(snapshot), "SELECT run_id FROM runs"
+  )$run_id) {
+    stop(conditionMessage(first_error), call. = FALSE)
+  }
   first <- availability_v201_read_store(db, run_id)
   final <- first
   resume_error <- NULL
   if (!is.null(interrupt_day)) {
     options(
-      ledgr.interrupt = FALSE,
       ledgr.v201.interrupt_at = "",
       ledgr.v201.fail_at = timestamp(resume_fail_day)
     )
@@ -457,7 +460,7 @@ availability_v201_run_case <- function(arm,
 
 availability_v201_compare_store <- function(x, y) {
   surfaces <- c(
-    "identity", "diagnostics", "events", "equity", "state", "completion"
+    "identity", "diagnostics", "events", "equity", "completion"
   )
   vapply(surfaces, function(surface) {
     identical(x[[surface]], y[[surface]])

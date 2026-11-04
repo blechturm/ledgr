@@ -196,7 +196,7 @@ testthat::test_that("invalid terminal merge preserves prior rows and status", {
 })
 
 # ledgr-test-profile: heavy_protocol
-testthat::test_that("fixed-basket resume commits the valued prefix and resumes it", {
+testthat::test_that("fixed-basket failure rolls back its prefix and restarts cleanly", {
   dates <- as.Date("2020-01-01") + 0:2
   bars <- data.frame(
     ts_utc = as.POSIXct(paste(dates, "16:00:00"), tz = "UTC"),
@@ -213,17 +213,14 @@ testthat::test_that("fixed-basket resume commits the valued prefix and resumes i
     instruments_df = data.frame(instrument_id = "AAA")
   )
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  prior <- options(
-    ledgr.interrupt = FALSE,
-    ledgr.v201.prefix_interrupt_at = "2020-01-02T16:00:00Z"
-  )
+  prior <- options(ledgr.v201.prefix_interrupt_at = "2020-01-02T16:00:00Z")
   on.exit(options(prior), add = TRUE)
   strategy <- function(ctx, params) {
     if (identical(
       ctx$ts_utc,
       getOption("ledgr.v201.prefix_interrupt_at", "")
     )) {
-      options(ledgr.interrupt = TRUE)
+      rlang::interrupt()
     }
     ledgr_strategy_result(ctx$flat(), ts_utc = ctx$ts_utc)
   }
@@ -244,28 +241,28 @@ testthat::test_that("fixed-basket resume commits the valued prefix and resumes i
     .package = "ledgr"
   )
 
-  first <- ledgr_run(experiment, run_id = "dense-prefix-bypass")
-  close(first)
+  got <- tryCatch(
+    ledgr_run(experiment, run_id = "dense-prefix-bypass"),
+    interrupt = function(e) "interrupted"
+  )
+  testthat::expect_identical(got, "interrupted")
   first_store <- availability_prefix_store(
     snapshot$db_path,
     "dense-prefix-bypass"
   )
-  testthat::expect_identical(first_store$status, "RUNNING")
-  testthat::expect_equal(nrow(first_store$equity), 2L)
+  testthat::expect_identical(first_store$status, "FAILED")
+  testthat::expect_equal(nrow(first_store$equity), 0L)
 
-  options(
-    ledgr.interrupt = FALSE,
-    ledgr.v201.prefix_interrupt_at = ""
-  )
-  resumed <- ledgr_run(experiment, run_id = "dense-prefix-bypass")
-  close(resumed)
+  options(ledgr.v201.prefix_interrupt_at = "")
+  restarted <- ledgr_run(experiment, run_id = "dense-prefix-bypass")
+  close(restarted)
   final_store <- availability_prefix_store(
     snapshot$db_path,
     "dense-prefix-bypass"
   )
   testthat::expect_identical(final_store$status, "DONE")
   testthat::expect_equal(nrow(final_store$equity), 3L)
-  testthat::expect_identical(calls$n, 2L)
+  testthat::expect_identical(calls$n, 1L)
   reopened <- ledgr_run_open(snapshot, "dense-prefix-bypass")
   on.exit(close(reopened), add = TRUE)
   testthat::expect_equal(nrow(ledgr_compute_equity_curve(reopened)), 3L)

@@ -32,6 +32,20 @@ ledgr_availability_diagnostic_columns <- function(n) {
   )
 }
 
+ledgr_diagnostic_implicit_columns <- function(n) {
+  chr <- function() character(n)
+  int <- function() integer(n)
+  dbl <- function() numeric(n)
+  ts <- function() as.POSIXct(rep(NA_real_, n), origin = "1970-01-01", tz = "UTC")
+  list(
+    run_id = chr(), decision_seq = int(), execution_seq = int(), ts_utc = ts(),
+    instrument_id = chr(), target = dbl(), position_before = dbl(),
+    decision_price = dbl(), decision_mark_source = chr(), decision_mark_age = int(),
+    fill_quantity = dbl(), fill_price = dbl(), execution_ts_utc = ts(),
+    event_seq = int(), position_after = dbl()
+  )
+}
+
 # Production column writer. Columns live in an environment so writes target
 # stable preallocated vectors, and every column, character included, is
 # written in place with collapse::setv(). The writer accepts one typed block
@@ -58,7 +72,11 @@ ledgr_columnar_diagnostic_writer <- function(run_id,
   chunk_rows <- as.integer(chunk_rows)
   cols <- new.env(parent = emptyenv())
   column_names <- names(ledgr_availability_diagnostic_columns(0L))
+  implicit_cols <- new.env(parent = emptyenv())
+  implicit_names <- names(ledgr_diagnostic_implicit_columns(0L))
   n <- 0L
+  implicit_n <- 0L
+  logical_count <- 0L
   reset <- function() {
     fresh <- ledgr_availability_diagnostic_columns(chunk_rows)
     for (nm in column_names) assign(nm, fresh[[nm]], envir = cols)
@@ -66,6 +84,13 @@ ledgr_columnar_diagnostic_writer <- function(run_id,
     invisible(NULL)
   }
   reset()
+  reset_implicit <- function() {
+    fresh <- ledgr_diagnostic_implicit_columns(chunk_rows)
+    for (nm in implicit_names) assign(nm, fresh[[nm]], envir = implicit_cols)
+    implicit_n <<- 0L
+    invisible(NULL)
+  }
+  reset_implicit()
   build <- function(k) {
     out <- lapply(column_names, function(nm) {
       col <- get(nm, envir = cols)
@@ -78,6 +103,20 @@ ledgr_columnar_diagnostic_writer <- function(run_id,
     if (n == 0L) return(invisible(NULL))
     output_handler$write_run_diagnostics(build(n))
     reset()
+    invisible(NULL)
+  }
+  build_implicit <- function(k) {
+    out <- lapply(implicit_names, function(nm) {
+      col <- get(nm, envir = implicit_cols)
+      if (k < length(col)) col[seq_len(k)] else col
+    })
+    names(out) <- implicit_names
+    as.data.frame(out, stringsAsFactors = FALSE)
+  }
+  flush_implicit <- function() {
+    if (implicit_n == 0L) return(invisible(NULL))
+    output_handler$write_run_diagnostic_implicit(build_implicit(implicit_n))
+    reset_implicit()
     invisible(NULL)
   }
   append_block <- function(fields) {
@@ -103,13 +142,53 @@ ledgr_columnar_diagnostic_writer <- function(run_id,
     }
     invisible(NULL)
   }
+  append_implicit <- function(fields) {
+    total <- fields$n
+    start <- 1L
+    while (start <= total) {
+      if (implicit_n >= chunk_rows) flush_implicit()
+      take <- min(chunk_rows - implicit_n, total - start + 1L)
+      src <- seq.int(start, length.out = take)
+      dest <- seq.int(implicit_n + 1L, length.out = take)
+      for (nm in implicit_names) {
+        collapse::setv(
+          get(nm, envir = implicit_cols),
+          dest,
+          fields[[nm]][src],
+          vind1 = TRUE
+        )
+      }
+      implicit_n <<- implicit_n + take
+      start <- start + take
+    }
+    invisible(NULL)
+  }
   drain <- function() {
+    flush()
+    flush_implicit()
+    if (is.function(output_handler$write_diagnostic_coverage)) {
+      output_handler$write_diagnostic_coverage(logical_count)
+    }
+    if (is.function(output_handler$write_diagnostic_summary)) {
+      output_handler$write_diagnostic_summary()
+    }
     build(n)
   }
   list(
     keep = output_handler$diagnostic_keep,
+    can_encode = is.function(output_handler$write_run_diagnostic_implicit),
     append_block = append_block,
+    append_implicit = append_implicit,
+    record_coverage = function(n) {
+      logical_count <<- as.integer(n)
+      invisible(NULL)
+    },
     drain = drain,
-    release = reset
+    release = function() {
+      reset()
+      reset_implicit()
+      logical_count <<- 0L
+      invisible(NULL)
+    }
   )
 }

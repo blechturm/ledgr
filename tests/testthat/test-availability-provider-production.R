@@ -49,7 +49,6 @@ availability_v201_inspection_case <- function(interrupt_day = NULL) {
     )
   }
   withr::local_options(list(
-    ledgr.interrupt = FALSE,
     ledgr.v201.interrupt_at = interrupt_at,
     ledgr.v201.fail_at = "",
     ledgr.v201.increase_nonmember_at = "",
@@ -65,12 +64,12 @@ availability_v201_inspection_case <- function(interrupt_day = NULL) {
   )
   run_id <- if (is.null(interrupt_day)) "provider-direct" else "provider-resumed"
   if (!is.null(interrupt_day)) {
-    first <- ledgr_run(experiment, run_id = run_id)
-    close(first)
-    options(
-      ledgr.interrupt = FALSE,
-      ledgr.v201.interrupt_at = ""
+    got <- tryCatch(
+      ledgr_run(experiment, run_id = run_id),
+      interrupt = function(e) "interrupted"
     )
+    testthat::expect_identical(got, "interrupted")
+    options(ledgr.v201.interrupt_at = "")
   }
   direct <- ledgr_run(experiment, run_id = run_id)
   diagnostics <- tibble::as_tibble(direct, what = "diagnostics")

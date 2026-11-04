@@ -127,79 +127,28 @@ ledgr_run_sizing_summary <- function(bt, con = NULL) {
     con = con, close = function() invisible(FALSE)
   )
   on.exit(opened$close(), add = TRUE)
-  rows <- ledgr_diagnostic_decode(opened$con, bt$run_id, stage = "sizing")
-  decision_rows <- ledgr_diagnostic_decode(
-    opened$con,
-    bt$run_id,
-    stage = "decision"
-  )
-  decision_times <- sort(unique(
-    decision_rows$ts_utc[!is.na(decision_rows$instrument_id) & nzchar(decision_rows$instrument_id)]
-  ))
+  ledgr_diagnostic_require_coverage(opened$con, bt$run_id)
+  stored <- ledgr_diagnostic_summary_read(opened$con, bt$run_id)
   out <- ledgr_sizing_summary_empty()
-  if (nrow(rows) == 0L) {
-    out$no_instruction_decisions <- length(decision_times)
+  out$available <- isTRUE(stored$sizing_available[[1L]])
+  out$raw_intent_unavailable <- isTRUE(stored$raw_intent_unavailable[[1L]])
+  out$evidenced_decisions <- as.integer(stored$evidenced_decisions[[1L]])
+  out$unavailable_decisions <- as.integer(stored$unavailable_decisions[[1L]])
+  out$no_instruction_decisions <- as.integer(stored$no_instruction_decisions[[1L]])
+  out$rounded_to_zero_instructions <- as.integer(stored$rounded_to_zero_instructions[[1L]])
+  denominator <- stored$pooled_denominator[[1L]]
+  out$pooled_coverage <- if (is.finite(denominator) && denominator > 0) {
+    stored$pooled_numerator[[1L]] / denominator
   } else {
-    time <- as.numeric(as.POSIXct(rows$ts_utc, tz = "UTC"))
-    decision_time <- as.numeric(as.POSIXct(decision_times, tz = "UTC"))
-    unavailable <- rows$reason_code == "sizing_unavailable"
-    raw_notice <- rows$reason_code == "sizing_intent_unavailable"
-    instrument_row <- !is.na(rows$instrument_id) & nzchar(rows$instrument_id)
-    priced <- instrument_row & !unavailable & is.finite(rows$price) &
-      rows$price > 0 & is.finite(rows$target) & is.finite(rows$quantity)
-    requested_value <- abs(rows$target_before_risk * rows$price)
-    post_guard_value <- abs(rows$target * rows$price)
-    rounded_value <- abs(rows$quantity * rows$price)
-    requested_value[!priced] <- NA_real_
-    post_guard_value[!priced] <- NA_real_
-    rounded_value[!priced] <- NA_real_
-    unique_time <- sort(unique(time[instrument_row]), method = "radix")
-    coverage <- rep(NA_real_, length(unique_time))
-    if (length(unique_time) > 0L) {
-      group <- match(time[instrument_row], unique_time)
-      denominator_by_time <- rowsum(
-        ifelse(priced[instrument_row], post_guard_value[instrument_row], 0),
-        group, reorder = FALSE, na.rm = TRUE
-      )[, 1L]
-      numerator_by_time <- rowsum(
-        ifelse(priced[instrument_row], rounded_value[instrument_row], 0),
-        group, reorder = FALSE, na.rm = TRUE
-      )[, 1L]
-      covered <- denominator_by_time > 0
-      coverage[covered] <- numerator_by_time[covered] /
-        denominator_by_time[covered]
-    }
-    evidenced_times <- unique(time[instrument_row & !unavailable])
-    missing_times <- decision_time[!decision_time %in% unique(time[instrument_row])]
-    unavailable_times <- unique(c(
-      time[unavailable],
-      if (any(raw_notice)) missing_times else numeric()
-    ))
-    denominator <- sum(post_guard_value, na.rm = TRUE)
-    out$available <- any(instrument_row)
-    out$raw_intent_unavailable <- any(raw_notice)
-    out$evidenced_decisions <- length(evidenced_times)
-    out$unavailable_decisions <- length(unavailable_times)
-    out$no_instruction_decisions <- if (any(raw_notice)) 0L else length(missing_times)
-    out$rounded_to_zero_instructions <- sum(rows$reason_code %in% c(
-      "sizing_rounded_to_zero_addition",
-      "sizing_rounded_to_zero_liquidation"
-    ))
-    out$pooled_coverage <- if (denominator > 0) {
-      sum(rounded_value, na.rm = TRUE) / denominator
-    } else {
-      NA_real_
-    }
-    finite_coverage <- coverage[is.finite(coverage)]
-    out$minimum_decision_coverage <- if (length(finite_coverage)) min(finite_coverage) else NA_real_
-    out$last_decision_coverage <- if (length(coverage)) utils::tail(coverage, 1L) else NA_real_
-    if (any(priced)) {
-      out$requested_value_diagnostic <- sum(requested_value, na.rm = TRUE)
-      out$post_guard_value_diagnostic <- sum(post_guard_value, na.rm = TRUE)
-      out$rounded_value_diagnostic <- sum(rounded_value, na.rm = TRUE)
-      out$rounding_difference_diagnostic <- out$post_guard_value_diagnostic - out$rounded_value_diagnostic
-    }
+    NA_real_
   }
+  out$minimum_decision_coverage <- stored$minimum_decision_coverage[[1L]]
+  out$last_decision_coverage <- stored$last_decision_coverage[[1L]]
+  out$requested_value_diagnostic <- stored$requested_value_diagnostic[[1L]]
+  out$post_guard_value_diagnostic <- stored$post_guard_value_diagnostic[[1L]]
+  out$rounded_value_diagnostic <- stored$rounded_value_diagnostic[[1L]]
+  out$rounding_difference_diagnostic <-
+    out$post_guard_value_diagnostic - out$rounded_value_diagnostic
   snapshot_id <- bt$config$data$snapshot_id
   currencies <- DBI::dbGetQuery(
     opened$con,

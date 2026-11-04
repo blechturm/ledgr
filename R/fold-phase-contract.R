@@ -198,7 +198,10 @@ ledgr_fold_apply_stop <- function(fold_state, stop) {
   fold_state$status <- stop$status
   fold_state$stop_reason <- stop$reason_code
   fold_state$affected_exposure <- stop$affected_exposure
-  ledgr_fold_staging_write(fold_state, stop$diagnostics)
+  start <- fold_state$pending_segments$logical_n
+  index <- seq_len(stop$diagnostics$n)
+  ledgr_fold_staging_write(fold_state, stop$diagnostics, start + index)
+  fold_state$pending_segments$logical_n <- start + stop$diagnostics$n
   if (stop$counts_processed) {
     fold_state$processed <- fold_state$processed + 1L
   }

@@ -51,7 +51,7 @@ availability_economics_tables <- function(bt) {
   list(
     run = DBI::dbGetQuery(opened$con, "SELECT status FROM runs WHERE run_id = ?", params = list(bt$run_id)),
     completion = DBI::dbGetQuery(opened$con, "SELECT * FROM run_completion WHERE run_id = ?", params = list(bt$run_id)),
-    diagnostics = DBI::dbGetQuery(opened$con, "SELECT * FROM run_diagnostics WHERE run_id = ? ORDER BY diagnostic_seq", params = list(bt$run_id)),
+    diagnostics = as.data.frame(ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id)),
     events = DBI::dbGetQuery(opened$con, "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq", params = list(bt$run_id)),
     equity = DBI::dbGetQuery(opened$con, "SELECT * FROM equity_curve WHERE run_id = ? ORDER BY ts_utc", params = list(bt$run_id))
   )
@@ -833,14 +833,15 @@ testthat::test_that("execution-time membership changes are diagnostic only", {
 })
 
 # ledgr-test-profile: review
-testthat::test_that("decision traces append across deliberate interruption and resume", {
+testthat::test_that("decision traces replace a failed attempt on fresh restart", {
   snapshot <- availability_economics_snapshot("AAA", days = 3L)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  prior_interrupt <- getOption("ledgr.interrupt")
-  on.exit(options(ledgr.interrupt = prior_interrupt), add = TRUE)
+  prior_interrupt <- getOption("ledgr.test.availability.interrupt", FALSE)
+  on.exit(options(ledgr.test.availability.interrupt = prior_interrupt), add = TRUE)
   strategy <- function(ctx, params) {
-    if (identical(ctx$ts_utc, "2020-01-01T16:00:00Z")) {
-      options(ledgr.interrupt = TRUE)
+    if (isTRUE(getOption("ledgr.test.availability.interrupt", FALSE)) &&
+        identical(ctx$ts_utc, "2020-01-02T16:00:00Z")) {
+      rlang::interrupt()
     }
     ctx$flat()
   }
@@ -850,37 +851,39 @@ testthat::test_that("decision traces append across deliberate interruption and r
     valuation_policy = ledgr_valuation_stale(1),
     cost_model = ledgr_cost_zero()
   )
-  first <- ledgr_run(exp, run_id = "availability-interrupted")
-  first_stored <- availability_economics_tables(first)
+  options(ledgr.test.availability.interrupt = TRUE)
+  got <- tryCatch(
+    ledgr_run(exp, run_id = "availability-interrupted"),
+    interrupt = function(e) "interrupted"
+  )
+  testthat::expect_identical(got, "interrupted")
+  first_stored <- availability_economics_tables(list(
+    db_path = snapshot$db_path,
+    run_id = "availability-interrupted"
+  ))
   first_diagnostics <- first_stored$diagnostics
-  testthat::expect_identical(first_stored$run$status, "RUNNING")
+  testthat::expect_identical(first_stored$run$status, "FAILED")
   testthat::expect_equal(nrow(first_stored$completion), 0L)
-  testthat::expect_gt(nrow(first_diagnostics), 0L)
-  testthat::expect_equal(nrow(first_stored$equity), 1L)
-  close(first)
-
-  options(ledgr.interrupt = FALSE)
-  resumed <- ledgr_run(exp, run_id = "availability-interrupted")
-  on.exit(close(resumed), add = TRUE)
-  resumed_stored <- availability_economics_tables(resumed)
-  testthat::expect_identical(resumed_stored$run$status, "DONE")
-  testthat::expect_equal(nrow(resumed_stored$completion), 1L)
-  testthat::expect_equal(nrow(resumed_stored$equity), 3L)
+  testthat::expect_identical(nrow(first_diagnostics), 0L)
+  testthat::expect_equal(nrow(first_stored$equity), 0L)
+  options(ledgr.test.availability.interrupt = FALSE)
+  restarted <- ledgr_run(exp, run_id = "availability-interrupted")
+  on.exit(close(restarted), add = TRUE)
+  restarted_stored <- availability_economics_tables(restarted)
+  testthat::expect_identical(restarted_stored$run$status, "DONE")
+  testthat::expect_equal(nrow(restarted_stored$completion), 1L)
+  testthat::expect_equal(nrow(restarted_stored$equity), 3L)
   testthat::expect_identical(
-    as.numeric(as.POSIXct(resumed_stored$equity$ts_utc, tz = "UTC")),
+    as.numeric(as.POSIXct(restarted_stored$equity$ts_utc, tz = "UTC")),
     as.numeric(as.POSIXct(
       paste(as.Date("2020-01-01") + 0:2, "16:00:00"),
       tz = "UTC"
     ))
   )
-  testthat::expect_gt(nrow(resumed_stored$diagnostics), nrow(first_diagnostics))
+  testthat::expect_false(any(restarted_stored$diagnostics$reason_code == "fold_exception"))
   testthat::expect_identical(
-    resumed_stored$diagnostics[seq_len(nrow(first_diagnostics)), , drop = FALSE],
-    first_diagnostics
-  )
-  testthat::expect_identical(
-    resumed_stored$diagnostics$diagnostic_seq,
-    seq_len(nrow(resumed_stored$diagnostics))
+    restarted_stored$diagnostics$diagnostic_seq,
+    seq_len(nrow(restarted_stored$diagnostics))
   )
   reopened <- ledgr_run_open(snapshot, "availability-interrupted")
   on.exit(close(reopened), add = TRUE)

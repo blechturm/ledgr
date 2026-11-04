@@ -152,15 +152,6 @@ testthat::test_that("[LTB-0490] structured intent reasons use one durable portfo
   fills <- ledgr_results(with_reason, "fills")
   equity <- ledgr_results(with_reason, "equity")
   metrics <- ledgr_compute_metrics(with_reason)
-  con <- ledgr:::get_connection(snapshot)
-  state_with_reason <- DBI::dbGetQuery(
-    con,
-    paste(
-      "SELECT ts_utc, state_json FROM strategy_state",
-      "WHERE run_id = 'intent-dense-recorded' ORDER BY ts_utc"
-    )
-  )
-
   close(with_reason)
   reopened <- ledgr_run_open(snapshot, "intent-dense-recorded")
   on.exit(close(reopened), add = TRUE)
@@ -180,14 +171,7 @@ testthat::test_that("[LTB-0490] structured intent reasons use one durable portfo
   testthat::expect_identical(ledgr_results(omitted, "fills"), fills)
   testthat::expect_identical(ledgr_results(omitted, "equity"), equity)
   testthat::expect_identical(ledgr_compute_metrics(omitted), metrics)
-  state_omitted <- DBI::dbGetQuery(
-    con,
-    paste(
-      "SELECT ts_utc, state_json FROM strategy_state",
-      "WHERE run_id = 'intent-dense-omitted' ORDER BY ts_utc"
-    )
-  )
-  testthat::expect_identical(state_omitted, state_with_reason)
+  con <- ledgr:::get_connection(snapshot)
   identity <- DBI::dbGetQuery(
     con,
     paste(
@@ -313,14 +297,16 @@ testthat::test_that("[LTB-0492] malformed intent reasons refuse before economic 
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0493] resume and committed walk-forward runs retain each invoked reason once", {
+testthat::test_that("[LTB-0493] fresh restart and committed walk-forward runs retain invoked reasons once", {
   snapshot <- ledgr_snapshot_from_df(intent_evidence_bars(8L))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  prior_interrupt <- getOption("ledgr.interrupt")
-  on.exit(options(ledgr.interrupt = prior_interrupt), add = TRUE)
+  prior_interrupt <- getOption("ledgr.test.intent.interrupt", FALSE)
+  on.exit(options(ledgr.test.intent.interrupt = prior_interrupt), add = TRUE)
   interrupting <- function(ctx, params) {
     n <- ctx$state$n + 1L
-    if (n == 2L && isTRUE(params$interrupt)) options(ledgr.interrupt = TRUE)
+    if (n == 2L && isTRUE(getOption("ledgr.test.intent.interrupt", FALSE))) {
+      rlang::interrupt()
+    }
     list(
       targets = ctx$hold(),
       state_update = list(n = n),
@@ -331,31 +317,40 @@ testthat::test_that("[LTB-0493] resume and committed walk-forward runs retain ea
     interrupting, portfolio_state = list(n = 0L),
     cost_model = ledgr_cost_zero()
   )
-  options(ledgr.interrupt = FALSE)
-  first <- ledgr_run(
-    exp,
-    params = list(interrupt = TRUE),
-    run_id = "intent-resume"
+  options(ledgr.test.intent.interrupt = TRUE)
+  got <- tryCatch(
+    ledgr_run(
+      exp,
+      params = list(interrupt = TRUE),
+      run_id = "intent-resume"
+    ),
+    interrupt = function(e) "interrupted"
   )
-  first_rows <- intent_evidence_rows(first)
-  close(first)
-  testthat::expect_identical(nrow(first_rows), 2L)
+  testthat::expect_identical(got, "interrupted")
+  failed_rows <- DBI::dbGetQuery(
+    ledgr:::get_connection(snapshot),
+    paste(
+      "SELECT COUNT(*) AS n FROM run_diagnostics",
+      "WHERE run_id = 'intent-resume' AND reason_code = 'strategy_intent'"
+    )
+  )
+  testthat::expect_identical(failed_rows$n[[1L]], 0)
 
-  options(ledgr.interrupt = FALSE)
-  resumed <- ledgr_run(
+  options(ledgr.test.intent.interrupt = FALSE)
+  restarted <- ledgr_run(
     exp,
     params = list(interrupt = TRUE),
     run_id = "intent-resume"
   )
-  on.exit(close(resumed), add = TRUE)
-  resumed_rows <- intent_evidence_rows(resumed)
-  testthat::expect_identical(nrow(resumed_rows), 8L)
+  on.exit(close(restarted), add = TRUE)
+  restarted_rows <- intent_evidence_rows(restarted)
+  testthat::expect_identical(nrow(restarted_rows), 8L)
   testthat::expect_identical(
-    unname(resumed_rows$reasons),
+    unname(restarted_rows$reasons),
     paste0("pulse_", seq_len(8L))
   )
-  testthat::expect_identical(resumed_rows$detail_json, rep("{}", 8L))
-  testthat::expect_identical(anyDuplicated(resumed_rows$ts_utc), 0L)
+  testthat::expect_identical(restarted_rows$detail_json, rep("{}", 8L))
+  testthat::expect_identical(anyDuplicated(restarted_rows$ts_utc), 0L)
 
   wf_exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,

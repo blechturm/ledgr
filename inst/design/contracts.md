@@ -217,11 +217,16 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   back and a failed memory candidate exposes no successful result; private
   state and buffers already changed are not restored. The compiled
   spot-FIFO branch keeps its state-before-append order.
-- Stages write pulse diagnostics into the typed staging in emission order.
+- Stages reserve logical pulse diagnostics in emission order. P2 carries
+  normal decision and risk segments unexpanded to P3; after planning, P3
+  certifies exact clean decision/fill and clean-hold forms by context ordinal.
+  Only residual indices enter the general row expansion. The typed staging
+  tracks logical offsets separately from its physical used prefix.
   Its capacity is fixed in E at `max(6N + 4, Q_pulse)` rows (`N` run
   instruments, `Q_pulse` the most disposition rows due on one pulse); a row
   beyond it refuses with `ledgr_invalid_fold_execution`. P5, or E on a stop,
-  hands the used rows to the existing bounded diagnostic writer as one block
+  hands the physical residual rows to the existing bounded diagnostic writer
+  as one block and the compact implicit columns to its bounded codec buffer
   and resets the used count, so no staged row survives its pulse and no
   run-long diagnostic buffer exists; the memory sink's filter and sequence
   gaps are unchanged. P1 writes one equity row per valued pulse on both
@@ -238,8 +243,9 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 ### Typed Fold Carrier
 
 The carrier contract of the typed-fold-carrier synthesis (Section 4) as
-implemented in v0.2.3 cut 5 (LDG-3164 to LDG-3168). It is internal: it
-changes no public API, stored format or identity.
+implemented in v0.2.3 cut 5 (LDG-3164 to LDG-3168), extended by the Cut 11
+diagnostic codec. It changes no public API or run identity; the codec is a
+store-format binding.
 
 - Every typed column is a plain vector without attributes, of storage type
   double, integer, logical or character, and of exactly its axis length:
@@ -285,7 +291,7 @@ changes no public API, stored format or identity.
 | applied row | `position_before`, `position_after`, `close_qty`, `open_qty`, `realized_close`, `realized_delta`, `event_realized`, `event_cost_basis` | finite; actual positions from lots; an opening closes and opens nothing and takes no Kahan step; the close/open split is checked against the lots before and after | the lot kernel; the calling boundary |
 | publication | `status`, `next_event_seq` and the ordered typed `ledger_events` columns: common identity/execution, `cash_delta`, `position_delta`, `source`, `source_fact_id`, corporate-cash evidence and disposition evidence | `WROTE` exactly when the block has rows, else `NO_OP`; contiguous sequences; IDs formatted once per block from run and sequence; existing tokens; `position_delta` the signed quantity; non-applicable evidence is typed missing; no accounting JSON or metadata list | `ledgr_fill_event_payload()` at P4; the handler retains it |
 | leg | `event_seq`, `instrument_id`, `side`, `action`, `ts_utc`, `qty`, `price`, `fee`, `realized_pnl` | event order with CLOSE before OPEN, once each; the canonical fee split (`ledgr_fill_leg_fees()`); an OPEN leg realizes 0 | `ledgr_fill_leg_block()` at P4; the memory sink retains it |
-| diagnostics (staging) | `n`, `capacity` and the writer's per-row columns: `instrument_id`, `stage`, `outcome`, `reason_code`, `reasons`, `target`, `quantity`, `price`, `mark_source`, `mark_age`, `decision_ts_utc`, `execution_ts_utc`, `event_seq`, `target_before_risk`, `target_after_risk`, `position_before`, `position_after`, `feature_identity_json`, `detail_json` | `n` at most `capacity`; rules apply to the used prefix only; the persisted defaults and missingness (stage, outcome, mark source and feature identity may be NA; instrument, reason code, reasons, decision time and detail may not); `run_id`, `diagnostic_seq` and `ts_utc` are added at the drain | P1, P2, P3, the scheduled skip, P5 and E's stop installation; one pulse |
+| diagnostics (staging) | physical `n`, logical `logical_n`, `capacity`, `logical_offset` and the writer's per-row columns: `instrument_id`, `stage`, `outcome`, `reason_code`, `reasons`, `target`, `quantity`, `price`, `mark_source`, `mark_age`, `decision_ts_utc`, `execution_ts_utc`, `event_seq`, `target_before_risk`, `target_after_risk`, `position_before`, `position_after`, `feature_identity_json`, `detail_json` | physical `n` at most `capacity`; logical offsets are unique positions within the pulse and `logical_n` includes certified implicit rows; rules apply to the physical used prefix only; persisted defaults and missingness are unchanged; `run_id`, logical `diagnostic_seq` and `ts_utc` are added at drain | P1, P2, P3, the scheduled skip, P5 and E's stop installation; one pulse |
 | equity | `ts`, `cash`, `positions_value`, `realized_pnl`, `cost_basis`, `n` | rows preallocated to the pulse count; only the first `n` are valid, in strictly increasing time; values as valued | P1; E hands a frozen prefix |
 | stop | `status`, `reason_code`, `affected_instrument_ids`, `affected_exposure`, `diagnostics`, `counts_processed` | non-empty status and reason; `diagnostics` one fully used staging block | P1, P2 or P3; E applies it once |
 
@@ -1488,7 +1494,11 @@ Accepted change pending:
   strategy-schedule declaration and hash in `run_provenance` and
   the compiled decision-pulse and scheduled-skip counts to `run_telemetry`;
   readers recover and verify the declaration rather than inferring it from
-  diagnostics. It stores no
+  diagnostics. The store fingerprint also binds
+  `ledgr_diagnostic_codec_rule_version`. Physical diagnostic residuals,
+  certified implicit clean pairs and holds, logical coverage and compact
+  exact run summaries are one current representation; missing or mismatched
+  codec evidence refuses and no compatibility reader exists. It stores no
   `walk_forward_folds.hydration_start_utc` column, and its sealed
   corporate-action provenance distinguishes assumed from evidenced knowledge
   (Cut 17 LDG-3085). Schema-120 through schema-124 stores are older
@@ -1513,8 +1523,13 @@ Accepted change pending:
 <a id="contract-persistence-fold-evidence"></a>
 ### Fold Evidence And Early Exit
 
-- Availability-aware direct runs persist one decision trace row per invoked
-  axis ID plus ordered risk, execution, reconciliation, and stop evidence.
+- Availability-aware direct runs preserve one logical decision trace row per
+  invoked axis ID plus ordered risk, execution, reconciliation, and stop
+  evidence. Exact current-close clean decisions and fills/holds may use the
+  certified implicit codec; every difference remains a typed physical
+  residual. Scheduled skips, stops and errors are always physical. Missing,
+  duplicated or corrupt coverage/association evidence refuses with
+  `ledgr_diagnostic_corrupt`; absence never means hold.
   Expected valuation exhaustion, unavailable risk marks, unsupported terminal
   settlement, and reconciliation stops return through the normal fold
   transaction and finalize as `INCOMPLETE`, preserving only accepted prefix

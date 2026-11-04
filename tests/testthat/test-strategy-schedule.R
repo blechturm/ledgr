@@ -105,10 +105,6 @@ testthat::test_that("[LTB-0512] scheduled skips retain valuation evidence", {
     rows("equity_curve", manual$run_id, "ts_utc"),
     rows("equity_curve", scheduled$run_id, "ts_utc")
   )
-  testthat::expect_identical(
-    rows("strategy_state", manual$run_id, "ts_utc"),
-    rows("strategy_state", scheduled$run_id, "ts_utc")
-  )
   testthat::expect_identical(manual$status, scheduled$status)
 
   manual_valuation <- ledgr_valuation_summary(manual)
@@ -901,15 +897,6 @@ testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan st
   )
   testthat::expect_identical(as.integer(reconciliation$n[[1L]]), info$pulse_count)
 
-  state_n <- vapply(
-    availability_state_values(run),
-    function(state) state$n,
-    integer(1)
-  )
-  testthat::expect_identical(length(state_n), info$pulse_count)
-  testthat::expect_identical(max(state_n), info$decision_pulse_count)
-  testthat::expect_identical(sum(diff(state_n) != 0L), info$decision_pulse_count)
-
   year_exp <- ws42_with_schedule(fixture$exp, ledgr_schedule_year_start())
   testthat::expect_error(
     ledgr_run(year_exp, run_id = "scheduled-zero-flat"),
@@ -923,12 +910,8 @@ testthat::test_that("[LTB-0505] scheduled skips bypass only decision and plan st
   testthat::expect_identical(opened_info$decision_pulse_count, 0L)
   testthat::expect_identical(opened_info$scheduled_skip_count, opened_info$pulse_count)
 
-  old_interrupt <- getOption("ledgr.interrupt")
-  on.exit(options(ledgr.interrupt = old_interrupt), add = TRUE)
-  options(ledgr.interrupt = TRUE)
-  carried_partial <- ledgr_run(year_exp, run_id = "scheduled-zero-carried")
-  close(carried_partial)
-  options(ledgr.interrupt = FALSE)
+  carried_first <- ledgr_run(year_exp, run_id = "scheduled-zero-carried")
+  close(carried_first)
   carried_done <- ledgr_run(year_exp, run_id = "scheduled-zero-carried")
   on.exit(close(carried_done), add = TRUE)
   carried_info <- ledgr_run_info(fixture$snapshot, carried_done$run_id)
@@ -1209,7 +1192,7 @@ testthat::test_that("[LTB-0506] current schema persists, reopens and discloses s
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume state", {
+testthat::test_that("[LTB-0507] skipped pulses preserve economics across fresh restart", {
   opening <- ledgr_opening(
     cash = 1000,
     positions = c(AAA = 1),
@@ -1256,11 +1239,11 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
   state_strategy <- function(ctx, params) {
     n <- ctx$state$n
     if (isTRUE(getOption("ledgr.schedule.interrupt_on_decision", FALSE)) && n == 0L) {
-      options(ledgr.interrupt = TRUE)
+      rlang::interrupt()
     }
     ledgr_strategy_result(ctx$hold(), n = n + 1L)
   }
-  resumed <- ws42_history_fixture(
+  restarted <- ws42_history_fixture(
     strategy = state_strategy,
     features = list(),
     opening = opening,
@@ -1268,29 +1251,26 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
     schedule = ledgr_schedule_week_start(),
     portfolio_state = list(n = 0L)
   )
-  on.exit(ledgr_snapshot_close(resumed$snapshot), add = TRUE)
-  reference <- ledgr_run(resumed$exp, run_id = "schedule-resume-reference")
-  on.exit(close(reference), add = TRUE)
-  old_interrupt <- getOption("ledgr.interrupt")
+  on.exit(ledgr_snapshot_close(restarted$snapshot), add = TRUE)
   old_schedule_interrupt <- getOption("ledgr.schedule.interrupt_on_decision")
-  on.exit(options(
-    ledgr.interrupt = old_interrupt,
-    ledgr.schedule.interrupt_on_decision = old_schedule_interrupt
-  ), add = TRUE)
-  options(
-    ledgr.interrupt = FALSE,
-    ledgr.schedule.interrupt_on_decision = TRUE
+  on.exit(
+    options(ledgr.schedule.interrupt_on_decision = old_schedule_interrupt),
+    add = TRUE
   )
-  partial <- ledgr_run(resumed$exp, run_id = "schedule-resume")
-  close(partial)
-  options(
-    ledgr.interrupt = FALSE,
-    ledgr.schedule.interrupt_on_decision = FALSE
+  options(ledgr.schedule.interrupt_on_decision = FALSE)
+  reference <- ledgr_run(restarted$exp, run_id = "schedule-restart-reference")
+  on.exit(close(reference), add = TRUE)
+  options(ledgr.schedule.interrupt_on_decision = TRUE)
+  got <- tryCatch(
+    ledgr_run(restarted$exp, run_id = "schedule-restart"),
+    interrupt = function(e) "interrupted"
   )
-  completed <- ledgr_run(resumed$exp, run_id = "schedule-resume")
+  testthat::expect_identical(got, "interrupted")
+  options(ledgr.schedule.interrupt_on_decision = FALSE)
+  completed <- ledgr_run(restarted$exp, run_id = "schedule-restart")
   on.exit(close(completed), add = TRUE)
 
-  opened <- ledgr:::ledgr_run_store_open(resumed$snapshot$db_path)
+  opened <- ledgr:::ledgr_run_store_open(restarted$snapshot$db_path)
   on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
   fetch <- function(table, run_id, order) {
     DBI::dbGetQuery(
@@ -1302,10 +1282,6 @@ testthat::test_that("[LTB-0507] skipped pulses preserve economics and resume sta
   testthat::expect_identical(
     fetch("equity_curve", reference$run_id, "ts_utc"),
     fetch("equity_curve", completed$run_id, "ts_utc")
-  )
-  testthat::expect_identical(
-    fetch("strategy_state", reference$run_id, "ts_utc"),
-    fetch("strategy_state", completed$run_id, "ts_utc")
   )
   fetch_events <- function(run_id) {
     DBI::dbGetQuery(

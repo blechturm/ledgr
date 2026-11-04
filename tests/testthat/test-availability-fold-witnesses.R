@@ -88,7 +88,7 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
     "availability-v0-2-0-1"
   )
   surfaces <- c(
-    "diagnostics", "events", "equity", "state", "completion", "identity"
+    "diagnostics", "events", "equity", "completion", "identity"
   )
   # LDG-2403 registered 1e-10 for harmless accounting-order noise. Keep exact
   # identity for every frozen field except the one derived value whose summation
@@ -111,17 +111,6 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       actual <- actual[actual$stage != "sizing", , drop = FALSE]
       rownames(actual) <- NULL
       actual$diagnostic_seq <- expected$diagnostic_seq
-    }
-    if (identical(surface, "state")) {
-      marker <- actual$state_json == ledgr:::ledgr_strategy_state_cursor_marker
-      testthat::expect_true(any(marker))
-      payloads <- lapply(actual$state_json[!marker], ledgr:::ledgr_json_read_nested)
-      testthat::expect_true(all(vapply(payloads, function(x) {
-        identical(as.integer(x$rule_version), 1L) &&
-          is.character(x$axis) && length(x$axis) > 0L &&
-          is.list(x$fields) && length(x$fields) == 0L
-      }, logical(1L))))
-      actual$state_json <- expected$state_json
     }
     if (identical(surface, "identity")) {
       expected_metric <- ledgr:::ledgr_json_read_nested(
@@ -170,6 +159,21 @@ testthat::test_that("direct persisted rows match the reviewed baseline", {
       }
       expected_config$strategy$params$strategy_key <- NULL
       actual_config$strategy$params$strategy_key <- NULL
+      # The frozen helper used the retired soft-stop option and qualified as
+      # Tier 1. Its current replacement raises a real interrupt through a
+      # captured package function, which preflight correctly classifies as
+      # Tier 2. This is provenance only; the exact persisted run surfaces are
+      # compared below after acknowledging that intentional retirement.
+      testthat::expect_identical(
+        expected_config$strategy$provenance$reproducibility_level,
+        "tier_1"
+      )
+      testthat::expect_identical(
+        actual_config$strategy$provenance$reproducibility_level,
+        "tier_2"
+      )
+      actual_config$strategy$provenance$reproducibility_level <-
+        expected_config$strategy$provenance$reproducibility_level
       testthat::expect_identical(
         actual_config$strategy_state,
         ledgr:::ledgr_json_read_nested(canonical_json(list(
@@ -304,7 +308,7 @@ testthat::test_that("run identity excludes exactly the three registered fields",
 })
 
 # ledgr-test-profile: heavy_protocol
-testthat::test_that("ported failures roll back and resumes preserve prefixes", {
+testthat::test_that("ported failures roll back and nonterminal attempts restart fresh", {
   exception <- availability_v201_run_case(
     "production",
     "exception_rollback",
@@ -342,16 +346,13 @@ testthat::test_that("ported failures roll back and resumes preserve prefixes", {
     )
     testthat::expect_equal(nrow(result$final$events), 0L)
   }
-  testthat::expect_identical(resumed$first$identity$status, "RUNNING")
+  testthat::expect_identical(resumed$first$identity$status, "FAILED")
   testthat::expect_identical(resumed$final$identity$status, "FAILED")
-  prefix <- resumed$first$diagnostics
-  testthat::expect_identical(
-    resumed$final$diagnostics[seq_len(nrow(prefix)), ],
-    prefix
-  )
+  testthat::expect_false(identical(resumed$final$diagnostics, resumed$first$diagnostics))
   testthat::expect_identical(
     resumed$final$diagnostics$reason_code[[nrow(resumed$final$diagnostics)]],
     "fold_exception"
   )
-  testthat::expect_identical(resumed$final$equity, resumed$first$equity)
+  testthat::expect_equal(nrow(resumed$first$equity), 0L)
+  testthat::expect_equal(nrow(resumed$final$equity), 0L)
 })

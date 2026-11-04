@@ -43,11 +43,18 @@ testthat::test_that("the production diagnostic path defaults to one typed block"
     "diagnostic-production",
     sink$handler
   )
-  testthat::expect_identical(names(writer), c("keep", "append_block", "drain", "release"))
+  testthat::expect_identical(
+    names(writer),
+    c(
+      "keep", "can_encode", "append_block", "append_implicit",
+      "record_coverage", "drain", "release"
+    )
+  )
 
   writer$append_block(diagnostic_production_block(2L))
   testthat::expect_length(sink$state$writes, 0L)
-  testthat::expect_equal(nrow(writer$drain()), 2L)
+  testthat::expect_equal(nrow(writer$drain()), 0L)
+  testthat::expect_equal(vapply(sink$state$writes, nrow, integer(1L)), 2L)
 
 })
 
@@ -66,8 +73,8 @@ testthat::test_that("typed diagnostic blocks split across injected chunks", {
       capacity
     )
     tail <- writer$drain()
-    testthat::expect_equal(nrow(tail), 3L)
-    actual <- do.call(rbind, c(sink$state$writes, list(tail)))
+    testthat::expect_equal(nrow(tail), 0L)
+    actual <- do.call(rbind, sink$state$writes)
     expected <- as.data.frame(block, stringsAsFactors = FALSE)
     rownames(actual) <- NULL
     rownames(expected) <- NULL
@@ -127,7 +134,7 @@ testthat::test_that("a production block chunk remains available when its append 
   testthat::expect_identical(writer$drain(), tail)
   writer$release()
   testthat::expect_equal(nrow(writer$drain()), 0L)
-  actual <- do.call(rbind, c(state$writes, list(tail)))
+  actual <- do.call(rbind, state$writes)
   rownames(actual) <- NULL
   testthat::expect_identical(actual$instrument_id, c("I01", "I02", "I03"))
   testthat::expect_identical(actual$diagnostic_seq, 1:3)

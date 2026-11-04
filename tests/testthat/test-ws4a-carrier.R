@@ -2453,9 +2453,7 @@ ws4a_json_shapes <- function(e) {
   shape <- function(x) paste0(ws4a_head(x), "(", paste(vapply(as.list(x)[-1L], function(y) {
     if (is.call(y) && ws4a_head(y) == "list") paste0("list(", paste(names(y)[-1L], collapse = ","), ")") else ws4a_txt(y)
   }, ""), collapse = "; "), ")")
-  vapply(Filter(function(x) {
-    grepl("json|JSON", ws4a_head(x)) || identical(ws4a_head(x), "ledgr_strategy_state_encode")
-  }, ws4a_calls(e)), shape, "")
+  vapply(Filter(function(x) grepl("json|JSON", ws4a_head(x)), ws4a_calls(e)), shape, "")
 }
 ws4a_d6_routed <- c(
   ledgr_fold_stage_observe_settle = "ledgr_availability_detail_json(affected$details[[k]])",
@@ -2463,8 +2461,7 @@ ws4a_d6_routed <- c(
   ledgr_fold_stage_decide = "canonical_json(list(risk_step))",
   ledgr_fold_stage_plan = "canonical_json(list(cash_before,virtual_final_cash,recorded_final_cash))",
   ledgr_fold_stage_commit = paste0("canonical_json(list(cash_before,virtual_final_cash,recorded_final_cash,intended_gross_exposure,",
-    "post_risk_gross_exposure,actual_gross_exposure,exposure_basis))"),
-  ledgr_fold_stage_commit = "ledgr_strategy_state_encode(next_state; services$strategy_state_declaration; context_ids)"
+    "post_risk_gross_exposure,actual_gross_exposure,exposure_basis))")
 )
 ws4a_d6_hits <- function(fns) {
   unlist(lapply(names(fns), function(nm) {
@@ -2485,7 +2482,7 @@ testthat::test_that("[WS4a D6] the fold stages encode JSON only at the routed si
   testthat::expect_true(hit("ledgr_fold_stage_plan", "canonical_json(list(intent_reason = x))"))
   testthat::expect_true(hit(
     "ledgr_fold_stage_commit",
-    "ledgr_strategy_state_encode(state_update, services$strategy_state_declaration, context_ids)"
+    "canonical_json(list(state_update = next_state))"
   ))
 })
 
@@ -3115,9 +3112,13 @@ testthat::test_that("[WS4a W1] P4 installs the book, publishes, advances, record
   }
   for (new in c("fold_state$event_seq <- fold_state$event_seq + length(rows)",
     "fold_state$positions[fill$pos] <- candidate$book$net_by_inst[fill$pos]")) {
-    bad <- ws4a_w1(mutant(new))
-    legs <- vapply(bad$orders, function(f) !is.na(f[["legs_recorded"]]), NA)
-    testthat::expect_false(all(mapply(ws4a_w1_ok, bad$orders, legs)), info = new)
+    bad <- tryCatch(ws4a_w1(mutant(new)), ledgr_diagnostic_corrupt = identity)
+    if (inherits(bad, "ledgr_diagnostic_corrupt")) {
+      testthat::succeed()
+    } else {
+      legs <- vapply(bad$orders, function(f) !is.na(f[["legs_recorded"]]), NA)
+      testthat::expect_false(all(mapply(ws4a_w1_ok, bad$orders, legs)), info = new)
+    }
   }
 })
 
@@ -3164,19 +3165,24 @@ ws4a_3168_capture <- function(avail, paths = c("run", "sweep"), stop_at = NA_int
     },
     ledgr_fold_flush_pulse_block = function(fold_state, diagnostic_writer, ...) {
       staged <- fold_state$pending_segments$n
+      logical_staged <- fold_state$pending_segments$logical_n
       sequence_before <- fold_state$diagnostic_seq
       problem <- ns$ledgr_carrier_problem(fold_state$pending_segments, "diagnostics", NA_integer_)
       handed <- c(rows = 0L, stopped = 0L)
       writer <- list(
         keep = diagnostic_writer$keep,
+        can_encode = diagnostic_writer$can_encode,
         append_block = function(block) {
           handed <<- c(rows = length(block$diagnostic_seq), stopped = sum(block$outcome %in% "stopped"))
           diagnostic_writer$append_block(block)
-        }
+        },
+        append_implicit = diagnostic_writer$append_implicit,
+        record_coverage = diagnostic_writer$record_coverage
       )
       flush(fold_state, writer, ...)
       add("drains", list(staged = staged, handed = handed, after = fold_state$pending_segments$n,
         advanced = fold_state$diagnostic_seq - sequence_before,
+        logical_staged = logical_staged,
         capacity = fold_state$pending_segments$capacity, problem = problem))
     },
     ledgr_fold_apply_stop = function(fold_state, stop) {
@@ -3214,8 +3220,12 @@ ws4a_d2_runtime <- function(got) {
   staged <- vapply(got$p1, `[[`, 0L, "staged")
   c(sprintf("a pulse starts with %d staged rows", staged[staged != 0L]),
     unlist(lapply(got$drains, function(d) {
-      if (d$handed[["rows"]] > d$staged || d$after != 0L || d$advanced != d$staged) {
-        sprintf("a drain of %d rows hands %d, advances %d and keeps %d", d$staged, d$handed[["rows"]], d$advanced, d$after)
+      if (d$handed[["rows"]] > d$staged || d$after != 0L ||
+          d$advanced != d$logical_staged) {
+        sprintf(
+          "a drain of %d physical/%d logical rows hands %d, advances %d and keeps %d",
+          d$staged, d$logical_staged, d$handed[["rows"]], d$advanced, d$after
+        )
       }
     })),
     if (length(unique(vapply(got$drains, `[[`, 0L, "capacity"))) > 1L) "the staging capacity changed")
@@ -3377,7 +3387,10 @@ testthat::test_that("[WS4a D2] the pulse staging is typed, drained whole and nev
     fold_state$pending_segments$n <- min(1L, kept)
   }
   whole <- function(original) function(fold_state, ...) {
-    if (fold_state$pending_segments$n > 0L) fold_state$pending_segments$n <- fold_state$pending_segments$capacity
+    if (fold_state$pending_segments$n > 0L) {
+      fold_state$pending_segments$n <- fold_state$pending_segments$capacity
+      fold_state$pending_segments$logical_n <- fold_state$pending_segments$capacity
+    }
     original(fold_state, ...)
   }
   for (mutant in list(retain, whole)) {
