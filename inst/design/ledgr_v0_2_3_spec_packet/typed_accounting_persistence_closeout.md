@@ -63,6 +63,14 @@ at ledgr-research `e8ff0bd` fixed the input boundary for this transition; the
 next private milestone belongs to LDG-3209 after the complete Cut 11 format is
 known.
 
+`R CMD build --no-build-vignettes` succeeds. A full supported-C-locale
+`R CMD check --no-manual --no-build-vignettes` runs the installed-package tests
+and all vignette code successfully. It reports only the repository's two known
+pre-rendered-vignette warnings. Its first pass found one unqualified `tail()`
+in the new append boundary; correction `ac991cbd` qualifies `utils::tail()`,
+and a rebuilt post-correction code/documentation check reports no code NOTE and
+the same two vignette warnings.
+
 ## Append batching decision
 
 Workstream 24 retains the one mechanism already measured and mutation-tested

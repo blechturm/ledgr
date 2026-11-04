@@ -3731,6 +3731,7 @@ tickets:
       - "Contracts, ledgr_results()/as_tibble help, the accounting vignette and rendered markdown, the internal snapshot manual and NEWS teach one wide typed SELECT * ledger with typed missing evidence and no JSON accounting envelope; test-documentation-contracts.R passes and detects the current schema-125 wording."
       - "The complete package suite reaches every WS24-owned block successfully. Its eight failures are the unchanged baseline groups: historical malformed v0.2.2 YAML (LTB-0408/LTB-0416), Windows latin1 (LTB-0247) and five native-encoding sweep-retention assertions; the optional quantmod missing-package path is the unchanged skip."
       - "The batching decision reuses the registered WS4a typed pulse block and audit-log flush mechanism, with db_live immediate block visibility; the C13c fault matrix, event-buffer growth and compiled parity witnesses settle rollback, ordering, fees and effects. The record is rule-16 design evidence, not a timing gate."
+      - "R CMD build succeeds. Full supported-C-locale R CMD check executes installed-package tests and every vignette successfully; correction ac991cbd removes its one new unqualified-tail code NOTE, and the rebuilt post-correction check reports only the two established pre-rendered-vignette warnings."
   - id: "LDG-3206"
     title: "Retire pulse-level resume and restart nonterminal attempts"
     workstream: 25
