@@ -1,16 +1,15 @@
-# A0 closeout: current native outputs frozen before WS1
+# A0 closeout: native outputs frozen at the Cut 11 final format
 
-**Answer (green).** Today's tree (`release/v0.2.3` at `20034e00`; this
-harness changes no product file) produces byte-reproducible outputs through
-both output handlers on eight synthetic workloads (16 handler paths).
-`records/` holds them (290 files, 552.0 KB, one SHA-256 each in
-`records/manifest.csv`). `check.R` re-runs everything and passes; all 17
+**Answer (green).** The WS25 final-format candidate produces byte-reproducible
+outputs through durable and memory paths on eight synthetic workloads.
+`records/` holds them (297 files, 619,011 bytes, one SHA-256 each in
+`records/manifest.csv`). `check.R` re-runs everything and passes; all registered
 corruptions in `guts.R` make it fail and name the table or the missing
-observation point. No stop condition in brief section 6 fired: the harness is
-1,445 R lines, the records 0.5 MB, no product file changed and the output is
-deterministic. WS1 gate: `Rscript dev/bench/v0_2_3_output_freeze/check.R`
-exits 0 on the WS1 tree. Revision 2 answers `reviews/codex_review_1.md`; revision 3 answers
-`reviews/codex_review_2.md`.
+observation point. The records remain bounded at about 0.5 MB and the output is
+deterministic. `Rscript dev/bench/v0_2_3_output_freeze/check.R` exits 0 on the
+candidate. Revision 2 answers `reviews/codex_review_1.md`; revision 3 answers
+`reviews/codex_review_2.md`; this WS25 revision records the current codec and
+fresh-restart format.
 
 ## Workloads
 
@@ -18,10 +17,8 @@ Reasons and fixture sources are in `inventory.md`. Paths:
 
 - `run`: `ledgr_run` per candidate (persistent, `audit_log`); expected
   failures are recorded, not raised.
-- `run_db_live`: `ledgr_backtest(execution_mode = "db_live")`.
-- `run_interrupted`: the run store right after a `ledgr.interrupt` soft stop,
-  frozen before the resume overwrites it.
-- `run_resumed`: the same run after it is resumed.
+- `run_failed`: the failed attempt before a restart replaces its output.
+- `run_restarted`: the same identity after an atomic restart from pulse one.
 - `run_abort`: a refusal through `abort_run`.
 - `sweep_w1`/`sweep_w2`: `ledgr_sweep` with one or two workers (memory).
 - `sweep_compiled`: the spot-FIFO memory path.
@@ -29,21 +26,23 @@ Reasons and fixture sources are in `inventory.md`. Paths:
 
 | Workload | Paths | Record |
 | --- | --- | --- |
-| dense_cost | run, run_db_live, sweep_w1, sweep_w2, sweep_compiled | 105.9 KB |
-| dense_risk_features | run, sweep_w1, sweep_w2 | 57.3 KB |
-| dense_dividend_state | run, sweep_w1 | 29.6 KB |
-| avail_terminal_resume | run, run_interrupted, run_resumed, sweep_w1, sweep_w2 | 75.0 KB |
-| avail_acquisition | run, sweep_w1 | 37.9 KB |
-| avail_incomplete | run, sweep_w1, sweep_w2 | 42.2 KB |
-| walk_forward | run, sweep_w1, walk_forward | 156.1 KB |
+| dense_cost | run, sweep_w1, sweep_w2, sweep_compiled | 118.2 KB |
+| dense_risk_features | run, sweep_w1, sweep_w2 | 83.4 KB |
+| dense_dividend_state | run, sweep_w1 | 23.3 KB |
+| avail_terminal_resume | run, run_failed, run_restarted, sweep_w1, sweep_w2 | 80.2 KB |
+| avail_acquisition | run, sweep_w1 | 37.6 KB |
+| avail_incomplete | run, sweep_w1, sweep_w2 | 49.0 KB |
+| walk_forward | run, sweep_w1, walk_forward | 164.8 KB |
 | failures | run, run_abort, sweep_w1, sweep_w2 | 46.7 KB |
 
 What each path records:
 
 - **Persistent paths:**
   - every run-store table with a `run_id` column (runs, run_provenance,
-    run_telemetry, run_completion, run_diagnostics, ledger_events,
-    equity_curve, strategy_state, run_tags, run_promotion_context);
+    run_telemetry, run_completion, the logical `run_diagnostics` trace,
+    `run_diagnostic_implicit`, `run_diagnostic_coverage`,
+    `run_diagnostic_summary`, ledger_events, equity_curve, run_tags and
+    run_promotion_context);
   - the public readers (fills, trades and `ledgr_compute_metrics`) for runs
     that returned;
   - `run_conditions`: every warning and expected error in order, with its
@@ -97,8 +96,9 @@ must not change in WS1.
 
 ## Determinism
 
-Two `record.R` runs on the final code gave identical manifests (SHA-256
-`64b452e7…a239c83`). The
+`record.R` followed by `check.R` on the final code gave byte-identical
+manifests (committed manifest SHA-256
+`91735a8a38f9ec38adcce9ebb2e11c2f7882c0c69a884d08c62859c3b4a222ea`). The
 varying fields found earlier are handled by declaration:
 
 - the random `sweep_id`, which is excluded;
@@ -116,12 +116,12 @@ store, the sweep result, the memory sink's buffers, or a patched handler.
 | none (control) | exit 0, PASS |
 | FILL qty +1 | dense_cost/run/ledger_events and fills, qty |
 | equity value moved 1 ulp | dense_risk_features/run/equity_curve row 13 |
-| one run_diagnostics row deleted | avail_terminal_resume/run/run_diagnostics row 6 |
+| one compact diagnostic pair deleted | refuses before logical trace recording |
 | two ledger events swapped | dense_dividend_state/run/ledger_events, fills |
 | `runs.error_msg` NULL changed to text 'NA' | avail_terminal_resume/run/runs, error_msg |
 | retained sweep equity moved 1 ulp | dense_cost/sweep_w1/sweep_returns row 19 |
 | sweep attribute `execution_assumptions$opening` replaced by `opening/<field>` siblings | dense_cost/sweep_w1/sweep_attrs |
-| soft-stopped run persists pulse_count -999 before the resume | avail_terminal_resume/run_interrupted/run_telemetry |
+| failed attempt persists pulse_count -999 before restart | avail_terminal_resume/run_failed/run_telemetry |
 | memory sink: one event_id altered | dense_cost/sweep_w1/memory_events, event_id |
 | memory sink: retained diagnostic's detail_json replaced | avail_terminal_resume/sweep_w1/memory_diagnostics |
 | memory factory absent, no observer | stops: "no memory-sink observation point" |
@@ -179,7 +179,7 @@ with bars.
 The text normalizations `<DB_PATH>` and `<SRCREF>` are described under
 Determinism.
 
-## Today's handler agreement (`agreement.csv`, 213 checks, 4 differ)
+## Current handler agreement (`agreement.csv`, 190 checks, 2 differ)
 
 **Agreements.**
 
@@ -187,37 +187,35 @@ Determinism.
   equity path, closed trades, stop reason and warning codes.
 - The memory sink's events, retained diagnostics, completion and equity facts
   equal the persisted rows.
-- `db_live` matches `audit_log`, the resumed run matches the straight run, and
-  two workers match one.
-- The compiled sweep matches the R sweep on every table, including the memory
-  buffers.
+- The fresh restart matches the straight run, and two workers match one.
+- The compiled sweep matches the R sweep on its public rows and every native
+  memory buffer.
+- INCOMPLETE annualized return is missing on both durable and sweep paths, the
+  accepted WS23 correction.
 
 **Known differences.**
 
-1. On INCOMPLETE runs the sweep row reports `annualized_return = 0`, while
-   `ledgr_compute_metrics()` on the run withholds it (`NA`).
-2. A FAILED candidate's sweep `error_msg` names `run_id=bad`, while the run's
+1. A FAILED candidate's sweep `error_msg` names `run_id=bad`, while the run's
    names `run_id=a0-failures-bad`; the class is the same.
-3. The memory sink keeps only summary diagnostic rows (for example 7 of 33),
-   by design.
-4. The compiled path's `execution_assumptions` names `spot_fifo`, as expected.
+2. The compiled path's `execution_assumptions` names `spot_fifo`, as expected.
 
-## Open points for the WS1 cut
+## Current scope and open points
 
 1. Two-worker sweeps run the sink in mirai daemons, so only their public
-   output is frozen. WS1 should keep the sink observable in-process for the
-   `sweep_w1` and `sweep_compiled` paths.
-2. Difference 1 is a semantic choice for the unified handler. WS1 must keep
-   both values or decide the change explicitly and re-record on `20034e00`.
-3. Re-recording is only legitimate on `20034e00`, because the records embed
-   the fixture strategy source (`config_json`, `strategy_hash`). The same
-   applies to any edit to `fixtures.R`.
-4. The harness has dependencies that WS1 must keep available:
+   output is frozen. Native sink buffers are observed in-process through
+   `sweep_w1` and `sweep_compiled`; the separate worker witness owns native
+   daemon evidence.
+2. The removed `ledgr_backtest()` entry point is no longer represented by a
+   dead `run_db_live` arm. The durable path is `ledgr_run()`; its returned
+   handle still exercises durable readers and lifecycle behavior.
+3. The dense risk/feature fixture uses the current flat context columns. This
+   is why its records and strategy hash are intentionally re-frozen here.
+4. The harness still depends on source-checkout capabilities:
    - it runs from a source checkout through pkgload (workers load the source
      tree); `<SRCREF>` assumes rlang adds source references to messages;
    - it uses the internals `ledgr_run_store_open/close` and `ledgr_fold_list`.
-5. Finalization-failure recovery and the daemon-side buffers of two-worker
-   sweeps are not frozen; only a mocked `DBI::dbWithTransaction` reaches the
-   former. Keep the existing tests for those paths (for example
-   `test-availability-parity.R` 276 and 347) through WS1.
-6. Re-run `timing.R` after WS1 on the same host to re-measure H6.
+5. Finalization-failure recovery is not frozen; only a mocked
+   `DBI::dbWithTransaction` reaches it. The registered recovery tests retain
+   that ownership.
+6. The private rebuild, milestone timing and paired H1 memory gate remain
+   outside this public A0 record and keep LDG-3209 open.

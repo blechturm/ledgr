@@ -579,6 +579,9 @@ ledgr_run_fold_impl <- function(config,
   }
   start_idx <- restart$start_idx
   next_event_seq <- restart$next_event_seq
+  if (!is.na(next_event_seq) && next_event_seq > 1L) {
+    output_handler$seed_event_boundary(next_event_seq - 1L, start_ts_utc)
+  }
 
   prepared_control <- ledgr_run_prepare_control(control)
   max_pulses <- prepared_control$max_pulses
@@ -815,12 +818,7 @@ ledgr_run_fold_impl <- function(config,
     dispositions_active = TRUE,
     carried = opening_carried$pending
   )
-  raw_sizing_notice_written <- ledgr_diagnostic_present(
-    con,
-    run_id,
-    stage = "sizing",
-    reason_code = "sizing_intent_unavailable"
-  )
+  raw_sizing_notice_written <- FALSE
 
   fold_execution <- ledgr_execution_spec(
     run_id = run_id,
@@ -858,7 +856,7 @@ ledgr_run_fold_impl <- function(config,
     } else {
       ledgr_corporate_action_identity_decode(cfg$corporate_actions)$policy
     },
-    frozen_at_resume = if (length(opening_carried$frozen) > 0L) {
+    opening_frozen = if (length(opening_carried$frozen) > 0L) {
       # A carried test window opens with the holdings its predecessor left
       # frozen, so freeze entry is not recorded twice across the boundary.
       as.character(opening_carried$frozen)
@@ -866,7 +864,6 @@ ledgr_run_fold_impl <- function(config,
       NULL
     },
     final_execution_posix = calendar$final_execution_posix,
-    last_executed_at_resume = NULL,
     schedule_sessions = ledgr_strategy_schedule_sessions(history_substrate),
     schedule_params = schedule_params,
     decision_due = schedule$decision_due,

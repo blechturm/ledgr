@@ -112,7 +112,13 @@ ledgr_run_completion_info_many <- function(con, run_ids) {
       quoted_ids
     )
   )
-  stopped <- ledgr_diagnostic_decode(con, unique(run_ids), outcome = "stopped")
+  stopped <- DBI::dbGetQuery(
+    con,
+    sprintf(
+      "SELECT run_id, instrument_id FROM run_diagnostics WHERE outcome = 'stopped' AND run_id IN (%s)",
+      quoted_ids
+    )
+  )
   for (run_id in unique(run_ids)) {
     row <- completion[completion$run_id == run_id, , drop = FALSE]
     if (nrow(row) == 0L) next

@@ -86,7 +86,7 @@ before running anything, with \code{ledgr_walk_forward_gapped_carry} or
 \code{test_window}, or \code{"flat_test_state"}, which accepts any layout.
 
 Rerunning a session with the same arguments reuses its finished test runs
-as recorded and resumes a test run that an interruption left unfinished.
+as recorded and restarts a nonterminal test run from its first pulse.
 Fold boundaries on the snapshot's first or last date resolve to its first
 or last session; a date outside the snapshot refuses. Anchored
 fold definitions intentionally grow the train window over time, so compute

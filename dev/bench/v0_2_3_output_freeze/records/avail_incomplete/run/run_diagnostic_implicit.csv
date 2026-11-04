@@ -1,0 +1,5 @@
+"run_id:character","decision_seq:integer","execution_seq:integer","decision_order:integer","ts_utc:POSIXct/POSIXt","instrument_id:character","target:numeric","position_before:numeric","decision_price:numeric","decision_mark_source:character","decision_mark_age:integer","fill_quantity:numeric","fill_price:numeric","execution_ts_utc:POSIXct/POSIXt","event_seq:integer","position_after:numeric"
+"a0-avail_incomplete-one","2","3","1","2020-01-01T16:00:00Z","AAA","1","0","101","current_close","0","1","102","2020-01-02T09:30:00Z","1","1"
+"a0-avail_incomplete-one","5",NA,"1","2020-01-02T16:00:00Z","AAA","1","1","102","current_close","0",NA,NA,NA,NA,"1"
+"a0-avail_incomplete-two","2","3","1","2020-01-01T16:00:00Z","AAA","2","0","101","current_close","0","2","102","2020-01-02T09:30:00Z","1","2"
+"a0-avail_incomplete-two","5",NA,"1","2020-01-02T16:00:00Z","AAA","2","2","102","current_close","0",NA,NA,NA,NA,"2"

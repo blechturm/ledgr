@@ -1,4 +1,4 @@
-# ledgr-test-profile: review
+# ledgr-test-file-profile: review
 testthat::test_that("[LTB-0554] logical diagnostics own every production read", {
   bars <- data.frame(
     ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
@@ -83,6 +83,38 @@ testthat::test_that("[LTB-0554] logical diagnostics own every production read", 
     ledgr:::ledgr_diagnostic_summary_from_store(opened$con, bt$run_id),
     ledgr_diagnostic_decode = function(...) {
       stop("terminal summary materialized the full logical trace")
+    },
+    .package = "ledgr"
+  ))
+  # Store-wide summaries consume the persisted, hashed summary rather than
+  # re-decoding or re-validating a trace whose size grows with the run.
+  testthat::expect_no_error(testthat::with_mocked_bindings(
+    {
+      ledgr:::ledgr_diagnostic_flag_counts(opened$con, bt$run_id)
+      ledgr:::ledgr_run_sizing_summary(bt, con = opened$con)
+      ledgr:::ledgr_run_completion_info_many(opened$con, bt$run_id)
+    },
+    ledgr_diagnostic_require_coverage = function(...) {
+      stop("store-wide summary revalidated the logical trace")
+    },
+    ledgr_diagnostic_decode = function(...) {
+      stop("store-wide summary decoded the logical trace")
+    },
+    .package = "ledgr"
+  ))
+
+  # Sweep folds use a memory sink. They must not allocate the durable
+  # implicit-row buffer at construction.
+  memory_handler <- ledgr:::ledgr_output_handler(
+    ledgr:::ledgr_output_sink_memory("no-implicit-buffer")
+  )
+  testthat::expect_no_error(testthat::with_mocked_bindings(
+    ledgr:::ledgr_columnar_diagnostic_writer(
+      run_id = "no-implicit-buffer",
+      output_handler = memory_handler
+    ),
+    ledgr_diagnostic_implicit_columns = function(...) {
+      stop("memory sink allocated a durable implicit buffer")
     },
     .package = "ledgr"
   ))
@@ -196,7 +228,8 @@ testthat::test_that("[LTB-0554] logical diagnostics own every production read", 
   testthat::expect_identical(
     readers,
     sort(c(
-      "availability-diagnostic-writer.R", "db-schema-current.R",
+      "availability-diagnostic-writer.R", "availability-results.R",
+      "db-schema-current.R",
       "backtest-runner.R", "diagnostic-codec.R", "diagnostic-decoder.R",
       "fold-engine.R", "output-handler.R",
       "run-resume.R"
@@ -236,4 +269,169 @@ testthat::test_that("[LTB-0556] implicit certification is exact and missing-safe
   clean <- ledgr:::ledgr_diagnostic_clean_fill(missing, NULL, fill, reason)
   clean[is.na(clean)] <- FALSE
   testthat::expect_false(clean)
+
+  bars <- data.frame(
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+    instrument_id = "AAA",
+    open = c(10, 999, 12),
+    high = c(11, 1000, 13),
+    low = c(9, 998, 11),
+    close = c(10, 999, 12),
+    volume = 1000
+  )
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  order_witness <- new.env(parent = emptyenv())
+  order_witness$p2 <- FALSE
+  order_witness$certified <- 0L
+  order_witness$expanded <- 0L
+  original_clean_hold <- ledgr:::ledgr_diagnostic_clean_hold
+  original_add_residual <- ledgr:::ledgr_fold_staging_add_residual
+  testthat::local_mocked_bindings(
+    ledgr_diagnostic_clean_hold = function(...) {
+      testthat::expect_true(order_witness$p2)
+      order_witness$certified <- order_witness$certified + 1L
+      original_clean_hold(...)
+    },
+    ledgr_fold_staging_add_residual = function(...) {
+      testthat::expect_gt(order_witness$certified, 0L)
+      order_witness$expanded <- order_witness$expanded + 1L
+      original_add_residual(...)
+    },
+    .package = "ledgr"
+  )
+  bt <- ledgr_run(ledgr_experiment(
+    snapshot,
+    function(ctx, params) {
+      # P2 sees the current pulse, never the distinctive next-bar outcome.
+      if (identical(ctx$ts_utc, "2020-01-01T00:00:00Z")) {
+        testthat::expect_identical(unname(ctx$close), 10)
+      }
+      order_witness$p2 <- TRUE
+      ctx$hold()
+    },
+    opening = ledgr_opening(cash = 1000),
+    cost_model = ledgr_cost_zero()
+  ), run_id = "certify-before-expand")
+  on.exit(close(bt), add = TRUE)
+  testthat::expect_gt(order_witness$certified, 0L)
+  testthat::expect_gt(order_witness$expanded, 0L)
+})
+
+testthat::test_that("[LTB-0557] registered nonterminal runs publish empty evidence", {
+  bars <- data.frame(
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+    instrument_id = "AAA",
+    open = 10:12,
+    high = 11:13,
+    low = 9:11,
+    close = 10:12,
+    volume = 1000
+  )
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  bt <- ledgr_run(ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$hold(),
+    opening = ledgr_opening(cash = 1000),
+    cost_model = ledgr_cost_zero()
+  ), run_id = "empty-evidence-birth")
+  on.exit(close(bt), add = TRUE)
+  opened <- ledgr:::ledgr_backtest_read_connection(bt)
+  on.exit(opened$close(), add = TRUE)
+
+  for (status in c("CREATED", "RUNNING")) {
+    DBI::dbWithTransaction(opened$con, {
+      for (table in c(
+        "run_diagnostics", "run_diagnostic_implicit",
+        "run_diagnostic_coverage", "run_diagnostic_summary",
+        "run_completion", "run_telemetry"
+      )) {
+        DBI::dbExecute(
+          opened$con,
+          paste0("DELETE FROM ", table, " WHERE run_id = ?"),
+          params = list(bt$run_id)
+        )
+      }
+      DBI::dbExecute(
+        opened$con,
+        "UPDATE runs SET status = ?, error_msg = NULL WHERE run_id = ?",
+        params = list(status, bt$run_id)
+      )
+      ledgr:::ledgr_diagnostic_initialize_run(opened$con, bt$run_id)
+    })
+    listed <- ledgr_run_list(snapshot)
+    testthat::expect_identical(listed$status[listed$run_id == bt$run_id], status)
+    info <- ledgr_run_info(snapshot, bt$run_id)
+    testthat::expect_identical(info$status, status)
+    testthat::expect_true(is.na(
+      listed$valuation_state[listed$run_id == bt$run_id]
+    ))
+  }
+})
+
+testthat::test_that("[LTB-0558] in-pulse implicit sequence order is exact", {
+  axis <- as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3
+  bars <- expand.grid(
+    ts_utc = axis,
+    instrument_id = c("AAA", "BBB"),
+    KEEP.OUT.ATTRS = FALSE,
+    stringsAsFactors = FALSE
+  )
+  bars <- bars[order(bars$ts_utc, bars$instrument_id), , drop = FALSE]
+  bars$open <- bars$high <- bars$low <- bars$close <- 10
+  bars$volume <- 1000
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  first <- format(axis[[1L]], "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  bt <- ledgr_run(ledgr_experiment(
+    snapshot,
+    function(ctx, params) {
+      if (identical(ctx$ts_utc, first)) c(AAA = 1, BBB = 1) else ctx$hold()
+    },
+    opening = ledgr_opening(cash = 1000),
+    cost_model = ledgr_cost_zero()
+  ), run_id = "implicit-sequence-order")
+  on.exit(close(bt), add = TRUE)
+  opened <- ledgr:::ledgr_backtest_read_connection(bt)
+  on.exit(opened$close(), add = TRUE)
+  rows <- DBI::dbGetQuery(
+    opened$con,
+    paste(
+      "SELECT * FROM run_diagnostic_implicit WHERE run_id = ?",
+      "ORDER BY ts_utc, instrument_id"
+    ),
+    params = list(bt$run_id)
+  )
+  group <- rows[rows$ts_utc == rows$ts_utc[[1L]], , drop = FALSE]
+  testthat::expect_gte(nrow(group), 2L)
+  one <- group[1L, ]
+  two <- group[2L, ]
+
+  testthat::expect_error(
+    DBI::dbExecute(
+      opened$con,
+      "UPDATE run_diagnostic_implicit SET decision_seq = ? WHERE run_id = ? AND decision_seq = ?",
+      params = list(one$decision_seq, bt$run_id, two$decision_seq)
+    )
+  )
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE run_diagnostic_implicit SET decision_seq = -1 WHERE run_id = ? AND decision_seq = ?",
+    params = list(bt$run_id, one$decision_seq)
+  )
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE run_diagnostic_implicit SET decision_seq = ? WHERE run_id = ? AND decision_seq = ?",
+    params = list(one$decision_seq, bt$run_id, two$decision_seq)
+  )
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE run_diagnostic_implicit SET decision_seq = ? WHERE run_id = ? AND decision_seq = -1",
+    params = list(two$decision_seq, bt$run_id)
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id),
+    class = "ledgr_diagnostic_corrupt"
+  )
 })

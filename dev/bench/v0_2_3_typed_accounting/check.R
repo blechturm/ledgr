@@ -9,11 +9,12 @@ patterns <- c(
   ledger_table = "ledger_events",
   state_asof = "ledgr_state_asof",
   diagnostics_table = "run_diagnostics",
-  strategy_state_table = "strategy_state",
+  diagnostics_implicit_table = "run_diagnostic_implicit",
+  diagnostics_coverage_table = "run_diagnostic_coverage",
+  diagnostics_summary_table = "run_diagnostic_summary",
   completion_table = "run_completion",
-  interrupt_option = "ledgr.interrupt",
   max_pulses = "max_pulses",
-  resume_symbol = "ledgr_run_resume"
+  restart_symbol = "ledgr_run_restart_nonterminal"
 )
 expected <- utils::read.csv(file.path(here, "source_census.csv"), stringsAsFactors = FALSE)
 actual <- do.call(rbind, lapply(names(patterns), function(family) {

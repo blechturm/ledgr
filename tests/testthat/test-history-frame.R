@@ -537,7 +537,10 @@ testthat::test_that("[LTB-0299] recorded readiness and estimation exclusion crea
   con <- ledgr:::get_connection(with_history$snapshot)
   counts <- function(run_id) {
     vapply(
-      c("ledger_events", "equity_curve", "strategy_state", "run_diagnostics"),
+      c(
+        "ledger_events", "equity_curve", "run_diagnostics",
+        "run_diagnostic_implicit", "run_diagnostic_coverage", "run_diagnostic_summary"
+      ),
       function(table) {
         DBI::dbGetQuery(
           con, sprintf("SELECT COUNT(*) AS n FROM %s WHERE run_id = ?", table),

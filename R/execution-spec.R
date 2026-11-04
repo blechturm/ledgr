@@ -74,8 +74,7 @@ ledgr_execution_spec <- function(run_id,
                                  execution_opportunities_posix = NULL,
                                  corporate_action_plan = NULL,
                                  corporate_action_policy = NULL,
-                                 frozen_at_resume = NULL,
-                                 last_executed_at_resume = NULL,
+                                 opening_frozen = NULL,
                                  final_execution_posix = NULL,
                                  schedule_sessions = NULL,
                                  schedule_params = list(),
@@ -129,11 +128,8 @@ ledgr_execution_spec <- function(run_id,
   if (!is.null(corporate_action_policy)) {
     spec$corporate_action_policy <- corporate_action_policy
   }
-  if (length(frozen_at_resume) > 0L) {
-    spec$frozen_at_resume <- as.character(frozen_at_resume)
-  }
-  if (length(last_executed_at_resume) == 1L && !is.na(last_executed_at_resume)) {
-    spec$last_executed_at_resume <- as.POSIXct(last_executed_at_resume, tz = "UTC")
+  if (length(opening_frozen) > 0L) {
+    spec$opening_frozen <- as.character(opening_frozen)
   }
   spec$availability_provider <- availability_provider
   spec$execution_opportunities_posix <- execution_opportunities_posix

@@ -253,6 +253,12 @@ testthat::test_that("recording-pulse derivation uses the unique configured sessi
 
   exact <- ledgr:::ledgr_fill_recording_pulses_from_sessions(fills, sessions, timing)
   testthat::expect_identical(exact, as.POSIXct("2020-01-02 16:00:00", tz = "UTC"))
+  source <- paste(deparse(body(
+    ledgr:::ledgr_fill_recording_pulses_from_sessions
+  )), collapse = "\n")
+  testthat::expect_match(source, "match(fill_time, session_open", fixed = TRUE)
+  testthat::expect_false(grepl("for (", source, fixed = TRUE))
+  testthat::expect_false(grepl("which(session_open", source, fixed = TRUE))
 
   reconstructed <- ledgr:::ledgr_fill_recording_pulses_from_opportunities(
     fills,

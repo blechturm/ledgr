@@ -116,7 +116,7 @@ testthat::test_that("[LTB-0550] typed accounting carrier owns fields and block b
     ledgr_output_handler = c(
       "append_compiled_spot_batch", "ledgr_accounting_rows", "validate_append"
     ),
-    ledgr_run_resume = "ledgr_write_opening_position_events"
+    ledgr_run_restart_nonterminal = "ledgr_write_opening_position_events"
   )
   for (name in names(boundary_calls)) {
     source <- paste(deparse(body(get(name, envir = asNamespace("ledgr")))), collapse = "\n")

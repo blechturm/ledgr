@@ -216,8 +216,10 @@ a0_run_keys <- list(
   runs = "run_id", run_provenance = "run_id", run_telemetry = "run_id",
   run_completion = "run_id", run_promotion_context = "run_id",
   run_tags = c("run_id", "tag"), ledger_events = c("run_id", "event_seq"),
-  equity_curve = c("run_id", "ts_utc"), strategy_state = c("run_id", "ts_utc"),
-  run_diagnostics = c("run_id", "diagnostic_seq")
+  equity_curve = c("run_id", "ts_utc"),
+  run_diagnostics = c("run_id", "diagnostic_seq"),
+  run_diagnostic_implicit = c("run_id", "decision_seq"),
+  run_diagnostic_coverage = "run_id", run_diagnostic_summary = "run_id"
 )
 
 a0_with_store <- function(db_path, fn) {
@@ -237,8 +239,21 @@ a0_store_tables <- function(db_path, run_ids) {
     unknown <- setdiff(tabs, names(a0_run_keys))
     if (length(unknown)) stop(sprintf("a0: run-store table(s) without a declared key: %s", paste(unknown, collapse = ",")), call. = FALSE)
     marks <- paste(rep("?", length(run_ids)), collapse = ",")
+    existing_run_ids <- DBI::dbGetQuery(
+      con,
+      sprintf("SELECT run_id FROM runs WHERE run_id IN (%s)", marks),
+      params = as.list(run_ids)
+    )$run_id
     out <- lapply(tabs, function(t) {
-      df <- DBI::dbGetQuery(con, sprintf("SELECT * FROM %s WHERE run_id IN (%s)", t, marks), params = as.list(run_ids))
+      df <- if (identical(t, "run_diagnostics")) {
+        if (length(existing_run_ids) > 0L) {
+          as.data.frame(ledgr:::ledgr_diagnostic_decode(con, existing_run_ids))
+        } else {
+          DBI::dbGetQuery(con, "SELECT * FROM run_diagnostics WHERE FALSE")
+        }
+      } else {
+        DBI::dbGetQuery(con, sprintf("SELECT * FROM %s WHERE run_id IN (%s)", t, marks), params = as.list(run_ids))
+      }
       a0_canon(df, t, a0_run_keys[[t]])
     })
     stats::setNames(out, tabs)
@@ -462,7 +477,6 @@ a0_run_workload <- function(id, work_dir, gut = NULL) {
   on.exit(for (s in c(list(fx$snapshot), fx$close)) ledgr_snapshot_close(s), add = TRUE)
   out <- list()
   persisted <- list()
-  options(ledgr.interrupt = FALSE)
   sweep <- function(...) ledgr_sweep(fx$exp, fx$grid, seed = fx$seed, retain = a0_retain(), ...)
 
   obs <- in_path("sweep_w1", a0_observe_memory(sweep(), gut))
@@ -489,31 +503,26 @@ a0_run_workload <- function(id, work_dir, gut = NULL) {
     persisted$run <- committed("run", NULL, function(i, rid) ledgr_run(fx$exp, params = sw$params[[i]],
       feature_params = sw$feature_params[[i]], run_id = rid, seed = sw$execution_seed[[i]]))
   }
-  if ("run_db_live" %in% paths) {
-    persisted$run_db_live <- committed("run_db_live", "db_live", function(i, rid) {
-      do.call(ledgr_backtest, c(fx$backtest, list(strategy_params = sw$params[[i]], run_id = rid)))
-    })
-  }
   if ("run_abort" %in% paths) {
     sink <- a0_new_sink()
     rid <- a0_run_id(id, "abort")
     ok <- a0_run_or_record(ledgr_run(fx$abort_exp, params = fx$abort_params, run_id = rid), rid, sink)
     persisted$run_abort <- list(ids = rid, done = if (ok) rid else character(), sink = sink)
   }
-  if ("run_resumed" %in% paths) {
-    params <- utils::modifyList(sw$params[[1L]], list(interrupt = TRUE))
-    rid <- a0_run_id(id, "resumed")
-    resume <- function() ledgr_run(fx$exp, params = params, run_id = rid, seed = sw$execution_seed[[1L]])
-    # The soft-stopped run's durable state is frozen before the resume
-    # overwrites it (status, telemetry, ledger, state, equity, diagnostics).
+  if ("run_restarted" %in% paths) {
+    params <- utils::modifyList(sw$params[[1L]], list(restart_probe = TRUE))
+    rid <- a0_run_id(id, "restarted")
+    restart <- function() ledgr_run(fx$exp, params = params, run_id = rid, seed = sw$execution_seed[[1L]])
+    # Freeze the failed attempt before the next call atomically replaces all
+    # derived output and starts again at pulse one.
     sink <- a0_new_sink()
-    in_path("run_interrupted", a0_run_or_record(resume(), rid, sink))
-    options(ledgr.interrupt = FALSE)
-    out$run_interrupted <- c(a0_store_tables(db_path, rid),
+    fx$restart_once$armed <- TRUE
+    in_path("run_failed", a0_run_or_record(restart(), rid, sink))
+    out$run_failed <- c(a0_store_tables(db_path, rid),
       list(run_conditions = a0_canon(sink$rows, "run_conditions", "seq")))
     sink <- a0_new_sink()
-    a0_run_or_record(resume(), rid, sink)
-    persisted$run_resumed <- list(ids = rid, done = rid, sink = sink)
+    a0_run_or_record(restart(), rid, sink)
+    persisted$run_restarted <- list(ids = rid, done = rid, sink = sink)
   }
   if ("walk_forward" %in% paths) {
     # Warnings raised anywhere inside walk-forward (train sweeps, test runs)

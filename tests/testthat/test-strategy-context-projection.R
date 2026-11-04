@@ -38,6 +38,19 @@ strategy_context_projection_capture <- function(ctx, params) {
   )
 }
 
+strategy_context_projection_run <- function(experiment, seen) {
+  original <- ledgr:::ledgr_fold_stage_decide
+  testthat::with_mocked_bindings(
+    ledgr_run(experiment),
+    ledgr_fold_stage_decide = function(...) {
+      decision <- original(...)
+      seen$state <- append(seen$state, list(unclass(decision$state_update)))
+      decision
+    },
+    .package = "ledgr"
+  )
+}
+
 testthat::test_that("[LTB-0089] strategy contexts expose only current feature values", {
   pulses <- as.POSIXct("2026-01-01", tz = "UTC") + 86400 * 0:2
   projection <- ledgr:::ledgr_runtime_projection(
@@ -126,29 +139,33 @@ testthat::test_that("[LTB-0089] strategy contexts expose only current feature va
   on.exit(ledgr_snapshot_close(dense_snapshot), add = TRUE)
   on.exit(ledgr_snapshot_close(availability_snapshot), add = TRUE)
   features <- ledgr_feature_map(signal = ledgr_ind_sma(2))
-  dense_run <- ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
+  dense_seen <- new.env(parent = emptyenv())
+  dense_seen$state <- list()
+  availability_seen <- new.env(parent = emptyenv())
+  availability_seen$state <- list()
+  dense_run <- strategy_context_projection_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
     dense_snapshot,
     strategy_context_projection_capture,
     features = features,
     cost_model = ledgr_cost_zero(),
     portfolio_state = list(entry = "", projection_exposed = FALSE)
-  ))
-  availability_run <- ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
+  ), dense_seen)
+  availability_run <- strategy_context_projection_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
     availability_snapshot,
     strategy_context_projection_capture,
     features = features,
     valuation_policy = ledgr_valuation_stale(1),
     cost_model = ledgr_cost_zero(),
     portfolio_state = list(entry = "", projection_exposed = FALSE)
-  ))
+  ), availability_seen)
   on.exit(close(dense_run), add = TRUE)
   on.exit(close(availability_run), add = TRUE)
   expected <- c(
     "NA|NA|NA", "101.5|101.5|101.5", "102.5|102.5|102.5",
     "103.5|103.5|103.5", "104.5|104.5|104.5"
   )
-  dense_state <- availability_state_values(dense_run)
-  availability_state <- availability_state_values(availability_run)
+  dense_state <- dense_seen$state
+  availability_state <- availability_seen$state
   testthat::expect_identical(vapply(dense_state, `[[`, character(1L), "entry"), expected)
   testthat::expect_identical(
     vapply(availability_state, `[[`, character(1L), "entry"),

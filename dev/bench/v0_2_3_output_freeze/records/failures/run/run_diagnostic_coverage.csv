@@ -1,0 +1,3 @@
+"run_id:character","logical_count:integer","codec_rule_version:integer"
+"a0-failures-bad","1","1"
+"a0-failures-ok","14","1"

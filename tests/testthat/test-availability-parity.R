@@ -2,8 +2,9 @@ availability_store_contents <- function(path, run_id) {
   opened <- ledgr:::ledgr_run_store_open(path)
   on.exit(ledgr:::ledgr_run_store_close(opened), add = TRUE)
   tables <- c(
-    "runs", "ledger_events", "strategy_state", "equity_curve",
-    "run_completion", "run_diagnostics"
+    "runs", "ledger_events", "equity_curve", "run_completion",
+    "run_diagnostics", "run_diagnostic_implicit",
+    "run_diagnostic_coverage", "run_diagnostic_summary"
   )
   stats::setNames(lapply(tables, function(table) {
     DBI::dbGetQuery(
@@ -338,7 +339,10 @@ testthat::test_that("terminal completion recovers projections without strategy r
   testthat::expect_identical(calls$n, calls_after_failure)
   testthat::expect_identical(recovered_rows$runs$status, "INCOMPLETE")
   testthat::expect_true(is.na(recovered_rows$runs$error_msg))
-  for (table in c("ledger_events", "strategy_state", "equity_curve", "run_completion", "run_diagnostics")) {
+  for (table in c(
+    "ledger_events", "equity_curve", "run_completion", "run_diagnostics",
+    "run_diagnostic_implicit", "run_diagnostic_coverage", "run_diagnostic_summary"
+  )) {
     testthat::expect_identical(recovered_rows[[table]], clean_rows[[table]])
   }
 })

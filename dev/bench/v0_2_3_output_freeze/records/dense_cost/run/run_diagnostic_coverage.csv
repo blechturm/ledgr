@@ -1,0 +1,4 @@
+"run_id:character","logical_count:integer","codec_rule_version:integer"
+"a0-dense_cost-flat","25","1"
+"a0-dense_cost-open_end","27","1"
+"a0-dense_cost-partial","30","1"

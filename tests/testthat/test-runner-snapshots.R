@@ -115,6 +115,10 @@ testthat::test_that("runner can use separate snapshot artifact and run ledger da
     config = cfg
   )
   close(bt)
+  testthat::expect_no_error(utils::capture.output(summary(bt)))
+  testthat::expect_no_error(
+    ledgr:::ledgr_backtest_terminal_evidence(bt)
+  )
   # A fresh run-store connection must re-attach the sealed snapshot source
   # before the logical decoder validates compact current-close evidence.
   reopened <- ledgr:::ledgr_backtest_read_connection(bt)

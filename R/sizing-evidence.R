@@ -127,7 +127,6 @@ ledgr_run_sizing_summary <- function(bt, con = NULL) {
     con = con, close = function() invisible(FALSE)
   )
   on.exit(opened$close(), add = TRUE)
-  ledgr_diagnostic_require_coverage(opened$con, bt$run_id)
   stored <- ledgr_diagnostic_summary_read(opened$con, bt$run_id)
   out <- ledgr_sizing_summary_empty()
   out$available <- isTRUE(stored$sizing_available[[1L]])

@@ -75,7 +75,7 @@ fact APIs return only data known at the decision time.
 
 Ambient strategy RNG calls such as \code{runif(1)} are Tier 2 under the execution
 seed contract for ordinary sequential runs, but they are not certified for
-resume or parallel equivalence. Strategies that need pulse-specific
+parallel equivalence. Strategies that need pulse-specific
 stochastic inputs in those paths should derive them from \code{ctx$pulse_seed}
 without reading ambient \code{.Random.seed}, for example with
 \code{withr::with_seed(ctx$pulse_seed, sample.int(n, 1))}. Preflight detects only

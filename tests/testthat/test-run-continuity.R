@@ -406,4 +406,66 @@ testthat::test_that("[LTB-0555] pulse-level persistence and soft-stop seams are 
     testthat::expect_false(grepl(needle, source, fixed = TRUE), info = needle)
   }
   testthat::expect_false("strategy_state" %in% names(ledgr_current_schema_definition()$tables))
+  teaching_paths <- c(
+    files,
+    list.files(file.path(root, "man"), pattern = "[.]Rd$", full.names = TRUE),
+    list.files(file.path(root, "vignettes"), pattern = "[.](qmd|md)$", full.names = TRUE),
+    file.path(root, "inst", "design", "contracts.md")
+  )
+  teaching <- paste(vapply(
+    teaching_paths,
+    function(path) paste(readLines(path, warn = FALSE), collapse = "\n"),
+    ""
+  ), collapse = "\n")
+  retired_teaching <- c(
+    "resumes a test run that an interruption left unfinished",
+    "resume or parallel equivalence",
+    "axis and resume rules",
+    "preserves committed ledger and strategy-state evidence",
+    "one physical row per axis"
+  )
+  for (needle in retired_teaching) {
+    testthat::expect_false(grepl(needle, teaching, fixed = TRUE), info = needle)
+  }
+
+  bars <- data.frame(
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:2,
+    instrument_id = "AAA",
+    open = 100:102,
+    high = 101:103,
+    low = 99:101,
+    close = 100:102,
+    volume = 1000
+  )
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  seeded <- new.env(parent = emptyenv())
+  seeded$n <- 0L
+  original_handler <- ledgr:::ledgr_output_handler
+  testthat::local_mocked_bindings(
+    ledgr_output_handler = function(...) {
+      handler <- original_handler(...)
+      original_seed <- handler$seed_event_boundary
+      handler$seed_event_boundary <- function(event_seq, ts_utc) {
+        seeded$n <- seeded$n + 1L
+        seeded$event_seq <- event_seq
+        original_seed(event_seq, ts_utc)
+      }
+      handler
+    },
+    .package = "ledgr"
+  )
+  bt <- ledgr_run(ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$hold(),
+    opening = ledgr_opening(
+      cash = 1000,
+      positions = c(AAA = 1),
+      cost_basis = c(AAA = 100)
+    ),
+    cost_model = ledgr_cost_zero()
+  ), run_id = "opening-boundary-seed")
+  on.exit(close(bt), add = TRUE)
+  testthat::expect_identical(seeded$n, 1L)
+  testthat::expect_identical(seeded$event_seq, 1L)
 })

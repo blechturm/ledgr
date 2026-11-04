@@ -56,7 +56,7 @@
 #'
 #' Ambient strategy RNG calls such as `runif(1)` are Tier 2 under the execution
 #' seed contract for ordinary sequential runs, but they are not certified for
-#' resume or parallel equivalence. Strategies that need pulse-specific
+#' parallel equivalence. Strategies that need pulse-specific
 #' stochastic inputs in those paths should derive them from `ctx$pulse_seed`
 #' without reading ambient `.Random.seed`, for example with
 #' `withr::with_seed(ctx$pulse_seed, sample.int(n, 1))`. Preflight detects only

@@ -156,6 +156,19 @@ strategy_context_surface_shape_matches <- function(observed, documented) {
   identical(observed, documented)
 }
 
+strategy_context_run_capture_updates <- function(experiment, seen) {
+  original <- ledgr:::ledgr_fold_stage_decide
+  testthat::with_mocked_bindings(
+    ledgr_run(experiment),
+    ledgr_fold_stage_decide = function(...) {
+      decision <- original(...)
+      seen$state <- append(seen$state, list(unclass(decision$state_update)))
+      decision
+    },
+    .package = "ledgr"
+  )
+}
+
 testthat::test_that("[LTB-0091] authored surface table matches real callback contexts", {
   table <- strategy_context_surface_table()
   testthat::expect_identical(anyDuplicated(table[, c("scope", "member")]), 0L)
@@ -189,7 +202,11 @@ testthat::test_that("[LTB-0091] authored surface table matches real callback con
   on.exit(ledgr_snapshot_close(dense_snapshot), add = TRUE)
   on.exit(ledgr_snapshot_close(availability_snapshot), add = TRUE)
   features <- ledgr_feature_map(signal = ledgr_ind_sma(2))
-  dense_run <- ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
+  dense_seen <- new.env(parent = emptyenv())
+  dense_seen$state <- list()
+  availability_seen <- new.env(parent = emptyenv())
+  availability_seen$state <- list()
+  dense_run <- strategy_context_run_capture_updates(ledgr_experiment(opening = ledgr_opening(cash = 100000),
     dense_snapshot,
     strategy_context_surface_capture,
     features = features,
@@ -198,8 +215,8 @@ testthat::test_that("[LTB-0091] authored surface table matches real callback con
       step = 0L, top = "", plane = "", plane_lengths = "",
       plane_named = "", universe = "", members = ""
     )
-  ))
-  availability_run <- ledgr_run(ledgr_experiment(
+  ), dense_seen)
+  availability_run <- strategy_context_run_capture_updates(ledgr_experiment(
     availability_snapshot,
     strategy_context_surface_capture,
     universe = ledgr_universe_members("surface"),
@@ -215,11 +232,11 @@ testthat::test_that("[LTB-0091] authored surface table matches real callback con
       step = 0L, top = "", plane = "", plane_lengths = "",
       plane_named = "", universe = "", members = ""
     )
-  ))
+  ), availability_seen)
   on.exit(close(dense_run), add = TRUE)
   on.exit(close(availability_run), add = TRUE)
-  dense <- availability_last_state(dense_run)
-  availability_history <- availability_state_values(availability_run)
+  dense <- utils::tail(dense_seen$state, 1L)[[1L]]
+  availability_history <- availability_seen$state
   held <- availability_history[[2L]]
   empty <- availability_history[[3L]]
   testthat::expect_identical(held$members, "")
@@ -306,24 +323,26 @@ testthat::test_that("[LTB-0119] every context exposes the common eligibility pla
     masked = list(1, 1)
   )
 
-  dense_run <- ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
+  dense_seen <- new.env(parent = emptyenv())
+  dense_seen$state <- list()
+  dense_run <- strategy_context_run_capture_updates(ledgr_experiment(opening = ledgr_opening(cash = 100000),
     dense_snapshot,
     eligibility_plane_capture,
     cost_model = ledgr_cost_zero(),
     portfolio_state = list(
       members_text = "", member_text = "", buyable_text = "", masked_text = ""
     )
-  ))
+  ), dense_seen)
   on.exit(close(dense_run), add = TRUE)
   plain <- function(entry) {
     out <- lapply(entry, function(value) as.vector(unlist(value)))
     out[order(names(out))]
   }
-  dense_seen <- availability_last_state(dense_run)
-  testthat::expect_identical(dense_seen$members_text, "AAA,BBB")
-  testthat::expect_identical(dense_seen$member_text, "TRUE,TRUE")
-  testthat::expect_identical(dense_seen$buyable_text, "TRUE,TRUE")
-  testthat::expect_identical(dense_seen$masked_text, "1,1")
+  dense_last <- utils::tail(dense_seen$state, 1L)[[1L]]
+  testthat::expect_identical(dense_last$members_text, "AAA,BBB")
+  testthat::expect_identical(dense_last$member_text, "TRUE,TRUE")
+  testthat::expect_identical(dense_last$buyable_text, "TRUE,TRUE")
+  testthat::expect_identical(dense_last$masked_text, "1,1")
 
   pulse <- ledgr_pulse_snapshot(
     dense_snapshot,
@@ -354,7 +373,9 @@ testthat::test_that("[LTB-0119] every context exposes the common eligibility pla
     )
   )
   on.exit(ledgr_snapshot_close(availability_snapshot), add = TRUE)
-  availability_run <- ledgr_run(ledgr_experiment(
+  availability_seen <- new.env(parent = emptyenv())
+  availability_seen$state <- list()
+  availability_run <- strategy_context_run_capture_updates(ledgr_experiment(
     availability_snapshot,
     eligibility_plane_capture,
     universe = ledgr_universe_members("eligibility"),
@@ -364,9 +385,9 @@ testthat::test_that("[LTB-0119] every context exposes the common eligibility pla
     portfolio_state = list(
       members_text = "", member_text = "", buyable_text = "", masked_text = ""
     )
-  ))
+  ), availability_seen)
   on.exit(close(availability_run), add = TRUE)
-  ragged_seen <- availability_state_values(availability_run)
+  ragged_seen <- availability_seen$state
   testthat::expect_identical(ragged_seen[[1L]]$buyable_text, "TRUE")
   testthat::expect_identical(ragged_seen[[1L]]$masked_text, "1")
   testthat::expect_identical(ragged_seen[[2L]]$members_text, "")

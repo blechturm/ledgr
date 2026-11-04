@@ -1689,10 +1689,11 @@ Accepted change pending:
   `status`, `execution_mode`, elapsed seconds, and pulse count. Detailed per-component telemetry remains
   session-scoped through `ledgr_backtest_bench()`.
 - A failure after the fold has committed but before equity and `DONE`
-  finalization records `FAILED` with the original error and preserves committed
-  ledger and strategy-state evidence. Resuming the same run identity
-  after that failure performs finalization only: it must not delete or duplicate
-  committed fold rows, and its ordered economic evidence must equal a clean run.
+  finalization records `FAILED` with the original error. Valid committed
+  completion evidence permits publication recovery without strategy execution;
+  otherwise the next invocation atomically replaces derived attempt output and
+  restarts the same run identity from pulse one. It must not mix attempts, and
+  its ordered economic evidence must equal a clean run.
   Best-effort failed telemetry must not mask the original error; successful
   `DONE` finalization precedes non-transactional telemetry persistence.
 - Infrastructure-owned temporary names used by snapshot ingestion and eager

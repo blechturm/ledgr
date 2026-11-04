@@ -29,7 +29,8 @@ a0_sink_state <- function(handler) {
 }
 
 a0_guts <- list(
-  fill_qty = list(workload = "dense_cost", expect = "ledger_events",
+  fill_qty = list(workload = "dense_cost", expect = "<error>",
+    error_pattern = "Diagnostic codec association evidence is corrupt",
     what = "one FILL quantity in ledger_events increased by 1 share (partial candidate, first fill)",
     store = function(con) {
       DBI::dbExecute(con, paste(
@@ -37,32 +38,34 @@ a0_guts <- list(
         "(SELECT MIN(event_seq) FROM ledger_events WHERE run_id = ? AND event_type = 'FILL')"
       ), params = list("a0-dense_cost-partial", "a0-dense_cost-partial"))
     }),
-  equity_ulp = list(workload = "dense_risk_features", expect = "equity_curve",
+  equity_ulp = list(workload = "dense_cost", expect = "equity_curve",
     what = "one equity_curve equity value moved by one unit in the last place",
     store = function(con) {
-      rid <- "a0-dense_risk_features-tight"
-      row <- DBI::dbGetQuery(con, "SELECT ts_utc, equity FROM equity_curve WHERE run_id = ? ORDER BY ts_utc LIMIT 1 OFFSET 4",
+      rid <- "a0-dense_cost-partial"
+      row <- DBI::dbGetQuery(con, "SELECT ts_utc, equity FROM equity_curve WHERE run_id = ? ORDER BY ts_utc LIMIT 1 OFFSET 1",
         params = list(rid))
       DBI::dbExecute(con, "UPDATE equity_curve SET equity = ? WHERE run_id = ? AND ts_utc = ?",
         params = list(a0_next_ulp(row$equity[[1L]]), rid, row$ts_utc[[1L]]))
     }),
-  drop_diagnostic = list(workload = "avail_terminal_resume", expect = "run_diagnostics",
-    what = "one run_diagnostics row deleted",
+  drop_diagnostic = list(workload = "avail_terminal_resume", expect = "<error>",
+    error_pattern = "Diagnostic codec",
+    what = "one compact diagnostic pair deleted before logical decoding",
     store = function(con) {
       rid <- "a0-avail_terminal_resume-straight"
       DBI::dbExecute(con, paste(
-        "DELETE FROM run_diagnostics WHERE run_id = ? AND diagnostic_seq =",
-        "(SELECT MIN(diagnostic_seq) + 5 FROM run_diagnostics WHERE run_id = ?)"
+        "DELETE FROM run_diagnostic_implicit WHERE run_id = ? AND decision_seq =",
+        "(SELECT MIN(decision_seq) FROM run_diagnostic_implicit WHERE run_id = ?)"
       ), params = list(rid, rid))
     }),
-  swap_events = list(workload = "dense_dividend_state", expect = "ledger_events",
-    what = "two adjacent ledger events (dividend CASHFLOW, FILL) written in swapped order",
+  swap_events = list(workload = "dense_cost", expect = "<error>",
+    error_pattern = "Diagnostic codec association evidence is corrupt",
+    what = "two in-pulse FILL event sequences swapped without changing their payloads",
     store = function(con) {
-      rid <- "a0-dense_dividend_state-add"
-      rows <- DBI::dbGetQuery(con, "SELECT * FROM ledger_events WHERE run_id = ? AND event_seq IN (2, 3) ORDER BY event_seq",
+      rid <- "a0-dense_cost-partial"
+      rows <- DBI::dbGetQuery(con, "SELECT * FROM ledger_events WHERE run_id = ? AND event_seq IN (1, 2) ORDER BY event_seq",
         params = list(rid))
       rows$event_seq <- rev(rows$event_seq)
-      DBI::dbExecute(con, "DELETE FROM ledger_events WHERE run_id = ? AND event_seq IN (2, 3)", params = list(rid))
+      DBI::dbExecute(con, "DELETE FROM ledger_events WHERE run_id = ? AND event_seq IN (1, 2)", params = list(rid))
       DBI::dbAppendTable(con, "ledger_events", rows)
     }),
   null_to_text = list(workload = "avail_terminal_resume", expect = "runs",
@@ -90,9 +93,9 @@ a0_guts <- list(
       attr(sw, "execution_assumptions") <- ea
       sw
     }),
-  interrupted_telemetry = list(workload = "avail_terminal_resume", expect = "run_telemetry",
-    what = "soft-stopped run: the handler persists pulse_count = -999 before the resume overwrites it",
-    patch_paths = "run_interrupted",
+  failed_telemetry = list(workload = "avail_terminal_resume", expect = "run_telemetry",
+    what = "failed attempt: the handler persists pulse_count = -999 before restart replaces it",
+    patch_paths = "run_failed",
     patch = list(ledgr_output_handler = function(original) function(sink, ...) {
       handler <- original(sink, ...)
       if (!inherits(sink, "ledgr_output_sink_duckdb")) return(handler)
@@ -141,7 +144,8 @@ a0_guts <- list(
       DBI::dbExecute(con, "UPDATE runs SET error_msg = error_msg || ' (altered)' WHERE run_id = ?",
         params = list("a0-failures-bad"))
     }),
-  fail_exception_diagnostic = list(workload = "failures", expect = "run_diagnostics",
+  fail_exception_diagnostic = list(workload = "failures", expect = "<error>",
+    error_pattern = "Diagnostic codec coverage is corrupt",
     what = "failed run: the exception diagnostic written after rollback is lost",
     store = function(con) {
       DBI::dbExecute(con, "DELETE FROM run_diagnostics WHERE run_id = ? AND outcome = 'error'",
@@ -164,8 +168,8 @@ a0_guts <- list(
       sw
     }),
   abort_status = list(workload = "failures", expect = "runs",
-    what = "abort_run refusal: run status left RUNNING instead of FAILED",
+    what = "failed run status changed from FAILED to RUNNING",
     store = function(con) {
-      DBI::dbExecute(con, "UPDATE runs SET status = 'RUNNING' WHERE run_id = ?", params = list("a0-failures-abort"))
+      DBI::dbExecute(con, "UPDATE runs SET status = 'RUNNING' WHERE run_id = ?", params = list("a0-failures-bad"))
     })
 )

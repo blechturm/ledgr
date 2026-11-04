@@ -6,6 +6,7 @@ testthat::test_that("[LTB-0259] store-format bindings and JSON are exact", {
     ledgr_canonical_json_rule_version = "integer",
     ledgr_corporate_action_policy_schema_version = "integer",
     ledgr_cost_schema_version = "integer",
+    ledgr_diagnostic_codec_rule_version = "integer",
     ledgr_experiment_store_schema_version = "integer",
     ledgr_fact_schema_version = "integer",
     ledgr_feature_history_rule_version = "integer",
@@ -74,7 +75,7 @@ testthat::test_that("[LTB-0259] store-format bindings and JSON are exact", {
     "ledgr_cost_schema_version"
   )
 
-  testthat::expect_identical(length(bindings), 30L)
+  testthat::expect_identical(length(bindings), 31L)
 })
 
 testthat::test_that("[LTB-0260] store gate classifies every marker failure", {
@@ -183,6 +184,16 @@ testthat::test_that("[LTB-0260] store gate classifies every marker failure", {
     "fingerprint_mismatch",
     125L,
     "ledgr_sizing_evidence_rule_version"
+  )
+  # WS24 closed at schema 125 before the diagnostic codec binding joined the
+  # same fingerprint. That exact intermediate store is never current.
+  ws24_close <- current
+  ws24_close[["ledgr_diagnostic_codec_rule_version"]] <- NULL
+  expect_cause(
+    marker_store("125", ledgr:::ledgr_store_format_json(ws24_close)),
+    "fingerprint_mismatch",
+    125L,
+    "ledgr_diagnostic_codec_rule_version"
   )
   changed <- current
   changed[["ledgr_cost_schema_version"]] <- 999L

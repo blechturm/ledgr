@@ -16,7 +16,11 @@ testthat::test_that("ledgr_db_init() opens DB and ensures schema", {
 
   testthat::expect_true("runs" %in% tables)
   testthat::expect_true("bars" %in% tables)
-  testthat::expect_true("strategy_state" %in% tables)
+  testthat::expect_false("strategy_state" %in% tables)
+  testthat::expect_true(all(c(
+    "run_diagnostic_implicit", "run_diagnostic_coverage",
+    "run_diagnostic_summary"
+  ) %in% tables))
 })
 
 # ledgr-test-profile: review

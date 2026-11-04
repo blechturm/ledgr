@@ -34,8 +34,8 @@ a0_fx_timing_scale <- function(db_path) {
   strategy <- function(ctx, params) {
     targets <- ctx$flat()
     for (id in ctx$universe) {
-      sma <- ctx$feature(id, "sma_20")
-      if (!is.na(sma) && ctx$close(id) > sma) targets[[id]] <- params$qty
+      sma <- ctx[["sma_20"]][[id]]
+      if (!is.na(sma) && ctx$close[[id]] > sma) targets[[id]] <- params$qty
     }
     targets
   }
@@ -60,7 +60,6 @@ time_workload <- function(id, fixture) {
   if (file.exists(db_path)) unlink(db_path)
   fx <- fixture(db_path)
   on.exit(ledgr_snapshot_close(fx$snapshot), add = TRUE)
-  options(ledgr.interrupt = FALSE)
   sweep_path <- function() ledgr_sweep(fx$exp, fx$grid, seed = fx$seed, retain = a0_retain())
   sw <- suppressWarnings(sweep_path())
   run_path <- function(tag) {

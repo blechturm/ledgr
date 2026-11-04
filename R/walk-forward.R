@@ -55,7 +55,7 @@
 #' `test_window`, or `"flat_test_state"`, which accepts any layout.
 #'
 #' Rerunning a session with the same arguments reuses its finished test runs
-#' as recorded and resumes a test run that an interruption left unfinished.
+#' as recorded and restarts a nonterminal test run from its first pulse.
 #' Fold boundaries on the snapshot's first or last date resolve to its first
 #' or last session; a date outside the snapshot refuses. Anchored
 #' fold definitions intentionally grow the train window over time, so compute
@@ -1153,7 +1153,7 @@ ledgr_walk_forward_run_or_open <- function(exp,
                                            seed,
                                            history_substrate = NULL) {
   # A finished test run (DONE or INCOMPLETE) is reused as recorded. Any other
-  # existing row, such as an interrupted run left FAILED, resumes through the
+  # existing row, such as an interrupted run left FAILED, restarts through the
   # ordinary run path with the same window, parameters and seed; that path
   # refuses a run whose configuration no longer matches.
   if (ledgr_walk_forward_run_status(exp, run_id) %in% c("DONE", "INCOMPLETE")) {

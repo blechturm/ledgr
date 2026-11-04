@@ -1,5 +1,5 @@
-# A0 recorder: runs every workload through both output handlers on the current
-# tree and writes canonical records plus manifest.csv.
+# A0 recorder: runs every workload through the current durable and memory
+# paths and writes canonical records plus manifest.csv.
 #
 # Usage: Rscript record.R [--out=<dir>] [--pkg=<package root>]
 #   --out defaults to records/ next to this script.

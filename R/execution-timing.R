@@ -145,12 +145,12 @@ ledgr_fill_recording_pulses_from_sessions <- function(fills, sessions, timing) {
   # The configured opportunity calendar is session_open[-1]. A valid
   # single-venue snapshot therefore identifies the recording close directly.
   # Missing or duplicated opportunities stay unavailable rather than guessed.
-  for (i in seq_along(fill_time)) {
-    hit <- which(!is.na(session_open) & session_open == fill_time[[i]])
-    if (length(hit) == 1L && hit[[1L]] >= 2L) {
-      recording[[i]] <- session_close[[hit[[1L]]]]
-    }
-  }
+  hit <- match(fill_time, session_open, incomparables = NA)
+  duplicate_open <- session_open %in% session_open[
+    duplicated(session_open, incomparables = NA)
+  ]
+  ok <- !is.na(hit) & hit >= 2L & !duplicate_open[hit]
+  recording[ok] <- session_close[hit[ok]]
   as.POSIXct(recording, origin = "1970-01-01", tz = "UTC")
 }
 

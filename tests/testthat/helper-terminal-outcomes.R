@@ -107,7 +107,7 @@ terminal_outcome_tables <- function(bt) {
   list(
     run = query("SELECT status, config_json FROM runs WHERE run_id = ?"),
     completion = query("SELECT * FROM run_completion WHERE run_id = ?"),
-    diagnostics = query("SELECT * FROM run_diagnostics WHERE run_id = ? ORDER BY diagnostic_seq"),
+    diagnostics = ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id),
     events = query("SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq"),
     equity = query("SELECT * FROM equity_curve WHERE run_id = ? ORDER BY ts_utc")
   )

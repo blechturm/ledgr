@@ -280,8 +280,8 @@ return
 
 `vignette("strategy-authoring-tools", package = "ledgr")` builds a
 strategy that uses state step by step. `?ledgr_strategy_context` states
-the full typed declaration, patch, replacement, reset, axis and resume
-rules.
+the full typed declaration, patch, replacement, reset, axis and
+fresh-attempt restart rules.
 
 ## Prepare A Small Experiment
 
@@ -444,6 +444,24 @@ summary(bt_first)
 #>
 #> Exposure:
 #>   Time in Market:      69.77%
+#>
+#> Sizing Evidence:
+#>   Decision clock:                    accepted decision mark
+#>   Currency:                          USD
+#>   Aggregation:                       exposure-weighted across priced sizing rows
+#>   Evidenced decisions (may overlap): 0
+#>   Decisions with unavailable intent: 129
+#>   Decisions with no sizing instruction: 0
+#>   Rounded-to-zero instructions:      0
+#>   Coverage (pooled):                 N/A
+#>   Coverage (minimum decision):       N/A
+#>   Coverage (last decision):          N/A
+#>   Final actual invested exposure:    8.52% (final valued pulse)
+#>   Decision-exposure diagnostics (cross-decision sums; not portfolio exposure or P&L):
+#>     Requested value:                 NA
+#>     Post-guard pre-floor value:       NA
+#>     Rounded value:                   NA
+#>     Rounding difference:             NA
 #>
 #> Execution Evidence:
 #>   Execution Clock:      bar_native

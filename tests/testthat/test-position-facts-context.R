@@ -183,7 +183,7 @@ testthat::test_that("plain, uncarried and carried configuration hashes bind exac
   testthat::expect_false(identical(config_hash(carried), config_hash(changed)))
 })
 
-testthat::test_that("resume rebuilds position facts from the committed accounting prefix", {
+testthat::test_that("restart rebuilds position facts from pulse one", {
   dates <- as.Date("2020-01-01") + 0:5
   snapshot <- ledgr_snapshot_from_df(ledgr_test_make_bars("AAA", dates))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -213,12 +213,16 @@ testthat::test_that("resume rebuilds position facts from the committed accountin
     config, run_id = "facts-resume", control = list(max_pulses = 3L)
   )
   before <- length(seen$rows)
-  resumed <- ledgr_run_config(config, run_id = "facts-resume")
-  first <- seen$rows[[before + 1L]]
-  testthat::expect_identical(first$ts, "2020-01-04T00:00:00Z")
-  testthat::expect_equal(first$entry_at, as.POSIXct("2020-01-02", tz = "UTC"))
-  testthat::expect_identical(first$bars_since_entry, 2)
-  testthat::expect_true(is.finite(first$entry_price))
+  ledgr_run_config(config, run_id = "facts-resume")
+  restarted <- seen$rows[(before + 1L):length(seen$rows)]
+  testthat::expect_length(restarted, length(dates))
+  testthat::expect_identical(restarted[[1L]]$ts, "2020-01-01T00:00:00Z")
+  testthat::expect_true(is.na(restarted[[1L]]$entry_at))
+  testthat::expect_true(is.na(restarted[[1L]]$bars_since_entry))
+  fourth <- restarted[[4L]]
+  testthat::expect_equal(fourth$entry_at, as.POSIXct("2020-01-02", tz = "UTC"))
+  testthat::expect_identical(fourth$bars_since_entry, 2)
+  testthat::expect_true(is.finite(fourth$entry_price))
 })
 
 testthat::test_that("carried facts retain shared-axis anchors and external openings do not invent them", {
@@ -237,7 +241,7 @@ testthat::test_that("carried facts retain shared-axis anchors and external openi
   testthat::expect_true(all(is.na(external$exit_bar)))
 })
 
-testthat::test_that("durable resume preserves carried opening anchors", {
+testthat::test_that("durable restart preserves carried opening anchors", {
   dates <- as.Date("2020-01-01") + 0:5
   snapshot <- ledgr_snapshot_from_df(ledgr_test_make_bars("AAA", dates))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
@@ -278,8 +282,9 @@ testthat::test_that("durable resume preserves carried opening anchors", {
     config, run_id = "carried-facts-resume", control = list(max_pulses = 2L)
   )
   prefix_n <- length(seen$rows)
-  resumed <- ledgr_run_config(config, run_id = "carried-facts-resume")
-  testthat::expect_equal(seen$rows[(prefix_n + 1L):length(seen$rows)], live_rows[(prefix_n + 1L):length(live_rows)])
+  ledgr_run_config(config, run_id = "carried-facts-resume")
+  restarted_rows <- seen$rows[(prefix_n + 1L):length(seen$rows)]
+  testthat::expect_equal(restarted_rows, live_rows)
 })
 
 testthat::test_that("three contiguous walk-forward windows retain entry and exit facts", {

@@ -272,9 +272,11 @@ testthat::test_that("seeded ambient RNG strategies restart from pulse one", {
     control = list(max_pulses = 2L)
   )
 
-  restarted <- ledgr_run_config(cfg, run_id = "ambient-rng-resume")
+  ledgr_run_config(cfg, run_id = "ambient-rng-resume")
+  ledgr_run_config(cfg, run_id = "ambient-rng-clean")
+  restarted <- ledgr:::new_ledgr_backtest("ambient-rng-resume", db_path, cfg)
+  clean <- ledgr:::new_ledgr_backtest("ambient-rng-clean", db_path, cfg)
   on.exit(close(restarted), add = TRUE)
-  clean <- ledgr_run_config(cfg, run_id = "ambient-rng-clean")
   on.exit(close(clean), add = TRUE)
   strip <- function(x) {
     x$run_id <- NULL
@@ -283,7 +285,10 @@ testthat::test_that("seeded ambient RNG strategies restart from pulse one", {
     x
   }
   testthat::expect_identical(strip(ledgr_results(restarted, "ledger")), strip(ledgr_results(clean, "ledger")))
-  testthat::expect_identical(ledgr_results(restarted, "equity"), ledgr_results(clean, "equity"))
+  testthat::expect_identical(
+    strip(ledgr_results(restarted, "equity")),
+    strip(ledgr_results(clean, "equity"))
+  )
 })
 
 # ledgr-test-profile: heavy_protocol

@@ -46,24 +46,20 @@ ledgr_diagnostic_require_coverage <- function(con,
     params = as.list(run_ids)
   )
   missing <- setdiff(run_ids, as.character(coverage$run_id))
-  if (length(missing) > 0L) {
-    missing_marks <- paste(rep("?", length(missing)), collapse = ", ")
-    uninitialized <- DBI::dbGetQuery(
-      con,
-      paste0(
-        "SELECT r.run_id FROM runs r WHERE r.run_id IN (", missing_marks,
-        ") AND r.status = 'RUNNING' AND NOT EXISTS ",
-        "(SELECT 1 FROM run_diagnostics d WHERE d.run_id = r.run_id) AND NOT EXISTS ",
-        "(SELECT 1 FROM run_diagnostic_implicit i WHERE i.run_id = r.run_id)"
-      ),
-      params = as.list(missing)
-    )$run_id
-    missing <- setdiff(missing, as.character(uninitialized))
-  }
   if (length(missing) > 0L ||
       any(coverage$codec_rule_version != ledgr_diagnostic_codec_rule_version)) {
-    rlang::abort("Diagnostic codec coverage is missing or uses an unsupported rule.",
-                 class = "ledgr_diagnostic_corrupt")
+    affected <- if (length(missing) > 0L) missing[[1L]] else {
+      as.character(coverage$run_id[
+        coverage$codec_rule_version != ledgr_diagnostic_codec_rule_version
+      ][[1L]])
+    }
+    rlang::abort(
+      sprintf(
+        "Diagnostic codec coverage is missing or uses an unsupported rule for run `%s`.",
+        affected
+      ),
+      class = "ledgr_diagnostic_corrupt"
+    )
   }
   counts <- DBI::dbGetQuery(
     con,
@@ -139,6 +135,27 @@ ledgr_diagnostic_require_coverage <- function(con,
     rlang::abort("Diagnostic codec association evidence is corrupt.",
                  class = "ledgr_diagnostic_corrupt")
   }
+  order_bad <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT COUNT(*) AS bad FROM (",
+      "SELECT seq, ord, LAG(seq) OVER (PARTITION BY run_id, ts_utc, kind ORDER BY ord) AS prior_seq, ",
+      "COUNT(*) OVER (PARTITION BY run_id, ts_utc, kind, ord) AS ord_n FROM (",
+      "SELECT run_id, ts_utc, 'decision' AS kind, decision_seq AS seq, decision_order AS ord ",
+      "FROM run_diagnostic_implicit WHERE run_id IN (", marks, ") UNION ALL ",
+      "SELECT run_id, ts_utc, 'execution' AS kind, execution_seq AS seq, event_seq AS ord ",
+      "FROM run_diagnostic_implicit WHERE run_id IN (", marks, ") AND execution_seq IS NOT NULL",
+      ") evidence) x WHERE ord IS NULL OR ord <= 0 OR ord_n <> 1 OR ",
+      "(prior_seq IS NOT NULL AND seq <= prior_seq)"
+    ),
+    params = c(as.list(run_ids), as.list(run_ids))
+  )$bad[[1L]]
+  if (order_bad != 0L) {
+    rlang::abort(
+      sprintf("Diagnostic codec sequence evidence is corrupt for run `%s`.", run_ids[[1L]]),
+      class = "ledgr_diagnostic_corrupt"
+    )
+  }
   invisible(TRUE)
 }
 
@@ -201,15 +218,18 @@ ledgr_diagnostic_decode <- function(con, run_ids, stage = NULL, outcome = NULL,
 }
 
 ledgr_diagnostic_next_seq <- function(con, run_id) {
-  row <- DBI::dbGetQuery(con,
-    "SELECT logical_count FROM run_diagnostic_coverage WHERE run_id = ?",
-    params = list(run_id))
-  if (nrow(row) == 0L) 1L else as.integer(row$logical_count[[1L]]) + 1L
-}
-
-ledgr_diagnostic_present <- function(con, run_id, stage = NULL, outcome = NULL, reason_code = NULL) {
-  nrow(ledgr_diagnostic_decode(con, run_id, stage = stage, outcome = outcome,
-                              reason_code = reason_code)) > 0L
+  row <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT GREATEST(",
+      "COALESCE((SELECT MAX(diagnostic_seq) FROM run_diagnostics WHERE run_id = ?), 0), ",
+      "COALESCE((SELECT MAX(decision_seq) FROM run_diagnostic_implicit WHERE run_id = ?), 0), ",
+      "COALESCE((SELECT MAX(execution_seq) FROM run_diagnostic_implicit WHERE run_id = ?), 0)",
+      ") + 1 AS next_seq"
+    ),
+    params = list(run_id, run_id, run_id)
+  )
+  as.integer(row$next_seq[[1L]])
 }
 
 ledgr_diagnostic_flag_counts <- function(con, run_ids) {
@@ -218,7 +238,6 @@ ledgr_diagnostic_flag_counts <- function(con, run_ids) {
     return(data.frame(run_id = character(), decisions = integer(), stale = integer(),
                       frozen = integer(), assumed = integer(), stringsAsFactors = FALSE))
   }
-  ledgr_diagnostic_require_coverage(con, run_ids)
   rows <- ledgr_diagnostic_summary_read(con, run_ids)
   rows[c("run_id", "decisions", "stale", "frozen", "assumed")]
 }

@@ -162,14 +162,16 @@ testthat::test_that("[LTB-0138] diagnostic sequence is initialized once", {
     },
     .package = "ledgr"
   )
-  handler <- ledgr:::ledgr_output_handler(
-    ledgr:::ledgr_output_sink_duckdb(
-      con = con,
-      run_id = run_id,
-      run_wall_start = as.POSIXct("2020-01-01", tz = "UTC"),
-      execution_mode = "audit_log"
-    )
+  sink <- ledgr:::ledgr_output_sink_duckdb(
+    con = con,
+    run_id = run_id,
+    run_wall_start = as.POSIXct("2020-01-01", tz = "UTC"),
+    execution_mode = "audit_log"
   )
+  # The durable codec preserves P3's logical sequence. This unit isolates the
+  # handler's generic sequence-initialisation branch explicitly.
+  sink$preserve_diagnostic_seq <- FALSE
+  handler <- ledgr:::ledgr_output_handler(sink)
   block <- function(reason, n) {
     do.call(rbind, lapply(seq_len(n), function(i) {
       ledgr:::ledgr_availability_diagnostic_row(
@@ -1127,7 +1129,9 @@ testthat::test_that("[LTB-0518] one output handler exposes exactly each storage 
     "flush_pending", "flush_pulse_events", "init_buffers", "pending_event_count",
     "record_failure", "record_run_status", "run_transaction",
     "seed_event_boundary", "set_schedule_counts", "store_session_telemetry", "terminal_status_written",
+    "write_diagnostic_coverage", "write_diagnostic_summary",
     "write_exception_diagnostic", "write_fill_events", "write_run_diagnostics",
+    "write_run_diagnostic_implicit",
     "write_run_evidence", "write_telemetry"
   )
   # LDG-3168 (category 3): the memory sink records no equity of its own; the
@@ -1143,7 +1147,7 @@ testthat::test_that("[LTB-0518] one output handler exposes exactly each storage 
     "write_run_diagnostics", "write_run_evidence",
     "write_telemetry"
   )
-  testthat::expect_length(duckdb_methods, 20L)
+  testthat::expect_length(duckdb_methods, 23L)
   testthat::expect_length(memory_methods, 25L)
   testthat::expect_length(intersect(duckdb_methods, memory_methods), 18L)
 

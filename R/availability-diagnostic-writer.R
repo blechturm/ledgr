@@ -38,7 +38,8 @@ ledgr_diagnostic_implicit_columns <- function(n) {
   dbl <- function() numeric(n)
   ts <- function() as.POSIXct(rep(NA_real_, n), origin = "1970-01-01", tz = "UTC")
   list(
-    run_id = chr(), decision_seq = int(), execution_seq = int(), ts_utc = ts(),
+    run_id = chr(), decision_seq = int(), execution_seq = int(),
+    decision_order = int(), ts_utc = ts(),
     instrument_id = chr(), target = dbl(), position_before = dbl(),
     decision_price = dbl(), decision_mark_source = chr(), decision_mark_age = int(),
     fill_quantity = dbl(), fill_price = dbl(), execution_ts_utc = ts(),
@@ -72,8 +73,13 @@ ledgr_columnar_diagnostic_writer <- function(run_id,
   chunk_rows <- as.integer(chunk_rows)
   cols <- new.env(parent = emptyenv())
   column_names <- names(ledgr_availability_diagnostic_columns(0L))
-  implicit_cols <- new.env(parent = emptyenv())
-  implicit_names <- names(ledgr_diagnostic_implicit_columns(0L))
+  can_encode <- is.function(output_handler$write_run_diagnostic_implicit)
+  implicit_cols <- if (can_encode) new.env(parent = emptyenv()) else NULL
+  implicit_names <- if (can_encode) {
+    names(ledgr_diagnostic_implicit_columns(0L))
+  } else {
+    character()
+  }
   n <- 0L
   implicit_n <- 0L
   logical_count <- 0L
@@ -85,6 +91,10 @@ ledgr_columnar_diagnostic_writer <- function(run_id,
   }
   reset()
   reset_implicit <- function() {
+    if (!can_encode) {
+      implicit_n <<- 0L
+      return(invisible(NULL))
+    }
     fresh <- ledgr_diagnostic_implicit_columns(chunk_rows)
     for (nm in implicit_names) assign(nm, fresh[[nm]], envir = implicit_cols)
     implicit_n <<- 0L
@@ -143,6 +153,9 @@ ledgr_columnar_diagnostic_writer <- function(run_id,
     invisible(NULL)
   }
   append_implicit <- function(fields) {
+    if (!can_encode) {
+      rlang::abort("Implicit diagnostics require a durable codec writer.", class = "ledgr_internal_error")
+    }
     total <- fields$n
     start <- 1L
     while (start <= total) {
@@ -176,7 +189,7 @@ ledgr_columnar_diagnostic_writer <- function(run_id,
   }
   list(
     keep = output_handler$diagnostic_keep,
-    can_encode = is.function(output_handler$write_run_diagnostic_implicit),
+    can_encode = can_encode,
     append_block = append_block,
     append_implicit = append_implicit,
     record_coverage = function(n) {
@@ -186,7 +199,8 @@ ledgr_columnar_diagnostic_writer <- function(run_id,
     drain = drain,
     release = function() {
       reset()
-      reset_implicit()
+      implicit_n <<- 0L
+      implicit_cols <<- if (can_encode) new.env(parent = emptyenv()) else NULL
       logical_count <<- 0L
       invisible(NULL)
     }

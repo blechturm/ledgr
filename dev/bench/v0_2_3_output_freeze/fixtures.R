@@ -49,18 +49,15 @@ a0_fx_dense_cost <- function(db_path) {
     partial = list(strategy = list(aaa_qty = 4, aaa_partial_qty = 2, bbb_qty = 2, close_day5 = TRUE, last_bar_qty = 0)),
     open_end = list(strategy = list(aaa_qty = 1, aaa_partial_qty = 1, bbb_qty = 0, close_day5 = FALSE, last_bar_qty = 3))
   )
-  # ledgr_backtest() arguments for the db_live persistent mode (live writes).
-  backtest <- list(snapshot = snapshot, strategy = strategy, universe = c("AAA", "BBB"), initial_cash = 10000,
-    cost_model = ledgr_cost_chain(ledgr_cost_spread_bps(5), ledgr_cost_fixed_fee(1)), execution_mode = "db_live")
-  list(snapshot = snapshot, exp = exp, grid = grid, seed = 2591L, backtest = backtest)
+  list(snapshot = snapshot, exp = exp, grid = grid, seed = 2591L)
 }
 
 a0_fx_dense_risk_features <- function(db_path) {
   snapshot <- ledgr_snapshot_from_df(a0_dense_bars(), db_path = db_path, snapshot_id = "a0_dense_risk_features")
   strategy <- function(ctx, params) {
     targets <- ctx$hold()
-    sma <- ctx$feature("AAA", "sma_3")
-    targets["AAA"] <- if (!is.na(sma) && ctx$close("AAA") > sma) params$qty else 0
+    sma <- ctx[["sma_3"]][["AAA"]]
+    targets["AAA"] <- if (!is.na(sma) && ctx$close[["AAA"]] > sma) params$qty else 0
     if (!is.null(ctx$pulse_seed) && (ctx$pulse_seed %% 2L) == 0L) targets["BBB"] <- params$qty_b
     targets
   }
@@ -117,9 +114,13 @@ a0_fx_avail_terminal_resume <- function(db_path) {
   snapshot <- ledgr_snapshot_from_df(bars, instruments_df = data.frame(instrument_id = names(closes)),
     db_path = db_path, snapshot_id = "a0_avail_terminal_resume",
     facts = ledgr_facts(a0_sessions(as.Date("2020-01-01") + 0:5), lifetime), price_basis = "split_adjusted")
+  restart_once <- new.env(parent = emptyenv())
+  restart_once$armed <- FALSE
   strategy <- function(ctx, params) {
-    if (isTRUE(params$interrupt) && identical(ctx$ts_utc, "2020-01-03T16:00:00Z")) {
-      options(ledgr.interrupt = TRUE)
+    if (isTRUE(params$restart_probe) && isTRUE(restart_once$armed) &&
+        identical(ctx$ts_utc, "2020-01-03T16:00:00Z")) {
+      restart_once$armed <- FALSE
+      stop("a0 planned restart witness", call. = FALSE)
     }
     target <- ctx$hold()
     if (ctx$ts_utc >= "2020-01-03T16:00:00Z" && "AAA" %in% names(target)) target[["AAA"]] <- 0
@@ -129,8 +130,9 @@ a0_fx_avail_terminal_resume <- function(db_path) {
     opening = ledgr_opening(cash = 1000, positions = c(AAA = 2, BBB = 4), cost_basis = c(AAA = 100, BBB = 100)),
     valuation_policy = ledgr_valuation_stale(1), corporate_action_policy = ledgr_corporate_actions_research(),
     cost_model = ledgr_cost_zero())
-  grid <- ledgr_grid_named(straight = list(strategy = list(interrupt = FALSE)))
-  list(snapshot = snapshot, exp = exp, grid = grid, seed = 169L)
+  grid <- ledgr_grid_named(straight = list(strategy = list(restart_probe = FALSE)))
+  list(snapshot = snapshot, exp = exp, grid = grid, seed = 169L,
+       restart_once = restart_once)
 }
 
 a0_fx_avail_acquisition <- function(db_path) {
@@ -180,6 +182,7 @@ a0_fx_avail_incomplete <- function(db_path) {
     target
   }
   exp <- ledgr_experiment(snapshot, strategy,
+    opening = ledgr_opening(cash = 1000),
     valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"), cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(one = list(strategy = list(qty = 1)), two = list(strategy = list(qty = 2)))
   list(snapshot = snapshot, exp = exp, grid = grid, seed = 31L)
@@ -234,11 +237,13 @@ a0_fx_failures <- function(db_path) {
     target
   }
   exp <- ledgr_experiment(snapshot, strategy, universe = c("AAA", "BBB"),
+    opening = ledgr_opening(cash = 1000),
     valuation_policy = ledgr_valuation_stale(2), cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(ok = list(strategy = list(fail = FALSE, qty = 2)),
     bad = list(strategy = list(fail = TRUE, qty = 2)))
   dense <- ledgr_snapshot_from_df(bars, db_path = db_path, snapshot_id = "a0_failures_dense")
-  abort_exp <- ledgr_experiment(dense, strategy, universe = c("AAA", "BBB"), cost_model = ledgr_cost_zero())
+  abort_exp <- ledgr_experiment(dense, strategy, universe = c("AAA", "BBB"),
+    opening = ledgr_opening(cash = 1000), cost_model = ledgr_cost_zero())
   list(snapshot = snapshot, exp = exp, grid = grid, seed = 404L, abort_exp = abort_exp,
     abort_params = list(fail = FALSE, qty = 2), close = list(dense))
 }
@@ -248,15 +253,15 @@ a0_fx_failures <- function(db_path) {
 # ---------------------------------------------------------------------------
 
 a0_workloads <- list(
-  dense_cost = list(fixture = a0_fx_dense_cost, paths = c("run", "run_db_live", "sweep_w1", "sweep_w2", "sweep_compiled"),
-    why = "parity-suite base case: two instruments, cost chain (spread + fixed fee), flat/partial/open-end candidates, last-bar no-fill warning; one and two workers; compiled spot-FIFO memory path; db_live persistent mode via ledgr_backtest()"),
+  dense_cost = list(fixture = a0_fx_dense_cost, paths = c("run", "sweep_w1", "sweep_w2", "sweep_compiled"),
+    why = "parity-suite base case: two instruments, cost chain (spread + fixed fee), flat/partial/open-end candidates, last-bar no-fill warning; one and two workers; compiled spot-FIFO memory path"),
   dense_risk_features = list(fixture = a0_fx_dense_risk_features, paths = c("run", "sweep_w1", "sweep_w2"),
     why = "risk chain (long_only + max_weight with a grid parameter), SMA feature warmup, opening lot, pulse_seed-driven targets, non-default metric context"),
   dense_dividend_state = list(fixture = a0_fx_dense_dividend_state, paths = c("run", "sweep_w1"),
     why = "dense mode corporate action (ordinary cash dividend posting CASHFLOW) and strategy_state writes via state_update"),
-  # run_resumed also records run_interrupted: the store between the two calls.
-  avail_terminal_resume = list(fixture = a0_fx_avail_terminal_resume, paths = c("run", "run_resumed", "sweep_w1", "sweep_w2"),
-    why = "availability mode: stale-mark freeze, bankruptcy terminal write-off (DISPOSITION), diagnostics and completion; ledgr.interrupt soft stop then resume; one and two workers"),
+  # run_restarted also records run_failed: the store between the two calls.
+  avail_terminal_resume = list(fixture = a0_fx_avail_terminal_resume, paths = c("run", "run_restarted", "sweep_w1", "sweep_w2"),
+    why = "availability mode: stale-mark freeze, bankruptcy terminal write-off (DISPOSITION), diagnostics and completion; failed attempt then atomic restart; one and two workers"),
   avail_acquisition = list(fixture = a0_fx_avail_acquisition, paths = c("run", "sweep_w1"),
     why = "availability mode cash acquisition: held terminal position disposed at the deal price"),
   avail_incomplete = list(fixture = a0_fx_avail_incomplete, paths = c("run", "sweep_w1", "sweep_w2"),

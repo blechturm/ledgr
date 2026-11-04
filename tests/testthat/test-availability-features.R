@@ -330,10 +330,16 @@ testthat::test_that("[LTB-0073] strict feature matrices survive every execution 
   )
   for (route in names(observed)) {
     actual <- availability_strict_matrix(observed[[route]])
+    rownames(actual) <- NULL
     expected <- do.call(rbind, lapply(
       expected_windows[[route]],
       availability_strict_expected
     ))
+    if (identical(route, "interrupted_resume")) {
+      full <- availability_strict_expected(2L)
+      expected <- rbind(full[seq_len(3L), , drop = FALSE], full)
+      expected <- expected[order(expected$window, expected$ts_utc), , drop = FALSE]
+    }
     rownames(expected) <- NULL
     testthat::expect_identical(
       actual[, c("window", "ts_utc")],
@@ -733,11 +739,21 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     ttr_cold$value$config,
     run_id = "strict-ttr-resume"
   ))
+  ttr_restart_expected <- availability_carry_expected(2L)
+  ttr_restart_expected <- rbind(
+    ttr_restart_expected[seq_len(3L), , drop = FALSE],
+    ttr_restart_expected
+  )
+  ttr_restart_expected <- ttr_restart_expected[
+    order(ttr_restart_expected$ts_utc),
+    ,
+    drop = FALSE
+  ]
   testthat::expect_equal(
     unname(as.matrix(availability_strict_matrix(
       c(partial$messages, resumed$messages)
     )[, c("AAA", "BBB")])),
-    unname(as.matrix(availability_carry_expected(2L)[, c("AAA", "BBB")])),
+    unname(as.matrix(ttr_restart_expected[, c("AAA", "BBB")])),
     tolerance = 1e-8
   )
 

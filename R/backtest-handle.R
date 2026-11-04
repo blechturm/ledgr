@@ -187,11 +187,25 @@ ledgr_backtest_read_connection <- function(bt) {
     rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
 
+  prepare_snapshot <- function(con) {
+    snapshot_path <- ledgr_snapshot_db_path_from_config(bt$config, bt$db_path)
+    if (!ledgr_same_db_path(snapshot_path, bt$db_path)) {
+      attached <- DBI::dbGetQuery(
+        con,
+        "SELECT database_name FROM duckdb_databases() WHERE database_name = 'ledgr_snapshot_src'"
+      )
+      if (nrow(attached) == 0L) {
+        ledgr_prepare_snapshot_source_tables(con, snapshot_path, bt$db_path)
+      }
+    }
+    con
+  }
+
   state <- backtest_state(bt)
   if (!is.null(state$con) && DBI::dbIsValid(state$con)) {
     ledgr_store_assert_current(state$con, bt$db_path)
     return(list(
-      con = state$con,
+      con = prepare_snapshot(state$con),
       temporary = FALSE,
       close = function() invisible(FALSE)
     ))
@@ -200,7 +214,7 @@ ledgr_backtest_read_connection <- function(bt) {
   if (identical(bt$db_path, ":memory:")) {
     opened <- ledgr_backtest_open(bt)
     return(list(
-      con = opened$con,
+      con = prepare_snapshot(opened$con),
       temporary = FALSE,
       close = function() invisible(FALSE)
     ))
@@ -210,7 +224,7 @@ ledgr_backtest_read_connection <- function(bt) {
   if (!is.null(held_store)) {
     ledgr_store_assert_current(held_store, bt$db_path)
     return(list(
-      con = held_store,
+      con = prepare_snapshot(held_store),
       temporary = FALSE,
       close = function() invisible(FALSE)
     ))
@@ -219,7 +233,7 @@ ledgr_backtest_read_connection <- function(bt) {
   if (isTRUE(state$held)) {
     state$held_open <- TRUE
     return(list(
-      con = ledgr_backtest_open(bt)$con,
+      con = prepare_snapshot(ledgr_backtest_open(bt)$con),
       temporary = FALSE,
       close = function() invisible(FALSE)
     ))
@@ -227,7 +241,7 @@ ledgr_backtest_read_connection <- function(bt) {
 
   opened <- ledgr_store_open(bt$db_path, mode = "open")
   list(
-    con = opened$con,
+    con = prepare_snapshot(opened$con),
     temporary = TRUE,
     close = function() {
       suppressWarnings(try(DBI::dbDisconnect(opened$con, shutdown = TRUE), silent = TRUE))

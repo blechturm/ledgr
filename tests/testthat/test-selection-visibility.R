@@ -346,7 +346,10 @@ testthat::test_that("[LTB-0190] frozen flags use a constant number of grouped st
   ids <- c(frozen_ids, frozen_ids[[1L]], "batch-dense")
   flags <- ledgr:::ledgr_run_assumption_flags_many(con, ids)
   testthat::expect_identical(query_count, one_run_queries)
-  testthat::expect_identical(query_count, 3L)
+  # The exact logical decoder reads the grouped coverage, summary and trace
+  # evidence before the one grouped equity read.  The important scale rule is
+  # that adding or repeating run IDs does not add store reads.
+  testthat::expect_identical(query_count, 7L)
   testthat::expect_identical(flags$run_id, ids)
   testthat::expect_identical(
     flags$valuation_state,

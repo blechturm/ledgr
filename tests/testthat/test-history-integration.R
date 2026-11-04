@@ -291,7 +291,11 @@ testthat::test_that("[LTB-0302] pulse inspection is external, P1/P2-only and gat
   )
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   con <- ledgr:::get_connection(fixture$snapshot)
-  run_tables <- c("runs", "ledger_events", "equity_curve", "strategy_state", "run_diagnostics", "run_completion")
+  run_tables <- c(
+    "runs", "ledger_events", "equity_curve", "run_diagnostics",
+    "run_diagnostic_implicit", "run_diagnostic_coverage",
+    "run_diagnostic_summary", "run_completion"
+  )
   rows <- function() {
     vapply(run_tables, function(table) {
       DBI::dbGetQuery(con, sprintf("SELECT COUNT(*) AS n FROM %s", table))$n

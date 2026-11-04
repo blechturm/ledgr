@@ -317,7 +317,7 @@ For example, an experiment can declare
 
 `vignette("strategy-authoring-tools", package = "ledgr")` builds a strategy
 that uses state step by step. `?ledgr_strategy_context` states the full typed
-declaration, patch, replacement, reset, axis and resume rules.
+declaration, patch, replacement, reset, axis and fresh-attempt restart rules.
 
 ## Prepare A Small Experiment
 

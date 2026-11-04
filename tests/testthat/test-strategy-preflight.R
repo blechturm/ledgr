@@ -283,26 +283,6 @@ testthat::test_that("strategy preflight flags ambient RNG as Tier 2, not certifi
   testthat::expect_true(any(grepl("Ambient RNG", preflight$notes, fixed = TRUE)))
 })
 
-testthat::test_that("ambient RNG preflight has a resume fail-loud helper", {
-  strategy <- function(ctx, params) {
-    targets <- ctx$flat()
-    if (stats::runif(1) > 0.5) {
-      targets["TEST_A"] <- 1
-    }
-    targets
-  }
-  preflight <- ledgr_strategy_preflight(strategy)
-
-  err <- testthat::capture_error(
-    ledgr:::ledgr_abort_strategy_ambient_rng_for_resume(preflight)
-  )
-  testthat::expect_s3_class(err, "ledgr_strategy_ambient_rng_resume")
-  testthat::expect_s3_class(err, "ledgr_strategy_preflight_error")
-  testthat::expect_match(conditionMessage(err), "runif", fixed = TRUE)
-  testthat::expect_match(conditionMessage(err), "ctx$pulse_seed", fixed = TRUE)
-})
-
-
 testthat::test_that("strategy preflight keeps captured mutable environments Tier 2 with an explicit note", {
   external_env <- new.env(parent = emptyenv())
   external_env$qty <- 1

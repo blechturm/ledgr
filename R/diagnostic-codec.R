@@ -2,6 +2,27 @@
 # participate in economic run identity.
 ledgr_diagnostic_codec_rule_version <- 1L
 
+# Every registered attempt has a valid empty logical trace before execution.
+# This makes CREATED and crash-orphan RUNNING rows readable without inventing
+# a read-time missing-evidence exception.
+ledgr_diagnostic_initialize_run <- function(con, run_id) {
+  DBI::dbExecute(
+    con,
+    paste(
+      "INSERT INTO run_diagnostic_coverage",
+      "(run_id, logical_count, codec_rule_version) VALUES (?, 0, ?)",
+      "ON CONFLICT(run_id) DO UPDATE SET logical_count = 0,",
+      "codec_rule_version = excluded.codec_rule_version"
+    ),
+    params = list(run_id, ledgr_diagnostic_codec_rule_version)
+  )
+  row <- ledgr_diagnostic_summary_from_store(con, run_id)
+  row$summary_hash <- ledgr_diagnostic_summary_hash(row)
+  DBI::dbExecute(con, "DELETE FROM run_diagnostic_summary WHERE run_id = ?", params = list(run_id))
+  ledgr_store_append(con, "run_diagnostic_summary", row)
+  invisible(TRUE)
+}
+
 ledgr_diagnostic_segment_at <- function(segment, name, index) {
   value <- segment[[name]]
   if (length(value) == 1L) rep_len(value, length(index)) else value[index]
@@ -74,6 +95,7 @@ ledgr_diagnostic_implicit_block <- function(run_id,
     run_id = rep_len(as.character(run_id), n),
     decision_seq = as.integer(decision_seq),
     execution_seq = as.integer(execution_seq),
+    decision_order = as.integer(k),
     ts_utc = .POSIXct(rep_len(decision$ts, n), tz = "UTC"),
     instrument_id = as.character(ledgr_diagnostic_segment_at(decision, "instrument_id", k)),
     target = as.numeric(ledgr_diagnostic_segment_at(decision, "target", k)),
@@ -101,6 +123,7 @@ ledgr_diagnostic_implicit_hold_block <- function(run_id,
     run_id = rep_len(as.character(run_id), n),
     decision_seq = as.integer(decision_seq),
     execution_seq = rep(NA_integer_, n),
+    decision_order = as.integer(rows),
     ts_utc = .POSIXct(rep_len(decision$ts, n), tz = "UTC"),
     instrument_id = as.character(ledgr_diagnostic_segment_at(decision, "instrument_id", rows)),
     target = target,
@@ -244,15 +267,31 @@ ledgr_diagnostic_summary_read <- function(con, run_ids) {
     params = as.list(run_ids)
   )
   if (nrow(rows) != length(run_ids) || !setequal(as.character(rows$run_id), run_ids)) {
-    rlang::abort("Run diagnostic summary evidence is missing or duplicated.",
-                 class = "ledgr_diagnostic_corrupt")
+    affected <- unique(c(
+      setdiff(run_ids, as.character(rows$run_id)),
+      as.character(rows$run_id[duplicated(rows$run_id)])
+    ))
+    if (length(affected) == 0L) affected <- run_ids
+    rlang::abort(
+      sprintf(
+        "Run diagnostic summary evidence is missing or duplicated for run `%s`.",
+        affected[[1L]]
+      ),
+      class = "ledgr_diagnostic_corrupt"
+    )
   }
   expected <- vapply(seq_len(nrow(rows)), function(i) {
     ledgr_diagnostic_summary_hash(rows[i, , drop = FALSE])
   }, character(1L))
   if (!identical(as.character(rows$summary_hash), unname(expected))) {
-    rlang::abort("Run diagnostic summary evidence is corrupt.",
-                 class = "ledgr_diagnostic_corrupt")
+    bad <- which(as.character(rows$summary_hash) != unname(expected))
+    rlang::abort(
+      sprintf(
+        "Run diagnostic summary evidence is corrupt for run `%s`.",
+        as.character(rows$run_id[[bad[[1L]]]])
+      ),
+      class = "ledgr_diagnostic_corrupt"
+    )
   }
   rows
 }

@@ -17,8 +17,8 @@
 "R/availability-provider-prepared.R",568,"ledgr_availability_provider_from_plan","read_branch_or_equality","is.null(history_substrate_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"is.null",FALSE,FALSE
 "R/availability-provider.R",1,"ledgr_availability_provider_version","binding","ledgr_availability_provider_version <- function() {     ""ledgr_availability_provider_v1"" }",FALSE,"none",FALSE,FALSE,FALSE,"",FALSE,FALSE
 "R/availability-provider.R",2,"ledgr_availability_provider_version","convention_string","ledgr_availability_provider_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
-"R/backtest-results.R",929,"summary.ledgr_backtest","read_branch_or_equality","is.null(timing_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"is.null",FALSE,FALSE
-"R/backtest-results.R",929,"summary.ledgr_backtest","read_branch_or_equality","is.na(timing_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"is.na",FALSE,FALSE
+"R/backtest-results.R",928,"summary.ledgr_backtest","read_branch_or_equality","is.null(timing_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"is.null",FALSE,FALSE
+"R/backtest-results.R",928,"summary.ledgr_backtest","read_branch_or_equality","is.na(timing_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"is.na",FALSE,FALSE
 "R/business-objective.R",1,"ledgr_business_objective_schema_version","binding","ledgr_business_objective_schema_version <- 1L",TRUE,"write_site:ledgr_business_objective;ledgr_business_objective_validate",TRUE,TRUE,FALSE,"",FALSE,FALSE
 "R/business-objective.R",1287,"ledgr_stable_region_detect","convention_string","ledgr_stable_region_strict_lattice_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/business-objective.R",2,"ledgr_objective_criterion_schema_version","binding","ledgr_objective_criterion_schema_version <- 1L",TRUE,"write_site:ledgr_objective_criterion_new;ledgr_objective_criterion_validate",TRUE,TRUE,FALSE,"",FALSE,FALSE
@@ -58,13 +58,15 @@
 "R/cost-model.R",310,"ledgr_experiment_normalize_timing_model","read_branch_or_equality","identical(as.integer(timing_model$version), 1L)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/cost-model.R",339,"ledgr_cost_model_from_payload","read_branch_or_equality","identical(as.integer(payload$cost_schema_version), ledgr_cost_schema_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/db-schema-validate.R",96,"ledgr_schema_abort_enum_difference","read_branch_or_equality","identical(ledgr_schema_constraint_signature(subset_check(expected)), ledgr_schema_constraint_signature(subset_check(actual)))",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
+"R/diagnostic-codec.R",3,"ledgr_diagnostic_codec_rule_version","binding","ledgr_diagnostic_codec_rule_version <- 1L",TRUE,"write_site:ledgr_diagnostic_initialize_run;ledgr_output_sink_duckdb",FALSE,TRUE,TRUE,"",FALSE,FALSE
+"R/diagnostic-decoder.R",50,"ledgr_diagnostic_require_coverage","read_branch_or_equality","coverage$codec_rule_version != ledgr_diagnostic_codec_rule_version",TRUE,"comparison",FALSE,FALSE,FALSE,"!=",TRUE,FALSE
+"R/diagnostic-decoder.R",53,"ledgr_diagnostic_require_coverage","read_branch_or_equality","coverage$codec_rule_version != ledgr_diagnostic_codec_rule_version",TRUE,"comparison",FALSE,FALSE,FALSE,"!=",TRUE,FALSE
 "R/execution-spec.R",1,"ledgr_execution_spec_version","binding","ledgr_execution_spec_version <- function() {     ""ledgr_execution_spec_v1"" }",FALSE,"none",FALSE,FALSE,FALSE,"",FALSE,FALSE
-"R/execution-spec.R",163,"ledgr_validate_execution_spec","read_branch_or_equality","identical(spec$spec_version, ledgr_execution_spec_version())",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
+"R/execution-spec.R",159,"ledgr_validate_execution_spec","read_branch_or_equality","identical(spec$spec_version, ledgr_execution_spec_version())",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/execution-spec.R",2,"ledgr_execution_spec_version","convention_string","ledgr_execution_spec_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/execution-timing.R",1,"ledgr_availability_execution_timing_rule_version","binding","ledgr_availability_execution_timing_rule_version <- 2L",FALSE,"none",TRUE,TRUE,FALSE,"",FALSE,FALSE
-"R/execution-timing.R",135,"ledgr_fill_recording_pulses_from_evidence","convention_string","availability_open_v2",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
-"R/execution-timing.R",135,"ledgr_fill_recording_pulses_from_evidence","read_branch_or_equality","identical(timing$execution_timing_convention, ""availability_open_v2"")",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
-"R/execution-timing.R",191,"ledgr_fill_recording_pulses_from_evidence","read_branch_or_equality","identical(timing$execution_timing_version, ledgr_availability_execution_timing_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
+"R/execution-timing.R",132,"ledgr_fill_recording_pulses_from_sessions","convention_string","availability_open_v2",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
+"R/execution-timing.R",132,"ledgr_fill_recording_pulses_from_sessions","read_branch_or_equality","identical(timing$execution_timing_convention, ""availability_open_v2"")",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/execution-timing.R",34,"ledgr_execution_timing_provenance","read_branch_or_equality","length(provider_version) == 1L",TRUE,"comparison",FALSE,FALSE,FALSE,"==",TRUE,FALSE
 "R/execution-timing.R",35,"ledgr_execution_timing_provenance","read_branch_or_equality","is.na(provider_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"is.na",FALSE,FALSE
 "R/execution-timing.R",36,"ledgr_execution_timing_provenance","read_branch_or_equality","identical(provider_version, ledgr_availability_provider_version())",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
@@ -74,7 +76,7 @@
 "R/execution-timing.R",47,"ledgr_execution_timing_provenance","read_branch_or_equality","version == ledgr_availability_execution_timing_rule_version",TRUE,"comparison",FALSE,FALSE,FALSE,"==",TRUE,FALSE
 "R/execution-timing.R",50,"ledgr_execution_timing_provenance","convention_string","availability_open_v2",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/execution-timing.R",69,"ledgr_execution_timing_require_current","read_branch_or_equality","identical(timing$execution_timing_version, ledgr_availability_execution_timing_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
-"R/experiment-store-schema.R",1,"ledgr_experiment_store_schema_version","binding","ledgr_experiment_store_schema_version <- 124L",TRUE,"write_site:ledgr_run_fold_impl;ledgr_store_create_current",TRUE,TRUE,FALSE,"",FALSE,FALSE
+"R/experiment-store-schema.R",1,"ledgr_experiment_store_schema_version","binding","ledgr_experiment_store_schema_version <- 125L",TRUE,"write_site:ledgr_run_fold_impl;ledgr_store_create_current",TRUE,TRUE,FALSE,"",FALSE,FALSE
 "R/experiment-store-schema.R",2,"ledgr_saved_sweep_schema_version","binding","ledgr_saved_sweep_schema_version <- 6L",TRUE,"write_site:ledgr_sweep_reconstruct_risk_identity",TRUE,TRUE,FALSE,"",FALSE,FALSE
 "R/experiment-store-schema.R",3,"ledgr_sweep_provenance_version","binding","ledgr_sweep_provenance_version <- ""ledgr_provenance_v2""",FALSE,"none",FALSE,TRUE,TRUE,"",FALSE,FALSE
 "R/experiment-store-schema.R",3,,"convention_string","ledgr_provenance_v2",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
@@ -122,7 +124,7 @@
 "R/rng.R",137,"ledgr_candidate_validate_seed_rule","read_branch_or_equality","identical(provenance$seed_contract, ""ledgr_walk_forward_seed_v1"")",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/rng.R",138,"ledgr_candidate_validate_seed_rule","convention_string","ledgr_walk_forward_seed_v1",TRUE,"convention_literal",FALSE,TRUE,FALSE,"",FALSE,FALSE
 "R/rng.R",42,"ledgr_pulse_seed_rule_version","binding","ledgr_pulse_seed_rule_version <- 2L",FALSE,"none",FALSE,TRUE,TRUE,"",FALSE,FALSE
-"R/run-registration.R",100,"ledgr_run_registration","read_branch_or_equality","identical(stored_cfg$identity_rule_version, ledgr_identity_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
+"R/run-registration.R",103,"ledgr_run_registration","read_branch_or_equality","identical(stored_cfg$identity_rule_version, ledgr_identity_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/sizing-evidence.R",1,"ledgr_sizing_evidence_rule_version","binding","ledgr_sizing_evidence_rule_version <- 1L",FALSE,"none",FALSE,TRUE,TRUE,"",FALSE,FALSE
 "R/snapshot-source.R",72,"ledgr_prepare_snapshot_source_tables","read_branch_or_equality","DBI::dbGetQuery(con, paste0(""SELECT COUNT(*) AS n FROM information_schema.tables "", ""WHERE table_catalog = 'ledgr_snapshot_src' AND table_name = "", DBI::dbQuoteString(con, table_name)))$n[[1L]] > 0L",TRUE,"comparison",FALSE,FALSE,FALSE,">",FALSE,FALSE
 "R/snapshots-hash.R",1,"ledgr_snapshot_content_hash_rule_version","binding","ledgr_snapshot_content_hash_rule_version <- 4L",TRUE,"write_site:ledgr_snapshot_create;ledgr_snapshot_from_df;ledgr_snapshot_seal;ledgr_snapshot_write_availability",TRUE,TRUE,FALSE,"",FALSE,FALSE
@@ -140,8 +142,7 @@
 "R/strategy-schedule.R",238,"ledgr_schedule_validate","read_branch_or_equality","version != floor(version)",TRUE,"comparison",FALSE,FALSE,FALSE,"!=",TRUE,FALSE
 "R/strategy-schedule.R",239,"ledgr_schedule_validate","read_branch_or_equality","as.integer(version) != ledgr_schedule_version",TRUE,"comparison",FALSE,FALSE,FALSE,"!=",TRUE,FALSE
 "R/strategy-state.R",1,"ledgr_strategy_state_rule_version","binding","ledgr_strategy_state_rule_version <- 1L",TRUE,"write_site:ledgr_strategy_state_declaration_validate",TRUE,TRUE,FALSE,"",FALSE,FALSE
-"R/strategy-state.R",380,"ledgr_strategy_state_decode","read_branch_or_equality","identical(as.integer(decoded$rule_version), ledgr_strategy_state_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
-"R/strategy-state.R",88,"ledgr_strategy_state_declaration_validate","read_branch_or_equality","identical(as.integer(x$rule_version), ledgr_strategy_state_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
+"R/strategy-state.R",86,"ledgr_strategy_state_declaration_validate","read_branch_or_equality","identical(as.integer(x$rule_version), ledgr_strategy_state_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/sweep-filter.R",1,"ledgr_sweep_filter_schema_version","binding","ledgr_sweep_filter_schema_version <- 1L",FALSE,"none",TRUE,TRUE,FALSE,"",FALSE,FALSE
 "R/sweep-filter.R",432,"ledgr_sweep_filter_result_validate","read_branch_or_equality","identical(as.integer(x$metadata$schema_version), ledgr_sweep_filter_schema_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE
 "R/sweep-persistence-schema.R",239,"ledgr_sweep_storage_assert_sweep","read_branch_or_equality","identical(identity_rule, ledgr_identity_rule_version)",TRUE,"comparison",FALSE,FALSE,FALSE,"identical",TRUE,FALSE

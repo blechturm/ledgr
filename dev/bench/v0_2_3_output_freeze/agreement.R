@@ -108,21 +108,11 @@ a0_agreement <- function(results) {
     for (p in intersect(c("sweep_w2", "sweep_compiled"), names(t))) {
       for (tab in intersect(names(t[[p]]), names(sw))) add(w, sprintf("%s vs sweep_w1: %s", p, tab), "", a0_cmp(t[[p]][[tab]], sw[[tab]]))
     }
-    if (!is.null(t$run_resumed)) {
+    if (!is.null(t$run_restarted)) {
       straight <- a0_run_id(w, sw$sweep$candidate_id[[1L]])
-      for (tab in c("ledger_events", "equity_curve", "run_diagnostics", "run_completion", "strategy_state", "fills")) {
-        add(w, sprintf("resumed vs straight run: %s", tab), "",
-          a0_cmp(t$run_resumed[[tab]], a0_rows(t$run[[tab]], "run_id", straight), drop = c("run_id", "event_id")))
-      }
-    }
-    if (!is.null(t$run_db_live)) {
-      for (cid in sw$sweep$candidate_id) {
-        live <- a0_run_id(w, cid, "db_live")
-        for (tab in c("ledger_events", "equity_curve", "fills", "trades", "metrics")) {
-          add(w, sprintf("db_live (ledgr_backtest) vs audit_log (ledgr_run): %s", tab), cid,
-            a0_cmp(a0_rows(t$run_db_live[[tab]], "run_id", live), a0_rows(t$run[[tab]], "run_id", a0_run_id(w, cid)),
-              drop = c("run_id", "event_id")))
-        }
+      for (tab in c("ledger_events", "equity_curve", "run_diagnostics", "run_completion", "fills")) {
+        add(w, sprintf("restarted vs straight run: %s", tab), "",
+          a0_cmp(t$run_restarted[[tab]], a0_rows(t$run[[tab]], "run_id", straight), drop = c("run_id", "event_id")))
       }
     }
   }

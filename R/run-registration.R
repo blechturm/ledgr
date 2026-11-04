@@ -53,9 +53,10 @@ ledgr_run_registration <- function(con,
 
   if (!is_resume) {
     run_created_at_utc <- as.POSIXct(Sys.time(), tz = "UTC")
-    DBI::dbExecute(
-      con,
-      "
+    DBI::dbWithTransaction(con, {
+      DBI::dbExecute(
+        con,
+        "
       INSERT INTO runs (
         run_id,
         created_at_utc,
@@ -69,32 +70,34 @@ ledgr_run_registration <- function(con,
         status,
         error_msg
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ",
-      params = list(
-        run_id,
-        run_created_at_utc,
-        engine_version,
-        config_json,
-        cfg_hash,
-        snapshot_id,
-        metric_context_storage$json,
-        metric_context_storage$hash,
-        metric_context_storage$version,
-        "CREATED",
-        NA_character_
+        ",
+        params = list(
+          run_id,
+          run_created_at_utc,
+          engine_version,
+          config_json,
+          cfg_hash,
+          snapshot_id,
+          metric_context_storage$json,
+          metric_context_storage$hash,
+          metric_context_storage$version,
+          "CREATED",
+          NA_character_
+        )
       )
-    )
-    inserted_run <- DBI::dbGetQuery(
-      con,
-      "SELECT run_id FROM runs WHERE run_id = ?",
-      params = list(run_id)
-    )
-    if (nrow(inserted_run) != 1L || !identical(as.character(inserted_run$run_id[[1]]), run_id)) {
-      rlang::abort(
-        sprintf("Run registration verification failed for run_id=%s.", run_id),
-        class = "ledgr_run_registration_failed"
+      ledgr_diagnostic_initialize_run(con, run_id)
+      inserted_run <- DBI::dbGetQuery(
+        con,
+        "SELECT run_id FROM runs WHERE run_id = ?",
+        params = list(run_id)
       )
-    }
+      if (nrow(inserted_run) != 1L || !identical(as.character(inserted_run$run_id[[1]]), run_id)) {
+        rlang::abort(
+          sprintf("Run registration verification failed for run_id=%s.", run_id),
+          class = "ledgr_run_registration_failed"
+        )
+      }
+    })
   } else {
     stored_cfg <- ledgr_json_read_config(run_row$config_json[[1]])
     if (!identical(

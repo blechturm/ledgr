@@ -336,8 +336,6 @@ ledgr_strategy_state_apply_values <- function(previous, update, declaration,
   out
 }
 
-ledgr_strategy_state_equal <- function(x, y) identical(x, y)
-
 #' Return targets with a declared strategy-state patch
 #'
 #' @param targets Complete named target quantities.

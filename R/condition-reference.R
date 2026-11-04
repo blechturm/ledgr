@@ -957,6 +957,8 @@
 #' - `ledgr_snapshot_required` reports snapshot is required.
 #' - `ledgr_snapshot_sessions_invalid` reports the snapshot sessions invalid
 #'   boundary.
+#' - `ledgr_diagnostic_corrupt` reports that the durable diagnostic trace is
+#'   not an exact, ordered logical record.
 #' - `ledgr_strategy_ambient_rng_not_supported` reports the strategy ambient
 #'   rng not supported boundary.
 #' - `ledgr_strategy_ambient_rng_parallel` reports the strategy ambient rng
@@ -1214,6 +1216,7 @@
 #' @aliases ledgr_snapshot_quarantine_unacknowledged
 #' @aliases ledgr_snapshot_required
 #' @aliases ledgr_snapshot_sessions_invalid
+#' @aliases ledgr_diagnostic_corrupt
 #' @aliases ledgr_strategy_ambient_rng_not_supported
 #' @aliases ledgr_strategy_ambient_rng_parallel
 #' @aliases ledgr_strategy_eval_failed

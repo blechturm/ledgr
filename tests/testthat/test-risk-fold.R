@@ -202,7 +202,8 @@ testthat::test_that("[LTB-0281] the envelope calls five typed stage packets in o
     observe = c("observation", "execution"),
     decide = c(
       "context_pos", "strategy_qty", "target_qty", "actionable_k",
-      "state_update", "intent_reason", "sample_start",
+      "state_update", "intent_reason", "diagnostic_decision",
+      "diagnostic_risk", "sample_start",
       "t_ctx", "t_strat", "t_target"
     ),
     # LDG-3166 (category 3): P3 returns the typed plan batch. LDG-3168

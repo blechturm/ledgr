@@ -277,10 +277,10 @@ testthat::test_that("a straight run reads the v2 vector over its own calendar", 
   testthat::expect_true(all(is.na(rec$seed)))
 })
 
-testthat::test_that("resume reads the same pulse seeds as a straight run on the same calendar", {
+testthat::test_that("restart reads the same pulse seeds as a straight run on the same calendar", {
   rec <- ps2_recorder()
-  # Strategy state is checkpointed every pulse, so a resume starts after the
-  # last checkpoint rather than at the first pulse.
+  # A nonterminal attempt restarts from pulse one. The durable trace therefore
+  # receives the same pulse-seed vector as a clean run.
   strategy <- function(ctx, params) {
     rec$ts <- c(rec$ts, ctx$ts_utc)
     rec$seed <- c(rec$seed, if (is.null(ctx$pulse_seed)) NA_integer_ else ctx$pulse_seed)
@@ -342,13 +342,13 @@ testthat::test_that("resume reads the same pulse seeds as a straight run on the 
   testthat::expect_length(straight, 8L)
   testthat::expect_identical(straight, stats::setNames(ledgr:::ledgr_pulse_seeds(7L, 1:8), names(straight)))
   testthat::expect_length(first_part, 3L)
-  # The resume starts at calendar index 4 and keeps the run's indices: the
-  # vector is read from `start_idx`, it never restarts at 1.
-  testthat::expect_identical(names(second_part), names(straight)[4:8])
+  testthat::expect_identical(names(second_part), names(straight))
   testthat::expect_identical(first_part, straight[names(first_part)])
-  testthat::expect_identical(second_part, straight[names(second_part)])
-  testthat::expect_identical(unname(second_part), ledgr:::ledgr_pulse_seeds(7L, 4:8))
-  testthat::expect_false(identical(unname(second_part), ledgr:::ledgr_pulse_seeds(7L, 1:5)))
+  testthat::expect_identical(second_part, straight)
+  testthat::expect_identical(
+    unname(second_part),
+    ledgr:::ledgr_pulse_seeds(7L, 1:8)
+  )
 })
 
 testthat::test_that("a run window reads the same pulse seeds as a straight run on the same calendar", {
@@ -471,9 +471,9 @@ testthat::test_that("sweep (one and two workers) and promotion read a straight r
 })
 
 # Optional review item: actual draws through the recipe agree between a
-# continuous run and a resumed run, and between a windowed run and a straight
+# continuous run and a restarted run, and between a windowed run and a straight
 # run on the window's own calendar.
-testthat::test_that("actual draws agree for continuous, resumed and windowed runs on the same calendar", {
+testthat::test_that("actual draws agree for continuous, restarted and windowed runs on the same calendar", {
   testthat::skip_if_not_installed("withr")
   calls <- new.env(parent = emptyenv())
   calls$n <- 0L
@@ -520,8 +520,8 @@ testthat::test_that("actual draws agree for continuous, resumed and windowed run
     ledgr_test_modernize_config(resume$cfg),
     run_id = "ps2-draw"
   ))
-  # The resume executed only pulses 6 to 12 of the same calendar.
-  testthat::expect_identical(calls$n, 7L)
+  # The failed attempt is discarded; the replacement executes all 12 pulses.
+  testthat::expect_identical(calls$n, 12L)
   clean_bt <- ledgr:::new_ledgr_backtest("ps2-draw", clean$db_path, clean$cfg)
   resumed_bt <- ledgr:::new_ledgr_backtest("ps2-draw", resume$db_path, resume$cfg)
   on.exit(close(clean_bt), add = TRUE)

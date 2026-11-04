@@ -621,9 +621,10 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   handler$write_run_diagnostics <- function(diagnostics) {
     if (!is.null(diagnostics) && nrow(diagnostics) > 0L) {
       if (!isTRUE(sink$preserve_diagnostic_seq)) {
+        first_seq <- next_diagnostic_seq()
         diagnostics$diagnostic_seq <- seq.int(
-          from = next_diagnostic_seq(),
-          length.out = nrow(diagnostics)
+          from = first_seq,
+          to = first_seq + nrow(diagnostics) - 1L
         )
       }
       sink$keep_diagnostics(diagnostics)

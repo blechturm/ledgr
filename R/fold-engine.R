@@ -1767,16 +1767,6 @@ ledgr_fold_envelope <- function(execution, output_handler) {
 
   last_fully_valued_ts <- as.POSIXct(NA, tz = "UTC")
   last_executed_ts <- as.POSIXct(NA, tz = "UTC")
-  # A resumed availability run continues the prefix committed with its strategy
-  # state: every pulse before start_idx was valued, and its last fill is in the
-  # ledger. The completion row then covers the whole run, not only this
-  # invocation, even when the first resumed pulse stops.
-  if (start_idx > 1L) {
-    last_fully_valued_ts <- as.POSIXct(pulses_posix[[start_idx - 1L]], tz = "UTC")
-  }
-  if (!is.null(execution$last_executed_at_resume)) {
-    last_executed_ts <- execution$last_executed_at_resume
-  }
   affected <- list(
     value = NA_real_,
     details = list(),
@@ -1797,7 +1787,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     affected_exposure = affected,
     last_fully_valued = last_fully_valued_ts,
     last_executed = last_executed_ts,
-    frozen_set = as.character(execution$frozen_at_resume %||% character()),
+    frozen_set = as.character(execution$opening_frozen %||% character()),
     pending_segments = ledgr_fold_diagnostic_staging(
       ledgr_fold_diagnostic_capacity(length(instrument_ids), corporate_action_plan)
     ),

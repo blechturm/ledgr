@@ -345,6 +345,7 @@
 \alias{ledgr_snapshot_quarantine_unacknowledged}
 \alias{ledgr_snapshot_required}
 \alias{ledgr_snapshot_sessions_invalid}
+\alias{ledgr_diagnostic_corrupt}
 \alias{ledgr_strategy_ambient_rng_not_supported}
 \alias{ledgr_strategy_ambient_rng_parallel}
 \alias{ledgr_strategy_eval_failed}
@@ -1266,6 +1267,8 @@ quarantine unacknowledged boundary.
 \item \code{ledgr_snapshot_required} reports snapshot is required.
 \item \code{ledgr_snapshot_sessions_invalid} reports the snapshot sessions invalid
 boundary.
+\item \code{ledgr_diagnostic_corrupt} reports that the durable diagnostic trace is
+not an exact, ordered logical record.
 \item \code{ledgr_strategy_ambient_rng_not_supported} reports the strategy ambient
 rng not supported boundary.
 \item \code{ledgr_strategy_ambient_rng_parallel} reports the strategy ambient rng

@@ -41,6 +41,7 @@ ledgr_run_restart_nonterminal <- function(con,
         lots = opening_lots
       )
     }
+    ledgr_diagnostic_initialize_run(con, run_id)
     as.integer(next_event_seq)
   }
   # Replacement and opening publication are one boundary. A condition in

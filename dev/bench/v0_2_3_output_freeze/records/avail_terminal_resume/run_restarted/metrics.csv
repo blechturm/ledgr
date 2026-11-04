@@ -1,0 +1,10 @@
+"run_id:character","metric:character","value:numeric","error:character"
+"a0-avail_terminal_resume-restarted","annualized_return","-0.99981886591981606",NA
+"a0-avail_terminal_resume-restarted","avg_trade","-20",NA
+"a0-avail_terminal_resume-restarted","max_drawdown","-0.15714285714285714",NA
+"a0-avail_terminal_resume-restarted","n_trades","1",NA
+"a0-avail_terminal_resume-restarted","sharpe_ratio","-7.0992957397195413",NA
+"a0-avail_terminal_resume-restarted","time_in_market","0.66666666666666663",NA
+"a0-avail_terminal_resume-restarted","total_return","-0.15714285714285714",NA
+"a0-avail_terminal_resume-restarted","volatility","1.1156036162416418",NA
+"a0-avail_terminal_resume-restarted","win_rate","0",NA
