@@ -1593,7 +1593,7 @@ workstreams:
     cut: 11
     status: "pending"
     accepted: null
-    close_review: null
+    close_review: "CHANGES_REQUIRED in close_review_25.md (independent clean-context Claude Type 1): F1-F10 found stale censuses/tests, nonterminal empty-evidence poisoning, a lost opening-boundary seed, a fill/session scan, missing failure-sensitive witnesses, stale resume wording, repeated store-wide decoding, eager compact buffers, undetected in-pulse permutations and closed split-store reads. Correction ce749805 closes F1-F10 with registered detectors, a green 1,347-block suite, R CMD check, current source/codebase censuses and the refreshed public A0 corruption matrix. LDG-3209 and this workstream remain pending because the private rebuild, rule-16 milestone and paired H1 memory gate are explicitly OPEN; an independent final close review follows those records."
     depends_on_workstream: 24
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 25, after LDG-3209", reason: "One claim joins LDG-3206 through LDG-3209: pulse cursors/checkpoints/restore and ledgr.interrupt are gone; nonterminal attempts restart atomically from pulse one while terminal idempotence and completion publication recovery remain exact; all diagnostic consumers first move behind an exact logical decoder while physical rows are still complete; only then may the writer select a certified implicit form or explicit typed residual before row expansion; full/filtered diagnostics, explanations, summaries, sequence positions and economics reconstruct exactly without strategy code or writes; scheduled skips and irreducible sizing remain; retention and association are non-circular/no-lookahead; all proof families and the H1 memory gate pass or have explicit disposition; and the completed cut has one final schema-125 plus codec-binding fingerprint."}
@@ -3737,7 +3737,7 @@ tickets:
   - id: "LDG-3206"
     title: "Retire pulse-level resume and restart nonterminal attempts"
     workstream: 25
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3205"]
@@ -3764,11 +3764,15 @@ tickets:
       - "seed-v2 behavior, caller RNG restoration and parallel restrictions remain exact; only resume-specific ambient-RNG and continuation rules disappear"
       - "checkpoint_every remains in configuration and controls buffer flushing; a fixed experiment's configuration hash equals LDG-3200"
       - "every removed/migrated registered resume test is listed with its retired-resume reason, no other fixture/oracle changes, and exact-name documentation/condition searches detect stale continuation teaching"
-    evidence: []
+    evidence:
+      - "R/, the current schema catalogue, exports and option scans at ce749805 contain no strategy_state table, pulse cursor/restore codec, ledgr_run_resume or ledgr.interrupt branch; tests/testthat/test-run-continuity.R#LTB-0555 and tests/claims.yml#LCL-0544 detect restoration in source, schema and current teaching."
+      - "The restart witnesses in test-run-continuity.R, test-experiment-run.R, test-history-frame.R, test-history-integration.R, test-position-facts-context.R and test-pulse-seed-v2.R cover CREATED/RUNNING/FAILED/max_pulses fresh attempts, one opening publication, real-interrupt rollback, DONE/INCOMPLETE idempotence and completion-only recovery; the opening-tail call mutation fails its registered detector."
+      - "inst/design/ledgr_v0_2_3_spec_packet/per_pulse_restart_decoder_closeout.md#retired-and-migrated-tests lists every resume-owned retirement/migration and reason, including LTB-0490/LTB-0493, LTB-0532 through LTB-0536, availability economics, strict/TTR, position facts, pulse seed, context projection/surface, terminal outcomes and the WS4a mutation. checkpoint_every remains only the event-buffer flush control."
+      - "Final public verification at ce749805: full package suite 1,347 blocks, focused registered mutations pass, R CMD build succeeds and R CMD check --no-manual --no-build-vignettes reports Status: OK."
   - id: "LDG-3207"
     title: "Decode the logical trace and route every diagnostic consumer"
     workstream: 25
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3206"]
@@ -3791,11 +3795,14 @@ tickets:
       - "fills and diagnostics have no circular call edge; unique association derives from typed events/calendars or explicit evidence, and clock/ambiguity mutations fail"
       - "runtime/call-graph witnesses prove reads invoke no strategy/custom indicator/risk/cost code and write no table/projection/metadata/cache; filtered reads do not expand the full run first"
       - "always-physical stop/error/scheduled-skip readers are classified and detected; sweep candidates retain existing evidence, numbering and metrics and gain no full-trace or D8 claim"
-    evidence: []
+    evidence:
+      - "tests/testthat/test-diagnostic-decoder.R#LTB-0554 (LCL-0543) proves exact complete and bounded logical decoding, no user-code invocation, no store-wide full-trace decode, empty CREATED/RUNNING evidence and the literal production-source boundary; dev/bench/v0_2_2_pre_cran_removal/census/ records the current helper/condition/run-config surface."
+      - "R/execution-timing.R associates typed fills with the unique session axis through vectorized match; test-availability-execution-timing.R keeps the missing/ambiguous clock cases and fails the former per-fill session scan shape. Closed split-store summary and terminal-evidence paths attach the snapshot on the decoder connection."
+      - "inst/design/ledgr_v0_2_2_spec_packet/snapshot_verification_consumer_census.csv classifies diagnostic-decoder.R as a snapshot-dependent reader. The complete package suite and R CMD check pass at ce749805."
   - id: "LDG-3208"
     title: "Select exact implicit forms before row expansion"
     workstream: 25
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3207"]
@@ -3824,7 +3831,11 @@ tickets:
       - "the codec rule binding changes the store fingerprint but not run identity; one shared durable batching path serves the surviving writes"
       - "full/filtered trace, explanations, summaries and close/reopen remain exact after physical omission, and every registered corruption refuses"
       - "contract text names the codec binding and distinguishes logical rows from physical encoding; exact-name searches detect a restored one-physical-row-per-axis claim"
-    evidence: []
+    evidence:
+      - "tests/testthat/test-diagnostic-decoder.R#LTB-0556/#LTB-0558 (LCL-0545) compare certified compact runs with forced all-explicit twins, pin pre-expansion writer counters, P2 next-bar isolation, memory-sink lazy allocation, exact typed fields and refusal of missing/duplicate/swapped decision_order or event_seq coverage."
+      - "The final schema remains 125 and ledgr_diagnostic_codec_rule_version is a store-format binding only. tests/testthat/test-store-gate-contracts.R pins all 31 bindings and proves that a schema-125 WS24-close fingerprint refuses with fingerprint_mismatch; golden schema fixtures reproduce."
+      - "The seven optimization-shape scan of the correction diff finds no added row loop, growing accumulator, repeated preparation or pairwise scan: fill/session association is vectorized and implicit buffers exist only for durable codec-capable runs. The exact documentation detector rejects restored physical-row teaching."
+      - "dev/bench/v0_2_3_output_freeze at ce749805 records 297 canonical files (619,011 bytes); check.R reports 190 agreement checks with two declared differences and byte-identical output, while gut.R reports the control passing and every registered corruption failing with its named surface."
   - id: "LDG-3209"
     title: "Verify the final schema, proof families and Cut 11"
     workstream: 25
@@ -3854,4 +3865,7 @@ tickets:
       - "the one milestone record reports both named bases, all four WS8 hotspots, all three shape cells, quiet per-function counts, helper-sizing and logical/physical rows/bytes plus requested read/decode/memory evidence honestly"
       - "the paired H1 history resource protocol, with its baseline arm built fresh from the LDG-3200 base commit, passes the five gated working-set/private-commit ratios at no more than 1.10x (summed working set disclosed, elapsed reported but not gated), or a recorded maintainer exception gives a user-visible limit and a routed follow-up; this is the one binding memory gate retained by decision (8)"
       - "the golden catalogue and binding list change at each DDL/rule change so every intermediate commit is green; governance links remove pending obligations only after implementation evidence and acceptance"
-    evidence: []
+    evidence:
+      - "Public candidate ce749805: schema-125 golden rows plus codec binding reproduce; older/fingerprint-mismatched stores refuse; full suite (1,347 blocks), registered focused profiles, source/codebase censuses, package build and R CMD check all pass. dev/bench/v0_2_3_typed_accounting/check.R reports PASS over 90 seams, 30 accounting fields, 22 diagnostic fields and 297 frozen A0 files."
+      - "dev/bench/v0_2_3_output_freeze/closeout.md: current A0 fixture uses the flat strategy context, removes the dead ledgr_backtest/run_db_live arm, records logical rather than residual diagnostics, and passes check.R plus the complete corruption matrix. agreement.csv has 190 checks and only the declared compiled-assumption and failed-run-id message differences."
+      - "OPEN by design and not inferred: the disposable private Sharadar rebuild/aggregate comparison, the rule-16 milestone against LDG-3200 and v0.2.2, and the paired H1 history resource protocol. No E: data was read during the public implementation/correction. Workstream 25 remains pending until these gates have evidence or maintainer disposition and the independent close review passes."
