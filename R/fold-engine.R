@@ -192,7 +192,7 @@ ledgr_fold_plan_event_kinds <- function(plan, canonical_event_kinds = NULL) {
   ledgr_plan_kind_text(kinds)
 }
 
-# E import boundary (Synthesis 3.1): opening, carried or resumed state into
+# E import boundary (Synthesis 3.1): opening or carried state into
 # the fold's typed state. Named or run-aligned positions become the unnamed
 # run-axis vector; the lot book must be a typed book on the run axis (a
 # replayed book may extend the axis with entries that hold nothing). NULL
@@ -1314,7 +1314,8 @@ ledgr_fold_stage_plan <- function(
           fill_rows = clean_rows,
           decision_seq = base + decision_offsets[clean_k],
           execution_seq = base + execution_offsets[clean_rows],
-          event_seq = fold_state$event_seq + clean_rows - 1L
+          event_seq = fold_state$event_seq + clean_rows - 1L,
+          axis_size = length(instrument_ids)
         )
       )
     }
@@ -1325,7 +1326,11 @@ ledgr_fold_stage_plan <- function(
           run_id = services$run_id,
           decision = decision_diagnostic,
           rows = clean_hold_k,
-          decision_seq = base + decision_offsets[clean_hold_k]
+          decision_seq = base + decision_offsets[clean_hold_k],
+          decision_order = as.numeric(
+            (clean_hold_k - 1) * length(instrument_ids) +
+              context_pos[clean_hold_k]
+          )
         )
       )
     }
@@ -1696,8 +1701,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   telemetry <- execution$telemetry
   execution_seed <- execution$seed
   # Rule v2 pulse seeds on the run's own calendar, computed once per seeded
-  # fold and read by index; an unseeded fold builds no vector. Resume reads
-  # from `start_idx` on the same calendar.
+  # fold and read by index; an unseeded fold builds no vector.
   pulse_seeds <- NULL
   if (!is.null(execution_seed)) {
     # The enforcing point of the pinned kind (decision (1)).
@@ -1891,9 +1895,8 @@ ledgr_fold_envelope <- function(execution, output_handler) {
   services$decision_due <- execution$decision_due %||% NULL
 
   run_loop <- function() {
-    if (length(pulses_posix) == 0L || start_idx > length(pulses_posix)) {
-      # A resume after the last pulse values nothing new; an availability run
-      # still closes with its completion row, from the seeded prefix.
+    if (length(pulses_posix) == 0L) {
+      # An empty availability run still closes with its completion row.
       diagnostics <- diagnostic_writer$drain()
       if (length(pulses_posix) > 0L) {
         output_handler$write_run_evidence(

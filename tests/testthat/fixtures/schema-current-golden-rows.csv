@@ -1302,7 +1302,7 @@
 125,"2.0.0","column","run_diagnostic_implicit.run_id",71,"data_type","VARCHAR"
 125,"2.0.0","column","run_diagnostic_implicit.decision_seq",72,"data_type","INTEGER"
 125,"2.0.0","column","run_diagnostic_implicit.execution_seq",73,"data_type","INTEGER"
-125,"2.0.0","column","run_diagnostic_implicit.decision_order",74,"data_type","INTEGER"
+125,"2.0.0","column","run_diagnostic_implicit.decision_order",74,"data_type","BIGINT"
 125,"2.0.0","column","run_diagnostic_implicit.ts_utc",75,"data_type","TIMESTAMP"
 125,"2.0.0","column","run_diagnostic_implicit.instrument_id",76,"data_type","VARCHAR"
 125,"2.0.0","column","run_diagnostic_implicit.target",77,"data_type","DOUBLE"

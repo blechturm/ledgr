@@ -39,7 +39,7 @@ ledgr_diagnostic_implicit_columns <- function(n) {
   ts <- function() as.POSIXct(rep(NA_real_, n), origin = "1970-01-01", tz = "UTC")
   list(
     run_id = chr(), decision_seq = int(), execution_seq = int(),
-    decision_order = int(), ts_utc = ts(),
+    decision_order = dbl(), ts_utc = ts(),
     instrument_id = chr(), target = dbl(), position_before = dbl(),
     decision_price = dbl(), decision_mark_source = chr(), decision_mark_age = int(),
     fill_quantity = dbl(), fill_price = dbl(), execution_ts_utc = ts(),

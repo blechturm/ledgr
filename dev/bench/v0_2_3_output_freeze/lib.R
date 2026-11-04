@@ -481,6 +481,10 @@ a0_run_workload <- function(id, work_dir, gut = NULL) {
 
   obs <- in_path("sweep_w1", a0_observe_memory(sweep(), gut))
   sw <- obs$value
+  if (!identical(id, "failures") && any(sw$status == "FAILED")) {
+    failed <- paste(as.character(sw$candidate_id[sw$status == "FAILED"]), collapse = ", ")
+    stop(sprintf("a0: workload %s unexpectedly froze FAILED candidate(s): %s", id, failed), call. = FALSE)
+  }
   out$sweep_w1 <- c(a0_sweep_tables(if (is.function(gut$sweep)) gut$sweep(sw) else sw), a0_memory_tables(obs$observed, sw))
   if ("sweep_w2" %in% paths) out$sweep_w2 <- a0_sweep_tables(in_path("sweep_w2", sweep(workers = 2L)))
   if ("sweep_compiled" %in% paths) {
@@ -502,6 +506,27 @@ a0_run_workload <- function(id, work_dir, gut = NULL) {
   if ("run" %in% paths) {
     persisted$run <- committed("run", NULL, function(i, rid) ledgr_run(fx$exp, params = sw$params[[i]],
       feature_params = sw$feature_params[[i]], run_id = rid, seed = sw$execution_seed[[i]]))
+    if (!identical(id, "failures") &&
+        !setequal(persisted$run$ids, persisted$run$done)) {
+      failed <- setdiff(persisted$run$ids, persisted$run$done)
+      stop(sprintf("a0: workload %s unexpectedly froze FAILED run(s): %s",
+        id, paste(failed, collapse = ", ")), call. = FALSE)
+    }
+    if (identical(id, "dense_dividend_state")) {
+      # This fixture is the A0 witness for both dividend cash posting and the
+      # declared strategy-state carrier. The add candidate can fill only when
+      # the prior pulse's observed_cash update was returned through ctx$state.
+      a0_with_store(db_path, function(con) {
+        witness <- DBI::dbGetQuery(con, paste(
+          "SELECT source, event_type FROM ledger_events",
+          "WHERE run_id = ? ORDER BY event_seq"
+        ), params = list(a0_run_id(id, "add")))
+        if (!any(witness$source == "corporate_action_cash", na.rm = TRUE) ||
+            !any(witness$event_type == "FILL", na.rm = TRUE)) {
+          stop("a0: dense_dividend_state did not exercise dividend cash and declared state", call. = FALSE)
+        }
+      })
+    }
   }
   if ("run_abort" %in% paths) {
     sink <- a0_new_sink()

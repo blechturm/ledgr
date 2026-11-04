@@ -294,32 +294,6 @@ ledgr_run_fold_exit_guard <- function(exit_state, con, run_id, output_handler = 
     ),
     silent = TRUE
   )
-  # A real interrupt can roll back the first pulse before the fold has
-  # published any diagnostic evidence. The run still has a valid empty
-  # logical trace: publish its codec coverage and derived summary through
-  # the output handler before the failed row becomes reopenable. Never
-  # overwrite evidence from a committed pulse.
-  if (is.function(output_handler$write_diagnostic_coverage) &&
-      is.function(output_handler$write_diagnostic_summary)) {
-    existing <- try(
-      DBI::dbGetQuery(
-        con,
-        paste(
-          "SELECT",
-          "(SELECT COUNT(*) FROM run_diagnostic_coverage WHERE run_id = ?) AS coverage_n,",
-          "(SELECT COUNT(*) FROM run_diagnostics WHERE run_id = ?) +",
-          "(SELECT COUNT(*) FROM run_diagnostic_implicit WHERE run_id = ?) AS evidence_n"
-        ),
-        params = list(run_id, run_id, run_id)
-      ),
-      silent = TRUE
-    )
-    if (!inherits(existing, "try-error") && existing$coverage_n[[1L]] == 0L &&
-        existing$evidence_n[[1L]] == 0L) {
-      try(output_handler$write_diagnostic_coverage(0L), silent = TRUE)
-      try(output_handler$write_diagnostic_summary(), silent = TRUE)
-    }
-  }
   invisible(TRUE)
 }
 
@@ -563,7 +537,7 @@ ledgr_run_fold_impl <- function(config,
 
   restart <- if (isTRUE(terminal_recovery)) {
     list(
-      start_idx = length(pulses_posix) + 1L,
+      start_idx = 1L,
       next_event_seq = NA_integer_
     )
   } else {
@@ -812,9 +786,6 @@ ledgr_run_fold_impl <- function(config,
     policy_identity = cfg$corporate_actions %||% NULL,
     pulses_posix = pulses_posix,
     instrument_ids = instrument_ids,
-    existing_events = ledgr_corporate_action_existing_events(con, run_id),
-    existing_postings = ledgr_corporate_action_existing_postings(con, run_id),
-    start_idx = start_idx,
     dispositions_active = TRUE,
     carried = opening_carried$pending
   )

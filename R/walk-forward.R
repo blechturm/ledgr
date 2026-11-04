@@ -1346,9 +1346,9 @@ ledgr_walk_forward_carried_opening <- function(exp, run_id, window, history_subs
 }
 
 # The corporate-action rows the deciding window bound but did not settle
-# (LDG-3064). The window's own settlement plan is rebuilt from its ledger as
-# a resume past its last pulse would rebuild it: over the window's pulses plus
-# the next window's first pulse, with the window's own carried rows. Its
+# (LDG-3064). The window's own settlement plan is rebuilt from its ledger over
+# the window's pulses plus the next window's first pulse, with the window's
+# own carried rows. Its
 # carry_out() then names every cash entitlement, disposition and quantity
 # effect that one run would settle after this window, with the bound
 # quantity. No settlement timing is decided here.

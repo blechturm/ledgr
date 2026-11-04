@@ -85,7 +85,6 @@ ledgr_output_sink_duckdb <- function(con, run_id, run_wall_start, execution_mode
   sink$refresh_seq_on_exception <- TRUE
   # Physical rows retain their logical sequence positions; the codec may
   # leave certified holes which the decoder fills from implicit evidence.
-  sink$preserve_diagnostic_seq <- TRUE
   sink$diagnostic_keep <- function(diagnostics, n = NULL) {
     if (is.null(n)) n <- if (is.data.frame(diagnostics)) nrow(diagnostics) else length(diagnostics$stage)
     rep(TRUE, n)
@@ -220,7 +219,6 @@ ledgr_output_sink_memory <- function(run_id) {
   sink$requires_init <- FALSE
   sink$nonwrote_buffer_result <- TRUE
   sink$refresh_seq_on_exception <- FALSE
-  sink$preserve_diagnostic_seq <- TRUE
 
   # The fill legs of the pulse's published blocks: leg columns (the leg
   # group of ledgr_fill_leg_block()), held closure-local until flush_legs()
@@ -379,9 +377,8 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   handler <- list()
   handler$diagnostic_keep <- sink$diagnostic_keep
 
-  # Install the durable append boundary before a run continues. Opening rows
-  # and resumed rows may have been written before this handler was created;
-  # the first new block must still be checked against their final sequence and
+  # Install the durable append boundary after opening rows are written. The
+  # first fill block must still be checked against their final sequence and
   # timestamp.
   handler$seed_event_boundary <- function(event_seq, ts_utc) {
     event_seq_value <- as.numeric(event_seq)
@@ -620,13 +617,6 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   }
   handler$write_run_diagnostics <- function(diagnostics) {
     if (!is.null(diagnostics) && nrow(diagnostics) > 0L) {
-      if (!isTRUE(sink$preserve_diagnostic_seq)) {
-        first_seq <- next_diagnostic_seq()
-        diagnostics$diagnostic_seq <- seq.int(
-          from = first_seq,
-          to = first_seq + nrow(diagnostics) - 1L
-        )
-      }
       sink$keep_diagnostics(diagnostics)
       state$next_diagnostic_seq <- max(diagnostics$diagnostic_seq) + 1L
     }

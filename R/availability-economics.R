@@ -186,10 +186,9 @@ ledgr_availability_restrict_frozen <- function(view, valuation) {
   view
 }
 
-# Holdings frozen at one committed pulse, rebuilt for a resume. Ledger events
-# up to the pulse timestamp give the decision-time holdings after that pulse's
-# dispositions, so freeze entry and exit diagnostics after the resume match an
-# uninterrupted run.
+# Holdings frozen at one committed pulse, reconstructed at a selected
+# boundary. Ledger events up to the pulse timestamp give the decision-time
+# holdings after that pulse's dispositions.
 ledgr_availability_frozen_at <- function(con,
                                          run_id,
                                          initial_cash,

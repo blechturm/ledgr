@@ -336,7 +336,7 @@ ledgr_current_schema_definition <- function() {
       run_diagnostic_implicit = sql(
         "CREATE TABLE run_diagnostic_implicit(",
         "run_id VARCHAR, decision_seq INTEGER, execution_seq INTEGER,",
-        "decision_order INTEGER NOT NULL,",
+        "decision_order BIGINT NOT NULL,",
         "ts_utc TIMESTAMP NOT NULL, instrument_id VARCHAR NOT NULL,",
         "\"target\" DOUBLE NOT NULL, position_before DOUBLE NOT NULL,",
         "decision_price DOUBLE, decision_mark_source VARCHAR NOT NULL,",

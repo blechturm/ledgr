@@ -109,7 +109,7 @@ ledgr_diagnostic_require_coverage <- function(con,
   association <- DBI::dbGetQuery(
     con,
     paste0(
-      "SELECT COUNT(*) AS bad FROM run_diagnostic_implicit i ",
+      "SELECT DISTINCT i.run_id FROM run_diagnostic_implicit i ",
       "JOIN runs r ON r.run_id = i.run_id ",
       "LEFT JOIN snapshot_bars b ON b.snapshot_id = r.snapshot_id ",
       "AND b.instrument_id = i.instrument_id AND b.ts_utc = i.ts_utc ",
@@ -127,34 +127,138 @@ ledgr_diagnostic_require_coverage <- function(con,
       "i.target IS DISTINCT FROM i.position_after OR ",
       "i.decision_seq >= i.execution_seq)) OR ",
       "(i.execution_seq IS NULL AND (i.target IS DISTINCT FROM i.position_before OR ",
-      "i.position_after IS DISTINCT FROM i.position_before)))"
+      "i.position_after IS DISTINCT FROM i.position_before))) ",
+      "ORDER BY i.run_id LIMIT 1"
     ),
     params = association_params
-  )$bad[[1L]]
-  if (association != 0L) {
-    rlang::abort("Diagnostic codec association evidence is corrupt.",
-                 class = "ledgr_diagnostic_corrupt")
+  )
+  if (nrow(association) != 0L) {
+    rlang::abort(
+      sprintf(
+        "Diagnostic codec association evidence is corrupt for run `%s`.",
+        as.character(association$run_id[[1L]])
+      ),
+      class = "ledgr_diagnostic_corrupt"
+    )
   }
   order_bad <- DBI::dbGetQuery(
     con,
     paste0(
-      "SELECT COUNT(*) AS bad FROM (",
-      "SELECT seq, ord, LAG(seq) OVER (PARTITION BY run_id, ts_utc, kind ORDER BY ord) AS prior_seq, ",
-      "COUNT(*) OVER (PARTITION BY run_id, ts_utc, kind, ord) AS ord_n FROM (",
-      "SELECT run_id, ts_utc, 'decision' AS kind, decision_seq AS seq, decision_order AS ord ",
-      "FROM run_diagnostic_implicit WHERE run_id IN (", marks, ") UNION ALL ",
-      "SELECT run_id, ts_utc, 'execution' AS kind, execution_seq AS seq, event_seq AS ord ",
+      "SELECT run_id, COUNT(*) AS bad FROM (",
+      "SELECT run_id, seq, ord, LAG(seq) OVER (PARTITION BY run_id, ts_utc ORDER BY ord) AS prior_seq, ",
+      "COUNT(*) OVER (PARTITION BY run_id, ts_utc, ord) AS ord_n FROM (",
+      "SELECT run_id, ts_utc, execution_seq AS seq, event_seq AS ord ",
       "FROM run_diagnostic_implicit WHERE run_id IN (", marks, ") AND execution_seq IS NOT NULL",
       ") evidence) x WHERE ord IS NULL OR ord <= 0 OR ord_n <> 1 OR ",
-      "(prior_seq IS NOT NULL AND seq <= prior_seq)"
+      "(prior_seq IS NOT NULL AND seq <= prior_seq) ",
+      "GROUP BY run_id ORDER BY run_id LIMIT 1"
     ),
-    params = c(as.list(run_ids), as.list(run_ids))
-  )$bad[[1L]]
-  if (order_bad != 0L) {
+    params = as.list(run_ids)
+  )
+  if (nrow(order_bad) != 0L) {
     rlang::abort(
-      sprintf("Diagnostic codec sequence evidence is corrupt for run `%s`.", run_ids[[1L]]),
+      sprintf(
+        "Diagnostic codec sequence evidence is corrupt for run `%s`.",
+        as.character(order_bad$run_id[[1L]])
+      ),
       class = "ledgr_diagnostic_corrupt"
     )
+  }
+  # decision_order pairs the context ordinal with the run-axis ordinal.
+  # Reconstruct both components from the immutable stored universe so a
+  # coordinated rewrite of decision_seq and decision_order cannot reorder a
+  # logical pulse silently.
+  implicit_order <- DBI::dbGetQuery(
+    con,
+    paste0(
+      "SELECT run_id, ts_utc, instrument_id, decision_seq, decision_order, event_seq ",
+      "FROM run_diagnostic_implicit WHERE run_id IN (", marks, ")"
+    ),
+    params = as.list(run_ids)
+  )
+  if (nrow(implicit_order) > 0L) {
+    configs <- DBI::dbGetQuery(
+      con,
+      paste0("SELECT run_id, config_json FROM runs WHERE run_id IN (", marks, ")"),
+      params = as.list(run_ids)
+    )
+    axes <- lapply(configs$config_json, function(value) {
+      as.character(unlist(
+        ledgr_json_read_config(value)$universe$instrument_ids,
+        use.names = FALSE
+      ))
+    })
+    names(axes) <- as.character(configs$run_id)
+    expected_axis <- rep(NA_integer_, nrow(implicit_order))
+    context_order <- rep(NA_integer_, nrow(implicit_order))
+    row_order <- order(implicit_order$run_id, method = "radix")
+    grouped <- rle(as.character(implicit_order$run_id[row_order]))
+    group_end <- cumsum(grouped$lengths)
+    group_start <- c(1L, utils::head(group_end, -1L) + 1L)
+    for (group_i in seq_along(grouped$values)) {
+      rows <- row_order[seq.int(group_start[[group_i]], group_end[[group_i]])]
+      axis <- axes[[grouped$values[[group_i]]]]
+      if (!is.null(axis)) {
+        axis_size <- length(axis)
+        encoded <- as.numeric(implicit_order$decision_order[rows])
+        whole <- is.finite(encoded) & encoded == floor(encoded) &
+          encoded >= 1 & encoded <= axis_size * axis_size
+        expected_axis[rows] <- match(
+          as.character(implicit_order$instrument_id[rows]),
+          axis
+        )
+        context_order[rows[whole]] <- as.integer(
+          floor((encoded[whole] - 1) / axis_size) + 1
+        )
+        decoded_axis <- rep(NA_integer_, length(rows))
+        decoded_axis[whole] <- as.integer((encoded[whole] - 1) %% axis_size + 1)
+        mismatch <- is.na(decoded_axis) | is.na(expected_axis[rows]) |
+          decoded_axis != expected_axis[rows]
+        expected_axis[rows[mismatch]] <- NA_integer_
+      }
+    }
+    bad <- which(is.na(expected_axis) | is.na(context_order))
+    sequence_bad <- integer()
+    if (length(bad) == 0L) {
+      pulse_key <- paste(
+        implicit_order$run_id,
+        format(as.POSIXct(implicit_order$ts_utc, tz = "UTC"), "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC"),
+        sep = "\r"
+      )
+      row_order <- order(pulse_key, context_order, method = "radix")
+      ordered_pulse <- pulse_key[row_order]
+      ordered_context <- context_order[row_order]
+      ordered_sequence <- as.integer(implicit_order$decision_seq[row_order])
+      prior_same_pulse <- c(
+        FALSE,
+        ordered_pulse[-1L] == ordered_pulse[-length(ordered_pulse)]
+      )
+      invalid <- prior_same_pulse & (
+        ordered_context <= c(NA_integer_, ordered_context[-length(ordered_context)]) |
+          ordered_sequence <= c(NA_integer_, ordered_sequence[-length(ordered_sequence)])
+      )
+      if (any(invalid)) {
+        sequence_bad <- row_order[which(invalid)[[1L]]]
+      }
+    }
+    if (length(sequence_bad) > 0L) {
+      rlang::abort(
+        sprintf(
+          "Diagnostic codec sequence evidence is corrupt for run `%s`.",
+          as.character(implicit_order$run_id[[sequence_bad]])
+        ),
+        class = "ledgr_diagnostic_corrupt"
+      )
+    }
+    if (length(bad) > 0L) {
+      rlang::abort(
+        sprintf(
+          "Diagnostic codec decision-order evidence is corrupt for run `%s`.",
+          as.character(implicit_order$run_id[[bad[[1L]]]])
+        ),
+        class = "ledgr_diagnostic_corrupt"
+      )
+    }
   }
   invisible(TRUE)
 }

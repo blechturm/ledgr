@@ -9,31 +9,6 @@ ledgr_corporate_action_rows <- function(con, snapshot_id) {
   )
 }
 
-ledgr_corporate_action_existing_events <- function(con, run_id) {
-  DBI::dbGetQuery(
-    con,
-    paste(
-      "SELECT * FROM ledger_events",
-      "WHERE run_id = ? ORDER BY event_seq"
-    ),
-    params = list(run_id)
-  )
-}
-
-# Resume dedupe reads only typed posting identity. It deliberately excludes
-# fills and derives no cash, position or lot state.
-ledgr_corporate_action_existing_postings <- function(con, run_id) {
-  DBI::dbGetQuery(
-    con,
-    paste(
-      "SELECT source, source_fact_id FROM ledger_events",
-      "WHERE run_id = ? AND source_fact_id IS NOT NULL",
-      "ORDER BY event_seq"
-    ),
-    params = list(run_id)
-  )
-}
-
 # The quantity each selected fact is entitled to, recounted from the ledger as
 # the fresh fold binds it. The fold binds pulse e's entitlement while it
 # processes pulse e - 1, after that pulse's dispositions and the fills decided

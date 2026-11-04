@@ -400,7 +400,12 @@ testthat::test_that("[LTB-0555] pulse-level persistence and soft-stop seams are 
     "CREATE TABLE strategy_state", "FROM strategy_state", "INTO strategy_state",
     "ledgr_strategy_state_encode", "ledgr_strategy_state_decode",
     "ledgr_strategy_state_restore", "ledgr_strategy_state_cursor_marker",
-    "ledgr_run_resume", "ledgr.interrupt"
+    "ledgr_run_resume", "ledgr.interrupt",
+    "ledgr_corporate_action_existing_events",
+    "ledgr_corporate_action_existing_postings",
+    "Refusing to resume:",
+    "start_idx > length(pulses_posix)",
+    "coverage_n[[1L]] == 0L"
   )
   for (needle in retired) {
     testthat::expect_false(grepl(needle, source, fixed = TRUE), info = needle)

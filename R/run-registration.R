@@ -117,7 +117,7 @@ ledgr_run_registration <- function(con,
     ledgr_history_identity_require_current(stored_cfg$history)
     stored_cfg_hash <- run_row$config_hash[[1]]
     if (!identical(stored_cfg_hash, cfg_hash)) {
-      rlang::abort("Refusing to resume: config_hash does not match stored run.", class = "ledgr_run_hash_mismatch")
+      rlang::abort("Existing run config_hash does not match this invocation.", class = "ledgr_run_hash_mismatch")
     }
     stored_snapshot_id <- run_row$snapshot_id[[1]]
     stored_metric_context_hash <- run_row$metric_context_hash[[1]]
@@ -126,13 +126,13 @@ ledgr_run_registration <- function(con,
     if (is.character(stored_metric_context_hash) && length(stored_metric_context_hash) == 1L &&
       !is.na(stored_metric_context_hash) && nzchar(stored_metric_context_hash) &&
       !identical(stored_metric_context_hash, metric_context_storage$hash)) {
-      rlang::abort("Refusing to resume: metric_context_hash does not match stored run.", class = "ledgr_run_hash_mismatch")
+      rlang::abort("Existing run metric_context_hash does not match this invocation.", class = "ledgr_run_hash_mismatch")
     }
     if (!is.character(stored_snapshot_id) || length(stored_snapshot_id) != 1 || is.na(stored_snapshot_id) || !nzchar(stored_snapshot_id)) {
-      rlang::abort("Refusing to resume: stored run has no snapshot_id.", class = "ledgr_run_hash_mismatch")
+      rlang::abort("Existing run has no snapshot_id.", class = "ledgr_run_hash_mismatch")
     }
     if (!identical(stored_snapshot_id, snapshot_id)) {
-      rlang::abort("Refusing to resume: snapshot_id does not match stored run.", class = "ledgr_run_hash_mismatch")
+      rlang::abort("Existing run snapshot_id does not match this invocation.", class = "ledgr_run_hash_mismatch")
     }
   }
 

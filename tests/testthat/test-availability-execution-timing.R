@@ -216,7 +216,8 @@ testthat::test_that("fill results expose derived recording-pulse alignment", {
   )
 })
 
-testthat::test_that("recording-pulse derivation uses the unique configured session", {
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0559] recording-pulse derivation is vectorized and exact", {
   fill_time <- as.POSIXct("2020-01-02 09:30:00", tz = "UTC")
   close_time <- as.POSIXct("2020-01-01 16:00:00", tz = "UTC")
   fills <- tibble::tibble(

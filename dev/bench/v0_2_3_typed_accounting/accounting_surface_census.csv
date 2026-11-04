@@ -20,7 +20,6 @@
 "producer","producer_append","R/corporate-action-settlement.R",1
 "reader","reader_prepare","R/corporate-action-settlement.R",1
 "reader","reader_replay","R/corporate-action-settlement.R",1
-"storage_reference","ledger_reference","R/corporate-action-settlement.R",2
 "storage_reference","ledger_reference","R/db-schema-current.R",2
 "reader","reader_prepare","R/derived-state.R",1
 "reader","reader_replay","R/derived-state.R",1

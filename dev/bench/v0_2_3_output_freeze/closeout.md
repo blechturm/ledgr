@@ -2,7 +2,7 @@
 
 **Answer (green).** The WS25 final-format candidate produces byte-reproducible
 outputs through durable and memory paths on eight synthetic workloads.
-`records/` holds them (297 files, 619,011 bytes, one SHA-256 each in
+`records/` holds them (300 files, 634,264 bytes, one SHA-256 each in
 `records/manifest.csv`). `check.R` re-runs everything and passes; all registered
 corruptions in `guts.R` make it fail and name the table or the missing
 observation point. The records remain bounded at about 0.5 MB and the output is
@@ -28,12 +28,19 @@ Reasons and fixture sources are in `inventory.md`. Paths:
 | --- | --- | --- |
 | dense_cost | run, sweep_w1, sweep_w2, sweep_compiled | 118.2 KB |
 | dense_risk_features | run, sweep_w1, sweep_w2 | 83.4 KB |
-| dense_dividend_state | run, sweep_w1 | 23.3 KB |
+| dense_dividend_state | run, sweep_w1 | 38.2 KB |
 | avail_terminal_resume | run, run_failed, run_restarted, sweep_w1, sweep_w2 | 80.2 KB |
 | avail_acquisition | run, sweep_w1 | 37.6 KB |
 | avail_incomplete | run, sweep_w1, sweep_w2 | 49.0 KB |
 | walk_forward | run, sweep_w1, walk_forward | 164.8 KB |
 | failures | run, run_abort, sweep_w1, sweep_w2 | 46.7 KB |
+
+`dense_dividend_state` is failure-sensitive to both parts of its name. Its
+day-two target is reachable only when the prior pulse's declared
+`observed_cash` update returns through `ctx$state`; the harness then requires
+the durable add candidate to contain both a `corporate_action_cash` event and
+a fill. An undeclared/broken state carrier or a missing dividend posting stops
+the recorder instead of freezing a failed or economically empty workload.
 
 What each path records:
 
@@ -98,7 +105,7 @@ must not change in WS1.
 
 `record.R` followed by `check.R` on the final code gave byte-identical
 manifests (committed manifest SHA-256
-`91735a8a38f9ec38adcce9ebb2e11c2f7882c0c69a884d08c62859c3b4a222ea`). The
+`5f1a698744a28d81a4acbcdebd746d240ef34dbe7ff7c55e9ec1714509c31`). The
 varying fields found earlier are handled by declaration:
 
 - the random `sweep_id`, which is excluded;
@@ -114,10 +121,10 @@ store, the sweep result, the memory sink's buffers, or a patched handler.
 | Corruption | check.R names |
 | --- | --- |
 | none (control) | exit 0, PASS |
-| FILL qty +1 | dense_cost/run/ledger_events and fills, qty |
-| equity value moved 1 ulp | dense_risk_features/run/equity_curve row 13 |
+| FILL qty +1 | refuses: diagnostic association evidence is corrupt |
+| equity value moved 1 ulp | dense_cost/run/equity_curve |
 | one compact diagnostic pair deleted | refuses before logical trace recording |
-| two ledger events swapped | dense_dividend_state/run/ledger_events, fills |
+| two ledger events swapped | refuses: dense_cost diagnostic association evidence is corrupt |
 | `runs.error_msg` NULL changed to text 'NA' | avail_terminal_resume/run/runs, error_msg |
 | retained sweep equity moved 1 ulp | dense_cost/sweep_w1/sweep_returns row 19 |
 | sweep attribute `execution_assumptions$opening` replaced by `opening/<field>` siblings | dense_cost/sweep_w1/sweep_attrs |
@@ -127,10 +134,10 @@ store, the sweep result, the memory sink's buffers, or a patched handler.
 | memory factory absent, no observer | stops: "no memory-sink observation point" |
 | handler warns on each telemetry write in walk-forward | walk_forward/walk_forward/run_conditions |
 | failed run: error_msg altered | failures/run/runs, error_msg |
-| failed run: exception diagnostic lost | failures/run/run_diagnostics |
+| failed run: exception diagnostic lost | refuses: diagnostic coverage is corrupt |
 | failed run: rolled-back fill survives | failures/run/ledger_events |
 | FAILED sweep candidate: error_msg altered | failures/sweep_w1/sweep, error_msg |
-| abort_run refusal left RUNNING | failures/run_abort/runs, status |
+| failed run status changed to RUNNING | failures/run/runs, status |
 
 Every corruption exits 1.
 
@@ -179,7 +186,7 @@ with bars.
 The text normalizations `<DB_PATH>` and `<SRCREF>` are described under
 Determinism.
 
-## Current handler agreement (`agreement.csv`, 190 checks, 2 differ)
+## Current handler agreement (`agreement.csv`, 204 checks, 2 differ)
 
 **Agreements.**
 

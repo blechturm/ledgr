@@ -230,7 +230,7 @@ testthat::test_that("[LTB-0554] logical diagnostics own every production read", 
     sort(c(
       "availability-diagnostic-writer.R", "availability-results.R",
       "db-schema-current.R",
-      "backtest-runner.R", "diagnostic-codec.R", "diagnostic-decoder.R",
+      "diagnostic-codec.R", "diagnostic-decoder.R",
       "fold-engine.R", "output-handler.R",
       "run-resume.R"
     ), method = "radix")
@@ -340,32 +340,51 @@ testthat::test_that("[LTB-0557] registered nonterminal runs publish empty eviden
   opened <- ledgr:::ledgr_backtest_read_connection(bt)
   on.exit(opened$close(), add = TRUE)
 
-  for (status in c("CREATED", "RUNNING")) {
-    DBI::dbWithTransaction(opened$con, {
-      for (table in c(
-        "run_diagnostics", "run_diagnostic_implicit",
-        "run_diagnostic_coverage", "run_diagnostic_summary",
-        "run_completion", "run_telemetry"
-      )) {
-        DBI::dbExecute(
-          opened$con,
-          paste0("DELETE FROM ", table, " WHERE run_id = ?"),
-          params = list(bt$run_id)
-        )
-      }
-      DBI::dbExecute(
-        opened$con,
-        "UPDATE runs SET status = ?, error_msg = NULL WHERE run_id = ?",
-        params = list(status, bt$run_id)
-      )
-      ledgr:::ledgr_diagnostic_initialize_run(opened$con, bt$run_id)
-    })
+  stored <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT config_json, snapshot_id FROM runs WHERE run_id = ?",
+    params = list(bt$run_id)
+  )
+  cfg <- ledgr:::ledgr_json_read_config(stored$config_json[[1L]])
+
+  # Registration itself owns the CREATED evidence. Calling the initializer
+  # here would let a missing production call pass this detector.
+  created_id <- "empty-evidence-created"
+  ledgr:::ledgr_run_registration(
+    con = opened$con,
+    cfg = cfg,
+    run_id = created_id,
+    seed = cfg$engine$seed,
+    snapshot_id = stored$snapshot_id[[1L]],
+    metric_context = ledgr_metric_context()
+  )
+
+  # Restart itself owns the replacement RUNNING evidence. The completed run
+  # supplies a real registered identity; restart atomically deletes its prior
+  # attempt and publishes the empty logical trace before status is exposed.
+  ledgr:::ledgr_run_restart_nonterminal(
+    con = opened$con,
+    run_id = bt$run_id,
+    is_restart = TRUE,
+    start_ts_utc = bars$ts_utc[[1L]],
+    opening_positions = numeric(),
+    opening_cost_basis = numeric()
+  )
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE runs SET status = 'RUNNING', error_msg = NULL WHERE run_id = ?",
+    params = list(bt$run_id)
+  )
+
+  cases <- c(CREATED = created_id, RUNNING = bt$run_id)
+  for (status in names(cases)) {
+    run_id <- unname(cases[[status]])
     listed <- ledgr_run_list(snapshot)
-    testthat::expect_identical(listed$status[listed$run_id == bt$run_id], status)
-    info <- ledgr_run_info(snapshot, bt$run_id)
+    testthat::expect_identical(listed$status[listed$run_id == run_id], status)
+    info <- ledgr_run_info(snapshot, run_id)
     testthat::expect_identical(info$status, status)
     testthat::expect_true(is.na(
-      listed$valuation_state[listed$run_id == bt$run_id]
+      listed$valuation_state[listed$run_id == run_id]
     ))
   }
 })
@@ -407,6 +426,60 @@ testthat::test_that("[LTB-0558] in-pulse implicit sequence order is exact", {
   testthat::expect_gte(nrow(group), 2L)
   one <- group[1L, ]
   two <- group[2L, ]
+  testthat::expect_silent(ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id))
+
+  second <- ledgr_run(ledgr_experiment(
+    snapshot,
+    function(ctx, params) {
+      if (identical(ctx$ts_utc, first)) c(AAA = 1, BBB = 1) else ctx$hold()
+    },
+    opening = ledgr_opening(cash = 1000),
+    cost_model = ledgr_cost_zero()
+  ), run_id = "implicit-sequence-order-second")
+  on.exit(close(second), add = TRUE)
+  second_rows <- DBI::dbGetQuery(
+    opened$con,
+    "SELECT * FROM run_diagnostic_implicit WHERE run_id = ? ORDER BY decision_seq",
+    params = list(second$run_id)
+  )
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE run_diagnostic_implicit SET fill_price = fill_price + 1 WHERE run_id = ? AND decision_seq = ?",
+    params = list(second$run_id, second_rows$decision_seq[[1L]])
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_diagnostic_decode(opened$con, c(bt$run_id, second$run_id)),
+    "association evidence is corrupt for run `implicit-sequence-order-second`",
+    class = "ledgr_diagnostic_corrupt"
+  )
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE run_diagnostic_implicit SET fill_price = fill_price - 1 WHERE run_id = ? AND decision_seq = ?",
+    params = list(second$run_id, second_rows$decision_seq[[1L]])
+  )
+
+  second_one <- second_rows[1L, ]
+  second_two <- second_rows[2L, ]
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE run_diagnostic_implicit SET decision_seq = -1 WHERE run_id = ? AND decision_seq = ?",
+    params = list(second$run_id, second_one$decision_seq)
+  )
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE run_diagnostic_implicit SET decision_seq = ? WHERE run_id = ? AND decision_seq = ?",
+    params = list(second_one$decision_seq, second$run_id, second_two$decision_seq)
+  )
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE run_diagnostic_implicit SET decision_seq = ? WHERE run_id = ? AND decision_seq = -1",
+    params = list(second_two$decision_seq, second$run_id)
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_diagnostic_decode(opened$con, c(bt$run_id, second$run_id)),
+    "sequence evidence is corrupt for run `implicit-sequence-order-second`",
+    class = "ledgr_diagnostic_corrupt"
+  )
 
   testthat::expect_error(
     DBI::dbExecute(
@@ -432,6 +505,56 @@ testthat::test_that("[LTB-0558] in-pulse implicit sequence order is exact", {
   )
   testthat::expect_error(
     ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id),
+    class = "ledgr_diagnostic_corrupt"
+  )
+
+  # Restore the diagnostic sequence, then coordinate a rewrite of both the
+  # sequence and its stored ordinal. The ordinal is anchored independently to
+  # the immutable run axis, so the coordinated rewrite must still refuse.
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE run_diagnostic_implicit SET decision_seq = -1 WHERE run_id = ? AND decision_seq = ?",
+    params = list(bt$run_id, two$decision_seq)
+  )
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE run_diagnostic_implicit SET decision_seq = ? WHERE run_id = ? AND decision_seq = ?",
+    params = list(two$decision_seq, bt$run_id, one$decision_seq)
+  )
+  DBI::dbExecute(
+    opened$con,
+    "UPDATE run_diagnostic_implicit SET decision_seq = ? WHERE run_id = ? AND decision_seq = -1",
+    params = list(one$decision_seq, bt$run_id)
+  )
+  testthat::expect_silent(ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id))
+
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_seq = -1, decision_order = -1",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(bt$run_id, one$decision_seq)
+  )
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_seq = ?, decision_order = ?",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(one$decision_seq, one$decision_order, bt$run_id, two$decision_seq)
+  )
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET decision_seq = ?, decision_order = ?",
+      "WHERE run_id = ? AND decision_seq = -1"
+    ),
+    params = list(two$decision_seq, two$decision_order, bt$run_id)
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id),
+    "decision-order evidence is corrupt for run `implicit-sequence-order`",
     class = "ledgr_diagnostic_corrupt"
   )
 })

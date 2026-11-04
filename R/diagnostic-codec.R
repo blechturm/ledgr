@@ -87,7 +87,8 @@ ledgr_diagnostic_implicit_block <- function(run_id,
                                             fill_rows,
                                             decision_seq,
                                             execution_seq,
-                                            event_seq) {
+                                            event_seq,
+                                            axis_size) {
   k <- fill$k[fill_rows]
   n <- length(k)
   list(
@@ -95,7 +96,12 @@ ledgr_diagnostic_implicit_block <- function(run_id,
     run_id = rep_len(as.character(run_id), n),
     decision_seq = as.integer(decision_seq),
     execution_seq = as.integer(execution_seq),
-    decision_order = as.integer(k),
+    # One exact pair of context ordinal and run-axis position. The decoder
+    # derives both components from the stored run universe, so a coordinated
+    # rewrite of this value and decision_seq cannot silently reorder a pulse.
+    decision_order = as.numeric(
+      (fill$k[fill_rows] - 1) * axis_size + fill$pos[fill_rows]
+    ),
     ts_utc = .POSIXct(rep_len(decision$ts, n), tz = "UTC"),
     instrument_id = as.character(ledgr_diagnostic_segment_at(decision, "instrument_id", k)),
     target = as.numeric(ledgr_diagnostic_segment_at(decision, "target", k)),
@@ -114,7 +120,8 @@ ledgr_diagnostic_implicit_block <- function(run_id,
 ledgr_diagnostic_implicit_hold_block <- function(run_id,
                                                  decision,
                                                  rows,
-                                                 decision_seq) {
+                                                 decision_seq,
+                                                 decision_order) {
   n <- length(rows)
   target <- as.numeric(ledgr_diagnostic_segment_at(decision, "target", rows))
   before <- as.numeric(ledgr_diagnostic_segment_at(decision, "position_before", rows))
@@ -123,7 +130,7 @@ ledgr_diagnostic_implicit_hold_block <- function(run_id,
     run_id = rep_len(as.character(run_id), n),
     decision_seq = as.integer(decision_seq),
     execution_seq = rep(NA_integer_, n),
-    decision_order = as.integer(rows),
+    decision_order = as.numeric(decision_order),
     ts_utc = .POSIXct(rep_len(decision$ts, n), tz = "UTC"),
     instrument_id = as.character(ledgr_diagnostic_segment_at(decision, "instrument_id", rows)),
     target = target,

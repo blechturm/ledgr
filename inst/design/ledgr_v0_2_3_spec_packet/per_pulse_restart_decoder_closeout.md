@@ -45,6 +45,11 @@ fresh restart. A process killed while CREATED or RUNNING therefore remains
 listable and reports empty evidence rather than poisoning the store. Corruption
 errors name the run where relevant.
 
+LTB-0557 constructs both rows only through the production registration and
+restart boundaries. Process-local omission mutations were run separately for
+the registration initializer and the restart initializer; each makes the
+block fail when `ledgr_run_list()`/`ledgr_run_info()` reaches the orphan.
+
 The fills reader no longer reads diagnostics. It associates typed fill times
 with the unique declared session axis through one vectorized match; ambiguous
 or missing session anchors yield typed missing recording pulses. No logical
@@ -54,8 +59,9 @@ decoder, including closed-handle summary and terminal-evidence paths.
 
 LTB-0554/LCL-0543 owns the complete and bounded decoder, empty nonterminal
 evidence, the no-callback witness, the store-wide no-decode counters and the
-literal production-source census. LTB-0210 owns fill/session association and
-its vectorized shape.
+literal production-source census. LTB-0210 owns fill/session semantics;
+LTB-0559/LCL-0546 independently owns the vectorized `match()` shape and its
+missing and ambiguous-session behavior.
 
 ## Exact compact codec (LDG-3208)
 
@@ -73,6 +79,14 @@ duplicated and permuted in-pulse decision or execution positions before any
 logical result is returned. Writer counters pin certification before row and
 JSON expansion; the P2 next-bar witness pins the no-lookahead boundary; exact
 documentation searches reject a restored one-physical-row-per-axis claim.
+
+Each compact decision-order token pairs its context ordinal with its run-axis
+ordinal in one exact BIGINT. The independent validator recovers both from the
+stored run universe, sorts implicit rows once, allocates one result vector and
+matches instrument IDs in groups by run. It therefore accepts availability
+contexts whose order differs from the run axis while detecting a coordinated
+rewrite of the token and diagnostic sequence. It never scans the run axis once
+per diagnostic row or grows an accumulator.
 
 LTB-0554, LTB-0556 and LTB-0558 (LCL-0543/LCL-0545) own logical parity,
 physical omission, typed certification, lazy allocation, writer order and the
@@ -106,25 +120,50 @@ where their old observation seam or contract disappeared:
   than undefined persistent-state readers;
 - terminal-outcome helpers read logical diagnostics, never the physical
   residual table.
+- LTB-0138 no longer forces the dead non-preserving diagnostic writer branch;
+  it now pins the production-reachable exception row after rollback, whose
+  sequence is re-read once from the committed store;
+- LTB-0190's grouped-reader count first moved from three to seven because
+  current listing reads persisted summary/coverage plus the logical decoder
+  and one grouped equity projection, then to nine when the correction anchored
+  compact decision order to the independently stored run universe; the count
+  remains constant in the number of requested runs;
+- LTB-0281 adds `diagnostic_decision` and `diagnostic_risk` because P2 now
+  hands both typed diagnostic segments to P3 for pre-expansion certification;
+- the ambient-RNG restart witness reopens fresh handles after destructive
+  restart and normalizes only `run_id`, `event_id` and data-frame row names,
+  the unavoidable new-attempt identities; every economic and state-derived
+  ledger/equity value remains exact.
+- the typed-accounting source census drops the three dead
+  `backtest-runner.R` diagnostic-table references with the post-interrupt
+  repair branch; the decoder's independent order check replaces, rather than
+  adds to, its prior implicit-table query count; deleting the two orphaned
+  corporate-action readers removes their shared ledger-table row, so the exact
+  census moves from 90 to 86 populated seams.
+- the two corporate-action readers that existed only to seed a continued
+  fold are deleted after their last production call disappears; LTB-0555's
+  exact-name census makes restoring either orphan fail.
 
 ## Public verification on the correction candidate
 
 - package suite: 1,347 blocks, no failure;
 - focused decoder, restart, writer, session-association, split-store and
   control-plane suites: pass, including registered mutations;
-- A0: 297 canonical files (619,011 bytes), byte-identical on re-record;
-  control passes and every registered corruption fails with its named surface;
-- typed-accounting checker: 90 seams, 30 accounting fields and 22 diagnostic
+- A0: 300 canonical files (634,264 bytes), byte-identical on re-record;
+  204 agreement checks and two declared differences pass, and every registered
+  corruption fails with its named surface;
+- typed-accounting checker: 86 seams, 30 accounting fields and 22 diagnostic
   fields, pass; its private gate remains open;
-- codebase census checker: 2,008 helpers, 2,485 conditions and 89 findings,
+- codebase census checker: 2,006 helpers, 2,487 conditions and 89 findings,
   pass;
 - R CMD build and `R CMD check --no-manual --no-build-vignettes`: pass on the
   final candidate.
 
-The first R CMD check exposed a metadata error in the newly added decoder test
-file: a block-profile marker applied only to its first block. It was corrected
-to a file-profile marker; the static claim checker then assigned all four
-blocks to `review`, and the final build/check passed.
+The first R CMD check exposed one metadata error in the newly registered
+session-association shape detector: LTB-0559 promised the `review` profile but
+lacked its immediately adjacent block-profile marker. The marker was added,
+the static claim checker passed and a fresh source tarball completed R CMD
+check with status OK.
 
 ## Gates still open under LDG-3209
 

@@ -136,21 +136,23 @@ testthat::test_that("persistent output handler preserves buffered fill writes", 
   )
 })
 
-testthat::test_that("[LTB-0138] diagnostic sequence is initialized once", {
+testthat::test_that("[LTB-0138] exception diagnostics continue the durable sequence", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   ledgr_create_schema(con)
 
   run_id <- "diagnostic-sequence-handler"
   insert_test_run(con, run_id)
-  existing <- ledgr:::ledgr_availability_diagnostic_row(
-    run_id = run_id,
-    diagnostic_seq = 7L,
-    ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
-    stage = "context",
-    outcome = "passed",
-    reason_code = "existing"
-  )
+  existing <- do.call(rbind, lapply(seq_len(7L), function(i) {
+    ledgr:::ledgr_availability_diagnostic_row(
+      run_id = run_id,
+      diagnostic_seq = i,
+      ts_utc = as.POSIXct("2020-01-01", tz = "UTC"),
+      stage = "context",
+      outcome = "passed",
+      reason_code = paste0("existing", i)
+    )
+  }))
   DBI::dbAppendTable(con, "run_diagnostics", existing)
 
   original_next <- ledgr:::ledgr_next_diagnostic_seq
@@ -168,24 +170,16 @@ testthat::test_that("[LTB-0138] diagnostic sequence is initialized once", {
     run_wall_start = as.POSIXct("2020-01-01", tz = "UTC"),
     execution_mode = "audit_log"
   )
-  # The durable codec preserves P3's logical sequence. This unit isolates the
-  # handler's generic sequence-initialisation branch explicitly.
-  sink$preserve_diagnostic_seq <- FALSE
   handler <- ledgr:::ledgr_output_handler(sink)
-  block <- function(reason, n) {
-    do.call(rbind, lapply(seq_len(n), function(i) {
-      ledgr:::ledgr_availability_diagnostic_row(
-        run_id = run_id,
-        diagnostic_seq = 1L,
-        ts_utc = as.POSIXct("2020-01-02", tz = "UTC"),
-        stage = "context",
-        outcome = "passed",
-        reason_code = paste0(reason, i)
-      )
-    }))
-  }
-  handler$write_run_diagnostics(block("first", 2L))
-  handler$write_run_diagnostics(block("second", 1L))
+  exception <- ledgr:::ledgr_availability_diagnostic_row(
+    run_id = run_id,
+    diagnostic_seq = 1L,
+    ts_utc = as.POSIXct("2020-01-02", tz = "UTC"),
+    stage = "accounting",
+    outcome = "error",
+    reason_code = "fold_exception"
+  )
+  handler$write_exception_diagnostic(exception)
 
   rows <- DBI::dbGetQuery(
     con,
@@ -196,11 +190,8 @@ testthat::test_that("[LTB-0138] diagnostic sequence is initialized once", {
     params = list(run_id)
   )
   testthat::expect_identical(sequence_queries, 1L)
-  testthat::expect_identical(rows$diagnostic_seq, c(7L, 8L, 9L, 10L))
-  testthat::expect_identical(
-    rows$reason_code,
-    c("existing", "first1", "first2", "second1")
-  )
+  testthat::expect_identical(rows$diagnostic_seq, seq_len(8L))
+  testthat::expect_identical(utils::tail(rows$reason_code, 1L), "fold_exception")
 
   handler_source <- paste(
     c(

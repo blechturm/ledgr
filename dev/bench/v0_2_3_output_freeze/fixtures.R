@@ -90,11 +90,17 @@ a0_fx_dense_dividend_state <- function(db_path) {
     facts = ledgr_facts(ledgr_facts_equity_corporate_actions(dividend)), price_basis = "split_adjusted")
   strategy <- function(ctx, params) {
     targets <- ctx$hold()
-    if (identical(substr(ctx$ts_utc, 1L, 10L), "2020-01-02")) targets["AAA"] <- params$qty
+    # The day-two decision is reachable only when the day-one state update
+    # came back through the declared portfolio-state carrier.
+    if (identical(substr(ctx$ts_utc, 1L, 10L), "2020-01-02") &&
+        identical(ctx$state$observed_cash, 1000)) {
+      targets["AAA"] <- params$qty
+    }
     list(targets = targets, state_update = list(observed_cash = ctx$cash))
   }
   exp <- ledgr_experiment(snapshot, strategy,
     opening = ledgr_opening(cash = 1000, positions = c(AAA = 2), cost_basis = c(AAA = 100)),
+    portfolio_state = list(observed_cash = 0),
     cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(hold = list(strategy = list(qty = 2)), add = list(strategy = list(qty = 5)))
   list(snapshot = snapshot, exp = exp, grid = grid, seed = 11L)

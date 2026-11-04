@@ -278,16 +278,22 @@ testthat::test_that("seeded ambient RNG strategies restart from pulse one", {
   clean <- ledgr:::new_ledgr_backtest("ambient-rng-clean", db_path, cfg)
   on.exit(close(restarted), add = TRUE)
   on.exit(close(clean), add = TRUE)
-  strip <- function(x) {
+  # A fresh attempt necessarily has a distinct run_id and event_id. Normalize
+  # only those attempt identities (plus data-frame row names); every economic,
+  # temporal and state-derived ledger/equity value must remain identical.
+  strip_attempt_identity <- function(x) {
     x$run_id <- NULL
     x$event_id <- NULL
     rownames(x) <- NULL
     x
   }
-  testthat::expect_identical(strip(ledgr_results(restarted, "ledger")), strip(ledgr_results(clean, "ledger")))
   testthat::expect_identical(
-    strip(ledgr_results(restarted, "equity")),
-    strip(ledgr_results(clean, "equity"))
+    strip_attempt_identity(ledgr_results(restarted, "ledger")),
+    strip_attempt_identity(ledgr_results(clean, "ledger"))
+  )
+  testthat::expect_identical(
+    strip_attempt_identity(ledgr_results(restarted, "equity")),
+    strip_attempt_identity(ledgr_results(clean, "equity"))
   )
 })
 
