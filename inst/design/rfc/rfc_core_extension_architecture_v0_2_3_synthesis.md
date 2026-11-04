@@ -2,15 +2,22 @@
 
 **Adopt v2's affected-owner design:** one fold, fixed semantic boundaries,
 closed typed mechanisms, and a contract-first procedure. Reconcile the OMS
-obligations now. Recommend narrowing skeleton D1; that amendment remains
-for the maintainer to decide at acceptance. Add no capability or column and
+obligations now. Narrow skeleton D1; the maintainer accepted that
+amendment on 2026-11-04. Add no capability or column and
 change no public behavior. WS11 retains the core-versus-sister decision.
 
 - Role: record; RFC cycle stage 7, **Decision synthesis**. Codex, 2026-11-04.
 - Status: **draft**, pending independent Type 1 final review and maintainer
   acceptance. Sections 2-5 and 7 state the proposed binding scope; Section 6
-  is an explicit amendment recommendation, not a decided maintainer choice.
+  is the D1 and skeleton amendment the maintainer accepted on 2026-11-04.
 - Brief: drafted by Claude, approved by the maintainer on 2026-11-04.
+- Final-review patches, 2026-11-04: the
+  [Type 1 final review](rfc_core_extension_architecture_v0_2_3_final_review.md)
+  (independent Claude session, PASS_AFTER_PATCHES) P1 to P5 applied in place:
+  the skeleton 2.1 block keeps its first-checkpoint and no-baked-policy guard,
+  the OMS table covers OMS 12 item 10 and 13 item 14 and no longer sweeps in
+  7.2, the unchanged row names skeleton Sections 6-7 and D1's retained text,
+  and the D1 wording records the maintainer's decision.
 - Inputs: [seed v1](rfc_core_extension_architecture_v0_2_3_seed.md),
   [response](rfc_core_extension_architecture_v0_2_3_response.md),
   [response review](rfc_core_extension_architecture_v0_2_3_response_review.md),
@@ -110,7 +117,7 @@ stage registry or unused OMS/liquidity functions are authorized.
 These mechanisms do not establish that every future economic model fits
 today's kernel. It requires distinct positions and positive fill prices
 (`R/lot-accounting.R:323-331`), while publication exchanges spot principal
-(`R/ledger-writer.R:7-16`). That supports Section 6's recommendation, not
+(`R/ledger-writer.R:7-16`). That supports Section 6's amendment, not
 permission to change either computation now.
 
 The scenarios impose the following constraints when their owning work opens:
@@ -159,8 +166,8 @@ promising delivery.
 2. **Name all owners.** Cover production, scheduling, application, publication,
    reconstruction, identity and failure ordering. For each changed field name
    type, axis, unit, producer, validator and owner; show how Section 2 survives.
-   Check the four skeleton scenarios at every family close, subject to the
-   maintainer's Section 6 disposition.
+   Check the four skeleton scenarios at every family close, as amended by
+   Section 6.
 3. **Contract before code.** Resolve conflicts and exact supersessions first.
    Specify lifecycle/economic semantics, validation and refusal precedence.
    Do not quietly expand an accepted capability during its ticket cut.
@@ -190,12 +197,12 @@ rewrite the unimplemented OMS schema.
 | --- | --- | --- |
 | OMS 4.1 `meta_json` and adapter-field alternative (`:156-161`); the generic `meta_json` field in 4.2 (`:193`); repeated adapter alternatives in 11 and 14 (`:552`, `:610`) | Superseded in part | Section 3, mechanism 1: contracted typed evidence, no generic metadata envelope. Adapter fields remain deferred until needed; no columns now. |
 | OMS 4.3 ledger back-links and deferred promotion (`:211-216`); repeated JSON back-links in 1 and 6.1 (`:36`, `:44-47`, `:352`) | Superseded in part | Typed `order_id`, `order_event_seq` and `proposal_id` ledger links when OMS lands. Deterministic preallocation, immutable forward/back links and separate rows survive. |
-| OMS 12 item 7 (`:566`); execution-enable meaning of diagnostic mode in 6.2 (`:359`) | Superseded in part | One semantic path; lifecycle retention belongs to the output handler. Final-bar accounting/no-fill behavior stays unchanged. A retention choice cannot alter order processing. |
+| OMS 12 item 7 (`:566`); execution-enable meaning of diagnostic mode in 6.2 (`:359`) and 13 item 14 (`:594`) | Superseded in part | One semantic path; lifecycle retention belongs to the output handler. Final-bar accounting/no-fill behavior stays unchanged. A retention choice cannot alter order processing. |
 | OMS 7.4 regeneration rationale (`:411`); omission wording in 4.2 and 7.4 (`:165`, `:406`) | Superseded in part | Research decisions come from recorded evidence and exact package decoding, never strategy execution. No dedicated `target_decisions` table is required now; absence of that table cannot justify lost required intent or diagnostics. Records Sections 2-4 govern current logical evidence. |
-| OMS 7.1 context (`:373-389`), 9.1 replay (`:475`) and 10.2 replay tests (`:516`) | Amended for interpretation | The paragraph below: context is an edge distinction; deterministic re-execution and read-side reconstruction are distinct operations. No mode branch or user-code replay on reads. |
-| OMS 3.1-3.5, 4.3 preallocation/immutability, 5 lifecycle meaning, 7.3 retention boundary, 7.5 promotion gate, 8 safety/reconciliation | Unchanged | Those addressed sections remain operative, subject only to the explicit replacements above; order storage, retention API and later capabilities retain their owning cuts/RFCs. |
+| OMS 7.1 context (`:373-381`), 9.1 replay (`:475`), 10.2 replay tests (`:516`) and 12 item 10 (`:569`) | Amended for interpretation | The paragraph below: context is an edge distinction; deterministic re-execution and read-side reconstruction are distinct operations. No mode branch or user-code replay on reads. |
+| OMS 3.1-3.5, 4.3 preallocation/immutability, 5 lifecycle meaning, 7.2-7.3 retention concept and boundary, 7.5 promotion gate, 8 safety/reconciliation | Unchanged | Those addressed sections remain operative, subject only to the explicit replacements above; order storage, retention API and later capabilities retain their owning cuts/RFCs. |
 
-The old 7.1 context distinction (`OMS:373-389`) remains an edge, adapter and
+The old 7.1 context distinction (`OMS:373-381`) remains an edge, adapter and
 persistence distinction; it grants no execution-mode branch. The replay/ID
 requirements in 9.1 and 10.2 (`OMS:475`, `:516`) mean deterministic IDs on a
 new execution and exact reconstruction from retained evidence on a read,
@@ -205,41 +212,45 @@ contracted codec remains a storage decision. Full logical evidence and the
 pre-CRAN refusal policy prevail.
 
 At acceptance, append a dated OMS amendment with this table, add its header
-notice and heading markers at Sections 1, 4.1-4.3, 6.1-6.2, 7.4, 11, 12 and
-14 linking here. Add clarifying markers at 7.1, 9.1 and 10.2 for the readings
+notice and heading markers at Sections 1, 4.1-4.3, 6.1-6.2, 7.4, 11, 12, 13
+and 14 linking here. Add clarifying markers at 7.1, 9.1, 10.2 and 12 item 10
+for the readings
 above. Preserve the old text and unrelated obligations. This is acceptance
 work, not a claim that notices were installed by this single-file task
 (`inst/design/rfc_cycle.md:79-85`;
 `inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md:118-141`).
 
-## 6. Recommended D1 And Skeleton Amendment
+## 6. D1 And Skeleton Amendment
 
-**Q1: recommend the amendment, with a complete owner-map check. The maintainer
-decides it at acceptance.** V2's last-sentence replacement alone leaves the
+**Q1: adopt the amendment, with a complete owner-map check (maintainer
+decision, 2026-11-04).** V2's last-sentence replacement alone leaves the
 old four-row table promising that the lot kernel never changes. Replace the
 following exact passages together; until accepted and recorded, D1 stands
 and affected lean-core coding remains gated.
 
-| Target artifact and addressed section | Recommended disposition | Exact replacement |
+| Target artifact and addressed section | Disposition | Exact replacement |
 | --- | --- | --- |
 | D, D1 locality claim (`:15-18`, starting "It must not foreclose") | Amended | "It must not foreclose these capabilities. For each, name the smallest coherent set of affected stages and structures and preserve the fixed semantic boundaries of the core extension architecture synthesis Section 2." |
 | D, D1 Check (`:27-30`) | Superseded | "The synthesis and every family close answer the four scenarios with a complete affected-owner map, including scheduling, publication, reconstruction, identity and failure ordering. A second engine, an execution-mode branch or a duplicated kernel is a finding. Reuse shared primitives wherever their arithmetic applies. A proposed strategy-boundary or lot-kernel change needs its own contract, explicit disposition of any conflicting accepted boundary and parity for unchanged behavior; it is never made silently." |
 | Skeleton 2.1 introduction, table and locality/check paragraph (`:137-157`) | Superseded | The replacement block immediately below. |
-| Skeleton Sections 1, 2 outside that block, 3-5; D2 | Unchanged | Those sections, including the order-shaped handoff (`Skeleton:93-99`), scalar cash, complete FIFO first checkpoint, stage recorder, public parity and coding gate. D1's other statements remain minimum extension guards, not proof that future economics fit today's kernel. |
+| Skeleton Sections 1, 2 outside that block, 3-7; D1 statement and table (`D:8-14`, `:20-25`); D2 | Unchanged | Those sections, including the order-shaped handoff (`Skeleton:93-99`), scalar cash, complete FIFO first checkpoint, stage recorder, public parity and coding gate. D1's other statements remain minimum extension guards, not proof that future economics fit today's kernel. |
 
 Exact replacement block for Skeleton 2.1:
 
-> Bind D1 as a constraint on the skeleton and every family close, not a request
-> for unused code. Preserve the fixed boundaries in the core extension
-> architecture synthesis Section 2. The four scenarios below name affected
-> owners; they do not freeze every future stage or the current event grammar.
+> Bind [D1](rfc_lean_core_skeleton_v0_2_3_maintainer_decisions.md#d1-built-for-what-comes-next-without-building-it)
+> as a constraint on the skeleton, its first checkpoint and every family
+> close, not a request for unused code. The interface table preserves the
+> fixed boundaries in the core extension architecture synthesis Section 2;
+> preparation and the FIFO family must not bake future policy into storage or
+> arithmetic. The four scenarios below name affected owners; they do not
+> freeze every future stage or the current event grammar.
 >
 > | Future capability | Affected owners and preserved boundary |
 > | --- | --- |
 > | OMS: intent, lifecycle, outstanding orders | P3 planning and the existing order-shaped handoff; E's typed order state and scheduled-skip sequencing; P4 ordered conflict-free batching; P4/P5 lifecycle publication and retention services. Existing orders must progress without a fresh strategy call. P2 remains a full-target interface; lifecycle state stays outside strategy state and accounting rows. Repeated fills are not merged. |
 > | Other order types | P3 fill resolution and typed order fields; preparation/P1 execution slices; timing and, for surviving orders, the OMS owners above. P2 never sees future execution data; P4/P5 consume resolved effects without interpreting order types. The timing contract owns activation and ambiguity. |
 > | Short selling and leverage | P2 target/risk validation, P3 short refusal and portfolio affordability; prepared causal terms, P1 settlement/valuation and P4/P5 typed financing publication as needed. Signed storage remains; financing and collateral are separate rules. Current short refusal and FIFO arithmetic do not change in this skeleton. |
-> | Other asset classes | Preparation and the named valuation, sizing, affordability, settlement, application, publication and reconstruction services change under the cross-asset contract. Reuse applicable signed-book primitives; do not promise that spot principal exchange, positive fill prices or every kernel operation fit new economics. Any necessary kernel change takes its own contract and parity route. |
+> | Other asset classes | Preparation and the named valuation, sizing, affordability, settlement, application, publication and reconstruction services change under the cross-asset contract. Reuse applicable signed-book primitives; do not promise that spot principal exchange, positive fill prices or every kernel operation fit new economics. Any necessary kernel change takes its own contract and parity route. Terms and event interpretation stay with their named consumers, not constants or generic metadata spread through the fold. |
 >
 > Each concrete extension supplies the complete owner map and explains every
 > change; this table is not an exhaustive future implementation specification.
@@ -250,14 +261,13 @@ Exact replacement block for Skeleton 2.1:
 
 Record the accepted form as dated appended amendments to D and Skeleton,
 with header links and affected-section notices. This draft does not amend
-those files. If the maintainer rejects the recommendation, resolve the
-remaining D1/kernel conflict before declaring the extension gate satisfied.
+those files.
 
 ## 7. Rejections, Routing And Evidence
 
 | Rejected proposal | Reason |
 | --- | --- |
-| V1's one-place/one-stage promise; an immutable kernel for arbitrary future assets | Shared rules legitimately have several owners; current spot arithmetic is not proof of future economics. Use the owner map and Section 6 recommendation. |
+| V1's one-place/one-stage promise; an immutable kernel for arbitrary future assets | Shared rules legitimately have several owners; current spot arithmetic is not proof of future economics. Use the owner map and Section 6 amendment. |
 | Named P3 sub-stages as mandatory new abstractions, a carrier per step, speculative terms/currency vectors | No present contract needs them. Preserve real responsibilities and extract helpers only when justified. |
 | Universal integer enums; JSON or callbacks as extension escapes | Closed validation matters, not token representation. Generic payloads and user execution hooks evade the typed contract. |
 | Per-asset accounting engines or using compiled dispatch as economic policy | They split semantics and cannot compose mixed assets in one run. |
@@ -274,7 +284,7 @@ evidence must test them; a diagram alone proves none of them.
 encodings and validation placement within the accepted skeleton interface;
 later OMS physical storage, retention API and commit mechanism under Section
 5. Timing, new economic models and public policy surfaces remain RFC work,
-not spec-cut discretion. D1 is a maintainer acceptance choice, not a cut question.
+not spec-cut discretion. D1's disposition is the maintainer's 2026-11-04 decision, not a cut question.
 
 **Future Obligations Recorded:** at acceptance, route Section 3.1's conditional
 timing/protective-parameter obligation through `execution-policy`; attach the
