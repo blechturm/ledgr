@@ -22,6 +22,11 @@
 - Draft revision, 2026-11-04, before final review: incorporate D1's four-row
   structural check, D2's coding gate and amendment route, and WS16's stage
   recorder requirement. Refresh source/contract checks at the new head.
+- Final-review patches, 2026-11-04: the
+  [Type 1 final review](rfc_lean_core_skeleton_v0_2_3_final_review.md)
+  (independent Claude session, PASS_AFTER_PATCHES) P1 to P3 applied in place:
+  the target-axis correction of seed v2 is stated, D1's OMS Section 5 is
+  retained, and the shorting row names P3's short-exposure check.
 
 ## 1. Decision And Authority
 
@@ -80,7 +85,7 @@ their semantics into a harness to avoid an integration boundary.
 | E and P1 | E owns execution sequencing and stop installation. P1 alone reads the substrate and produces separate decision data and execution data. Settlement and position facts precede the decision as contracted. |
 | P2 | Receives the cutoff-bound decision view, never next-bar execution data. Its public adapter supplies the existing strategy surface and validates the full return on each due pulse. |
 | P3-P5 | Consume typed decision/execution columns and existing services, with no substrate or history handle. Planning, accounting and publication retain their separate semantic boundaries. |
-| Fold state | Typed quantities on the run axis, scalar cash, typed asset-state fields and portfolio-state scalars, and one flat typed lot book. Decision targets live on the decision axis, mapped by `context_pos`; run-axis storage must not invent missing targets. |
+| Fold state | Typed quantities on the run axis, scalar cash, typed asset-state fields and portfolio-state scalars, and one flat typed lot book. Decision targets live on the decision axis, mapped by `context_pos`; run-axis storage must not invent missing targets. This corrects seed v2 (principle 6 and Section 3.3), which put targets on the run axis; the current fold keeps them on the decision axis (`R/fold-engine.R:1058-1068`). |
 | Recording | Preallocated typed columns and used-prefix counters, indexed writes and capacity growth by doubling. Fold state, handler retention and diagnostic chunks retain their distinct owners. Frames manifest at service boundaries. |
 
 The P3-to-P4 plan/apply handoff keeps D1's order-shaped record: instrument
@@ -138,7 +143,7 @@ The check recurs at every family close under
 | --- | --- | --- |
 | OMS: intent, lifecycle, outstanding orders | P3 target-to-order planning and the order-shaped handoff; E's fold state can acquire engine-owned outstanding-order state; P4/P5 publication services can emit the separately owned `order_events` stream when authorized. | P1's causal observation, P2's full-target strategy boundary and the FIFO kernel need no reshape. Lifecycle state does not enter strategy state or accounting-ledger rows. |
 | Other order types | P3's single fill-resolution stage and its typed order record; preparation/P1 can supply the required indexed OHLCV execution slices and timing through the execution packet. Orders surviving a pulse use the OMS state boundary above. | P2 still sees only its cutoff-bound view. P4/P5 consume resolved accounting effects without interpreting order types; the lot kernel remains unchanged. No second substrate reader is introduced. |
-| Short selling and leverage | P2's target/risk validation services and P3's affordability policy change only under the shorting contract. Signed positions, openings and lots already fit the storage shape. Borrow/financing use typed event preparation, P1 settlement and the existing accounting/publication services at P4/P5 as applicable. | E's sequencing, the P2 stage/strategy interface, history representation and FIFO arithmetic require no rewrite. The present short-exposure refusal remains policy, not an unsigned type invariant. |
+| Short selling and leverage | P2's target/risk validation services and P3's short-exposure and affordability checks change only under the shorting contract. Signed positions, openings and lots already fit the storage shape. Borrow/financing use typed event preparation, P1 settlement and the existing accounting/publication services at P4/P5 as applicable. | E's sequencing, the P2 stage/strategy interface, history representation and FIFO arithmetic require no rewrite. The present short-exposure refusal remains policy, not an unsigned type invariant. |
 | Other asset classes | Preparation can add contracted typed per-instrument terms; P1 valuation, P2 sizing services and P3 cost/fill services read them by index. New accounting-critical events change their typed preparation/application/publication boundaries, vocabulary and schema through the cross-asset route. | E's sequencing, P2's target interface, causal-history semantics and the lot kernel are not reshaped. Terms and event interpretation stay with their named consumers, rather than becoming constants or generic metadata spread through the fold. |
 
 For each row, no stage outside the named owners would need reshaping under
@@ -162,7 +167,7 @@ Accounting publication carries resolved typed effects
 (`R/backtest-runner.R:119`, `R/accounting-replay.R:8`). These are the current
 facts; outstanding orders, new fill models and cross-asset terms remain future.
 
-Retain the authorities named by D1: [OMS Sections 3 and 6](rfc_ledgr_oms_seed_synthesis.md#3-accepted-architecture),
+Retain the authorities named by D1: [OMS Sections 3, 5 and 6](rfc_ledgr_oms_seed_synthesis.md#3-accepted-architecture),
 the [shorting/leverage obligation](README.md#shorting-leverage-contract),
 [cross-asset accounting route](README.md#cross-asset-accounting-events), and
 [precision/tradability route](README.md#asset-precision-tradability).
