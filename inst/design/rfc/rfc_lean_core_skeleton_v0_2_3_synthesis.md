@@ -7,6 +7,10 @@
   checkpoint completion. Coding waits for the core extension architecture RFC
   (D2).
 - Brief: drafted by Claude, approved by the maintainer on 2026-11-04.
+- Amended 2026-11-04: Section 2.1 is superseded by the
+  [amendment](#amendment-maintainer-2026-11-04-core-extension-architecture) from the accepted
+  [core extension architecture synthesis](rfc_core_extension_architecture_v0_2_3_synthesis.md) Section 6. The D2
+  coding gate is satisfied by that acceptance.
 - Parent: the accepted [lean fold core synthesis](rfc_lean_fold_core_v0_2_3_synthesis.md),
   especially Sections 2-5 and amendment A1.
 - Inputs: [seed v2](rfc_lean_core_skeleton_v0_2_3_seed_v2.md),
@@ -133,6 +137,9 @@ their accounting boundaries; delta trace storage does not remove required
 logical rows or instruction/sizing witnesses.
 
 ### 2.1 D1: Four-Row Structural Check
+
+**Superseded 2026-11-04** by the [amendment](#amendment-maintainer-2026-11-04-core-extension-architecture);
+the text below is kept as the accepted original.
 
 Bind D1 as a constraint on the skeleton and its first checkpoint, not a
 request for unused code. The interface table must preserve the following
@@ -441,3 +448,38 @@ v2. Independent Type 1 final review remains pending; this session's source
 checks do not substitute for it. No separate product-level binary choice is
 escalated by this synthesis; stage 6 is now supplied by the maintainer's D1-D2
 record.
+
+## Amendment (maintainer, 2026-11-04): core extension architecture
+
+The maintainer accepted the [core extension architecture synthesis](rfc_core_extension_architecture_v0_2_3_synthesis.md)
+on 2026-11-04. Its Section 6 supersedes Section 2.1 with the block below.
+Sections 1, 2 outside 2.1, and 3 to 7 are unchanged.
+
+| Target artifact | Addressed section | Disposition | Replacement |
+| --- | --- | --- | --- |
+| This synthesis | 2.1 introduction, table and locality/check paragraph | Superseded | The block below |
+| This synthesis | Sections 1, 2 outside 2.1, 3-7 | Unchanged | Those sections |
+
+### 2.1 (amended) D1: Affected-Owner Check
+
+Bind [D1](rfc_lean_core_skeleton_v0_2_3_maintainer_decisions.md#d1-built-for-what-comes-next-without-building-it)
+as a constraint on the skeleton, its first checkpoint and every family
+close, not a request for unused code. The interface table preserves the
+fixed boundaries in the core extension architecture synthesis Section 2;
+preparation and the FIFO family must not bake future policy into storage or
+arithmetic. The four scenarios below name affected owners; they do not
+freeze every future stage or the current event grammar.
+
+| Future capability | Affected owners and preserved boundary |
+| --- | --- |
+| OMS: intent, lifecycle, outstanding orders | P3 planning and the existing order-shaped handoff; E's typed order state and scheduled-skip sequencing; P4 ordered conflict-free batching; P4/P5 lifecycle publication and retention services. Existing orders must progress without a fresh strategy call. P2 remains a full-target interface; lifecycle state stays outside strategy state and accounting rows. Repeated fills are not merged. |
+| Other order types | P3 fill resolution and typed order fields; preparation/P1 execution slices; timing and, for surviving orders, the OMS owners above. P2 never sees future execution data; P4/P5 consume resolved effects without interpreting order types. The timing contract owns activation and ambiguity. |
+| Short selling and leverage | P2 target/risk validation, P3 short refusal and portfolio affordability; prepared causal terms, P1 settlement/valuation and P4/P5 typed financing publication as needed. Signed storage remains; financing and collateral are separate rules. Current short refusal and FIFO arithmetic do not change in this skeleton. |
+| Other asset classes | Preparation and the named valuation, sizing, affordability, settlement, application, publication and reconstruction services change under the cross-asset contract. Reuse applicable signed-book primitives; do not promise that spot principal exchange, positive fill prices or every kernel operation fit new economics. Any necessary kernel change takes its own contract and parity route. Terms and event interpretation stay with their named consumers, not constants or generic metadata spread through the fold. |
+
+Each concrete extension supplies the complete owner map and explains every
+change; this table is not an exhaustive future implementation specification.
+A second engine, execution-mode branch or duplicated kernel fails the check.
+A strategy-boundary or lot-kernel change requires explicit contract disposition
+and parity for unchanged behavior. No future capability or speculative field
+is implemented here. D2's acceptance and amendment gate remains in force.

@@ -7,8 +7,10 @@ amendment on 2026-11-04. Add no capability or column and
 change no public behavior. WS11 retains the core-versus-sister decision.
 
 - Role: record; RFC cycle stage 7, **Decision synthesis**. Codex, 2026-11-04.
-- Status: **draft**, pending independent Type 1 final review and maintainer
-  acceptance. Sections 2-5 and 7 state the proposed binding scope; Section 6
+- Status: **accepted** by the maintainer on 2026-11-04, after the independent
+  Type 1 final review (PASS_AFTER_PATCHES, P1-P5 applied). Acceptance
+  installed the Section 5 OMS amendment and the Section 6 D1 and skeleton
+  amendments. Sections 2-5 and 7 state the proposed binding scope; Section 6
   is the D1 and skeleton amendment the maintainer accepted on 2026-11-04.
 - Brief: drafted by Claude, approved by the maintainer on 2026-11-04.
 - Final-review patches, 2026-11-04: the

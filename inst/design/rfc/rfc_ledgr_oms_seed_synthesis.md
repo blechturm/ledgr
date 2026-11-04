@@ -1,6 +1,10 @@
 # RFC Synthesis: OMS Semantics For ledgr
 
 Role: record; RFC-cycle synthesis and durable decision record.
+Amended 2026-11-04: parts of Sections 1, 4.1-4.3, 6.1-6.2, 7.4, 11, 12, 13
+and 14 are superseded, and 7.1, 9.1, 10.2 and 12 item 10 are read as
+clarified, by the [amendment](#amendment-maintainer-2026-11-04-core-extension-architecture) from the accepted
+[core extension architecture synthesis](rfc_core_extension_architecture_v0_2_3_synthesis.md) Section 5.
 Status: accepted
 Authority: accepted synthesis; binds only its stated scope.
 
@@ -15,6 +19,9 @@ Authority: accepted synthesis; binds only its stated scope.
 ---
 
 ## 1. Decision Summary
+
+**Amended 2026-11-04:** superseded in part by the
+[core extension architecture amendment](#amendment-maintainer-2026-11-04-core-extension-architecture).
 
 OMS semantics are accepted as the v0.2.x design direction, with the data-model and lifecycle work scoped as a separate append-only stream that does not modify the existing accounting ledger contract. The strategy contract does not change. Strategies remain `function(ctx, params)` returning a full named numeric target vector. Engine-owned target-to-order translation, lifecycle state, and adapter-side safety machinery are introduced as new internal layers; none of them become public strategy APIs.
 
@@ -118,6 +125,9 @@ The synchronous research path has no persistent outstanding order after the puls
 
 ### 4.1 `order_events`
 
+**Amended 2026-11-04:** superseded in part by the
+[core extension architecture amendment](#amendment-maintainer-2026-11-04-core-extension-architecture).
+
 A new append-only table holds order lifecycle rows. Semantic fields are bound; the exact SQL may evolve through implementation:
 
 ```text
@@ -162,6 +172,9 @@ Adapter-shaped columns (`broker_order_id`, `client_order_id`, `parent_order_id`,
 
 ### 4.2 Target-decision artifacts
 
+**Amended 2026-11-04:** superseded in part by the
+[core extension architecture amendment](#amendment-maintainer-2026-11-04-core-extension-architecture).
+
 Paper/live persists target decisions. Research and sweep do not persist target decisions by default.
 
 The synthesis binds the logical target-decision contract, not a universal row-per-decision full-vector JSON storage shape. A target-decision artifact must let ledgr answer, under the declared mode and retention policy:
@@ -200,6 +213,9 @@ When payloads are retained, the strategy target vector is the full named vector.
 The first EOD implementation may use full-vector JSON stored directly on the decision row. That is an implementation detail, not the universal storage contract. Intraday and tick-level persistence require a separate storage design and are not part of v0.2.x. The v0.2.x schema must not force a destructive migration to support later deduplicated, sparse, columnar, or payload-reference storage.
 
 ### 4.3 Link mechanism between `order_events` and `ledger_events`
+
+**Amended 2026-11-04:** superseded in part by the
+[core extension architecture amendment](#amendment-maintainer-2026-11-04-core-extension-architecture).
 
 The v1 immutable link mechanism is bound as:
 
@@ -340,6 +356,9 @@ A rejected order has no fill accounting event. A pending-cancel order may still 
 
 ### 6.1 Default synchronous research path
 
+**Amended 2026-11-04:** superseded in part by the
+[core extension architecture amendment](#amendment-maintainer-2026-11-04-core-extension-architecture).
+
 For each non-zero target delta, the synchronous research path executes:
 
 ```text
@@ -356,6 +375,9 @@ One non-zero target delta produces one ORDER_INTENT, one fill proposal, one fill
 
 ### 6.2 Final-bar behavior
 
+**Amended 2026-11-04:** superseded in part by the
+[core extension architecture amendment](#amendment-maintainer-2026-11-04-core-extension-architecture).
+
 The current final-bar no-fill warning (`LEDGR_LAST_BAR_NO_FILL`) is preserved. Whether OMS diagnostic mode emits an ORDER_INTENT on the final bar without a fill is deferred to the implementation spec. Default research behavior does not introduce unfilled terminal orders on the final bar unless OMS diagnostic mode is explicitly enabled.
 
 ### 6.3 Partial fills in research
@@ -371,6 +393,9 @@ Research rejections are rare in v1. Possible deterministic rejection causes are 
 ## 7. Mode And Retention Decisions
 
 ### 7.1 Mode is the execution context
+
+**Clarified 2026-11-04:** read with the
+[core extension architecture amendment](#amendment-maintainer-2026-11-04-core-extension-architecture).
 
 ```text
 mode = "research" | "paper" | "live"
@@ -401,6 +426,9 @@ live:                           order_events required
 The suppression gate lives at the output-handler / retention-policy boundary, not in fold logic. Memory output handlers discard full lifecycle rows by default. The persistent DuckDB output handler writes them only when the run mode and retention policy enable diagnostic OMS artifacts.
 
 ### 7.4 Target-decision persistence by mode
+
+**Amended 2026-11-04:** superseded in part by the
+[core extension architecture amendment](#amendment-maintainer-2026-11-04-core-extension-architecture).
 
 ```text
 research and sweep: no target_decisions written by default
@@ -465,6 +493,9 @@ Reconciliation observations do not live in `strategy_state`. Reconciliation-only
 
 ### 9.1 Deterministic IDs
 
+**Clarified 2026-11-04:** read with the
+[core extension architecture amendment](#amendment-maintainer-2026-11-04-core-extension-architecture).
+
 ```text
 order_event_id  derived from run_id + order_event_seq (mirrors ledger pattern)
 order_id        derived from run_id + per-run order sequence
@@ -507,6 +538,9 @@ Future partial fills are represented as multiple ordinary `FILL` accounting rows
 
 ### 10.2 Testing obligations
 
+**Clarified 2026-11-04:** read with the
+[core extension architecture amendment](#amendment-maintainer-2026-11-04-core-extension-architecture).
+
 The v0.2.x OMS implementation spec must include:
 
 - State-machine tests verifying allowed transitions, rejecting invalid transitions, distinguishing `PENDING_CANCEL` from `CANCELED` and `PARTIALLY_FILLED` from `FILLED`, preserving fill history for canceled-after-partial, and verifying rejected orders have no accounting fill.
@@ -524,6 +558,9 @@ Any OMS-related policy plan that flows through sweep must be a worker-safe plain
 ---
 
 ## 11. Explicit Deferrals
+
+**Amended 2026-11-04:** superseded in part by the
+[core extension architecture amendment](#amendment-maintainer-2026-11-04-core-extension-architecture).
 
 The v0.2.x OMS planning window does not include:
 
@@ -555,6 +592,9 @@ The v0.2.x OMS planning window does not include:
 
 ## 12. v0.2.x Minimum Scope
 
+**Amended 2026-11-04:** superseded in part by the
+[core extension architecture amendment](#amendment-maintainer-2026-11-04-core-extension-architecture).
+
 The v0.2.x OMS planning window must include, at minimum:
 
 1. Pre-OMS `FILL_PARTIAL` cleanup tickets (§10.1).
@@ -575,6 +615,9 @@ The v0.2.x release must not ship public `ctx$order()`, `ctx$cancel()`, `ledgr_re
 ---
 
 ## 13. Open Questions Promoted To Spec-Cut
+
+**Amended 2026-11-04:** superseded in part by the
+[core extension architecture amendment](#amendment-maintainer-2026-11-04-core-extension-architecture).
 
 The following questions remain open and must be resolved during the v0.2.x spec-cut phase, before tickets are committed:
 
@@ -604,6 +647,9 @@ These questions are not blockers for the synthesis. They are inputs to the v0.2.
 
 ## 14. Future Obligations On Record
 
+**Amended 2026-11-04:** superseded in part by the
+[core extension architecture amendment](#amendment-maintainer-2026-11-04-core-extension-architecture).
+
 The synthesis records the following obligations for later RFCs:
 
 - **Paper/live RFC** must widen the §5.4 transition table to represent cancel-reject and late-fill-during-pending-cancel transitions without collapsing them into terminal cancellation.
@@ -621,3 +667,20 @@ The synthesis records the following obligations for later RFCs:
 This synthesis is accepted as binding for v0.2.x OMS data-model and lifecycle planning. The maintainer may amend it via a follow-up RFC; ad-hoc changes during spec-cut are not authorized.
 
 Predecessor synthesis (`rfc_chainable_risk_oms_policy_boundary_synthesis.md`) remains binding for v0.1.9. The execution-policy north-star RFC (`rfc_execution_policy_pipeline_audit_signal_north_star.md`) remains a non-binding architectural reference for v0.1.9.x and v0.2.x planning. This synthesis does not modify either.
+
+## Amendment (maintainer, 2026-11-04): core extension architecture
+
+The maintainer accepted the [core extension architecture synthesis](rfc_core_extension_architecture_v0_2_3_synthesis.md)
+on 2026-11-04. Its Section 5 supersedes or clarifies the clauses below;
+the old text above is preserved. Two streams, immutable links and the
+lifecycle meaning stay. Line references are to this file before the
+amendment notices were added.
+
+| Target artifact and addressed section | Disposition on acceptance | Replacement here |
+| --- | --- | --- |
+| OMS 4.1 `meta_json` and adapter-field alternative (`:156-161`); the generic `meta_json` field in 4.2 (`:193`); repeated adapter alternatives in 11 and 14 (`:552`, `:610`) | Superseded in part | Section 3, mechanism 1: contracted typed evidence, no generic metadata envelope. Adapter fields remain deferred until needed; no columns now. |
+| OMS 4.3 ledger back-links and deferred promotion (`:211-216`); repeated JSON back-links in 1 and 6.1 (`:36`, `:44-47`, `:352`) | Superseded in part | Typed `order_id`, `order_event_seq` and `proposal_id` ledger links when OMS lands. Deterministic preallocation, immutable forward/back links and separate rows survive. |
+| OMS 12 item 7 (`:566`); execution-enable meaning of diagnostic mode in 6.2 (`:359`) and 13 item 14 (`:594`) | Superseded in part | One semantic path; lifecycle retention belongs to the output handler. Final-bar accounting/no-fill behavior stays unchanged. A retention choice cannot alter order processing. |
+| OMS 7.4 regeneration rationale (`:411`); omission wording in 4.2 and 7.4 (`:165`, `:406`) | Superseded in part | Research decisions come from recorded evidence and exact package decoding, never strategy execution. No dedicated `target_decisions` table is required now; absence of that table cannot justify lost required intent or diagnostics. Records Sections 2-4 govern current logical evidence. |
+| OMS 7.1 context (`:373-381`), 9.1 replay (`:475`), 10.2 replay tests (`:516`) and 12 item 10 (`:569`) | Amended for interpretation | The paragraph below: context is an edge distinction; deterministic re-execution and read-side reconstruction are distinct operations. No mode branch or user-code replay on reads. |
+| OMS 3.1-3.5, 4.3 preallocation/immutability, 5 lifecycle meaning, 7.2-7.3 retention concept and boundary, 7.5 promotion gate, 8 safety/reconciliation | Unchanged | Those addressed sections remain operative, subject only to the explicit replacements above; order storage, retention API and later capabilities retain their owning cuts/RFCs. |

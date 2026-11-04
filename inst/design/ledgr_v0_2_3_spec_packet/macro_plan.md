@@ -677,7 +677,10 @@ against the current core and switched in one cut.
   is accepted; it decides how the core is later extended (OMS and order
   types, short selling, asset classes, accounting events). If it changes a
   structure the skeleton RFC binds, the skeleton synthesis is amended
-  before coding.
+  before coding. **Cleared 2026-11-04:** the
+  [synthesis](../rfc/rfc_core_extension_architecture_v0_2_3_synthesis.md) was accepted and amended skeleton
+  Section 2.1 and D1. Its Section 4 procedure, including the
+  affected-owner check, applies at every family close.
 - **One family per cut (maintainer, 2026-11-04).** Each family after the
   first checkpoint is its own cut (measure, cut, Codex cut review,
   implement), so each closes with its own budgets and review before the

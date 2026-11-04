@@ -1,11 +1,17 @@
 # RFC: Lean Core Skeleton (v0.2.3), Maintainer Decisions
 
 - Stage: maintainer decisions (stage 6), 2026-11-04. Input to the synthesis.
+- Amended 2026-11-04: D1 is narrowed by the accepted
+  [core extension architecture synthesis](rfc_core_extension_architecture_v0_2_3_synthesis.md) Section 6; see the
+  [amendment](#amendment-maintainer-2026-11-04-core-extension-architecture) below.
 - Drafted by Claude from the maintainer's statement below. The maintainer
   kept D1 as the skeleton's minimal guard on 2026-11-04 and moved the full
   extension design into its own cycle (D2).
 
 ## D1. Built for what comes next, without building it
+
+**Amended 2026-11-04:** the locality claim and the Check below are replaced
+by the [amendment](#amendment-maintainer-2026-11-04-core-extension-architecture); the statement and the table remain.
 
 Maintainer statement: "we have to rewrite the core with a future OMS in mind
 and it needs to be extensible for future order types, short selling, etc and
@@ -49,3 +55,14 @@ need to plan how to extend the core as well."
 - Stage parity before end-to-end parity, and the stage recorder in the first
   checkpoint, are routed in macro plan WS16 (2026-11-04) and bind this RFC's
   first checkpoint.
+
+## Amendment (maintainer, 2026-11-04): core extension architecture
+
+The maintainer accepted the [core extension architecture synthesis](rfc_core_extension_architecture_v0_2_3_synthesis.md)
+Section 6 on 2026-11-04. It replaces two passages of D1; the maintainer
+statement, the four-row table and D2 are unchanged.
+
+| Addressed passage | Disposition | Replacement |
+| --- | --- | --- |
+| D1 locality claim, from "It must not foreclose them either" to "without reshaping the others" | Amended | It must not foreclose these capabilities. For each, name the smallest coherent set of affected stages and structures and preserve the fixed semantic boundaries of the core extension architecture synthesis Section 2. |
+| D1 Check | Superseded | The synthesis and every family close answer the four scenarios with a complete affected-owner map, including scheduling, publication, reconstruction, identity and failure ordering. A second engine, an execution-mode branch or a duplicated kernel is a finding. Reuse shared primitives wherever their arithmetic applies. A proposed strategy-boundary or lot-kernel change needs its own contract, explicit disposition of any conflicting accepted boundary and parity for unchanged behavior; it is never made silently. |
