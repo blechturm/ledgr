@@ -304,7 +304,7 @@ testthat::test_that("[LTB-0206] a boundary on the first or last sealed date reso
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0207] an empty unfinished row resumes with its opening positions", {
+testthat::test_that("[LTB-0207] an empty unfinished row restarts with its opening positions", {
   days <- as.Date(c("2020-01-06", "2020-01-07", "2020-01-08", "2020-01-09"))
   hold <- function(ctx, params) ctx$hold()
   # One definition, so the rerun matches the first attempt's configuration;
@@ -378,7 +378,7 @@ testthat::test_that("[LTB-0208] flat_test_state still runs gapped, overlapping a
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0205] an interrupted walk-forward resumes its test run on rerun", {
+testthat::test_that("[LTB-0205] an interrupted walk-forward restarts its test run on rerun", {
   interrupt_march <- function(ctx, params) {
     if (identical(getOption("ledgr.test.wf_interrupt"), substr(ctx$ts_utc, 1, 10))) rlang::interrupt()
     ctx$universe[ctx$buyable] |>
@@ -441,7 +441,7 @@ testthat::test_that("[LTB-0205] an interrupted walk-forward resumes its test run
     class = "ledgr_run_hash_mismatch"
   )
 
-  resumed <- run_wf(snapshot)
-  testthat::expect_identical(resumed$status, "DONE")
-  testthat::expect_identical(digest(snapshot, resumed), reference_digest)
+  restarted <- run_wf(snapshot)
+  testthat::expect_identical(restarted$status, "DONE")
+  testthat::expect_identical(digest(snapshot, restarted), reference_digest)
 })

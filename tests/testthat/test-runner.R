@@ -85,8 +85,6 @@ testthat::test_that("runner executes a minimal end-to-end run and writes outputs
   n_eq <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM equity_curve WHERE run_id = ?", params = list(out$run_id))$n[[1]]
   testthat::expect_equal(n_eq, 3L)
 
-  n_state <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM strategy_state WHERE run_id = ?", params = list(out$run_id))$n[[1]]
-  testthat::expect_equal(n_state, 3L)
 })
 
 # ledgr-test-profile: review
@@ -170,142 +168,6 @@ testthat::test_that("runner refuses to resume on config hash mismatch", {
 })
 
 # ledgr-test-profile: review
-testthat::test_that("strategy_state is persisted and restored across resume", {
-  path <- tempfile(fileext = ".duckdb")
-
-  drv <- duckdb::duckdb()
-  con <- DBI::dbConnect(drv, dbdir = path)
-  ledgr_create_schema(con)
-
-  DBI::dbExecute(con, "INSERT INTO instruments (instrument_id) VALUES ('AAA')")
-  bars <- data.frame(
-    instrument_id = rep("AAA", 4),
-    ts_utc = as.POSIXct(c("2020-01-01 00:00:00", "2020-01-02 00:00:00", "2020-01-03 00:00:00", "2020-01-04 00:00:00"), tz = "UTC"),
-    open = c(100, 101, 102, 103),
-    high = c(100, 101, 102, 103),
-    low = c(100, 101, 102, 103),
-    close = c(100, 101, 102, 103),
-    volume = c(1, 1, 1, 1),
-    stringsAsFactors = FALSE
-  )
-  DBI::dbAppendTable(
-    con,
-    "bars",
-    bars
-  )
-
-  DBI::dbDisconnect(con, shutdown = TRUE)
-  duckdb::duckdb_shutdown(drv)
-
-  cost <- ledgr_cost_zero()
-  cfg <- list(
-    db_path = path,
-    engine = list(seed = 1L, tz = "UTC"),
-    universe = list(instrument_ids = c("AAA")),
-    backtest = list(
-      start_ts_utc = "2020-01-01T00:00:00Z",
-      end_ts_utc = "2020-01-04T00:00:00Z",
-      pulse = "EOD",
-      initial_cash = 1000
-    ),
-    timing_model = {
-      timing <- ledgr_timing_next_open()
-      list(
-        timing_schema_version = timing$timing_schema_version,
-        type_id = timing$type_id,
-        version = timing$version,
-        args = timing$args
-      )
-    },
-    cost_model = list(
-      cost_model_hash = ledgr:::ledgr_cost_model_hash(cost),
-      cost_plan_json = ledgr:::ledgr_cost_plan_json(cost)
-    ),
-    features = list(enabled = FALSE, defs = list()),
-    strategy = list(id = "hold_zero", params = list())
-  )
-  cfg <- ledgr_test_use_state_counter(cfg)
-  cfg <- ledgr_test_snapshot_backed_config(cfg, bars)
-
-  run_id <- "run-state-prev"
-  ledgr:::ledgr_run_fold(cfg, run_id = run_id, control = list(max_pulses = 2L))
-  gc()
-  Sys.sleep(0.05)
-
-  drv <- duckdb::duckdb()
-  con <- DBI::dbConnect(drv, dbdir = path)
-  on.exit(duckdb::duckdb_shutdown(drv), add = TRUE)
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-
-  ledgr_run_config(cfg, run_id = run_id)
-
-  states <- DBI::dbGetQuery(
-    con,
-    "SELECT ts_utc, state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
-    params = list(run_id)
-  )
-  declaration <- ledgr:::ledgr_strategy_state_from_identity(cfg$strategy_state)
-  steps <- vapply(states$state_json, function(x) {
-    ledgr:::ledgr_strategy_state_decode(x, declaration)$values$step
-  }, integer(1L))
-  testthat::expect_identical(states$ts_utc, c("2020-01-01T00:00:00Z", "2020-01-02T00:00:00Z", "2020-01-03T00:00:00Z", "2020-01-04T00:00:00Z"))
-  testthat::expect_identical(as.integer(steps), c(1L, 2L, 3L, 4L))
-})
-
-# ledgr-test-profile: review
-testthat::test_that("db_live writes strategy_state only after pulse fill writes", {
-  db_path <- make_runner_fixture_db()
-  cfg <- ledgr_test_snapshot_backed_config(base_runner_config(db_path), attr(db_path, "bars"))
-  cfg$engine$execution_mode <- "db_live"
-  cfg$features <- list(enabled = FALSE, defs = list())
-
-  ns <- asNamespace("ledgr")
-  original <- get("ledgr_write_fill_events", envir = ns, inherits = FALSE)
-  saw_state_before_fill <- FALSE
-  unlockBinding("ledgr_write_fill_events", ns)
-  # LDG-3166 (design note Section 5, category 5): the spy takes the column
-  # writer's signature (typed fill group, row index, instrument ID).
-  assign(
-    "ledgr_write_fill_events",
-    function(con, run_id, fill, i, instrument_id, event_seq_start = NULL, use_transaction = TRUE) {
-      state_rows <- DBI::dbGetQuery(
-        con,
-        "SELECT COUNT(*) AS n FROM strategy_state WHERE run_id = ?",
-        params = list(run_id)
-      )$n[[1]]
-      if (as.integer(state_rows) > 0L) saw_state_before_fill <<- TRUE
-      original(con, run_id, fill, i, instrument_id, event_seq_start = event_seq_start, use_transaction = use_transaction)
-    },
-    envir = ns
-  )
-  lockBinding("ledgr_write_fill_events", ns)
-  on.exit(
-    {
-      unlockBinding("ledgr_write_fill_events", ns)
-      assign("ledgr_write_fill_events", original, envir = ns)
-      lockBinding("ledgr_write_fill_events", ns)
-    },
-    add = TRUE
-  )
-
-  run_id <- "run-db-live-state-order"
-  ledgr:::ledgr_run_fold(cfg, run_id = run_id, control = list(max_pulses = 1L))
-  testthat::expect_false(saw_state_before_fill)
-  gc()
-  Sys.sleep(0.05)
-
-  drv <- duckdb::duckdb()
-  con <- DBI::dbConnect(drv, dbdir = db_path)
-  on.exit(duckdb::duckdb_shutdown(drv), add = TRUE)
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-
-  state_rows <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM strategy_state WHERE run_id = ?", params = list(run_id))$n[[1]]
-  fill_rows <- DBI::dbGetQuery(con, "SELECT COUNT(*) AS n FROM ledger_events WHERE run_id = ?", params = list(run_id))$n[[1]]
-  testthat::expect_equal(as.integer(state_rows), 1L)
-  testthat::expect_equal(as.integer(fill_rows), 1L)
-})
-
-# ledgr-test-profile: review
 testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes finalization", {
   make_config <- function(path) {
     bars <- ledgr_test_make_bars(c("AAA", "BBB"), as.Date("2020-01-01") + 0:7)
@@ -350,7 +212,6 @@ testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes
     close(bt)
     queries <- list(
       ledger = "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
-      state = "SELECT * FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
       equity = "SELECT * FROM equity_curve WHERE run_id = ? ORDER BY ts_utc"
     )
     c(
@@ -408,11 +269,6 @@ testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes
             "SELECT * FROM ledger_events WHERE run_id = ? ORDER BY event_seq",
             params = list(run_id)
           )
-          seam$state <- DBI::dbGetQuery(
-            conn,
-            "SELECT * FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
-            params = list(run_id)
-          )
           stop("injected finalization failure", call. = FALSE)
         }
         original_transaction(conn, code, ...)
@@ -435,10 +291,8 @@ testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes
   testthat::expect_identical(failed_rows$status$status, "FAILED")
   testthat::expect_identical(failed_rows$status$error_msg, "injected finalization failure")
   testthat::expect_identical(failed_rows$ledger, seam$ledger)
-  testthat::expect_identical(failed_rows$state, seam$state)
   testthat::expect_identical(nrow(failed_rows$equity), 0L)
   testthat::expect_identical(failed_rows$ledger, clean_rows$ledger)
-  testthat::expect_identical(failed_rows$state, clean_rows$state)
   testthat::expect_identical(failed_rows$fills, clean_rows$fills)
   testthat::expect_identical(failed_rows$trades, clean_rows$trades)
 
@@ -451,7 +305,6 @@ testthat::test_that("[LTB-0007] post-fold failure preserves evidence and resumes
   testthat::expect_identical(resumed_rows$status$status, "DONE")
   testthat::expect_true(is.na(resumed_rows$status$error_msg))
   testthat::expect_identical(resumed_rows$ledger, clean_rows$ledger)
-  testthat::expect_identical(resumed_rows$state, clean_rows$state)
   testthat::expect_identical(resumed_rows$equity, clean_rows$equity)
   testthat::expect_identical(resumed_rows$fills, clean_rows$fills)
   testthat::expect_identical(resumed_rows$trades, clean_rows$trades)

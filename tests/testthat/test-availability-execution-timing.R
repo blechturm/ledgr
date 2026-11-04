@@ -216,7 +216,7 @@ testthat::test_that("fill results expose derived recording-pulse alignment", {
   )
 })
 
-testthat::test_that("recording-pulse derivation fails closed on missing or ambiguous evidence", {
+testthat::test_that("recording-pulse derivation uses the unique configured session", {
   fill_time <- as.POSIXct("2020-01-02 09:30:00", tz = "UTC")
   close_time <- as.POSIXct("2020-01-01 16:00:00", tz = "UTC")
   fills <- tibble::tibble(
@@ -236,29 +236,23 @@ testthat::test_that("recording-pulse derivation fails closed on missing or ambig
       execution_timing_version = 2L
     )
   ))
-  missing <- ledgr:::ledgr_fill_recording_pulses_from_evidence(
+  missing <- ledgr:::ledgr_fill_recording_pulses_from_sessions(
     fills,
-    data.frame(),
-    sessions,
+    sessions[FALSE, , drop = FALSE],
     timing
   )
   testthat::expect_true(is.na(missing[[1L]]))
 
-  diagnostic <- data.frame(
-    event_seq = NA_integer_,
-    instrument_id = "AAA",
-    stage = "execution",
-    outcome = "filled",
-    decision_ts_utc = close_time,
-    execution_ts_utc = fill_time
-  )
-  ambiguous <- ledgr:::ledgr_fill_recording_pulses_from_evidence(
+  duplicated_session <- rbind(sessions, sessions[2L, , drop = FALSE])
+  ambiguous <- ledgr:::ledgr_fill_recording_pulses_from_sessions(
     fills,
-    rbind(diagnostic, diagnostic),
-    sessions,
+    duplicated_session,
     timing
   )
   testthat::expect_true(is.na(ambiguous[[1L]]))
+
+  exact <- ledgr:::ledgr_fill_recording_pulses_from_sessions(fills, sessions, timing)
+  testthat::expect_identical(exact, as.POSIXct("2020-01-02 16:00:00", tz = "UTC"))
 
   reconstructed <- ledgr:::ledgr_fill_recording_pulses_from_opportunities(
     fills,

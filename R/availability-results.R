@@ -18,11 +18,9 @@ ledgr_backtest_terminal_evidence <- function(bt, con = NULL) {
     completion = completion,
     completion_json = ledgr_completion_json(
       completion,
-      affected_instrument_ids = ledgr_stopped_instrument_ids(DBI::dbGetQuery(
-        opened$con,
-        "SELECT instrument_id, outcome FROM run_diagnostics WHERE run_id = ? AND outcome = 'stopped' ORDER BY diagnostic_seq",
-        params = list(bt$run_id)
-      )),
+      affected_instrument_ids = ledgr_stopped_instrument_ids(
+        ledgr_diagnostic_decode(opened$con, bt$run_id, outcome = "stopped")
+      ),
       assumptions = if (ledgr_availability_config_active(bt$config)) {
         ledgr_assumption_flags_for_run(bt, opened$con)
       } else {
@@ -33,21 +31,7 @@ ledgr_backtest_terminal_evidence <- function(bt, con = NULL) {
 }
 
 ledgr_backtest_diagnostics <- function(con, run_id) {
-  rows <- DBI::dbGetQuery(
-    con,
-    paste(
-      "SELECT * FROM run_diagnostics WHERE run_id = ?",
-      "ORDER BY diagnostic_seq"
-    ),
-    params = list(run_id)
-  )
-  # `run_diagnostics.reasons` predates optional strategy intent and is
-  # physically non-null. Sizing rows use the empty storage sentinel when the
-  # strategy supplied no intent reason; the typed result surface exposes that
-  # absence as character NA.
-  absent_sizing_reason <- rows$stage == "sizing" & !nzchar(rows$reasons)
-  rows$reasons[absent_sizing_reason] <- NA_character_
-  tibble::as_tibble(rows)
+  ledgr_diagnostic_decode(con, run_id)
 }
 
 ledgr_backtest_diagnostics_filtered <- function(con,
@@ -55,38 +39,13 @@ ledgr_backtest_diagnostics_filtered <- function(con,
                                                  instrument_id,
                                                  ts_utc = NULL,
                                                  include_strategy_intent = FALSE) {
-  where_time <- ""
-  params <- list(run_id, instrument_id)
-  if (!is.null(ts_utc)) {
-    where_time <- paste(
-      "AND ((stage = 'decision' AND ts_utc = ?)",
-      "OR (stage = 'execution' AND decision_ts_utc = ?))"
-    )
-    params <- c(params, list(ts_utc, ts_utc))
-  }
-  where_diagnostic <- if (isTRUE(include_strategy_intent)) {
-    paste(
-      "AND ((instrument_id = ? AND stage IN ('decision', 'execution'))",
-      "OR (instrument_id = '' AND stage = 'decision'",
-      "AND reason_code = 'strategy_intent'))"
-    )
-  } else {
-    paste(
-      "AND instrument_id = ?",
-      "AND stage IN ('decision', 'execution')"
-    )
-  }
-  tibble::as_tibble(DBI::dbGetQuery(
+  ledgr_diagnostic_decode(
     con,
-    paste(
-      "SELECT * FROM run_diagnostics",
-      "WHERE run_id = ?",
-      where_diagnostic,
-      where_time,
-      "ORDER BY diagnostic_seq"
-    ),
-    params = params
-  ))
+    run_id,
+    instrument_id = instrument_id,
+    explain_ts_utc = ts_utc,
+    include_strategy_intent = include_strategy_intent
+  )
 }
 
 ledgr_run_completion_info_empty <- function() {
@@ -111,14 +70,7 @@ ledgr_run_completion_info <- function(con, run_id) {
   if (is.null(completion) || nrow(completion) == 0L) {
     return(ledgr_run_completion_info_empty())
   }
-  stopped <- DBI::dbGetQuery(
-    con,
-    paste(
-      "SELECT instrument_id FROM run_diagnostics",
-      "WHERE run_id = ? AND outcome = 'stopped' ORDER BY diagnostic_seq"
-    ),
-    params = list(run_id)
-  )
+  stopped <- ledgr_diagnostic_decode(con, run_id, outcome = "stopped")
   affected_ids <- unique(as.character(stopped$instrument_id))
   affected_ids <- affected_ids[!is.na(affected_ids) & nzchar(affected_ids)]
   ledgr_run_completion_info_from_rows(completion, affected_ids)
@@ -160,17 +112,7 @@ ledgr_run_completion_info_many <- function(con, run_ids) {
       quoted_ids
     )
   )
-  stopped <- DBI::dbGetQuery(
-    con,
-    sprintf(
-      paste(
-        "SELECT run_id, instrument_id FROM run_diagnostics",
-        "WHERE run_id IN (%s) AND outcome = 'stopped'",
-        "ORDER BY run_id, diagnostic_seq"
-      ),
-      quoted_ids
-    )
-  )
+  stopped <- ledgr_diagnostic_decode(con, unique(run_ids), outcome = "stopped")
   for (run_id in unique(run_ids)) {
     row <- completion[completion$run_id == run_id, , drop = FALSE]
     if (nrow(row) == 0L) next

@@ -224,9 +224,9 @@ Useful fields include:
 
 A scheduled skip means ledgr deliberately did not construct a decision
 context or invoke the callback on that pulse. It is not an explicit
-`ctx$hold()` from the strategy. Economic events, reconciliation,
-strategy-state persistence and checkpointing still run, so the two
-counts describe callback cadence rather than missing market time.
+`ctx$hold()` from the strategy. Economic events, reconciliation and
+in-memory strategy-state updates still run, so the two counts describe
+callback cadence rather than missing market time.
 
 ``` r
 comparison <- ledgr_run_compare(snapshot, run_ids = c("trend_qty_5", "trend_qty_15"))

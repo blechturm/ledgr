@@ -121,7 +121,7 @@ scale_test_reference_recording <- function(fills, diagnostics, sessions, version
   as.POSIXct(out, origin = "1970-01-01", tz = "UTC")
 }
 
-testthat::test_that("[LTB-0210] vectorised fill recording pulses equal the per-fill rule", {
+testthat::test_that("[LTB-0210] fill recording pulses use only the configured session axis", {
   set.seed(210)
   day <- as.POSIXct("2021-01-04", tz = "UTC") + 86400 * (0:59)
   sessions <- data.frame(status = "open", session_open = day + 14.5 * 3600, session_close = day + 21 * 3600)
@@ -131,24 +131,21 @@ testthat::test_that("[LTB-0210] vectorised fill recording pulses equal the per-f
   k <- sample.int(59L, n, TRUE) + 1L
   exec_time <- sessions$session_open[k]
   fills <- data.frame(event_seq = seq_len(n), ts_utc = exec_time, instrument_id = sample(c("A", "B", NA), n, TRUE))
-  diag <- data.frame(
-    event_seq = seq_len(n), instrument_id = fills$instrument_id, stage = "execution",
-    outcome = "filled", decision_ts_utc = sessions$session_close[k - 1L], execution_ts_utc = exec_time
-  )
-  diag$event_seq[sample.int(n, 40L)] <- NA
-  diag$event_seq[sample.int(n, 20L)] <- 7L
-  diag$execution_ts_utc[sample.int(n, 20L)] <- NA
-  diag$decision_ts_utc[sample.int(n, 20L)] <- day[[1]]
-  diag <- rbind(diag, transform(diag[1:30, ], stage = "decision"))
   timing <- list(
     execution_timing_convention = "availability_open_v2",
     execution_timing_version = 2L
   )
-  got <- ledgr:::ledgr_fill_recording_pulses_from_evidence(fills, diag, sessions, timing)
-  expected <- scale_test_reference_recording(fills, diag, sessions, 2L)
+  got <- ledgr:::ledgr_fill_recording_pulses_from_sessions(fills, sessions, timing)
+  expected <- rep(as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"), n)
+  for (i in seq_len(n)) {
+    hit <- which(as.numeric(sessions$session_open) == as.numeric(fills$ts_utc[[i]]))
+    if (length(hit) == 1L && hit[[1L]] >= 2L) expected[[i]] <- sessions$session_close[[hit[[1L]]]]
+  }
   testthat::expect_identical(got, expected)
   testthat::expect_gt(sum(!is.na(got)), 100L)
-  testthat::expect_gt(sum(is.na(got)), 20L)
+  testthat::expect_gt(sum(is.na(got)), 0L)
+  source <- paste(readLines(testthat::test_path("..", "..", "R", "execution-timing.R"), warn = FALSE), collapse = "\n")
+  testthat::expect_false(grepl("run_diagnostics", source, fixed = TRUE))
 })
 
 testthat::test_that("[LTB-0211] a memory sweep keeps only the diagnostic rows its candidate row reads", {
@@ -221,9 +218,8 @@ testthat::test_that("[LTB-0215] typed strategy state changed in place is persist
     opening = ledgr_opening(cash = 1000)
   ), run_id = "in_place")
   on.exit(close(bt), add = TRUE)
-  got <- vapply(availability_state_values(bt), function(state) state$x, numeric(1))
   testthat::expect_gt(length(unique(live$x)), 3L)
-  testthat::expect_identical(got, live$x)
+  testthat::expect_identical(live$x, as.double(seq_along(live$x)))
 })
 
 testthat::test_that("[LTB-0216] the dense results plane replays the ledger once, not per time", {

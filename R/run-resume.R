@@ -1,113 +1,52 @@
-ledgr_run_resume_preflight <- function(is_resume, strategy_preflight) {
-  if (isTRUE(is_resume)) {
-    ledgr_abort_strategy_ambient_rng_for_resume(strategy_preflight)
-  }
-  invisible(TRUE)
-}
-
-ledgr_run_resume <- function(con,
-                             output_handler,
-                             run_id,
-                             is_resume,
-                             calendar,
-                             start_ts_utc,
-                             opening_positions,
-                             opening_cost_basis,
-                             opening_lots = NULL) {
-  fail_run <- output_handler$abort_run
-  pulses <- calendar$pulses
-  pulses_posix <- calendar$pulses_posix
-  pulses_iso <- calendar$pulses_iso
-
-  resume_posix <- pulses_posix[[1]]
-  resume_iso <- pulses_iso[[1]]
-  resume_exec_posix <- pulses_posix[[2]]
-  start_idx <- 1L
-  finalization_only_resume <- FALSE
-
-  if (is_resume) {
-    last_state <- DBI::dbGetQuery(
-      con,
-      "SELECT MAX(ts_utc) AS ts_utc FROM strategy_state WHERE run_id = ?",
-      params = list(run_id)
-    )$ts_utc[[1]]
-
-    if (length(last_state) == 1 && !is.na(last_state)) {
-      last_posix <- NULL
-      if (inherits(last_state, "POSIXt")) {
-        last_posix <- as.POSIXct(last_state, tz = "UTC")
-      } else if (is.numeric(last_state)) {
-        last_posix <- as.POSIXct(last_state, origin = "1970-01-01", tz = "UTC")
-      } else if (is.character(last_state) && nzchar(last_state)) {
-        last_posix <- as.POSIXct(last_state, tz = "UTC", tryFormats = c("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d %H:%M:%S"))
+# A nonterminal invocation is a fresh attempt. Identity and snapshot trust are
+# checked by the caller before this boundary; any terminal completion evidence
+# is validated there as well. Only derived attempt output is replaced. The run
+# registration, provenance, tags and promotion context remain the identity of
+# the same run.
+ledgr_run_restart_nonterminal <- function(con,
+                                          run_id,
+                                          is_restart,
+                                          start_ts_utc,
+                                          opening_positions,
+                                          opening_cost_basis,
+                                          opening_lots = NULL) {
+  restart <- function() {
+    if (isTRUE(is_restart)) {
+      for (table in c(
+        "run_completion",
+        "run_telemetry",
+        "run_diagnostics",
+        "equity_curve",
+        "ledger_events"
+      )) {
+        DBI::dbExecute(
+          con,
+          paste("DELETE FROM", table, "WHERE run_id = ?"),
+          params = list(run_id)
+        )
       }
-      if (is.null(last_posix) || is.na(last_posix)) {
-        fail_run("Invalid strategy_state.ts_utc encountered; cannot resume deterministically.")
-      }
-
-      last_idx <- max(which(pulses_posix <= last_posix))
-      if (!is.finite(last_idx) || is.na(last_idx) || last_idx < 1) {
-        fail_run("strategy_state contains a timestamp not present in pulse calendar; cannot resume deterministically.")
-      }
-
-      start_idx <- as.integer(last_idx) + 1L
-      if (start_idx <= length(pulses)) {
-        resume_posix <- pulses_posix[[start_idx]]
-        resume_iso <- pulses_iso[[start_idx]]
-        resume_exec_posix <- if (start_idx < length(pulses_posix)) pulses_posix[[start_idx + 1L]] else as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
-      } else {
-        finalization_only_resume <- TRUE
-        resume_exec_posix <- as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
-      }
-    } else {
-      start_idx <- 1L
-      resume_posix <- pulses_posix[[1]]
-      resume_iso <- pulses_iso[[1]]
-      resume_exec_posix <- if (length(pulses_posix) >= 2) pulses_posix[[2]] else as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")
     }
-
-    # Resume cleanup removes prior tail rows that could create alternate outputs.
-    # A post-fold failure has no uncommitted fold tail to remove.
-    if (!isTRUE(finalization_only_resume)) {
-      DBI::dbWithTransaction(con, {
-        if (!is.na(resume_exec_posix)) {
-          DBI::dbExecute(con, "DELETE FROM ledger_events WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_exec_posix))
-        }
-        DBI::dbExecute(con, "DELETE FROM equity_curve WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_posix))
-        DBI::dbExecute(con, "DELETE FROM strategy_state WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_iso))
-        DBI::dbExecute(con, "DELETE FROM run_diagnostics WHERE run_id = ? AND ts_utc >= ?", params = list(run_id, resume_posix))
-      })
+    next_event_seq <- 1L
+    if (length(opening_positions) > 0L) {
+      next_event_seq <- ledgr_write_opening_position_events(
+        con = con,
+        run_id = run_id,
+        ts_utc = start_ts_utc,
+        positions = opening_positions,
+        cost_basis = opening_cost_basis,
+        event_seq_start = next_event_seq,
+        lots = opening_lots
+      )
     }
+    as.integer(next_event_seq)
   }
-
-  next_event_seq <- DBI::dbGetQuery(
-    con,
-    "SELECT COALESCE(MAX(event_seq), 0) + 1 AS next_seq FROM ledger_events WHERE run_id = ?",
-    params = list(run_id)
-  )$next_seq[[1]]
-  next_event_seq <- as.integer(next_event_seq)
-  # Opening positions are the first events a run writes, in one append. A
-  # resumed row without any event (left CREATED, RUNNING or FAILED before that
-  # append) has not posted its opening yet, so it posts it now.
-  post_opening <- !is_resume || next_event_seq == 1L
-  if (post_opening && length(opening_positions) > 0L) {
-    next_event_seq <- ledgr_write_opening_position_events(
-      con = con,
-      run_id = run_id,
-      ts_utc = start_ts_utc,
-      positions = opening_positions,
-      cost_basis = opening_cost_basis,
-      event_seq_start = next_event_seq,
-      lots = opening_lots
-    )
+  # Replacement and opening publication are one boundary. A condition in
+  # either half leaves the previous attempt untouched; the run exit guard
+  # records the failed invocation without producing mixed attempt output.
+  next_event_seq <- if (isTRUE(is_restart)) {
+    DBI::dbWithTransaction(con, restart())
+  } else {
+    restart()
   }
-
-  list(
-    resume_posix = resume_posix,
-    resume_iso = resume_iso,
-    resume_exec_posix = resume_exec_posix,
-    start_idx = start_idx,
-    finalization_only_resume = finalization_only_resume,
-    next_event_seq = next_event_seq
-  )
+  list(start_idx = 1L, next_event_seq = next_event_seq)
 }

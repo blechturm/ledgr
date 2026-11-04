@@ -107,8 +107,8 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   fill timing, cost resolution, final-bar no-fill behavior,
   cash/position/state transitions, and the canonical in-memory event stream.
   The output handler is the persistence or accumulation layer that materializes
-  fold outputs into `ledger_events`, `features`, `strategy_state`,
-  `equity_curve`, telemetry, summaries, comparison rows, or future in-memory
+  fold outputs into `ledger_events`, `features`, `equity_curve`, telemetry,
+  summaries, comparison rows, or future in-memory
   sweep result objects.
 - `ledgr_run()` and `ledgr_sweep()` must call the same fold core. Sweep
   mode may use a cheaper output handler, skip DuckDB persistence, batch
@@ -142,8 +142,8 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
   parent session axis before fold entry. On a due pulse P1 through P5 run as
   usual. On a scheduled skip P1 still observes and settles, P4 still binds the
   next corporate-action boundary and applies an empty plan, and P5 still
-  reconciles, persists carried strategy state, advances resume progress and
-  commits evidence. Only P2 context/callback work and P3 planning are skipped.
+  reconciles, updates carried in-memory strategy state and commits evidence.
+  Only P2 context/callback work and P3 planning are skipped.
   The skip writes one pulse diagnostic with stage `decision`, outcome
   `skipped`, reason `scheduled_skip`, empty instrument ID and `{}` detail;
   it is not an explicit strategy hold and creates no target or instrument
@@ -292,7 +292,7 @@ changes no public API, stored format or identity.
 - Stage timing samples and run telemetry keep their present scalar and array
   types. Every execution clock emits the same carrier groups.
 - One typed lot implementation serves every consumer: the fold, replay, the
-  chunked fills reader, opening and resume initialisation, walk-forward
+  chunked fills reader, opening initialisation, walk-forward
   carry and as-of state, terminal dispositions and recovery, the handler's
   accounting fact and the compiled pack and unpack. Its operations are
   opening, fill and disposition (`ledgr_lot_opening()`, `ledgr_lot_fill()`,
@@ -305,7 +305,7 @@ changes no public API, stored format or identity.
   without reordering. Compiled pack and unpack gather the typed lots and keep
   the aggregate and Kahan state; the C++ is unchanged.
 - Instruments are positions on the run axis. ID-to-position conversion
-  happens only at named boundaries: the opening and resume import
+  happens only at named boundaries: the opening import
   (`ledgr_carrier_import_state()`, `ledgr_lot_book_from_opening()`), the
   replay preparer, the P2 input and return (`ledgr_carrier_p2_input()`,
   `ledgr_validate_strategy_targets()`), the publication input (one instrument
@@ -318,7 +318,7 @@ changes no public API, stored format or identity.
   compiled-envelope RFC).
 - The fold owns its state and transient batches, the handler owns event and
   leg retention, and the diagnostic writer owns bounded chunks. Mutable
-  buffers are exclusive; retained context views, checkpoints, compiled
+  buffers are exclusive; retained context views, compiled
   inputs and returned values are copied or never written again. The lot
   kernel copies on modify and writes no book column by reference.
   Candidates and workers never share a book.
@@ -441,13 +441,13 @@ changes no public API, stored format or identity.
   fixed durations are then added exactly. No boundary is derived from a
   preceding clamped boundary, so a monthly chain anchored on 2019-12-31 has
   neither day drift nor a pulse gap.
-- Test-run resume (Cut 11, LDG-2980). When a walk-forward session is rerun, a
+- Test-run restart (Cut 11, LDG-2980; superseded by LDG-3206). When a walk-forward session is rerun, a
   test run that already exists with status `DONE` or `INCOMPLETE` is opened as
   recorded and not re-executed. Any other existing test run, such as one an
-  interruption left `FAILED`, resumes through the ordinary run path with the
+  interruption left `FAILED`, restarts through the ordinary run path with the
   same window, parameters and seed, so rerunning an interrupted session with
   the same arguments completes with the uninterrupted session's folds,
-  selections and test results. A resumed run whose configuration no longer
+  selections and test results. A restarted run whose configuration no longer
   matches refuses with `ledgr_run_hash_mismatch`.
 - Sealed-date boundaries (Cut 11, LDG-2991). Window and precompute boundaries
   are checked against the sealed snapshot range by calendar date (UTC). A
@@ -1332,10 +1332,10 @@ Accepted change pending:
   `state_update` is a complete replacement, so omitted fields restore defaults;
   `list()` restores all defaults. An omitted update retains state.
   `reset_state = TRUE` restores all defaults and cannot accompany a patch.
-  Every completed pulse writes the durable resume cursor. A changed state or
-  asset axis writes one complete typed checkpoint; an unchanged pulse writes
-  the fixed unchanged marker without invoking the state codec. Resume restores
-  the latest preceding checkpoint and aligns it to the resumed axis.
+  Strategy memory is local to one fold invocation and is not persisted as a
+  pulse checkpoint. A rerun of a nonterminal attempt restarts at pulse one from
+  the declared defaults; a new walk-forward test fold applies its declared
+  opening-state policy independently of that rule.
 
 <a id="contract-availability-targets"></a>
 ### Execution And Target Semantics
@@ -1520,21 +1520,20 @@ Accepted change pending:
   transaction and finalize as `INCOMPLETE`, preserving only accepted prefix
   economics. Unexpected fold exceptions remain `FAILED`, roll back the fold
   transaction, and record error diagnostics only after that rollback.
-  Deliberately interrupted `RUNNING` invocations retain their decision trace;
-  resumed invocations append rather than replace those diagnostic rows.
+  A nonterminal attempt may retain its evidence until the next invocation.
+  Before rerunning, ledgr validates identity, snapshot trust and any terminal
+  completion evidence, then atomically replaces all derived attempt output and
+  restarts from pulse one. Evidence from two attempts is never mixed.
 - Early exit (Cut 10, LDG-2975). Once a run row exists, an invocation that
   ends by an error or an interrupt condition without having written a terminal
   status records the row `FAILED`, with the condition's message or
   `Run interrupted before completion.` as `error_msg`, and the condition still
   reaches the caller. This applies to rows that are `CREATED`, `RUNNING` or
   already `FAILED` from an earlier attempt; `DONE` and `INCOMPLETE` rows are
-  never changed. The `ledgr.interrupt` soft stop still returns normally and
-  leaves the row `RUNNING`. A `FAILED` row resumes like any non-`DONE` row with
-  a matching configuration. A resumed row that has no ledger event yet (it
-  stopped before its opening append) posts its configured opening positions
-  before execution, as a first attempt does (Cut 11 close-review correction).
-  A resumed run binds each corporate-action entitlement at or before its
-  restart pulse from the ledger exactly as the fresh fold binds it: the
+  never changed. A `CREATED`, `RUNNING` or `FAILED` row with matching identity
+  starts a fresh attempt at pulse one after the atomic replacement described
+  above. Opening positions are posted exactly once in the new attempt.
+  Corporate-action entitlement therefore binds exactly as a fresh fold: the
   position after every event at or before the pulse before the entitlement
   pulse, so a fill executed at the entitlement session's open is not
   entitled; an entitlement on the run's first pulse binds the opening
@@ -1544,12 +1543,8 @@ Accepted change pending:
   it processed (an INCOMPLETE run's stop pulse, whose facts the fold binds
   before it stops) (Cut 12 LDG-2993). An
   availability run whose invocation values no pulse (a stop on its first
-  pulse, a stop on the first pulse of a resume, or a resume after its last
-  pulse) still finalizes through its equity prefix: a first-pulse stop stores
-  no equity rows and its run opens and reruns; a resumed run keeps the
-  prefix, achieved end and last execution its earlier invocations committed,
-  so its equity, completion row, ledger and diagnostics equal the
-  uninterrupted run's (Cut 12 LDG-2994). An interrupt inside the durable fold
+  pulse) still finalizes through its equity prefix and stores no fabricated
+  equity row. An interrupt inside the durable fold
   transaction
   rolls the transaction back and is then re-raised, so the invocation ends
   `FAILED` rather than finalizing the rolled-back pulses as a completed run.
@@ -1579,10 +1574,10 @@ Accepted change pending:
   `completion_json` records `affected_instrument_ids` as an array and an
   `assumptions` object holding the five valuation flags. Freeze and terminal
   state is never stored as separate accounting state. Freeze entry and exit
-  are diagnostics; resume and replay rebuild the frozen set from sealed bars,
-  facts, policy identity and committed ledger events. Memory, durable reopen
-  and an interrupted resume therefore agree on events, equity, diagnostics
-  and summary fields.
+  are diagnostics; a restarted attempt rebuilds the frozen set from sealed
+  bars, facts, policy identity and its fresh ledger events. Memory, durable
+  reopen and a restarted interrupted attempt therefore agree on events,
+  equity, diagnostics and summary fields.
 
 <a id="contract-persistence-durability"></a>
 ### Constraint Metadata And Artifact Durability
@@ -2107,14 +2102,14 @@ and `AAA` a held nonmember, each holding 5:
   unqualified package calls on workers, and `worker_dependencies` carries the
   `require_namespace` and `attach` sets consumed by parallel setup.
 - Ambient strategy RNG calls such as `runif()`, `rnorm()`, and `sample()` are
-  Tier 2 for ordinary sequential runs, but they are not certified for resume
-  or parallel equivalence. Resume and parallel equivalence are guaranteed only
-  for strategies deterministic in `(ctx, params)`. Strategies needing
-  pulse-specific stochastic inputs in those paths should derive them from
+  Tier 2 for ordinary sequential runs, including a fresh nonterminal rerun,
+  but they are not certified for parallel equivalence. Parallel equivalence is
+  guaranteed only for strategies deterministic in `(ctx, params)`. Strategies needing
+  pulse-specific stochastic inputs in parallel paths should derive them from
   `ctx$pulse_seed`, not from ambient `.Random.seed`. Preflight detects only
-  direct calls to `runif()`, `rnorm()` and `sample()`: a resume refuses such a
-  strategy with `ledgr_strategy_ambient_rng_resume`, and a sweep with
-  `workers > 1` with `ledgr_strategy_ambient_rng_parallel`. Other draws, such
+  direct calls to `runif()`, `rnorm()` and `sample()`: a sweep with
+  `workers > 1` refuses such a strategy with
+  `ledgr_strategy_ambient_rng_parallel`. Other draws, such
   as `sample.int()`, `rbinom()` or draws inside package functions, are not
   detected, and they are not certified either. Detection is parked in
   `horizon.md`, "Ambient RNG detection for strategies".
@@ -2122,11 +2117,10 @@ and `AAA` a held nonmember, each holding 5:
   `withr::with_seed(ctx$pulse_seed, ...)` behind a guard that stops when
   `ctx$pulse_seed` is `NULL` (an unseeded run). Its draw uses a function that
   preflight does not flag, such as `sample.int()`; a flagged `sample()` call
-  would be refused on resume and with several workers even inside
-  `with_seed()`.
+  would be refused with several workers even inside `with_seed()`.
 - Pinned RNG kind: whenever ledgr seeds R's RNG, it sets the seed and the kind
   `Mersenne-Twister`/`Inversion`/`Rejection` in the same call. That happens
-  in every seeded fold (runs, resumes, windows, sweep candidates, walk-forward
+  in every seeded fold (runs, reruns, windows, sweep candidates, walk-forward
   and promotion) and in `ledgr_sim_bars()` and `ledgr_sim_pit_inputs()`.
   Parallel workers set the same kind when they start; the fold envelope remains
   the enforcing point. An unseeded fold sets neither seed nor kind. A strategy
@@ -2151,7 +2145,7 @@ and `AAA` a held nonmember, each holding 5:
   configuration carries no rule field. The constant is part of the
   experiment-store format fingerprint. Changing the rule bumps the constant.
 - For the same execution seed and the same pulse calendar, a straight run, a
-  resume (which continues at its start position and never restarts at 1), a
+  fresh rerun of a nonterminal attempt, a
   run window, a scheduled skip (whose seed is computed but not read), sweep
   candidates with any worker count and promotion obtain the same pulse seed at
   each position. No equality is claimed between calendars of different length:
@@ -2163,7 +2157,8 @@ and `AAA` a held nonmember, each holding 5:
   through one helper that leaves `.Random.seed`, or its absence, as it was, on
   normal and error exits. A strategy's draws therefore see the same stream
   whether or not ledgr wrote between pulses, so its results do not depend on
-  `checkpoint_every` or on `ledgr_run()` versus `ledgr_sweep()`. The strategy
+  `checkpoint_every` (which controls event-buffer flushing, not durable pulse
+  recovery) or on `ledgr_run()` versus `ledgr_sweep()`. The strategy
   and the fold themselves are not wrapped.
 - Caller restore: ledgr restores the caller's RNG kind and `.Random.seed` (or
   their absence) around its own work (store writes, seeding, worker start and
@@ -2756,7 +2751,14 @@ and `AAA` a held nonmember, each holding 5:
 - `ledgr_results(bt, what = ...)` may return a ledgr-owned tibble subclass for
   display. That subclass must remain tibble-compatible, and
   `tibble::as_tibble()` must expose the raw result table.
-- `diagnostics` is the ordered durable trace recorded by every run;
+- `diagnostics` is the ordered logical trace recorded by every run. One
+  decoder owns full and filtered diagnostic reads and the exact summaries
+  derived from them; consumers do not treat the physical diagnostic table as
+  the logical trace. The decoder preserves column order and types, typed
+  missing values, exact values and JSON bytes, timestamps, associations,
+  row order and `diagnostic_seq`. It executes no strategy, custom indicator,
+  risk or cost callback and writes no table, projection, metadata or cache.
+  Filtered explanation reads decode only their requested dependency window;
   `availability` is the common execution-state view, using prepared constants
   on a bar-native fixed basket and sealed facts plus the stored effective plan
   on a declared-session clock. Neither
@@ -2798,6 +2800,9 @@ and `AAA` a held nonmember, each holding 5:
 - Public fill `ts_utc` is economic execution time. Declared-session version-2
   fills use the next declared session opening, while equity remains stamped at
   the close pulse. The read-only `recording_pulse_ts_utc` column is derived from
+  the typed fill time and the run's declared session-opportunity calendar,
+  without reading execution diagnostics. A unique session opening maps to its
+  session close; an unavailable or ambiguous association remains typed missing.
   recorded fill association and sealed session facts; it is not persisted and
   remains `NA` when the association is missing or ambiguous. Bar-native
   alignment is the fill timestamp. Align fills to equity only after grouping fills

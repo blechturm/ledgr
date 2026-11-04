@@ -347,7 +347,6 @@
 \alias{ledgr_snapshot_sessions_invalid}
 \alias{ledgr_strategy_ambient_rng_not_supported}
 \alias{ledgr_strategy_ambient_rng_parallel}
-\alias{ledgr_strategy_ambient_rng_resume}
 \alias{ledgr_strategy_eval_failed}
 \alias{ledgr_strategy_hash_mismatch}
 \alias{ledgr_strategy_hash_unverified}
@@ -1271,8 +1270,6 @@ boundary.
 rng not supported boundary.
 \item \code{ledgr_strategy_ambient_rng_parallel} reports the strategy ambient rng
 parallel boundary.
-\item \code{ledgr_strategy_ambient_rng_resume} reports the strategy ambient rng
-resume boundary.
 \item \code{ledgr_strategy_eval_failed} reports the strategy eval failed boundary.
 \item \code{ledgr_strategy_hash_mismatch} reports the strategy hash mismatch
 boundary.

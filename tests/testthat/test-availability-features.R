@@ -799,10 +799,14 @@ testthat::test_that("undeclared indicators run as history-dependent in availabil
     requires_bars = 2
   )
   testthat::expect_identical(undeclared$history_class, "history_dependent")
+  seen <- new.env(parent = emptyenv())
+  seen$observed <- character()
   strategy <- function(ctx, params) {
     value <- ctx[["undeclared"]][["AAA"]]
+    observed <- if (is.na(value)) "NA" else format(value, digits = 17)
+    seen$observed <- c(seen$observed, observed)
     ledgr_strategy_result(
-      ctx$hold(), observed = if (is.na(value)) "NA" else format(value, digits = 17)
+      ctx$hold(), observed = observed
     )
   }
   run <- ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
@@ -817,7 +821,7 @@ testthat::test_that("undeclared indicators run as history-dependent in availabil
   on.exit(close(run), add = TRUE)
   # Session 3 has no bar: the segment restarts at session 4 and re-warms.
   testthat::expect_identical(
-    vapply(availability_state_values(run), function(state) state$observed, character(1L)),
+    seen$observed,
     c("NA", "101.5", "NA", "NA", "104.5", "105.5")
   )
 })
@@ -837,13 +841,19 @@ testthat::test_that("future facts do not change earlier features", {
     availability_runtime_fixture(status = future_status)
   )
   on.exit(lapply(snapshots, ledgr_snapshot_close), add = TRUE)
-  strategy <- function(ctx, params) {
-    value <- ctx[["sma_2"]][["AAA"]]
-    ledgr_strategy_result(
-      ctx$hold(), observed = if (is.na(value)) "NA" else format(value, digits = 17)
-    )
-  }
-  runs <- lapply(snapshots, function(snapshot) {
+  seen <- lapply(seq_along(snapshots), function(i) {
+    out <- new.env(parent = emptyenv())
+    out$observed <- character()
+    out
+  })
+  runs <- lapply(seq_along(snapshots), function(index) {
+    strategy <- function(ctx, params) {
+      value <- ctx[["sma_2"]][["AAA"]]
+      observed <- if (is.na(value)) "NA" else format(value, digits = 17)
+      seen[[index]]$observed <- c(seen[[index]]$observed, observed)
+      ledgr_strategy_result(ctx$hold(), observed = observed)
+    }
+    snapshot <- snapshots[[index]]
     ledgr_run(ledgr_experiment(opening = ledgr_opening(cash = 100000),
       snapshot,
       strategy,
@@ -855,7 +865,7 @@ testthat::test_that("future facts do not change earlier features", {
   })
   on.exit(lapply(runs, close), add = TRUE)
   testthat::expect_identical(
-    lapply(availability_state_values(runs[[1L]]), `[[`, "observed"),
-    lapply(availability_state_values(runs[[2L]]), `[[`, "observed")
+    seen[[1L]]$observed,
+    seen[[2L]]$observed
   )
 })

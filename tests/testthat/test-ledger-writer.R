@@ -1122,30 +1122,30 @@ testthat::test_that("[LTB-0516] the db_live writer keeps its validation and tran
 
 testthat::test_that("[LTB-0518] one output handler exposes exactly each storage kind's methods and owns the shared mechanisms", {
   duckdb_methods <- c(
-    "diagnostic_keep", "persists_strategy_state",
-    "abort_run", "append_event_rows", "buffer_event", "buffer_strategy_state",
+    "diagnostic_keep",
+    "abort_run", "append_event_rows", "buffer_event",
     "flush_pending", "flush_pulse_events", "init_buffers", "pending_event_count",
-    "pending_state_count", "record_failure", "record_run_status", "run_transaction",
+    "record_failure", "record_run_status", "run_transaction",
     "seed_event_boundary", "set_schedule_counts", "store_session_telemetry", "terminal_status_written",
     "write_exception_diagnostic", "write_fill_events", "write_run_diagnostics",
-    "write_run_evidence", "write_strategy_state", "write_telemetry"
+    "write_run_evidence", "write_telemetry"
   )
   # LDG-3168 (category 3): the memory sink records no equity of its own; the
   # inline summary reads the fold's frozen equity record (Synthesis 3.6).
   memory_methods <- c(
-    "diagnostic_keep", "persists_strategy_state",
+    "diagnostic_keep",
     "abort_run", "append_compiled_spot_batch", "append_event_rows", "buffer_event",
-    "buffer_strategy_state", "completion", "diagnostics", "events", "flush_pending",
+    "completion", "diagnostics", "events", "flush_pending",
     "flush_pulse_events", "init_buffers", "inline_summary", "pending_event_count",
-    "pending_state_count", "record_accounting_fact",
+    "record_accounting_fact",
     "record_failure", "record_run_status", "run_transaction", "seed_event_boundary", "store_session_telemetry",
     "typed_events", "write_exception_diagnostic", "write_fill_events",
-    "write_run_diagnostics", "write_run_evidence", "write_strategy_state",
+    "write_run_diagnostics", "write_run_evidence",
     "write_telemetry"
   )
-  testthat::expect_length(duckdb_methods, 24L)
-  testthat::expect_length(memory_methods, 29L)
-  testthat::expect_length(intersect(duckdb_methods, memory_methods), 22L)
+  testthat::expect_length(duckdb_methods, 20L)
+  testthat::expect_length(memory_methods, 25L)
+  testthat::expect_length(intersect(duckdb_methods, memory_methods), 18L)
 
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -1158,20 +1158,12 @@ testthat::test_that("[LTB-0518] one output handler exposes exactly each storage 
     ))
     testthat::expect_s3_class(durable, "ledgr_output_handler")
     testthat::expect_identical(sort(names(durable)), sort(duckdb_methods), info = mode)
-    testthat::expect_true(all(vapply(
-      durable[setdiff(names(durable), "persists_strategy_state")],
-      is.function, logical(1)
-    )), info = mode)
-    testthat::expect_true(durable$persists_strategy_state, info = mode)
+    testthat::expect_true(all(vapply(durable, is.function, logical(1))), info = mode)
   }
   memory <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_memory("method-set-memory"))
   testthat::expect_s3_class(memory, "ledgr_output_handler")
   testthat::expect_identical(sort(names(memory)), sort(memory_methods))
-  testthat::expect_true(all(vapply(
-    memory[setdiff(names(memory), "persists_strategy_state")],
-    is.function, logical(1)
-  )))
-  testthat::expect_false(memory$persists_strategy_state)
+  testthat::expect_true(all(vapply(memory, is.function, logical(1))))
 
   # The shared mechanisms live in the handler only: neither sink allocates an
   # event column buffer, grows one, or stages fill rows.
@@ -1184,7 +1176,7 @@ testthat::test_that("[LTB-0518] one output handler exposes exactly each storage 
   testthat::expect_false(grepl(shared, source_of(ledgr:::ledgr_output_sink_memory)))
 })
 
-testthat::test_that("[LTB-0521] typed state, equity and diagnostic stores keep values, classes and order across growth", {
+testthat::test_that("[LTB-0521] typed equity and diagnostic stores keep values, classes and order across growth", {
   # Equity facts. LDG-3168 (decision 10, categories 1 and 5): the facts are
   # rows of the fold's preallocated equity record (Synthesis 3.6), so the
   # sink's doubling growth is retired; the record holds 300 valued rows of a
@@ -1248,43 +1240,4 @@ testthat::test_that("[LTB-0521] typed state, equity and diagnostic stores keep v
     r
   })))
 
-  # Strategy states: 2,500 rows cross the initial 1,000 slots and one
-  # doubling before the flush manifests them as one frame.
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  ledgr_create_schema(con)
-  insert_test_run(con, "growth-durable")
-  durable <- ledgr:::ledgr_output_handler(ledgr:::ledgr_output_sink_duckdb(
-    con = con,
-    run_id = "growth-durable",
-    run_wall_start = as.POSIXct("2020-01-01", tz = "UTC"),
-    execution_mode = "audit_log"
-  ))
-  durable$init_buffers(10L)
-  m <- 2500L
-  state_ts <- format(as.POSIXct("2020-01-01", tz = "UTC") + 60 * seq_len(m), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-  state_json <- sprintf("{\"k\":%d}", seq_len(m))
-  for (i in seq_len(m)) durable$buffer_strategy_state(state_ts[[i]], state_json[[i]])
-  testthat::expect_identical(durable$pending_state_count(), m)
-  durable$flush_pending()
-  testthat::expect_identical(durable$pending_state_count(), 0L)
-  stored <- DBI::dbGetQuery(
-    con,
-    "SELECT run_id, ts_utc, state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
-    params = list("growth-durable")
-  )
-  reference <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(reference, shutdown = TRUE), add = TRUE)
-  ledgr_create_schema(reference)
-  # The pre-WS1 manifest: one frame per state row bound at the flush.
-  DBI::dbAppendTable(reference, "strategy_state", do.call(rbind, lapply(seq_len(m), function(i) {
-    data.frame(run_id = "growth-durable", ts_utc = state_ts[[i]], state_json = state_json[[i]],
-      stringsAsFactors = FALSE)
-  })))
-  expected_rows <- DBI::dbGetQuery(
-    reference,
-    "SELECT run_id, ts_utc, state_json FROM strategy_state ORDER BY ts_utc"
-  )
-  testthat::expect_identical(nrow(stored), m)
-  testthat::expect_identical(stored, expected_rows)
 })

@@ -13,7 +13,14 @@ testthat::test_that("dynamic membership drives the axis and stable asset state",
   )
   snapshot <- availability_runtime_fixture(days = 4L, membership = membership)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  seen <- new.env(parent = emptyenv())
+  seen$axis <- list()
+  seen$step <- integer()
+  seen$portfolio <- character()
   strategy <- function(ctx, params) {
+    seen$axis[[length(seen$axis) + 1L]] <- names(ctx$state$asset_value)
+    seen$step <- c(seen$step, ctx$state$step)
+    seen$portfolio <- c(seen$portfolio, ctx$state$portfolio)
     ledgr_strategy_result(
       stats::setNames(numeric(length(ctx$universe)), ctx$universe),
       portfolio = "kept",
@@ -32,13 +39,9 @@ testthat::test_that("dynamic membership drives the axis and stable asset state",
   )
   bt <- ledgr_run(exp)
   on.exit(close(bt), add = TRUE)
-  rows <- availability_state_rows(bt)
-  decoded <- lapply(rows$state_json, ledgr:::ledgr_strategy_state_decode,
-    declaration = exp$strategy_state)
-  testthat::expect_identical(lapply(decoded, `[[`, "axis"), list("AAA", character(), "AAA", character()))
-  testthat::expect_identical(vapply(decoded, function(x) x$values$step, integer(1L)), 1:4)
-  testthat::expect_identical(decoded[[4L]]$values$portfolio, "kept")
-  testthat::expect_equal(nrow(rows), 4L)
+  testthat::expect_identical(seen$axis, list("AAA", character(), "AAA", character()))
+  testthat::expect_identical(seen$step, 0:3)
+  testthat::expect_identical(seen$portfolio, rep("kept", 4L))
 })
 
 # ledgr-test-profile: review

@@ -110,7 +110,7 @@ testthat::test_that("schema can be created on an empty DuckDB", {
     "
   )$table_name
 
-  for (t in c("runs", "instruments", "bars", "ledger_events", "equity_curve", "strategy_state", "run_promotion_context")) {
+  for (t in c("runs", "instruments", "bars", "ledger_events", "equity_curve", "run_diagnostics", "run_promotion_context")) {
     testthat::expect_true(t %in% tables, info = sprintf("expected table %s to exist", t))
   }
   testthat::expect_false("features" %in% tables)
@@ -268,15 +268,15 @@ testthat::test_that("schema validation rejects missing tables and columns", {
   testthat::expect_error(ledgr_validate_schema(con), "Missing columns in runs:", fixed = TRUE)
   })
 
-  # Also covers: missing strategy_state table fails validation
+  # Also covers: a missing current durable evidence table fails validation.
   local({
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
   ledgr_create_schema(con)
-  DBI::dbExecute(con, "DROP TABLE strategy_state")
+  DBI::dbExecute(con, "DROP TABLE run_diagnostics")
 
-  testthat::expect_error(ledgr_validate_schema(con), "Missing table: strategy_state", fixed = TRUE)
+  testthat::expect_error(ledgr_validate_schema(con), "Missing table: run_diagnostics", fixed = TRUE)
   })
 })
 
@@ -399,31 +399,6 @@ testthat::test_that("run and snapshot status constraints are enforced", {
   })
 })
 
-
-testthat::test_that("strategy_state primary key prevents duplicates", {
-  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-
-  ledgr_create_schema(con)
-
-  DBI::dbExecute(
-    con,
-    "
-    INSERT INTO strategy_state (run_id, ts_utc, state_json)
-    VALUES ('run-1', '2020-01-01T00:00:00Z', '{}')
-    "
-  )
-
-  testthat::expect_error(
-    DBI::dbExecute(
-      con,
-      "
-      INSERT INTO strategy_state (run_id, ts_utc, state_json)
-      VALUES ('run-1', '2020-01-01T00:00:00Z', '{}')
-      "
-    )
-  )
-})
 
 testthat::test_that("ledger_events enforces uniqueness of (run_id, event_seq)", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")

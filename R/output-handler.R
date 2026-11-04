@@ -72,14 +72,11 @@ ledgr_fill_leg_block <- function(block, applied) {
 
 # DuckDB sink: the run store of one run. Durable appends, transactions with
 # interrupt re-raise, db_live immediate writes, diagnostic sequence seeding
-# from the store, telemetry and strategy-state persistence.
+# from the store and telemetry persistence.
 ledgr_output_sink_duckdb <- function(con, run_id, run_wall_start, execution_mode) {
   state <- new.env(parent = emptyenv())
   state$decision_pulse_count <- NA_integer_
   state$scheduled_skip_count <- NA_integer_
-  state$state_ts <- character(0)
-  state$state_json <- character(0)
-  state$state_n <- 0L
 
   sink <- list(run_id = run_id)
   sink$drains <- TRUE
@@ -181,56 +178,6 @@ ledgr_output_sink_duckdb <- function(con, run_id, run_wall_start, execution_mode
   }
   sink$store_session_telemetry <- function(telemetry) {
     ledgr_store_run_telemetry(run_id, telemetry)
-    invisible(TRUE)
-  }
-  # Strategy-state rows staged between flushes: two typed columns written by
-  # index, manifested as one frame at the flush.
-  sink$reset_states <- function() {
-    state$state_ts <- character(0)
-    state$state_json <- character(0)
-    state$state_n <- 0L
-    invisible(TRUE)
-  }
-  sink$buffer_state <- function(ts_utc, state_json) {
-    i <- state$state_n + 1L
-    if (i > length(state$state_ts)) {
-      capacity <- max(1000L, length(state$state_ts) * 2L)
-      grown_ts <- character(capacity)
-      grown_json <- character(capacity)
-      if (state$state_n > 0L) {
-        keep <- seq_len(state$state_n)
-        grown_ts[keep] <- state$state_ts[keep]
-        grown_json[keep] <- state$state_json[keep]
-      }
-      state$state_ts <- grown_ts
-      state$state_json <- grown_json
-    }
-    collapse::setv(state$state_ts, i, as.character(ts_utc), vind1 = TRUE)
-    collapse::setv(state$state_json, i, as.character(state_json), vind1 = TRUE)
-    state$state_n <- i
-    invisible(TRUE)
-  }
-  sink$pending_state_count <- function() as.integer(state$state_n)
-  sink$flush_states <- function() {
-    n <- state$state_n
-    if (n > 0L) {
-      keep <- seq_len(n)
-      ledgr_store_append(con, "strategy_state", data.frame(
-        run_id = rep(run_id, n),
-        ts_utc = state$state_ts[keep],
-        state_json = state$state_json[keep],
-        stringsAsFactors = FALSE
-      ))
-      sink$reset_states()
-    }
-    invisible(TRUE)
-  }
-  sink$write_state <- function(ts_utc, state_json) {
-    DBI::dbExecute(
-      con,
-      "INSERT INTO strategy_state (run_id, ts_utc, state_json) VALUES (?, ?, ?)",
-      params = list(run_id, ts_utc, state_json)
-    )
     invisible(TRUE)
   }
   structure(sink, class = "ledgr_output_sink_duckdb")
@@ -404,7 +351,6 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   pending_fills <- NULL
   handler <- list()
   handler$diagnostic_keep <- sink$diagnostic_keep
-  handler$persists_strategy_state <- isTRUE(sink$drains)
 
   # Install the durable append boundary before a run continues. Opening rows
   # and resumed rows may have been written before this handler was created;
@@ -681,9 +627,6 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     handler$write_telemetry <- sink$write_telemetry
     handler$store_session_telemetry <- sink$store_session_telemetry
     handler$pending_event_count <- function() as.integer(state$event_count)
-    handler$pending_state_count <- sink$pending_state_count
-    handler$buffer_strategy_state <- sink$buffer_state
-    handler$write_strategy_state <- sink$write_state
     handler$append_event_rows <- function(rows) {
       if (!is.null(rows) && nrow(rows) > 0L) {
         validate_append(rows)
@@ -701,7 +644,6 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
         sink$append_events(as.data.frame(values, stringsAsFactors = FALSE))
         state$event_count <- 0L
       }
-      sink$flush_states()
       invisible(TRUE)
     }
     return(structure(handler, class = "ledgr_output_handler"))
@@ -713,10 +655,7 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
   handler$write_telemetry <- function(...) invisible(TRUE)
   handler$store_session_telemetry <- function(...) invisible(TRUE)
   handler$pending_event_count <- function() 0L
-  handler$pending_state_count <- function() 0L
   handler$flush_pending <- function() invisible(TRUE)
-  handler$buffer_strategy_state <- function(...) invisible(TRUE)
-  handler$write_strategy_state <- function(...) invisible(TRUE)
   handler$completion <- function() state$completion
   handler$diagnostics <- sink$diagnostics
   handler$inline_summary <- sink$inline_summary

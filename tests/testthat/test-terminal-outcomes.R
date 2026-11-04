@@ -312,11 +312,12 @@ testthat::test_that("[LTB-0166] frozen holdings move independently and resume de
     CLK = rep(10, 7L)
   ))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  prior <- getOption("ledgr.interrupt")
-  on.exit(options(ledgr.interrupt = prior), add = TRUE)
+  prior_interrupt <- getOption("ledgr.test.real_interrupt")
+  on.exit(options(ledgr.test.real_interrupt = prior_interrupt), add = TRUE)
   strategy <- function(ctx, params) {
-    if (isTRUE(params$interrupt) && identical(ctx$ts_utc, "2020-01-04T16:00:00Z")) {
-      options(ledgr.interrupt = TRUE)
+    if (isTRUE(getOption("ledgr.test.real_interrupt", FALSE)) &&
+        identical(ctx$ts_utc, "2020-01-04T16:00:00Z")) {
+      rlang::interrupt()
     }
     ctx$hold()
   }
@@ -325,15 +326,18 @@ testthat::test_that("[LTB-0166] frozen holdings move independently and resume de
     strategy = strategy,
     positions = c(AAA = 2, BBB = 4)
   )
-  options(ledgr.interrupt = FALSE)
   straight <- ledgr_run(exp, params = list(interrupt = FALSE), run_id = "freeze-straight")
   s <- terminal_outcome_tables(straight)
   close(straight)
 
-  first <- ledgr_run(exp, params = list(interrupt = TRUE), run_id = "freeze-resumed")
-  close(first)
-  testthat::expect_identical(terminal_outcome_tables(first)$run$status, "RUNNING")
-  options(ledgr.interrupt = FALSE)
+  options(ledgr.test.real_interrupt = TRUE)
+  first <- tryCatch(
+    ledgr_run(exp, params = list(interrupt = TRUE), run_id = "freeze-resumed"),
+    interrupt = identity
+  )
+  testthat::expect_s3_class(first, "interrupt")
+  testthat::expect_identical(ledgr_run_info(snapshot, "freeze-resumed")$status, "FAILED")
+  options(ledgr.test.real_interrupt = FALSE)
   resumed <- ledgr_run(exp, params = list(interrupt = TRUE), run_id = "freeze-resumed")
   r <- terminal_outcome_tables(resumed)
   close(resumed)
@@ -542,11 +546,12 @@ testthat::test_that("[LTB-0169] memory, durable reopen and resume agree across f
     lifetime = terminal_outcome_lifetime("BBB", 5L, "bankruptcy")
   )
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  prior <- getOption("ledgr.interrupt")
-  on.exit(options(ledgr.interrupt = prior), add = TRUE)
+  prior_interrupt <- getOption("ledgr.test.real_interrupt")
+  on.exit(options(ledgr.test.real_interrupt = prior_interrupt), add = TRUE)
   strategy <- function(ctx, params) {
-    if (isTRUE(params$interrupt) && identical(ctx$ts_utc, "2020-01-03T16:00:00Z")) {
-      options(ledgr.interrupt = TRUE)
+    if (isTRUE(getOption("ledgr.test.real_interrupt", FALSE)) &&
+        identical(ctx$ts_utc, "2020-01-03T16:00:00Z")) {
+      rlang::interrupt()
     }
     target <- ctx$hold()
     if (ctx$ts_utc >= "2020-01-03T16:00:00Z" && "AAA" %in% names(target)) target[["AAA"]] <- 0
@@ -557,16 +562,19 @@ testthat::test_that("[LTB-0169] memory, durable reopen and resume agree across f
     strategy = strategy,
     positions = c(AAA = 2, BBB = 4)
   )
-  options(ledgr.interrupt = FALSE)
   straight <- ledgr_run(exp, params = list(interrupt = FALSE), run_id = "parity-straight")
   s <- terminal_outcome_tables(straight)
   straight_equity <- ledgr_results(straight, "equity")
   straight_fills <- ledgr_run_fills(straight)
   close(straight)
 
-  first <- ledgr_run(exp, params = list(interrupt = TRUE), run_id = "parity-resumed")
-  close(first)
-  options(ledgr.interrupt = FALSE)
+  options(ledgr.test.real_interrupt = TRUE)
+  first <- tryCatch(
+    ledgr_run(exp, params = list(interrupt = TRUE), run_id = "parity-resumed"),
+    interrupt = identity
+  )
+  testthat::expect_s3_class(first, "interrupt")
+  options(ledgr.test.real_interrupt = FALSE)
   resumed <- ledgr_run(exp, params = list(interrupt = TRUE), run_id = "parity-resumed")
   r <- terminal_outcome_tables(resumed)
   close(resumed)

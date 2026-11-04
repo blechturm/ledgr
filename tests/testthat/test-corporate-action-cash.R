@@ -269,7 +269,10 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     price_basis = "split_adjusted"
   )
   withr::defer(ledgr_snapshot_close(snapshot))
+  observed <- new.env(parent = emptyenv())
+  observed$cash <- numeric()
   strategy <- function(ctx, params) {
+    observed$cash <- c(observed$cash, ctx$cash)
     ledgr_strategy_result(ctx$hold(), observed_cash = ctx$cash)
   }
   experiment <- ledgr_experiment(
@@ -297,17 +300,8 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
   )
   corporate <- which(cash_events$source == "corporate_action_cash")
   testthat::expect_length(corporate, 1L)
-  state_rows <- DBI::dbGetQuery(
-    opened$con,
-    "SELECT state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
-    params = list(run$run_id)
-  )
-  observed_cash <- vapply(
-    availability_state_values(run), function(value) value$observed_cash,
-    numeric(1L)
-  )
   testthat::expect_identical(
-    unname(observed_cash),
+    unname(observed$cash),
     c(1000, 1002.5, 1002.5, 1002.5)
   )
   summary <- ledgr:::ledgr_corporate_action_summary(run)
@@ -320,9 +314,15 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     1L
   )
 
+  next_open_observed <- new.env(parent = emptyenv())
+  next_open_observed$cash <- numeric()
+  next_open_strategy <- function(ctx, params) {
+    next_open_observed$cash <- c(next_open_observed$cash, ctx$cash)
+    ledgr_strategy_result(ctx$hold(), observed_cash = ctx$cash)
+  }
   next_open_experiment <- ledgr_experiment(
     snapshot,
-    strategy,
+    next_open_strategy,
     opening = ledgr_opening(
       cash = 1000,
       positions = c(AAA = 2),
@@ -349,16 +349,6 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     ),
     params = list(next_open_run$run_id)
   )
-  next_open_state <- DBI::dbGetQuery(
-    next_open_con$con,
-    "SELECT state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
-    params = list(next_open_run$run_id)
-  )
-  next_open_context_cash <- vapply(
-    availability_state_values(next_open_run),
-    function(value) value$observed_cash,
-    numeric(1L)
-  )
   testthat::expect_identical(
     unname(next_open_equity$cash),
     c(1000, 1000, 1002.5, 1002.5)
@@ -368,7 +358,7 @@ testthat::test_that("[LTB-0036] public run posts one gross dividend and reports 
     c(1200, 1180, 1092.5, 1094.5)
   )
   testthat::expect_identical(
-    unname(next_open_context_cash),
+    unname(next_open_observed$cash),
     c(1000, 1000, 1002.5, 1002.5)
   )
 

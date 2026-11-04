@@ -127,24 +127,15 @@ ledgr_run_sizing_summary <- function(bt, con = NULL) {
     con = con, close = function() invisible(FALSE)
   )
   on.exit(opened$close(), add = TRUE)
-  rows <- DBI::dbGetQuery(
+  rows <- ledgr_diagnostic_decode(opened$con, bt$run_id, stage = "sizing")
+  decision_rows <- ledgr_diagnostic_decode(
     opened$con,
-    paste(
-      "SELECT ts_utc, instrument_id, reason_code, target_before_risk,",
-      "target, quantity, price FROM run_diagnostics",
-      "WHERE run_id = ? AND stage = 'sizing' ORDER BY diagnostic_seq"
-    ),
-    params = list(bt$run_id)
+    bt$run_id,
+    stage = "decision"
   )
-  decision_times <- DBI::dbGetQuery(
-    opened$con,
-    paste(
-      "SELECT DISTINCT ts_utc FROM run_diagnostics",
-      "WHERE run_id = ? AND stage = 'decision' AND instrument_id <> ''",
-      "ORDER BY ts_utc"
-    ),
-    params = list(bt$run_id)
-  )$ts_utc
+  decision_times <- sort(unique(
+    decision_rows$ts_utc[!is.na(decision_rows$instrument_id) & nzchar(decision_rows$instrument_id)]
+  ))
   out <- ledgr_sizing_summary_empty()
   if (nrow(rows) == 0L) {
     out$no_instruction_decisions <- length(decision_times)

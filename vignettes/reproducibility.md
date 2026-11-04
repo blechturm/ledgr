@@ -517,18 +517,17 @@ the active R distribution.
 
 Ambient strategy RNG calls such as `runif(1)` are a separate case. They
 are allowed as Tier 2 for ordinary sequential runs because ledgr’s
-execution seed contract can make a continuous strategy run repeatable,
-but they are not certified for resume or parallel equivalence. A resumed
-run reconstructs positions and cash from events; it does not restore
-`.Random.seed` to the exact point a continuous run would have reached
-before the next pulse.
+execution seed contract can make a strategy run repeatable, but they are
+not certified for parallel equivalence. A rerun of a nonterminal attempt
+starts again at pulse one; ledgr does not continue from a stored pulse
+checkpoint.
 
-Strategies that need pulse-specific stochastic inputs in resume-safe or
-parallel-safe paths should derive those inputs from `ctx$pulse_seed`.
+Strategies that need pulse-specific stochastic inputs in parallel-safe
+paths should derive those inputs from `ctx$pulse_seed`.
 The field is an integer computed from the execution seed and the 1-based
 pulse position in the run’s pulse calendar, so it does not depend on
 worker order, timestamps, event sequence numbers, or ambient RNG state.
-A straight run, a resumed run, a sweep candidate and its promoted run
+A straight run, a fresh rerun, a sweep candidate and its promoted run
 get the same value at the same position of the same calendar. `ctx$seed`
 remains the per-execution seed; `ctx$pulse_seed` is the per-pulse
 derivative, and it is `NULL` when the run has no seed.

@@ -140,8 +140,10 @@ testthat::test_that("ledgr_adapter_r integrates with TTR when available", {
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   ind <- ledgr_adapter_r("TTR::RSI", id = "test_ttr_rsi", requires_bars = 15L, n = 14L)
+  seen <- new.env(parent = emptyenv())
   capture_strategy <- function(ctx, params) {
     values <- ctx[[params$feature]]
+    seen$finite <- is.finite(values)
     ledgr_strategy_result(ctx$flat(), finite = is.finite(values))
   }
 
@@ -158,9 +160,8 @@ testthat::test_that("ledgr_adapter_r integrates with TTR when available", {
   asset_state = list(finite = NA)
   )
 
-  state <- availability_last_state(bt)
-  testthat::expect_setequal(names(state$finite), c("TEST_A", "TEST_B"))
-  testthat::expect_true(all(state$finite))
+  testthat::expect_setequal(names(seen$finite), c("TEST_A", "TEST_B"))
+  testthat::expect_true(all(seen$finite))
 })
 
 # ledgr-test-profile: heavy_protocol
@@ -183,8 +184,10 @@ testthat::test_that("ledgr_adapter_csv integrates with runtime features", {
   on.exit(ledgr_snapshot_close(snap), add = TRUE)
 
   ind <- ledgr_adapter_csv(csv_path = csv_path, value_col = "signal", id = "test_csv_signal")
+  seen <- new.env(parent = emptyenv())
   capture_strategy <- function(ctx, params) {
     values <- ctx[[params$feature]]
+    seen$values <- values
     ledgr_strategy_result(ctx$flat(), values = values)
   }
 
@@ -201,13 +204,12 @@ testthat::test_that("ledgr_adapter_csv integrates with runtime features", {
   asset_state = list(values = NA_real_)
   )
 
-  state <- availability_last_state(bt)
-  testthat::expect_setequal(names(state$values), c("TEST_A", "TEST_B"))
+  testthat::expect_setequal(names(seen$values), c("TEST_A", "TEST_B"))
   last_rows <- bars$ts_utc == max(bars$ts_utc)
   last_keys <- paste(vapply(bars$ts_utc[last_rows], ledgr_iso_utc, character(1)), bars$instrument_id[last_rows], sep = "||")
   expected_key <- paste(csv_df$ts_utc, csv_df$instrument_id, sep = "||")
   testthat::expect_equal(
-    unname(state$values[c("TEST_A", "TEST_B")]),
+    unname(seen$values[c("TEST_A", "TEST_B")]),
     csv_df$signal[match(last_keys, expected_key)]
   )
 })

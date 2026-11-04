@@ -123,15 +123,13 @@ ledgr_run_completion_validate_finalized <- function(con, completion, run_id, cal
   }
 
   stop_reason <- as.character(completion$stop_reason[[1L]])
-  stop_rows <- DBI::dbGetQuery(
+  stop_rows <- ledgr_diagnostic_decode(
     con,
-    paste(
-      "SELECT COUNT(*) AS n FROM run_diagnostics",
-      "WHERE run_id = ? AND reason_code = ? AND outcome = 'stopped'"
-    ),
-    params = list(run_id, stop_reason)
+    run_id,
+    outcome = "stopped",
+    reason_code = stop_reason
   )
-  if (stop_rows$n[[1L]] < 1L) {
+  if (nrow(stop_rows) < 1L) {
     ledgr_run_terminal_evidence_abort(
       "Finalized INCOMPLETE evidence does not contain its recorded stop diagnostic."
     )

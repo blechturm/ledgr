@@ -1507,34 +1507,9 @@ ledgr_fold_stage_commit <- function(
       default_scalars = services$strategy_state_default_scalars
     )
   }
-  changed <- isTRUE(fold_state$state_axis_changed) ||
-    !ledgr_strategy_state_equal(next_state, previous_state)
   fold_state$state_axis <- context_ids
   fold_state$state_axis_changed <- FALSE
   fold_state$strategy_state <- next_state
-  # The existing row is the resume cursor on every completed pulse. A changed
-  # state carries one complete typed checkpoint; an unchanged pulse writes the
-  # constant marker without invoking the codec.
-  if (sample_telemetry) sample_start <- ledgr_time_now()
-  state_json <- ledgr_strategy_state_cursor_marker
-  if (changed && isTRUE(output_handler$persists_strategy_state)) {
-    state_json <- ledgr_strategy_state_encode(
-      next_state, services$strategy_state_declaration, context_ids
-    )
-  }
-  if (isTRUE(output_handler$persists_strategy_state)) {
-    # This row is also the durable resume cursor, so even a strategy with no
-    # user state records every completed pulse. Only changed typed state is
-    # encoded; an unchanged cursor carries the constant marker above.
-    if (identical(services$event_mode, "live")) {
-      output_handler$write_strategy_state(ts_utc = ts_iso, state_json = state_json)
-    } else {
-      output_handler$buffer_strategy_state(ts_utc = ts_iso, state_json = state_json)
-    }
-  }
-  if (sample_telemetry) {
-    t_state <- t_state + ledgr_time_elapsed(sample_start, ledgr_time_now())
-  }
 
   fold_state$processed <- fold_state$processed + 1L
 
@@ -1559,17 +1534,12 @@ ledgr_fold_stage_commit <- function(
   if (services$checkpoint_every > 0L &&
       fold_state$processed %% services$checkpoint_every == 0L &&
       !identical(services$event_mode, "live") &&
-      (output_handler$pending_event_count() > 0L ||
-       output_handler$pending_state_count() > 0L)) {
+      output_handler$pending_event_count() > 0L) {
     output_handler$flush_pending()
   }
 
   continue <- TRUE
   if (fold_state$processed >= services$max_pulses) {
-    fold_state$full_run <- FALSE
-    continue <- FALSE
-  }
-  if (isTRUE(getOption("ledgr.interrupt", FALSE))) {
     fold_state$full_run <- FALSE
     continue <- FALSE
   }
@@ -1956,8 +1926,7 @@ ledgr_fold_envelope <- function(execution, output_handler) {
     }
 
     if (!identical(event_mode, "live") &&
-        (output_handler$pending_event_count() > 0L ||
-         output_handler$pending_state_count() > 0L)) {
+        output_handler$pending_event_count() > 0L) {
       output_handler$flush_pending()
     }
     diagnostics <- diagnostic_writer$drain()

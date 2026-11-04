@@ -123,91 +123,33 @@ ledgr_fill_recording_pulses_from_opportunities <- function(fills,
   )
 }
 
-ledgr_fill_recording_pulses_from_evidence <- function(fills,
-                                                       diagnostics,
-                                                       sessions,
-                                                       timing) {
+ledgr_fill_recording_pulses_from_sessions <- function(fills, sessions, timing) {
   unavailable <- rep(as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"), nrow(fills))
   if (nrow(fills) == 0L) return(unavailable)
   if (identical(timing$execution_timing_convention, "dense_bar_timestamp")) {
     return(as.POSIXct(fills$ts_utc, tz = "UTC"))
   }
   if (!identical(timing$execution_timing_convention, "availability_open_v2") ||
-      !is.data.frame(diagnostics) || nrow(diagnostics) == 0L ||
       !is.data.frame(sessions) || nrow(sessions) == 0L) {
     return(unavailable)
   }
 
-  diagnostics <- diagnostics[
-    as.character(diagnostics$stage) == "execution" &
-      as.character(diagnostics$outcome) == "filled",
-    ,
-    drop = FALSE
-  ]
   sessions <- sessions[as.character(sessions$status) == "open", , drop = FALSE]
-  if (nrow(diagnostics) == 0L || nrow(sessions) == 0L) return(unavailable)
+  sessions <- sessions[order(as.POSIXct(sessions$session_close, tz = "UTC")), , drop = FALSE]
+  if (nrow(sessions) < 2L) return(unavailable)
 
   fill_time <- as.numeric(as.POSIXct(fills$ts_utc, tz = "UTC"))
-  diag_execution <- as.numeric(as.POSIXct(diagnostics$execution_ts_utc, tz = "UTC"))
-  diag_decision <- as.numeric(as.POSIXct(diagnostics$decision_ts_utc, tz = "UTC"))
   session_open <- as.numeric(as.POSIXct(sessions$session_open, tz = "UTC"))
   session_close <- as.numeric(as.POSIXct(sessions$session_close, tz = "UTC"))
-  diag_event_seq <- suppressWarnings(as.integer(diagnostics$event_seq))
-  fill_event_seq <- suppressWarnings(as.integer(fills$event_seq))
-
-  # Every fill resolves at once; each step keeps the per-fill rule.
-  # (1) The diagnostic with the fill's event_seq, when exactly one exists.
-  exactly_one <- function(fill_key, diag_key) {
-    hit <- match(fill_key, diag_key, incomparables = NA)
-    repeated <- diag_key[duplicated(diag_key, incomparables = NA)]
-    count <- ifelse(is.na(hit), 0L, ifelse(fill_key %in% repeated, 2L, 1L))
-    list(hit = hit, count = count)
-  }
-  by_seq <- exactly_one(fill_event_seq, diag_event_seq)
-  # (2) Without an event_seq candidate, the diagnostic with the fill's
-  # instrument and execution time, when exactly one exists. The pair is one
-  # exact numeric key; a missing instrument or time never matches.
-  fill_inst <- as.character(fills$instrument_id)
-  diag_inst <- as.character(diagnostics$instrument_id)
-  inst_levels <- unique(c(diag_inst, fill_inst))
-  time_levels <- unique(c(diag_execution, fill_time))
-  pair_key <- function(inst, time) {
-    key <- (match(inst, inst_levels) - 1) * (length(time_levels) + 1) + match(time, time_levels)
-    key[is.na(inst) | is.na(time)] <- NA_real_
-    key
-  }
-  by_pair <- exactly_one(pair_key(fill_inst, fill_time), pair_key(diag_inst, diag_execution))
-  diagnostic_idx <- ifelse(
-    by_seq$count == 0L,
-    ifelse(by_pair$count == 1L, by_pair$hit, NA_integer_),
-    ifelse(by_seq$count == 1L, by_seq$hit, NA_integer_)
-  )
-  # (3) The diagnostic must record the fill's execution time.
-  resolved <- !is.na(diagnostic_idx)
-  same_time <- diag_execution[diagnostic_idx[resolved]] == fill_time[resolved]
-  resolved[resolved] <- !is.na(same_time) & same_time
-  # (4) Exactly one execution session at that time whose previous session
-  # closed at the decision time; its close is the recording pulse.
-  execution_time <- if (identical(
-    timing$execution_timing_version,
-    ledgr_availability_execution_timing_rule_version
-  )) session_open else session_close
-  shared_time <- execution_time[duplicated(execution_time)]
-  session <- match(fill_time, execution_time)
-  simple <- resolved & !(fill_time %in% shared_time) & !is.na(session) & session >= 2L
-  prior_close <- session_close[session[simple] - 1L] == diag_decision[diagnostic_idx[simple]]
-  simple[simple] <- !is.na(prior_close) & prior_close
   recording <- rep(NA_real_, nrow(fills))
-  recording[simple] <- session_close[session[simple]]
-  # Two sessions sharing one execution time keep the original per-fill rule.
-  for (i in which(resolved & fill_time %in% shared_time)) {
-    execution_sessions <- which(execution_time == fill_time[[i]])
-    prior_sessions <- execution_sessions - 1L
-    session_candidates <- execution_sessions[
-      prior_sessions >= 1L &
-        session_close[prior_sessions] == diag_decision[[diagnostic_idx[[i]]]]
-    ]
-    if (length(session_candidates) == 1L) recording[[i]] <- session_close[[session_candidates[[1L]]]]
+  # The configured opportunity calendar is session_open[-1]. A valid
+  # single-venue snapshot therefore identifies the recording close directly.
+  # Missing or duplicated opportunities stay unavailable rather than guessed.
+  for (i in seq_along(fill_time)) {
+    hit <- which(!is.na(session_open) & session_open == fill_time[[i]])
+    if (length(hit) == 1L && hit[[1L]] >= 2L) {
+      recording[[i]] <- session_close[[hit[[1L]]]]
+    }
   }
   as.POSIXct(recording, origin = "1970-01-01", tz = "UTC")
 }
@@ -221,17 +163,6 @@ ledgr_run_fill_recording_pulses <- function(bt, fills, con) {
     return(rep(as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC"), nrow(fills)))
   }
 
-  diagnostics <- DBI::dbGetQuery(
-    con,
-    paste(
-      "SELECT event_seq, instrument_id, stage, outcome,",
-      "decision_ts_utc, execution_ts_utc FROM run_diagnostics",
-      "WHERE run_id = ? AND stage = 'execution' AND outcome = 'filled'",
-      "ORDER BY diagnostic_seq"
-    ),
-    params = list(bt$run_id)
-  )
-
   snapshot <- ledgr_availability_snapshot_connection(bt, con)
   on.exit(snapshot$close(), add = TRUE)
   snapshot_id <- as.character(bt$config$data$snapshot_id)
@@ -239,11 +170,11 @@ ledgr_run_fill_recording_pulses <- function(bt, fills, con) {
     snapshot$con,
     paste(
       "SELECT status, session_open, session_close FROM snapshot_sessions",
-      "WHERE snapshot_id = ? ORDER BY session_close"
+      "WHERE snapshot_id = ? AND status = 'open' ORDER BY session_close"
     ),
     params = list(snapshot_id)
   )
-  ledgr_fill_recording_pulses_from_evidence(fills, diagnostics, sessions, timing)
+  ledgr_fill_recording_pulses_from_sessions(fills, sessions, timing)
 }
 
 ledgr_fill_timing_comparison <- function(timing) {

@@ -1054,26 +1054,6 @@ ledgr_strategy_preflight_uses_ambient_rng <- function(preflight) {
   length(ledgr_strategy_preflight_ambient_rng_symbols(preflight)) > 0L
 }
 
-ledgr_abort_strategy_ambient_rng_for_resume <- function(preflight) {
-  symbols <- ledgr_strategy_preflight_ambient_rng_symbols(preflight)
-  if (length(symbols) == 0L) {
-    return(invisible(FALSE))
-  }
-  rlang::abort(
-    paste0(
-      "Refusing to resume a strategy that reads ambient RNG state: ",
-      paste(symbols, collapse = ", "),
-      ". Resume equivalence is guaranteed only for strategies deterministic in `(ctx, params)`. ",
-      "Use `ctx$pulse_seed` to derive pulse-specific stochastic inputs without reading `.Random.seed`."
-    ),
-    class = c(
-      "ledgr_strategy_ambient_rng_resume",
-      "ledgr_strategy_ambient_rng_not_supported",
-      "ledgr_strategy_preflight_error"
-    )
-  )
-}
-
 ledgr_abort_strategy_ambient_rng_for_parallel <- function(preflight) {
   symbols <- ledgr_strategy_preflight_ambient_rng_symbols(preflight)
   if (length(symbols) == 0L) {

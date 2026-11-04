@@ -35,29 +35,13 @@ testthat::test_that("[LTB-0532] declared state preserves type, missingness and a
   state$count <- c(BBB = 1L, AAA = 2L)
   state$flag <- TRUE
   state$regime <- "risk_on"
-  json <- ledgr:::ledgr_strategy_state_encode(state, declaration, axis)
-  decoded <- ledgr:::ledgr_strategy_state_decode(json, declaration)
-  testthat::expect_identical(decoded$values, state)
-  testthat::expect_identical(decoded$axis, axis)
-  testthat::expect_type(decoded$values$whole, "double")
-  testthat::expect_false(identical(json, ledgr:::ledgr_strategy_state_cursor_marker))
-  testthat::expect_error(
-    ledgr:::ledgr_strategy_state_decode(
-      ledgr:::ledgr_strategy_state_cursor_marker, declaration
-    ),
-    class = "ledgr_invalid_strategy_state"
-  )
+  testthat::expect_type(state$whole, "double")
 
   empty_state <- ledgr:::ledgr_strategy_state_defaults(declaration, character())
-  empty_decoded <- ledgr:::ledgr_strategy_state_decode(
-    ledgr:::ledgr_strategy_state_encode(empty_state, declaration, character()),
-    declaration
-  )
-  testthat::expect_identical(empty_decoded$axis, character())
-  testthat::expect_identical(empty_decoded$values$peak, stats::setNames(numeric(), character()))
+  testthat::expect_identical(empty_state$peak, stats::setNames(numeric(), character()))
 
   reordered <- ledgr:::ledgr_strategy_state_align(
-    decoded$values, declaration, decoded$axis, c("AAA", "CCC", "BBB")
+    state, declaration, axis, c("AAA", "CCC", "BBB")
   )
   testthat::expect_identical(reordered$peak, c(AAA = NA_real_, CCC = NA_real_, BBB = 4))
   testthat::expect_identical(reordered$count, c(AAA = 2L, CCC = NA_integer_, BBB = 1L))
@@ -126,23 +110,6 @@ testthat::test_that("[LTB-0532] declared state preserves type, missingness and a
   frozen_peak <- view$peak
   state$peak[[1L]] <- 99
   testthat::expect_identical(view$peak, frozen_peak)
-
-  tampered <- ledgr:::ledgr_json_read_nested(json)
-  tampered$fields[[1L]]$name <- "undeclared"
-  testthat::expect_error(
-    ledgr:::ledgr_strategy_state_decode(canonical_json(tampered), declaration),
-    class = "ledgr_invalid_strategy_state"
-  )
-  bad_cast <- ledgr:::ledgr_json_read_nested(json)
-  integer_entry <- which(vapply(
-    bad_cast$fields, function(x) identical(x$type, "integer"), logical(1L)
-  ))[[1L]]
-  bad_cast$fields[[integer_entry]]$value[[1L]] <- "not-an-integer"
-  bad_cast$fields[[integer_entry]]$missing[[1L]] <- FALSE
-  testthat::expect_error(
-    ledgr:::ledgr_strategy_state_decode(canonical_json(bad_cast), declaration),
-    class = "ledgr_invalid_strategy_state"
-  )
 
   a <- ledgr:::ledgr_strategy_state_normalize(
     asset_state = list(z = 1, a = 2L), portfolio_state = list(flag = FALSE)
@@ -223,7 +190,14 @@ testthat::test_that("[LTB-0532] declared state preserves type, missingness and a
 
 # ledgr-test-profile: review
 testthat::test_that("[LTB-0533] helper patches and raw replacements stay distinct", {
+  seen <- new.env(parent = emptyenv())
+  seen$values <- list()
   strategy <- function(ctx, params) {
+    seen$values[[length(seen$values) + 1L]] <- list(
+      count = ctx$state$count,
+      regime = ctx$state$regime,
+      peak = ctx$state$peak
+    )
     if (ctx$state$count == 0L) {
       return(list(
         targets = ctx$hold(),
@@ -242,26 +216,19 @@ testthat::test_that("[LTB-0533] helper patches and raw replacements stay distinc
     strategy,
     asset_state = list(peak = NA_real_),
     portfolio_state = list(count = 0L, regime = "risk_on"),
-    days = 3L
+    days = 4L
   )
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
   run <- ledgr_run(fixture$exp, run_id = "ws17-patch-replace")
   on.exit(close(run), add = TRUE, after = FALSE)
-  rows <- DBI::dbGetQuery(
-    get_connection(fixture$snapshot),
-    "SELECT state_json FROM strategy_state WHERE run_id = 'ws17-patch-replace' ORDER BY ts_utc"
-  )
   declaration <- fixture$exp$strategy_state
-  decoded <- lapply(rows$state_json[1:3], ledgr:::ledgr_strategy_state_decode,
-    declaration = declaration)
-  testthat::expect_identical(decoded[[1L]]$values$count, 1L)
-  testthat::expect_identical(decoded[[1L]]$values$regime, "risk_off")
-  testthat::expect_identical(decoded[[2L]]$values$count, 2L)
-  testthat::expect_identical(decoded[[2L]]$values$regime, "risk_off")
-  testthat::expect_true(all(is.na(decoded[[2L]]$values$peak)))
-  testthat::expect_false("intent_reason" %in% names(decoded[[2L]]$values))
-  testthat::expect_identical(decoded[[3L]]$values$count, 0L)
-  testthat::expect_identical(decoded[[3L]]$values$regime, "risk_on")
+  testthat::expect_identical(vapply(seen$values, `[[`, integer(1L), "count"), c(0L, 1L, 2L, 0L))
+  testthat::expect_identical(
+    vapply(seen$values, `[[`, character(1L), "regime"),
+    c("risk_on", "risk_off", "risk_off", "risk_on")
+  )
+  testthat::expect_true(all(is.na(seen$values[[3L]]$peak)))
+  testthat::expect_true(all(is.na(seen$values[[4L]]$peak)))
 
   testthat::expect_error(
     ledgr_strategy_result(c(AAA = 0), count = 1L, reset_state = TRUE),
@@ -289,7 +256,8 @@ testthat::test_that("[LTB-0533] helper patches and raw replacements stay distinc
     class = "ledgr_invalid_strategy_state"
   )
   emptied <- ledgr:::ledgr_strategy_state_apply_values(
-    decoded[[1L]]$values, list(), declaration, c("BBB", "AAA"), patch = FALSE
+    ledgr:::ledgr_strategy_state_defaults(declaration, c("BBB", "AAA")),
+    list(), declaration, c("BBB", "AAA"), patch = FALSE
   )
   testthat::expect_identical(
     emptied,
@@ -298,110 +266,42 @@ testthat::test_that("[LTB-0533] helper patches and raw replacements stay distinc
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0534] unchanged cursors resume without replay or encoding", {
-  encodes <- 0L
-  original_encode <- ledgr:::ledgr_strategy_state_encode
-  testthat::local_mocked_bindings(
-    ledgr_strategy_state_encode = function(...) {
-      encodes <<- encodes + 1L
-      original_encode(...)
-    },
-    .package = "ledgr"
-  )
+testthat::test_that("[LTB-0534] a restarted attempt starts declared state from defaults", {
+  seen <- new.env(parent = emptyenv())
+  seen$counts <- integer()
   strategy <- function(ctx, params) {
-    if (ctx$state$count == 0L) {
-      ledgr_strategy_result(ctx$hold(), count = 1L)
-    } else {
-      ctx$hold()
+    seen$counts <- c(seen$counts, ctx$state$count)
+    if (isTRUE(getOption("ledgr.test.state_interrupt")) && ctx$state$count == 2L) {
+      rlang::interrupt()
     }
+    ledgr_strategy_result(ctx$hold(), count = ctx$state$count + 1L)
   }
   fixture <- ws17_dense_fixture(strategy, portfolio_state = list(count = 0L), days = 5L)
   on.exit(ledgr_snapshot_close(fixture$snapshot), add = TRUE)
-  old <- options(ledgr.interrupt = TRUE)
+  old <- options(ledgr.test.state_interrupt = TRUE)
   on.exit(options(old), add = TRUE)
-  first <- ledgr_run(fixture$exp, run_id = "ws17-resume")
-  close(first)
-  second <- ledgr_run(fixture$exp, run_id = "ws17-resume")
-  close(second)
-  options(ledgr.interrupt = FALSE)
-  resumed <- ledgr_run(fixture$exp, run_id = "ws17-resume")
-  on.exit(close(resumed), add = TRUE, after = FALSE)
-  rows <- DBI::dbGetQuery(
-    get_connection(fixture$snapshot),
-    "SELECT ts_utc, state_json FROM strategy_state WHERE run_id = 'ws17-resume' ORDER BY ts_utc"
+  got <- tryCatch(
+    ledgr_run(fixture$exp, run_id = "ws17-restart"),
+    interrupt = function(e) "interrupted"
   )
-  testthat::expect_equal(nrow(rows), 5L)
-  testthat::expect_false(identical(rows$state_json[[1L]], ledgr:::ledgr_strategy_state_cursor_marker))
-  testthat::expect_true(all(rows$state_json[-1L] == ledgr:::ledgr_strategy_state_cursor_marker))
-  testthat::expect_equal(length(unique(rows$ts_utc)), 5L)
-  testthat::expect_identical(encodes, 1L)
-
-  changing_snapshot <- scale_test_events_snapshot(second_members = c("AAA", "BBB"))
-  on.exit(ledgr_snapshot_close(changing_snapshot), add = TRUE, after = FALSE)
-  changing_exp <- ledgr_experiment(
-    changing_snapshot, function(ctx, params) ctx$hold(),
-    universe = ledgr_universe_members("u"),
-    valuation_policy = ledgr_valuation_stale(2),
-    asset_state = list(visits = 0L),
-    cost_model = ledgr_cost_zero(), opening = ledgr_opening(cash = 1000)
+  testthat::expect_identical(got, "interrupted")
+  testthat::expect_identical(seen$counts, 0:2)
+  options(ledgr.test.state_interrupt = FALSE)
+  restarted <- ledgr_run(fixture$exp, run_id = "ws17-restart")
+  on.exit(close(restarted), add = TRUE, after = FALSE)
+  testthat::expect_identical(tail(seen$counts, 5L), 0:4)
+  testthat::expect_false("strategy_state" %in% DBI::dbListTables(get_connection(fixture$snapshot)))
+  retired <- c(
+    "ledgr_strategy_state_encode", "ledgr_strategy_state_decode",
+    "ledgr_strategy_state_restore", "ledgr_strategy_state_cursor_marker"
   )
-  options(ledgr.interrupt = FALSE)
-  complete <- ledgr_run(changing_exp, run_id = "ws17-axis-complete")
-  close(complete)
-  options(ledgr.interrupt = TRUE)
-  for (i in seq_len(30L)) {
-    partial <- ledgr_run(changing_exp, run_id = "ws17-axis-resumed")
-    close(partial)
-    status <- DBI::dbGetQuery(
-      get_connection(changing_snapshot),
-      "SELECT status FROM runs WHERE run_id = 'ws17-axis-resumed'"
-    )$status[[1L]]
-    if (identical(status, "DONE")) break
-  }
-  complete_rows <- DBI::dbGetQuery(
-    get_connection(changing_snapshot),
-    paste(
-      "SELECT ts_utc, state_json FROM strategy_state",
-      "WHERE run_id = 'ws17-axis-complete' ORDER BY ts_utc"
-    )
-  )
-  resumed_rows <- DBI::dbGetQuery(
-    get_connection(changing_snapshot),
-    paste(
-      "SELECT ts_utc, state_json FROM strategy_state",
-      "WHERE run_id = 'ws17-axis-resumed' ORDER BY ts_utc"
-    )
-  )
-  testthat::expect_identical(resumed_rows, complete_rows)
-  encodes_after_changing_axis <- encodes
-
-  no_state <- ws17_dense_fixture(function(ctx, params) ctx$hold(), days = 3L)
-  on.exit(ledgr_snapshot_close(no_state$snapshot), add = TRUE, after = FALSE)
-  no_state_run <- ledgr_run(no_state$exp, run_id = "ws17-no-state")
-  on.exit(close(no_state_run), add = TRUE, after = FALSE)
-  testthat::expect_true(all(
-    availability_state_rows(no_state_run)$state_json ==
-      ledgr:::ledgr_strategy_state_cursor_marker
-  ))
-
-  same <- ws17_dense_fixture(
-    function(ctx, params) {
-      list(targets = ctx$hold(), state_update = list(count = 0L))
-    },
-    portfolio_state = list(count = 0L), days = 3L
-  )
-  on.exit(ledgr_snapshot_close(same$snapshot), add = TRUE, after = FALSE)
-  same_run <- ledgr_run(same$exp, run_id = "ws17-identical-raw")
-  on.exit(close(same_run), add = TRUE, after = FALSE)
-  testthat::expect_true(all(
-    availability_state_rows(same_run)$state_json ==
-      ledgr:::ledgr_strategy_state_cursor_marker
-  ))
-  testthat::expect_identical(encodes, encodes_after_changing_axis)
+  testthat::expect_false(any(vapply(
+    retired, exists, logical(1L), envir = asNamespace("ledgr"), inherits = FALSE
+  )))
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0536] asset state follows ID lifecycle and axis checkpoints", {
+testthat::test_that("[LTB-0536] in-memory asset state follows ID lifecycle", {
   snapshot <- scale_test_events_snapshot(second_members = c("AAA", "BBB"))
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   seen <- new.env(parent = emptyenv())
@@ -427,7 +327,6 @@ testthat::test_that("[LTB-0536] asset state follows ID lifecycle and axis checkp
   on.exit(close(run), add = TRUE, after = FALSE)
 
   previous <- stats::setNames(integer(), character())
-  changed_axis <- logical(length(seen$axis))
   changed_value <- seq_along(seen$axis) == 1L
   for (k in seq_along(seen$axis)) {
     axis <- seen$axis[[k]]
@@ -435,16 +334,8 @@ testthat::test_that("[LTB-0536] asset state follows ID lifecycle and axis checkp
     shared <- intersect(axis, names(previous))
     expected[shared] <- previous[shared]
     testthat::expect_identical(seen$before[[k]], expected, info = paste("pulse", k))
-    changed_axis[[k]] <- !identical(names(previous), axis)
     previous <- if (changed_value[[k]]) expected + 1L else expected
   }
-  rows <- availability_state_rows(run)
-  testthat::expect_identical(nrow(rows), length(seen$axis))
-  payload_expected <- changed_axis | changed_value
-  testthat::expect_identical(
-    rows$state_json != ledgr:::ledgr_strategy_state_cursor_marker,
-    payload_expected
-  )
   testthat::expect_true(any(vapply(seen$axis, length, integer(1)) == 3L))
   testthat::expect_true(any(vapply(seen$axis, length, integer(1)) == 2L))
 })
@@ -541,8 +432,8 @@ testthat::test_that("[LTB-0538] walk-forward resets declared state for every run
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   strategy <- function(ctx, params) {
     next_count <- ctx$state$count + 1L
-    target <- ctx$flat()
-    target[] <- params$quantity
+    target <- if (ctx$state$count == 0L) ctx$flat() else ctx$hold()
+    if (ctx$state$count == 0L) target[] <- params$quantity
     ledgr_strategy_result(target, count = next_count)
   }
   exp <- ledgr_experiment(
@@ -565,17 +456,6 @@ testthat::test_that("[LTB-0538] walk-forward resets declared state for every run
   on.exit(lapply(result$test_runs, close), add = TRUE, after = FALSE)
   testthat::expect_identical(length(result$test_runs), 2L)
   for (run in result$test_runs) {
-    row <- DBI::dbGetQuery(
-      get_connection(snapshot),
-      paste(
-        "SELECT state_json FROM strategy_state WHERE run_id = ?",
-        "ORDER BY ts_utc LIMIT 1"
-      ),
-      params = list(run$run_id)
-    )
-    restored <- ledgr:::ledgr_strategy_state_decode(
-      row$state_json[[1L]], exp$strategy_state
-    )
-    testthat::expect_identical(restored$values$count, 1L)
+    testthat::expect_gt(nrow(ledgr_results(run, "fills")), 0L)
   }
 })

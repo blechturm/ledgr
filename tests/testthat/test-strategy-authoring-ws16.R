@@ -402,6 +402,7 @@ testthat::test_that("[LTB-0531] construction requires investor inputs and schedu
     fixed = TRUE
   )
 
+  seen <- new.env(parent = emptyenv())
   stop_strategy <- function(ctx, params) {
     decision_day <- substr(ctx$ts_utc, 1L, 10L)
     dates <- paste(c(ctx$state$dates, decision_day), collapse = ",")
@@ -411,6 +412,8 @@ testthat::test_that("[LTB-0531] construction requires investor inputs and schedu
     ), collapse = ",")
     dates <- sub("^,", "", dates)
     due <- sub("^,", "", due)
+    seen$dates <- dates
+    seen$due <- due
     targets <- if (identical(decision_day, "2021-01-05")) ctx$flat() else ctx$hold()
     ledgr_strategy_result(
       targets, dates = dates, due = due
@@ -430,7 +433,6 @@ testthat::test_that("[LTB-0531] construction requires investor inputs and schedu
   run <- ledgr_run(fixture$exp, run_id = "ws16-mixed-cadence-stop")
   on.exit(close(run), add = TRUE, after = FALSE)
   fills <- ledgr_results(run, "fills")
-  seen <- availability_last_state(run)
   testthat::expect_identical(
     strsplit(seen$dates, ",", fixed = TRUE)[[1L]], as.character(fixture$days)
   )

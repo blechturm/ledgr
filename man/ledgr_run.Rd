@@ -52,8 +52,9 @@ If a run stops by an error or an interrupt after its row was created, for
 example during feature computation or under an R time limit, its status is
 recorded \code{FAILED} with the reason in \code{error_msg}, and the condition still
 reaches the caller. Calling \code{ledgr_run()} again with the same experiment and
-\code{run_id} resumes it. The \code{ledgr.interrupt} soft stop instead returns normally
-and leaves the run \code{RUNNING}.
+\code{run_id} verifies the stored identity and snapshot, clears the nonterminal
+attempt's derived output atomically, and restarts from pulse one. Completed
+\code{DONE} and \code{INCOMPLETE} runs remain idempotent.
 }
 
 \section{Identity}{

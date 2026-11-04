@@ -31,7 +31,7 @@ testthat::test_that("[LTB-0198] an early exit after registration records FAILED 
                      cost_model = ledgr_cost_zero())
   }
   failing <- ledgr_indicator(id = "boom", requires_bars = 1L, fn = function(window) stop("feature exploded"))
-  # One definition, so a rerun resumes the same row; the option picks the exit.
+  # One definition, so a rerun addresses the same row; the option picks the exit.
   interrupting <- ledgr_indicator(id = "halt", requires_bars = 1L, fn = function(window) {
     if (identical(getOption("ledgr.test.continuity_exit"), "error")) stop("second attempt failed")
     rlang::interrupt()
@@ -51,7 +51,7 @@ testthat::test_that("[LTB-0198] an early exit after registration records FAILED 
   testthat::expect_identical(row$status, "FAILED")
   testthat::expect_identical(row$error_msg, "Run interrupted before completion.")
 
-  # A resumed row that already says FAILED takes the new attempt's message.
+  # A restarted row that already says FAILED takes the new attempt's message.
   old <- options(ledgr.test.continuity_exit = "error")
   testthat::expect_error(ledgr_run(exp_with(list(interrupting)), run_id = "early-interrupt"), "second attempt failed")
   options(old)
@@ -59,27 +59,20 @@ testthat::test_that("[LTB-0198] an early exit after registration records FAILED 
   testthat::expect_identical(row$status, "FAILED")
   testthat::expect_match(row$error_msg, "second attempt failed", fixed = TRUE)
 
-  # Normal endings and the soft stop are untouched.
+  # Normal endings are untouched.
   done <- ledgr_run(exp_with(list(), buy), run_id = "normal-done")
   close(done)
   row <- continuity_run_row(snapshot, "normal-done")
   testthat::expect_identical(row$status, "DONE")
   testthat::expect_true(is.na(row$error_msg))
-  old <- options(ledgr.interrupt = TRUE)
-  soft <- ledgr_run(exp_with(list(), buy), run_id = "soft-stop")
-  options(old)
-  close(soft)
-  row <- continuity_run_row(snapshot, "soft-stop")
-  testthat::expect_identical(row$status, "RUNNING")
-  testthat::expect_true(is.na(row$error_msg))
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0202] a mid-loop interrupt is re-raised and an INCOMPLETE row is never rewritten", {
+testthat::test_that("[LTB-0202] a mid-loop interrupt restarts cleanly and an INCOMPLETE row is never rewritten", {
   hold <- function(ctx, params) ctx$hold()
   # An interrupt inside the pulse loop is not swallowed by the fold
-  # transaction: the row is FAILED, the caller sees it, and a rerun resumes to
-  # the uninterrupted result.
+  # transaction: the row is FAILED, the caller sees it, and a rerun starts at
+  # pulse one and replaces the attempt with the uninterrupted result.
   moving <- continuity_bars()
   moving$close <- moving$open <- moving$high <- moving$low <- c(10:14, 20:24)
   moving_snapshot <- ledgr_snapshot_from_df(moving, db_path = tempfile(fileext = ".duckdb"))
@@ -101,14 +94,27 @@ testthat::test_that("[LTB-0202] a mid-loop interrupt is re-raised and an INCOMPL
   row <- continuity_run_row(moving_snapshot, "midloop")
   testthat::expect_identical(row$status, "FAILED")
   testthat::expect_identical(row$error_msg, "Run interrupted before completion.")
-  resumed <- ledgr_run(midloop_exp, run_id = "midloop")
-  on.exit(close(resumed), add = TRUE)
+  restarted <- ledgr_run(midloop_exp, run_id = "midloop")
+  on.exit(close(restarted), add = TRUE)
   testthat::expect_gt(nrow(ledgr_results(reference, "fills")), 1L)
-  testthat::expect_identical(ledgr_results(resumed, "fills")$qty, ledgr_results(reference, "fills")$qty)
-  testthat::expect_identical(ledgr_results(resumed, "equity")$equity, ledgr_results(reference, "equity")$equity)
+  testthat::expect_identical(ledgr_results(restarted, "fills")$qty, ledgr_results(reference, "fills")$qty)
+  testthat::expect_identical(ledgr_results(restarted, "equity")$equity, ledgr_results(reference, "equity")$equity)
+
+  reference_ledger <- ledgr_results(reference, "ledger")
+  restarted_ledger <- ledgr_results(restarted, "ledger")
+  shared <- setdiff(
+    intersect(names(reference_ledger), names(restarted_ledger)),
+    c("run_id", "event_id")
+  )
+  testthat::expect_identical(restarted_ledger[shared], reference_ledger[shared])
+  testthat::expect_identical(
+    ledgr_results(restarted, "diagnostics")[setdiff(names(ledgr_results(restarted, "diagnostics")), "run_id")],
+    ledgr_results(reference, "diagnostics")[setdiff(names(ledgr_results(reference, "diagnostics")), "run_id")]
+  )
 
   # The guard never touches an INCOMPLETE row: corrupt its completion evidence
-  # so the resume path fails after registration, and the status must stay.
+  # so terminal-evidence validation fails before replacement, and the status
+  # and prior derived evidence must stay.
   days <- as.Date(c("2020-01-06", "2020-01-07", "2020-01-08"))
   utc <- function(d) as.POSIXct(paste(d, "21:00:00"), tz = "UTC")
   gap_bars <- data.frame(instrument_id = "AAA", ts_utc = utc(days[c(1, 3)]), open = 10, high = 10,
@@ -382,4 +388,22 @@ testthat::test_that("[LTB-0201] walk-forward reuses the previous selection or ru
                        ledgr_rule_argmax("sharpe_ratio"), seed = 1L, no_selection = "fail"),
     class = "ledgr_walk_forward_no_selection"
   )
+})
+
+# ledgr-test-profile: review
+testthat::test_that("[LTB-0555] pulse-level persistence and soft-stop seams are absent", {
+  root <- normalizePath(testthat::test_path("..", ".."), winslash = "/", mustWork = TRUE)
+  files <- list.files(file.path(root, "R"), pattern = "[.]R$", full.names = TRUE)
+  source <- paste(vapply(files, function(path) paste(readLines(path, warn = FALSE), collapse = "\n"), ""), collapse = "\n")
+
+  retired <- c(
+    "CREATE TABLE strategy_state", "FROM strategy_state", "INTO strategy_state",
+    "ledgr_strategy_state_encode", "ledgr_strategy_state_decode",
+    "ledgr_strategy_state_restore", "ledgr_strategy_state_cursor_marker",
+    "ledgr_run_resume", "ledgr.interrupt"
+  )
+  for (needle in retired) {
+    testthat::expect_false(grepl(needle, source, fixed = TRUE), info = needle)
+  }
+  testthat::expect_false("strategy_state" %in% names(ledgr_current_schema_definition()$tables))
 })

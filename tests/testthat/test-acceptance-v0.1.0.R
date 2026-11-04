@@ -271,7 +271,7 @@ testthat::test_that("AT5/AT6/AT7: ledger-derived state satisfies accounting iden
 })
 
 # ledgr-test-profile: review
-testthat::test_that("AT8: resume deletes tails and final outputs match a clean run", {
+testthat::test_that("AT8: restart replaces attempt output and matches a clean run", {
   instrument_ids <- c("AAA")
   ts_utc <- c("2020-01-01 00:00:00", "2020-01-02 00:00:00", "2020-01-03 00:00:00", "2020-01-04 00:00:00")
   bars <- ledgr_test_make_bars(instrument_ids, ts_utc)
@@ -312,11 +312,7 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
 
   ledger_resume <- ledgr_test_fetch_ledger_core(h1$con, run_id)
   eq_resume <- ledgr_test_fetch_equity_curve_core(h1$con, run_id)
-  st_resume <- DBI::dbGetQuery(
-    h1$con,
-    "SELECT ts_utc, state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
-    params = list(run_id)
-  )
+  testthat::expect_false("strategy_state" %in% DBI::dbListTables(h1$con))
 
   db_clean <- ledgr_test_make_db(instrument_ids, ts_utc, bars_df = bars, shuffle = TRUE)
   cfg_clean <- cfg
@@ -332,15 +328,8 @@ testthat::test_that("AT8: resume deletes tails and final outputs match a clean r
 
   ledger_clean <- ledgr_test_fetch_ledger_core(h2$con, run_id)
   eq_clean <- ledgr_test_fetch_equity_curve_core(h2$con, run_id)
-  st_clean <- DBI::dbGetQuery(
-    h2$con,
-    "SELECT ts_utc, state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
-    params = list(run_id)
-  )
-
   testthat::expect_equal(ledger_resume, ledger_clean)
   testthat::expect_equal(eq_resume, eq_clean)
-  testthat::expect_equal(st_resume, st_clean)
 })
 
 # ledgr-test-profile: review

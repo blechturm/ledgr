@@ -70,6 +70,7 @@ testthat::test_that("[LTB-0100] pulse inspection uses the run feature path", {
 
   feature_ids <- vapply(fixture$features, function(feature) feature$id, character(1))
   target_ts <- ledgr_iso_utc(tail(fixture$pulses, 1L))
+  seen <- new.env(parent = emptyenv())
   strategy <- function(ctx, params) {
     if (identical(ledgr_iso_utc(ctx$ts_utc), params$target_ts)) {
       values <- unlist(lapply(params$ids, function(id) {
@@ -83,9 +84,10 @@ testthat::test_that("[LTB-0100] pulse inspection uses the run feature path", {
         paste,
         sep = "::"
       )))
-      return(ledgr_strategy_result(ctx$flat(), values = paste(
+      seen$values <- paste(
         names(values), format(values, digits = 17), sep = "=", collapse = ";"
-      )))
+      )
+      return(ledgr_strategy_result(ctx$flat(), values = seen$values))
     }
     ctx$flat()
   }
@@ -107,7 +109,7 @@ testthat::test_that("[LTB-0100] pulse inspection uses the run feature path", {
     run_id = "pulse-feature-parity"
   )
   on.exit(close(run), add = TRUE)
-  encoded <- availability_last_state(run)$values
+  encoded <- seen$values
   pieces <- strsplit(encoded, ";", fixed = TRUE)[[1L]]
   run_values <- stats::setNames(
     as.numeric(sub("^[^=]*=", "", pieces)),

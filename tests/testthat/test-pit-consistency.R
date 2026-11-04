@@ -64,25 +64,25 @@ testthat::test_that("[LTB-0218] a run that values no pulse keeps its prefix, ope
   testthat::expect_true(any(grepl("no valued pulse", utils::capture.output(print(reopened)), fixed = TRUE)))
   close(reopened)
   close(ledgr_run(first, run_id = "first_pulse_stop"))
-  # LTB-0245 (review) covers the interrupted-and-resumed permutations.
+  # LTB-0245 (review) covers the interrupted-and-restarted permutations.
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0245] interrupted availability runs resume to what the uninterrupted run stores", {
+testthat::test_that("[LTB-0245] interrupted availability runs restart to what the uninterrupted run stores", {
   snapshot <- scale_test_events_snapshot()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   con <- ledgr:::get_connection(snapshot)
   days <- pit_consistency_days()
 
 
-  # A run interrupted before the pulse that stops it, then resumed, stores what
+  # A run interrupted before the pulse that stops it, then restarted, stores what
   # the uninterrupted run stores.
   buy_day <- as.character(days[[4]])
   buy_then_stop <- function(ctx, params) {
     target <- ctx$hold()
     if (identical(substr(ctx$ts_utc, 1, 10), buy_day)) target[["BBB"]] <- 1
     if (identical(substr(ctx$ts_utc, 1, 10), getOption("ledgr.test.interrupt_on", ""))) {
-      options(ledgr.interrupt = TRUE)
+      rlang::interrupt()
     }
     target
   }
@@ -92,7 +92,7 @@ testthat::test_that("[LTB-0245] interrupted availability runs resume to what the
     valuation_policy = ledgr_valuation_stale(0, exhausted = "refuse"), cost_model = ledgr_cost_zero(),
     opening = ledgr_opening(cash = 1000)
   )
-  old <- options(ledgr.interrupt = FALSE, ledgr.test.interrupt_on = "")
+  old <- options(ledgr.test.interrupt_on = "")
   on.exit(options(old), add = TRUE)
   close(ledgr_run(stopped, run_id = "fresh_stop"))
   fresh <- pit_consistency_stored(con, "fresh_stop")
@@ -100,9 +100,10 @@ testthat::test_that("[LTB-0245] interrupted availability runs resume to what the
   testthat::expect_gt(nrow(fresh$equity), 0L)
 
   options(ledgr.test.interrupt_on = as.character(days[[5]]))
-  close(ledgr_run(stopped, run_id = "resumed_stop"))
-  testthat::expect_identical(ledgr_run_info(snapshot, "resumed_stop")$status, "RUNNING")
-  options(ledgr.interrupt = FALSE, ledgr.test.interrupt_on = "")
+  got <- tryCatch(ledgr_run(stopped, run_id = "resumed_stop"), interrupt = function(e) "interrupted")
+  testthat::expect_identical(got, "interrupted")
+  testthat::expect_identical(ledgr_run_info(snapshot, "resumed_stop")$status, "FAILED")
+  options(ledgr.test.interrupt_on = "")
   close(ledgr_run(stopped, run_id = "resumed_stop"))
   resumed <- pit_consistency_stored(con, "resumed_stop")
   testthat::expect_identical(resumed$equity, fresh$equity)
@@ -111,11 +112,11 @@ testthat::test_that("[LTB-0245] interrupted availability runs resume to what the
   testthat::expect_identical(resumed$diagnostics, fresh$diagnostics)
   close(ledgr_run_open(snapshot, "resumed_stop"))
 
-  # A run interrupted after its last pulse values nothing on resume and still
+  # A run interrupted at its last pulse restarts and still
   # finishes as the uninterrupted run does.
   hold_or_interrupt <- function(ctx, params) {
     if (identical(substr(ctx$ts_utc, 1, 10), getOption("ledgr.test.interrupt_on", ""))) {
-      options(ledgr.interrupt = TRUE)
+      rlang::interrupt()
     }
     ctx$hold()
   }
@@ -127,9 +128,10 @@ testthat::test_that("[LTB-0245] interrupted availability runs resume to what the
   )
   close(ledgr_run(held, run_id = "fresh_done"))
   options(ledgr.test.interrupt_on = as.character(days[[length(days)]]))
-  close(ledgr_run(held, run_id = "resumed_done"))
-  testthat::expect_identical(ledgr_run_info(snapshot, "resumed_done")$status, "RUNNING")
-  options(ledgr.interrupt = FALSE, ledgr.test.interrupt_on = "")
+  got <- tryCatch(ledgr_run(held, run_id = "resumed_done"), interrupt = function(e) "interrupted")
+  testthat::expect_identical(got, "interrupted")
+  testthat::expect_identical(ledgr_run_info(snapshot, "resumed_done")$status, "FAILED")
+  options(ledgr.test.interrupt_on = "")
   close(ledgr_run(held, run_id = "resumed_done"))
   done <- pit_consistency_stored(con, "fresh_done")
   testthat::expect_identical(done$completion$intended_terminal_status, "DONE")

@@ -14,11 +14,6 @@ ledgr_current_schema_definition <- function() {
         "positions_value DOUBLE, equity DOUBLE, realized_pnl DOUBLE,",
         "unrealized_pnl DOUBLE, PRIMARY KEY(run_id, ts_utc))"
       ),
-      strategy_state = sql(
-        "CREATE TABLE strategy_state(",
-        "run_id VARCHAR, ts_utc VARCHAR, state_json VARCHAR NOT NULL,",
-        "PRIMARY KEY(run_id, ts_utc))"
-      ),
       snapshots = sql(
         "CREATE TABLE snapshots(",
         "snapshot_id VARCHAR PRIMARY KEY, status VARCHAR NOT NULL,",

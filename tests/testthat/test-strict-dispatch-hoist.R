@@ -31,13 +31,17 @@ strict_dispatch_fixture <- function(instruments, days = 5L) {
   )
 }
 
-strict_dispatch_experiment <- function(snapshot, instruments) {
+strict_dispatch_experiment <- function(snapshot, instruments, seen = NULL) {
   sma_id <- ledgr_feature_id(ledgr_ind_sma(2L))
   returns_id <- ledgr_feature_id(ledgr_ind_returns(2L))
   strategy <- function(ctx, params) {
     sma <- unname(ctx[[sma_id]])
     returns <- unname(ctx[[returns_id]])
     if (all(is.finite(c(sma, returns)))) {
+      if (!is.null(seen)) {
+        seen$sma <- stats::setNames(sma, ctx$universe)
+        seen$returns <- stats::setNames(returns, ctx$universe)
+      }
       return(ledgr_strategy_result(
         ctx$flat(),
         sma = stats::setNames(sma, ctx$universe),
@@ -74,16 +78,16 @@ testthat::test_that("[LTB-0157] strict dispatch resolves once per definition", {
     instruments <- sprintf("I%02d", seq_len(count))
     snapshot <- strict_dispatch_fixture(instruments)
     on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-    experiment <- strict_dispatch_experiment(snapshot, instruments)
+    seen <- new.env(parent = emptyenv())
+    experiment <- strict_dispatch_experiment(snapshot, instruments, seen)
     calls <- character()
     bt <- ledgr_run(experiment, run_id = paste0("dispatch-", count))
     on.exit(close(bt), add = TRUE)
     testthat::expect_identical(sort(calls), c("returns", "sma"))
-    state <- availability_last_state(bt)
     expected_sma <- 100 * seq_len(count) + 4.5
     expected_returns <- 2 / (100 * seq_len(count) + 3)
-    testthat::expect_identical(unname(state$sma), expected_sma)
-    testthat::expect_identical(unname(state$returns), expected_returns)
+    testthat::expect_identical(unname(seen$sma), expected_sma)
+    testthat::expect_identical(unname(seen$returns), expected_returns)
   }
 
   instruments <- c("I01", "I02")

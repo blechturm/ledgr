@@ -76,15 +76,12 @@ ledgr_valuation_summary <- function(bt, con = NULL) {
 # one query from the stop rows the fold recorded. valuation_state still
 # describes the marks of the pulses before the stop.
 ledgr_valuation_summary_add_stop <- function(out, run_id, con) {
-  stopped <- DBI::dbGetQuery(
+  stopped <- ledgr_diagnostic_decode(
     con,
-    paste(
-      "SELECT ts_utc, instrument_id, reason_code FROM run_diagnostics WHERE run_id = ?",
-      "AND stage = 'valuation' AND outcome = 'stopped'",
-      "AND reason_code IN ('valuation_horizon_exhausted', 'terminal_mark_unavailable')",
-      "ORDER BY diagnostic_seq"
-    ),
-    params = list(run_id)
+    run_id,
+    stage = "valuation",
+    outcome = "stopped",
+    reason_code = c("valuation_horizon_exhausted", "terminal_mark_unavailable")
   )
   ids <- unique(as.character(stopped$instrument_id))
   found <- nrow(stopped) > 0L
@@ -102,27 +99,22 @@ ledgr_valuation_summary_add_stop <- function(out, run_id, con) {
 ledgr_valuation_summary_evidence <- function(bt, con) {
   config <- bt$config
   policy <- config$availability$valuation_policy
-  held <- paste(
-    "run_id = ? AND quantity <> 0 AND",
-    "(stage = 'decision' OR (stage = 'valuation' AND outcome = 'marked'))"
-  )
-  stale <- DBI::dbGetQuery(
+  marks <- ledgr_diagnostic_decode(
     con,
-    paste(
-      "SELECT COUNT(*) AS sessions, COUNT(DISTINCT instrument_id) AS instruments,",
-      "MAX(mark_age) AS longest_age FROM run_diagnostics WHERE", held,
-      "AND mark_source = 'stale_close'"
-    ),
-    params = list(bt$run_id)
+    bt$run_id,
+    mark_source = c("stale_close", "frozen_close")
   )
-  frozen <- DBI::dbGetQuery(
-    con,
-    paste(
-      "SELECT ts_utc, instrument_id, quantity, price FROM run_diagnostics WHERE",
-      held, "AND mark_source = 'frozen_close' ORDER BY instrument_id, ts_utc"
-    ),
-    params = list(bt$run_id)
+  held <- !is.na(marks$quantity) & marks$quantity != 0 &
+    (marks$stage == "decision" | (marks$stage == "valuation" & marks$outcome == "marked"))
+  stale_rows <- marks[held & marks$mark_source == "stale_close", , drop = FALSE]
+  stale <- data.frame(
+    sessions = nrow(stale_rows),
+    instruments = length(unique(stale_rows$instrument_id)),
+    longest_age = if (nrow(stale_rows) > 0L) max(stale_rows$mark_age) else NA_integer_
   )
+  frozen <- marks[held & marks$mark_source == "frozen_close",
+                  c("ts_utc", "instrument_id", "quantity", "price"), drop = FALSE]
+  frozen <- frozen[order(frozen$instrument_id, frozen$ts_utc), , drop = FALSE]
   equity <- DBI::dbGetQuery(
     con,
     "SELECT ts_utc, equity FROM equity_curve WHERE run_id = ? ORDER BY ts_utc",
@@ -500,14 +492,12 @@ ledgr_assumption_flags_from_memory <- function(policy, diagnostics, equity) {
 ledgr_assumption_flags_for_run <- function(bt, con) {
   if (!ledgr_availability_config_active(bt$config)) return(NULL)
   valuation <- ledgr_valuation_summary_evidence(bt, con)
-  assumed <- DBI::dbGetQuery(
+  assumed <- nrow(ledgr_diagnostic_decode(
     con,
-    paste(
-      "SELECT COUNT(*) AS n FROM run_diagnostics WHERE run_id = ?",
-      "AND stage = 'valuation' AND reason_code = 'terminal_disposition'"
-    ),
-    params = list(bt$run_id)
-  )$n
+    bt$run_id,
+    stage = "valuation",
+    reason_code = "terminal_disposition"
+  ))
   ledgr_assumption_flags(valuation, assumed)
 }
 
@@ -627,21 +617,7 @@ ledgr_run_assumption_flags_many <- function(con, run_ids) {
   if (length(run_ids) == 0L) {
     return(out)
   }
-  quoted <- paste(DBI::dbQuoteString(con, unique(run_ids)), collapse = ", ")
-  grouped <- DBI::dbGetQuery(
-    con,
-    sprintf(
-      paste(
-        "SELECT run_id,",
-        "COUNT(*) FILTER (WHERE stage = 'decision') AS decisions,",
-        "COUNT(*) FILTER (WHERE quantity <> 0 AND (stage = 'decision' OR (stage = 'valuation' AND outcome = 'marked')) AND mark_source = 'stale_close') AS stale,",
-        "COUNT(*) FILTER (WHERE quantity <> 0 AND (stage = 'decision' OR (stage = 'valuation' AND outcome = 'marked')) AND mark_source = 'frozen_close') AS frozen,",
-        "COUNT(*) FILTER (WHERE stage = 'valuation' AND reason_code = 'terminal_disposition') AS assumed",
-        "FROM run_diagnostics WHERE run_id IN (%s) GROUP BY run_id"
-      ),
-      quoted
-    )
-  )
+  grouped <- ledgr_diagnostic_flag_counts(con, unique(run_ids))
   grouped <- grouped[grouped$decisions > 0, , drop = FALSE]
   if (nrow(grouped) == 0L) return(out)
   # Map every output row, so a run ID repeated by ledgr_run_compare() gets
@@ -658,21 +634,20 @@ ledgr_run_assumption_flags_many <- function(con, run_ids) {
   out$assumed_terminal_outcomes[hit] <- as.integer(g$assumed)
   frozen_runs <- as.character(grouped$run_id[grouped$frozen > 0])
   if (length(frozen_runs) > 0L) {
-    frozen_quoted <- paste(DBI::dbQuoteString(con, frozen_runs), collapse = ", ")
-    frozen <- DBI::dbGetQuery(
+    frozen <- ledgr_diagnostic_decode(
       con,
-      sprintf(
-        paste(
-          "SELECT run_id, ts_utc, instrument_id, quantity, price",
-          "FROM run_diagnostics WHERE run_id IN (%s)",
-          "AND quantity <> 0",
-          "AND (stage = 'decision' OR (stage = 'valuation' AND outcome = 'marked'))",
-          "AND mark_source = 'frozen_close'",
-          "ORDER BY run_id, instrument_id, ts_utc"
-        ),
-        frozen_quoted
-      )
+      frozen_runs,
+      mark_source = "frozen_close"
     )
+    frozen <- frozen[
+      !is.na(frozen$quantity) & frozen$quantity != 0 &
+        (frozen$stage == "decision" |
+           (frozen$stage == "valuation" & frozen$outcome == "marked")),
+      c("run_id", "ts_utc", "instrument_id", "quantity", "price"),
+      drop = FALSE
+    ]
+    frozen <- frozen[order(frozen$run_id, frozen$instrument_id, frozen$ts_utc), , drop = FALSE]
+    frozen_quoted <- paste(DBI::dbQuoteString(con, frozen_runs), collapse = ", ")
     equity <- DBI::dbGetQuery(
       con,
       sprintf(

@@ -178,31 +178,25 @@ testthat::test_that("[LTB-0268] seeded ledgr_run preserves caller RNG", {
     snapshot,
     function(ctx, params) {
       stats::runif(1L)
-      options(ledgr.interrupt = TRUE)
-      ctx$hold()
+      rlang::interrupt()
     },
     cost_model = ledgr_cost_zero()
   )
-  old_interrupt <- getOption("ledgr.interrupt")
-  on.exit(options(ledgr.interrupt = old_interrupt), add = TRUE)
-  options(ledgr.interrupt = FALSE)
   set.seed(1357L)
   interrupt_before <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-  interrupted <- ledgr_run(
-    interrupt_experiment,
-    run_id = "rng-run-interrupted",
-    seed = 2026L
+  interrupted <- tryCatch(
+    ledgr_run(interrupt_experiment, run_id = "rng-run-interrupted", seed = 2026L),
+    interrupt = identity
   )
-  on.exit(close(interrupted), add = TRUE)
+  testthat::expect_s3_class(interrupted, "interrupt")
   testthat::expect_identical(
     get(".Random.seed", envir = .GlobalEnv, inherits = FALSE),
     interrupt_before
   )
   testthat::expect_identical(
     ledgr_run_info(snapshot, "rng-run-interrupted")$status,
-    "RUNNING"
+    "FAILED"
   )
-  options(ledgr.interrupt = FALSE)
 
   grid <- ledgr_grid_named(candidate = list(strategy = list(unused = 1L)))
   set.seed(1L)

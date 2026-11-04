@@ -190,14 +190,7 @@ ledgr_write_run_telemetry <- function(con,
 }
 
 ledgr_next_diagnostic_seq <- function(con, run_id) {
-  as.integer(DBI::dbGetQuery(
-    con,
-    paste0(
-      "SELECT COALESCE(MAX(diagnostic_seq), 0) + 1 AS next_seq ",
-      "FROM run_diagnostics WHERE run_id = ?"
-    ),
-    params = list(run_id)
-  )$next_seq[[1L]])
+  ledgr_diagnostic_next_seq(con, run_id)
 }
 
 ledgr_config_opening_positions <- function(cfg) {
@@ -542,54 +535,24 @@ ledgr_run_fold_impl <- function(config,
     rlang::abort("engine.checkpoint_every must be an integer >= 1.", class = "ledgr_invalid_config")
   }
 
-  resume <- if (isTRUE(terminal_recovery)) {
+  restart <- if (isTRUE(terminal_recovery)) {
     list(
-      resume_posix = pulses_posix[[1L]],
-      resume_iso = pulses_iso[[1L]],
       start_idx = length(pulses_posix) + 1L,
       next_event_seq = NA_integer_
     )
   } else {
-    ledgr_run_resume(
+    ledgr_run_restart_nonterminal(
       con = con,
-      output_handler = output_handler,
       run_id = run_id,
-      is_resume = is_resume,
-      calendar = calendar,
+      is_restart = is_resume,
       start_ts_utc = start_ts_utc,
       opening_positions = opening_positions,
       opening_cost_basis = opening_cost_basis,
       opening_lots = opening_carried$lots
     )
   }
-  resume_posix <- resume$resume_posix
-  resume_iso <- resume$resume_iso
-  start_idx <- resume$start_idx
-  next_event_seq <- resume$next_event_seq
-
-  # Opening publication and resume cleanup happen against the durable store.
-  # Seed the handler from the surviving tail so its first new block is checked
-  # across that boundary, not merely within the new block.
-  if (!isTRUE(terminal_recovery) && is.finite(next_event_seq) && next_event_seq > 1L) {
-    durable_boundary <- DBI::dbGetQuery(
-      con,
-      paste(
-        "SELECT event_seq, ts_utc FROM ledger_events",
-        "WHERE run_id = ? ORDER BY event_seq DESC LIMIT 1"
-      ),
-      params = list(run_id)
-    )
-    if (nrow(durable_boundary) != 1L) {
-      rlang::abort(
-        "The durable event boundary is missing for a non-empty run.",
-        class = "ledgr_invalid_accounting_event"
-      )
-    }
-    output_handler$seed_event_boundary(
-      durable_boundary$event_seq[[1L]],
-      durable_boundary$ts_utc[[1L]]
-    )
-  }
+  start_idx <- restart$start_idx
+  next_event_seq <- restart$next_event_seq
 
   prepared_control <- ledgr_run_prepare_control(control)
   max_pulses <- prepared_control$max_pulses
@@ -648,25 +611,6 @@ ledgr_run_fold_impl <- function(config,
   }
   instrument_index <- seq_along(instrument_ids)
   names(instrument_index) <- instrument_ids
-  if (is_resume && !isTRUE(terminal_recovery) && length(pulses) > 0) {
-    resume_state <- ledgr_state_asof(
-      con, run_id, initial_cash, resume_posix,
-      instrument_ids = instrument_ids, bar_axis = history_axis,
-      initial_position_facts = position_facts
-    )
-    position_facts <- resume_state$position_facts
-    if (identical(execution_mode, "audit_log")) {
-      pos_vec <- rep(0, length(instrument_ids))
-      names(pos_vec) <- instrument_ids
-      if (!is.null(resume_state$positions) && length(resume_state$positions) > 0) {
-        pos_vec[names(resume_state$positions)] <- as.numeric(resume_state$positions)
-      }
-      state_env$current <- list(cash = resume_state$cash, positions = pos_vec, lot_state = resume_state$lot_state)
-    } else {
-      state_env$current <- list(cash = resume_state$cash, positions = resume_state$positions, lot_state = resume_state$lot_state)
-    }
-  }
-
   preflight_start <- ledgr_time_now()
   run_feature_series <- NULL
   run_feature_matrix <- NULL
@@ -812,7 +756,6 @@ ledgr_run_fold_impl <- function(config,
     )
   }
   strategy_preflight <- ledgr_strategy_preflight(strategy_fn)
-  ledgr_run_resume_preflight(is_resume, strategy_preflight)
   output_handler$record_run_status("RUNNING", NA_character_)
 
   strategy_state_declaration <- ledgr_strategy_state_from_identity(cfg$strategy_state)
@@ -826,12 +769,6 @@ ledgr_run_fold_impl <- function(config,
     ),
     axis = instrument_ids
   )
-  if (is_resume) {
-    strategy_state_mem <- ledgr_strategy_state_restore(
-      con, run_id, resume_iso, strategy_state_declaration, instrument_ids,
-      default_scalars = strategy_state_default_scalars
-    )
-  }
   current_positions <- state_env$current$positions
   full_positions <- stats::setNames(rep(0, length(instrument_ids)), instrument_ids)
   if (!is.null(current_positions) && length(current_positions) > 0L) {
@@ -852,15 +789,12 @@ ledgr_run_fold_impl <- function(config,
     dispositions_active = TRUE,
     carried = opening_carried$pending
   )
-  raw_sizing_notice_written <- isTRUE(DBI::dbGetQuery(
+  raw_sizing_notice_written <- ledgr_diagnostic_present(
     con,
-    paste(
-      "SELECT COUNT(*) > 0 AS present FROM run_diagnostics",
-      "WHERE run_id = ? AND stage = 'sizing'",
-      "AND reason_code = 'sizing_intent_unavailable'"
-    ),
-    params = list(run_id)
-  )$present[[1L]])
+    run_id,
+    stage = "sizing",
+    reason_code = "sizing_intent_unavailable"
+  )
 
   fold_execution <- ledgr_execution_spec(
     run_id = run_id,
@@ -898,17 +832,7 @@ ledgr_run_fold_impl <- function(config,
     } else {
       ledgr_corporate_action_identity_decode(cfg$corporate_actions)$policy
     },
-    frozen_at_resume = if (is_resume && start_idx > 1L) {
-      ledgr_availability_frozen_at(
-        con, run_id, initial_cash, availability_provider,
-        history_substrate$bars,
-        instrument_ids, pulses_posix, start_idx - 1L,
-        source_pulses_posix = history_axis,
-        pulse_columns = unname(history_substrate$pulse_index[
-          ledgr_projection_pulse_names(pulses_posix)
-        ])
-      )
-    } else if (length(opening_carried$frozen) > 0L) {
+    frozen_at_resume = if (length(opening_carried$frozen) > 0L) {
       # A carried test window opens with the holdings its predecessor left
       # frozen, so freeze entry is not recorded twice across the boundary.
       as.character(opening_carried$frozen)
@@ -916,15 +840,7 @@ ledgr_run_fold_impl <- function(config,
       NULL
     },
     final_execution_posix = calendar$final_execution_posix,
-    last_executed_at_resume = if (is_resume && start_idx > 1L) {
-      DBI::dbGetQuery(
-        con,
-        "SELECT MAX(ts_utc) AS ts_utc FROM ledger_events WHERE run_id = ? AND event_type = 'FILL'",
-        params = list(run_id)
-      )$ts_utc
-    } else {
-      NULL
-    },
+    last_executed_at_resume = NULL,
     schedule_sessions = ledgr_strategy_schedule_sessions(history_substrate),
     schedule_params = schedule_params,
     decision_due = schedule$decision_due,

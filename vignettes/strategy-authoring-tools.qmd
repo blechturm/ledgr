@@ -609,7 +609,7 @@ ledgr_run_compare(snapshot)
 sessions. During warmup the invoked strategy explicitly returns `ctx$hold()`.
 On other non-decision sessions the callback is not invoked at all: ledgr records
 a scheduled skip, carries state forward, and still processes economic events,
-accounting and checkpoints. A scheduled skip and `ctx$hold()` therefore mean
+accounting and in-memory strategy state. A scheduled skip and `ctx$hold()` therefore mean
 different things.
 
 `ledgr_run_compare()` summarizes every run stored with the snapshot.

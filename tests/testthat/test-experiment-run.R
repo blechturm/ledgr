@@ -236,7 +236,7 @@ testthat::test_that("pulse_seed strategies reproduce across continuous and resum
 })
 
 # ledgr-test-profile: review
-testthat::test_that("ambient RNG strategies fail loudly on resume", {
+testthat::test_that("seeded ambient RNG strategies restart from pulse one", {
   db_path <- tempfile(fileext = ".duckdb")
   on.exit(unlink(db_path), add = TRUE)
 
@@ -272,12 +272,18 @@ testthat::test_that("ambient RNG strategies fail loudly on resume", {
     control = list(max_pulses = 2L)
   )
 
-  err <- testthat::capture_error(
-    ledgr_run_config(cfg, run_id = "ambient-rng-resume")
-  )
-  testthat::expect_s3_class(err, "ledgr_strategy_ambient_rng_resume")
-  testthat::expect_match(conditionMessage(err), "runif", fixed = TRUE)
-  testthat::expect_match(conditionMessage(err), "ctx$pulse_seed", fixed = TRUE)
+  restarted <- ledgr_run_config(cfg, run_id = "ambient-rng-resume")
+  on.exit(close(restarted), add = TRUE)
+  clean <- ledgr_run_config(cfg, run_id = "ambient-rng-clean")
+  on.exit(close(clean), add = TRUE)
+  strip <- function(x) {
+    x$run_id <- NULL
+    x$event_id <- NULL
+    rownames(x) <- NULL
+    x
+  }
+  testthat::expect_identical(strip(ledgr_results(restarted, "ledger")), strip(ledgr_results(clean, "ledger")))
+  testthat::expect_identical(ledgr_results(restarted, "equity"), ledgr_results(clean, "equity"))
 })
 
 # ledgr-test-profile: heavy_protocol
@@ -500,7 +506,7 @@ testthat::test_that("ledgr_run validates params before execution", {
 })
 
 # ledgr-test-profile: review
-testthat::test_that("[LTB-0283] dense resume carries a typed portfolio scalar", {
+testthat::test_that("[LTB-0283] dense runs carry a typed portfolio scalar in memory", {
   bars <- data.frame(
     instrument_id = "AAA",
     ts_utc = as.POSIXct("2024-01-01", tz = "UTC") + 86400 * 0:2,
@@ -513,23 +519,18 @@ testthat::test_that("[LTB-0283] dense resume carries a typed portfolio scalar", 
   )
   snapshot <- ledgr_snapshot_from_df(bars)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  observed <- new.env(parent = emptyenv())
+  observed$values <- numeric()
   experiment <- ledgr_experiment(opening = ledgr_opening(cash = 100000),
     snapshot,
     function(ctx, params) {
+      observed$values <- c(observed$values, ctx$state$value)
       list(targets = ctx$hold(), state_update = list(value = 5))
     },
     portfolio_state = list(value = 0),
     cost_model = ledgr_cost_zero()
   )
-  old_options <- options(ledgr.interrupt = TRUE)
-  on.exit(options(old_options), add = TRUE)
-  first <- ledgr_run(experiment, run_id = "dense-scalar-state")
-  close(first)
-  options(ledgr.interrupt = FALSE)
-  resumed <- ledgr_run(experiment, run_id = "dense-scalar-state")
-  on.exit(close(resumed), add = TRUE)
-
-  states <- availability_state_values(resumed)
-  testthat::expect_equal(length(states), 3L)
-  testthat::expect_identical(vapply(states, function(state) state$value, numeric(1L)), rep(5, 3L))
+  run <- ledgr_run(experiment, run_id = "dense-scalar-state")
+  on.exit(close(run), add = TRUE)
+  testthat::expect_identical(observed$values, c(0, 5, 5))
 })

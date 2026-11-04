@@ -137,7 +137,10 @@ testthat::test_that("fixed baskets remain fixed when availability facts are decl
   )
   snapshot <- availability_runtime_fixture(membership = membership)
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  seen <- new.env(parent = emptyenv())
+  seen$members <- character()
   strategy <- function(ctx, params) {
+    seen$members <- c(seen$members, paste(ctx$members, collapse = ","))
     ledgr_strategy_result(
       ctx$hold(), members = paste(ctx$members, collapse = ",")
     )
@@ -153,7 +156,7 @@ testthat::test_that("fixed baskets remain fixed when availability facts are decl
   testthat::expect_identical(ledgr_experiment_plan(exp)$universe_type, "fixed")
   bt <- ledgr_run(exp)
   on.exit(close(bt), add = TRUE)
-  testthat::expect_identical(availability_last_state(bt)$members, "AAA")
+  testthat::expect_identical(tail(seen$members, 1L), "AAA")
 })
 
 # ledgr-test-profile: heavy_protocol

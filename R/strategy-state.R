@@ -1,7 +1,5 @@
 ledgr_strategy_state_rule_version <- 1L
 
-ledgr_strategy_state_cursor_marker <- "__ledgr_strategy_state_unchanged_v1__"
-
 ledgr_strategy_state_reserved_names <- function() {
   c("targets", "state_update", "asset_state", "portfolio_state",
     "intent_reason", "reset_state")
@@ -338,112 +336,7 @@ ledgr_strategy_state_apply_values <- function(previous, update, declaration,
   out
 }
 
-ledgr_strategy_state_encode <- function(values, declaration, axis) {
-  fields <- vector("list", length(declaration$fields))
-  for (i in seq_along(declaration$fields)) {
-    field <- declaration$fields[[i]]
-    value <- values[[field$name]]
-    missing <- is.na(value)
-    safe <- value
-    safe[missing] <- switch(field$type,
-      numeric = 0, integer = 0L, logical = FALSE, character = "")
-    fields[[i]] <- list(
-      name = field$name, type = field$type,
-      missing = as.logical(missing), value = unname(safe)
-    )
-  }
-  ledgr_canonical_json_encode(list(
-    rule_version = ledgr_strategy_state_rule_version,
-    axis = as.character(axis), fields = fields
-  ))
-}
-
-ledgr_strategy_state_decode <- function(json, declaration) {
-  if (!is.character(json) || length(json) != 1L || is.na(json) ||
-      !nzchar(json) || identical(json, ledgr_strategy_state_cursor_marker)) {
-    ledgr_strategy_state_abort(
-      "Persisted strategy state is not a current typed checkpoint."
-    )
-  }
-  decoded <- tryCatch(
-    ledgr_json_read_nested(json),
-    error = function(cnd) {
-      rlang::abort(
-        "Persisted strategy state is not valid JSON.",
-        class = "ledgr_invalid_strategy_state",
-        parent = cnd
-      )
-    }
-  )
-  axis_is_empty_array <- is.list(decoded$axis) && length(decoded$axis) == 0L
-  if (!is.list(decoded) ||
-      !identical(as.integer(decoded$rule_version), ledgr_strategy_state_rule_version) ||
-      !(is.character(decoded$axis) || axis_is_empty_array) ||
-      !is.list(decoded$fields)) {
-    ledgr_strategy_state_abort("Persisted strategy state is not a current typed checkpoint.")
-  }
-  axis <- if (axis_is_empty_array) character() else as.character(decoded$axis)
-  if (anyNA(axis) || any(!nzchar(axis)) || anyDuplicated(axis)) {
-    ledgr_strategy_state_abort(
-      "Persisted strategy state has an invalid asset axis."
-    )
-  }
-  out <- ledgr_strategy_state_defaults(declaration, axis)
-  seen <- character()
-  for (entry in decoded$fields) {
-    if (!is.list(entry) || !is.character(entry$name) || length(entry$name) != 1L) {
-      ledgr_strategy_state_abort("Persisted strategy state contains a malformed field.")
-    }
-    field <- ledgr_strategy_state_field(declaration, entry$name)
-    if (!identical(entry$type, field$type) || entry$name %in% seen) {
-      ledgr_strategy_state_abort("Persisted strategy-state type or field identity differs from its declaration.")
-    }
-    seen <- c(seen, entry$name)
-    raw_value <- unlist(entry$value, use.names = FALSE)
-    value <- suppressWarnings(ledgr_strategy_state_cast(raw_value, field$type))
-    missing <- as.logical(unlist(entry$missing, use.names = FALSE))
-    expected_n <- if (identical(field$scope, "asset")) length(axis) else 1L
-    if (length(value) != expected_n || length(missing) != expected_n || anyNA(missing)) {
-      ledgr_strategy_state_abort("Persisted strategy-state field has the wrong shape.")
-    }
-    if (any(is.na(value) & !missing)) {
-      ledgr_strategy_state_abort(
-        "Persisted strategy-state value cannot be cast to its declared type."
-      )
-    }
-    value[missing] <- switch(field$type,
-      numeric = NA_real_, integer = NA_integer_, logical = NA, character = NA_character_)
-    if (identical(field$scope, "asset")) names(value) <- axis
-    out[[field$name]] <- value
-  }
-  if (!setequal(seen, names(out))) {
-    ledgr_strategy_state_abort("Persisted strategy state omits a declared field.")
-  }
-  list(values = out, axis = axis)
-}
-
 ledgr_strategy_state_equal <- function(x, y) identical(x, y)
-
-ledgr_strategy_state_restore <- function(con, run_id, ts_utc,
-                                         declaration, resume_axis,
-                                         default_scalars = NULL) {
-  ts_iso <- ledgr_normalize_ts_utc(ts_utc)
-  cursor <- DBI::dbGetQuery(con, paste(
-    "SELECT ts_utc FROM strategy_state",
-    "WHERE run_id = ? AND ts_utc < ? ORDER BY ts_utc DESC LIMIT 1"
-  ), params = list(run_id, ts_iso))
-  defaults <- ledgr_strategy_state_defaults(
-    declaration, resume_axis, default_scalars = default_scalars
-  )
-  if (nrow(cursor) == 0L) return(list(values = defaults, axis = resume_axis))
-  payload <- DBI::dbGetQuery(con, paste(
-    "SELECT state_json FROM strategy_state",
-    "WHERE run_id = ? AND ts_utc <= ? AND state_json <> ?",
-    "ORDER BY ts_utc DESC LIMIT 1"
-  ), params = list(run_id, cursor$ts_utc[[1L]], ledgr_strategy_state_cursor_marker))
-  if (nrow(payload) == 0L) return(list(values = defaults, axis = resume_axis))
-  ledgr_strategy_state_decode(payload$state_json[[1L]], declaration)
-}
 
 #' Return targets with a declared strategy-state patch
 #'

@@ -47,8 +47,9 @@ ledgr_run_config <- function(config,
 #' example during feature computation or under an R time limit, its status is
 #' recorded `FAILED` with the reason in `error_msg`, and the condition still
 #' reaches the caller. Calling `ledgr_run()` again with the same experiment and
-#' `run_id` resumes it. The `ledgr.interrupt` soft stop instead returns normally
-#' and leaves the run `RUNNING`.
+#' `run_id` verifies the stored identity and snapshot, clears the nonterminal
+#' attempt's derived output atomically, and restarts from pulse one. Completed
+#' `DONE` and `INCOMPLETE` runs remain idempotent.
 #' @section Identity:
 #' Run identity fields, including `config_hash`, `feature_set_hash`,
 #' `cost_model_hash`, `cost_plan_json`, `risk_chain_hash`, and

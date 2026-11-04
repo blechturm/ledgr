@@ -40,58 +40,6 @@ availability_runtime_fixture <- function(days = 5L,
   )
 }
 
-availability_last_state <- function(bt) {
-  opened <- ledgr_open_duckdb_with_retry(bt$db_path)
-  on.exit({
-    DBI::dbDisconnect(opened$con, shutdown = TRUE)
-    duckdb::duckdb_shutdown(opened$drv)
-  }, add = TRUE)
-  json <- DBI::dbGetQuery(
-    opened$con,
-    "SELECT state_json FROM strategy_state WHERE run_id = ? AND state_json <> ? ORDER BY ts_utc DESC LIMIT 1",
-    params = list(bt$run_id, ledgr:::ledgr_strategy_state_cursor_marker)
-  )$state_json
-  config <- ledgr_json_read_config(DBI::dbGetQuery(
-    opened$con, "SELECT config_json FROM runs WHERE run_id = ?",
-    params = list(bt$run_id)
-  )$config_json[[1L]])
-  declaration <- ledgr:::ledgr_strategy_state_from_identity(config$strategy_state)
-  if (length(json) == 0L) {
-    return(ledgr:::ledgr_strategy_state_defaults(
-      declaration, config$universe$instrument_ids
-    ))
-  }
-  ledgr:::ledgr_strategy_state_decode(json[[1L]], declaration)$values
-}
-
-availability_state_rows <- function(bt) {
-  opened <- ledgr_open_duckdb_with_retry(bt$db_path)
-  on.exit({
-    DBI::dbDisconnect(opened$con, shutdown = TRUE)
-    duckdb::duckdb_shutdown(opened$drv)
-  }, add = TRUE)
-  DBI::dbGetQuery(
-    opened$con,
-    "SELECT ts_utc, state_json FROM strategy_state WHERE run_id = ? ORDER BY ts_utc",
-    params = list(bt$run_id)
-  )
-}
-
-availability_state_values <- function(bt) {
-  rows <- availability_state_rows(bt)
-  config <- availability_run_config(bt)
-  declaration <- ledgr:::ledgr_strategy_state_from_identity(config$strategy_state)
-  current <- ledgr:::ledgr_strategy_state_defaults(
-    declaration, config$universe$instrument_ids
-  )
-  lapply(rows$state_json, function(json) {
-    if (!identical(json, ledgr:::ledgr_strategy_state_cursor_marker)) {
-      current <<- ledgr:::ledgr_strategy_state_decode(json, declaration)$values
-    }
-    current
-  })
-}
-
 availability_run_config <- function(bt) {
   opened <- ledgr_open_duckdb_with_retry(bt$db_path)
   on.exit({

@@ -181,11 +181,8 @@ ledgr_corporate_action_run_quantities <- function(con, snapshot_id, run_id, rows
   if (!is.null(completion) && nrow(completion) == 1L) {
     window[[1L]] <- as.numeric(as.POSIXct(completion$intended_start_utc[[1L]], tz = "UTC"))
     if (identical(as.character(completion$intended_terminal_status[[1L]]), "INCOMPLETE")) {
-      stop_ts <- DBI::dbGetQuery(
-        con,
-        "SELECT MAX(ts_utc) AS ts_utc FROM run_diagnostics WHERE run_id = ? AND outcome = 'stopped'",
-        params = list(run_id)
-      )$ts_utc
+      stop_rows <- ledgr_diagnostic_decode(con, run_id, outcome = "stopped")
+      stop_ts <- if (nrow(stop_rows) > 0L) max(stop_rows$ts_utc) else as.POSIXct(NA, tz = "UTC")
       stop_ts <- as.numeric(as.POSIXct(stop_ts, tz = "UTC"))
       if (length(stop_ts) == 1L && !is.na(stop_ts)) window[[2L]] <- stop_ts
     }

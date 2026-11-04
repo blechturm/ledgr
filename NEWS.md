@@ -1,5 +1,11 @@
 # ledgr (development version)
 
+- Nonterminal runs no longer continue from durable pulse checkpoints. A rerun
+  verifies the same run and snapshot, atomically replaces the earlier attempt's
+  derived ledger, equity, diagnostic, completion and telemetry output, and
+  starts again at pulse one. Declared strategy state remains local to the fold;
+  the `strategy_state` table and `ledgr.interrupt` soft-stop option are removed.
+  Real interrupts still propagate and leave the run `FAILED`.
 - Experiment-store schema 125 stores every accounting event as one direct
   typed row. `ledgr_results(bt, "ledger")` returns that complete ordered table:
   common event terms, cash and position effects, posting source, and typed

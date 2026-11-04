@@ -311,11 +311,12 @@ testthat::test_that("[LTB-0175] reporting is identical from memory, reopen and r
     lifetime = terminal_outcome_lifetime("BBB", 5L, "bankruptcy")
   )
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
-  prior <- getOption("ledgr.interrupt")
-  on.exit(options(ledgr.interrupt = prior), add = TRUE)
+  prior_interrupt <- getOption("ledgr.test.real_interrupt")
+  on.exit(options(ledgr.test.real_interrupt = prior_interrupt), add = TRUE)
   strategy <- function(ctx, params) {
-    if (isTRUE(params$interrupt) && identical(ctx$ts_utc, "2020-01-03T16:00:00Z")) {
-      options(ledgr.interrupt = TRUE)
+    if (isTRUE(getOption("ledgr.test.real_interrupt", FALSE)) &&
+        identical(ctx$ts_utc, "2020-01-03T16:00:00Z")) {
+      rlang::interrupt()
     }
     ctx$hold()
   }
@@ -331,7 +332,6 @@ testthat::test_that("[LTB-0175] reporting is identical from memory, reopen and r
       warning = ledgr:::ledgr_result_assumption_warning(valuation, corporate)
     )
   }
-  options(ledgr.interrupt = FALSE)
   straight <- ledgr_run(exp, params = list(interrupt = FALSE), run_id = "report-straight")
   memory <- reports(straight)
   close(straight)
@@ -339,9 +339,13 @@ testthat::test_that("[LTB-0175] reporting is identical from memory, reopen and r
   reopened <- reports(reopened_bt)
   close(reopened_bt)
 
-  first <- ledgr_run(exp, params = list(interrupt = TRUE), run_id = "report-resumed")
-  close(first)
-  options(ledgr.interrupt = FALSE)
+  options(ledgr.test.real_interrupt = TRUE)
+  first <- tryCatch(
+    ledgr_run(exp, params = list(interrupt = TRUE), run_id = "report-resumed"),
+    interrupt = identity
+  )
+  testthat::expect_s3_class(first, "interrupt")
+  options(ledgr.test.real_interrupt = FALSE)
   resumed_bt <- ledgr_run(exp, params = list(interrupt = TRUE), run_id = "report-resumed")
   resumed <- reports(resumed_bt)
   close(resumed_bt)
