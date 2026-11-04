@@ -120,25 +120,23 @@ ledgr_fill_event_payload <- function(run_id,
   cash_delta <- fill$cash_delta[i]
   position_delta <- fill$position_delta[i]
   seq <- as.integer(event_seq) + seq_len(n) - 1L
-  rows <- ledgr_accounting_rows(
-    event_id = paste0(run_id, "_", sprintf("%08d", seq)),
-    run_id = rep(run_id, n),
-    ts_utc = ts_exec,
-    event_type = rep("FILL", n),
-    instrument_id = as.character(instrument_id),
-    side = c("SELL", "BUY")[(fill$side[i] > 0L) + 1L],
-    qty = fill$qty[i],
-    price = fill$price[i],
-    fee = fee,
-    event_seq = seq,
-    cash_delta = cash_delta,
-    position_delta = position_delta
-  )
-  rows$ts_utc <- as.numeric(rows$ts_utc)
+  rows <- ledgr_accounting_empty_columns(n)
+  rows$event_id <- paste0(run_id, "_", sprintf("%08d", seq))
+  rows$run_id <- rep(run_id, n)
+  rows$ts_utc <- as.numeric(ts_exec)
+  rows$event_type <- rep("FILL", n)
+  rows$instrument_id <- as.character(instrument_id)
+  rows$side <- c("SELL", "BUY")[(fill$side[i] > 0L) + 1L]
+  rows$qty <- fill$qty[i]
+  rows$price <- fill$price[i]
+  rows$fee <- fee
+  rows$event_seq <- seq
+  rows$cash_delta <- cash_delta
+  rows$position_delta <- position_delta
   rows$mark_source_ts_utc <- as.numeric(rows$mark_source_ts_utc)
   ledgr_carrier_new(c(
     list(status = "WROTE", next_event_seq = seq[[n]] + 1L),
-    as.list(rows)
+    rows
   ), "publication", NA_integer_)
 }
 

@@ -256,8 +256,6 @@ ledgr_prepare_accounting_events <- function(columns,
   disposition_basis <- as.character(columns$disposition_basis)
   mark_source <- as.character(columns$mark_source)
   mark_source_ts_utc <- suppressWarnings(as.POSIXct(columns$mark_source_ts_utc, tz = "UTC"))
-  mark_source_raw <- ifelse(is.na(mark_source_ts_utc), NA_character_,
-    format(mark_source_ts_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"))
   mark_age_value <- suppressWarnings(as.numeric(columns$mark_age))
   mark_age_present <- mark_age_value[disposition_rows]
   invalid_mark_age <- !is.na(mark_age_present) & (
@@ -341,7 +339,7 @@ ledgr_prepare_accounting_events <- function(columns,
   invalid_disposition_evidence <- disposition & (
     is.na(disposition_choice) | is.na(disposition_basis) |
       is.na(mark_source) | !nzchar(mark_source) |
-      is.na(mark_source_raw) | !nzchar(mark_source_raw) | is.na(mark_source_ts_utc) |
+      is.na(mark_source_ts_utc) |
       is.na(mark_age) | mark_age < 0L |
       !is.finite(affected_marked_exposure) | affected_marked_exposure < 0 |
       (scheduled & !(disposition_choice %in% c("last_permissible", "last_mark"))) |

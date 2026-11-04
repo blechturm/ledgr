@@ -85,20 +85,110 @@ testthat::test_that("[LTB-0550] typed accounting carrier owns fields and block b
     fixed = TRUE
   )
 
+  root <- testthat::test_path("..", "..")
   producer_names <- c(
-    "ledgr_fill_event_payload", "ledgr_opening_position_event_rows",
-    "ledgr_corporate_action_plan", "ledgr_disposition_post"
+    ledgr_fill_event_payload = "ledgr_accounting_empty_columns",
+    ledgr_opening_position_event_rows = "ledgr_accounting_rows",
+    ledgr_corporate_action_plan = "ledgr_accounting_rows",
+    ledgr_disposition_post = "ledgr_accounting_rows"
   )
-  for (name in producer_names) {
+  for (name in names(producer_names)) {
     source <- paste(deparse(body(get(name, envir = asNamespace("ledgr")))), collapse = "\n")
-    testthat::expect_match(source, "ledgr_accounting_rows", fixed = TRUE, info = name)
+    testthat::expect_match(source, producer_names[[name]], fixed = TRUE, info = name)
     testthat::expect_no_match(source, "meta_json", fixed = TRUE, info = name)
     testthat::expect_no_match(source, "canonical_json", fixed = TRUE, info = name)
     testthat::expect_no_match(source, "ledgr_json_read_nested", fixed = TRUE, info = name)
   }
+
+  boundary_calls <- list(
+    ledgr_write_opening_position_events = c(
+      "ledgr_opening_position_event_rows", "ledgr_validate_accounting_append",
+      "ledgr_store_append"
+    ),
+    ledgr_write_fill_events = c(
+      "ledgr_fill_event_payload", "ledgr_validate_accounting_append",
+      "ledgr_write_fill_publication_row"
+    ),
+    ledgr_write_fill_publication_row = "INSERT INTO ledger_events",
+    ledgr_output_sink_duckdb = c(
+      "ledgr_store_append(con, \"ledger_events\"", "ledgr_write_fill_publication_row"
+    ),
+    ledgr_output_handler = c(
+      "append_compiled_spot_batch", "ledgr_accounting_rows", "validate_append"
+    ),
+    ledgr_run_resume = "ledgr_write_opening_position_events"
+  )
+  for (name in names(boundary_calls)) {
+    source <- paste(deparse(body(get(name, envir = asNamespace("ledgr")))), collapse = "\n")
+    for (needle in boundary_calls[[name]]) {
+      testthat::expect_match(source, needle, fixed = TRUE, info = name)
+    }
+  }
+
+  r_files <- sort(list.files(file.path(root, "R"), "[.]R$", full.names = TRUE))
+  direct_patterns <- c(
+    append = "ledgr_store_append(con, \"ledger_events\"",
+    insert = "INSERT INTO ledger_events"
+  )
+  direct_sites <- do.call(rbind, lapply(r_files, function(path) {
+    source <- paste(readLines(path, warn = FALSE), collapse = "\n")
+    counts <- vapply(direct_patterns, function(pattern) {
+      hits <- gregexpr(pattern, source, fixed = TRUE)[[1L]]
+      if (identical(hits[[1L]], -1L)) 0L else length(hits)
+    }, integer(1))
+    if (!any(counts > 0L)) return(NULL)
+    data.frame(
+      path = paste0("R/", basename(path)),
+      pattern = names(counts)[counts > 0L],
+      count = unname(counts[counts > 0L]),
+      stringsAsFactors = FALSE
+    )
+  }))
+  rownames(direct_sites) <- NULL
+  expected_sites <- data.frame(
+    path = c("R/backtest-runner.R", "R/ledger-writer.R", "R/output-handler.R"),
+    pattern = c("append", "insert", "append"),
+    count = c(1L, 1L, 1L),
+    stringsAsFactors = FALSE
+  )
+  testthat::expect_identical(direct_sites, expected_sites)
   testthat::expect_false(exists(
     "ledgr_lot_parse_meta", envir = asNamespace("ledgr"), inherits = FALSE
   ))
+
+  contracts <- readLines(
+    file.path(root, "inst", "design", "contracts.md"),
+    warn = FALSE
+  )
+  publication <- contracts[grepl("^\\| publication \\|", contracts)]
+  testthat::expect_length(publication, 1L)
+  testthat::expect_no_match(publication, "meta_json", fixed = TRUE)
+  testthat::expect_no_match(publication, "one metadata list", fixed = TRUE)
+  staging_start <- grep("^### Event Staging And Parallel Sweeps$", contracts)
+  staging_end <- staging_start + grep(
+    "^### ", contracts[(staging_start + 1L):length(contracts)]
+  )[[1L]]
+  staging <- paste(contracts[staging_start:(staging_end - 1L)], collapse = "\n")
+  testthat::expect_no_match(staging, "meta_json", fixed = TRUE)
+  testthat::expect_no_match(staging, "per-event `meta` list", fixed = TRUE)
+  testthat::expect_no_match(
+    staging,
+    "writes its event-order realized P&L",
+    fixed = TRUE
+  )
+  manual <- readLines(
+    file.path(root, "inst", "design", "manual", "execution_fold_core.qmd"),
+    warn = FALSE
+  )
+  emission_start <- grep("^Event emission dispatch is handler-based\\.", manual)
+  emission_end <- grep("^### Availability Path$", manual)
+  emission <- paste(manual[emission_start:(emission_end - 1L)], collapse = "\n")
+  testthat::expect_no_match(emission, "meta_json", fixed = TRUE)
+  corporate_source <- paste(readLines(
+    file.path(root, "R", "corporate-action-results.R"),
+    warn = FALSE
+  ), collapse = "\n")
+  testthat::expect_no_match(corporate_source, "parsed `meta`", fixed = TRUE)
 
   opening <- typed_accounting_opening()
   fill <- typed_accounting_row(

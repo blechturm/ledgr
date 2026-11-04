@@ -146,13 +146,9 @@ ledgr_write_fill_events <- function(con, run_id, fill, i, instrument_id, event_s
     instrument_id = instrument_id,
     event_seq = as.integer(event_seq_start)
   )
-  rows <- as.data.frame(
-    publication[ledgr_accounting_event_columns()],
-    stringsAsFactors = FALSE
+  ledgr_validate_accounting_append(
+    publication[ledgr_accounting_event_columns()]
   )
-  rows$ts_utc <- as.POSIXct(rows$ts_utc, tz = "UTC")
-  rows$mark_source_ts_utc <- as.POSIXct(rows$mark_source_ts_utc, tz = "UTC")
-  ledgr_validate_accounting_append(rows)
   ledgr_write_fill_publication_row(con, publication, 1L, use_transaction)
 }
 

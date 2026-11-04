@@ -154,8 +154,8 @@ ledgr_corporate_action_summary_events <- function(con,
 }
 
 # Each selected fact's entitled parent quantity as the run's fold bound it,
-# recounted from the run's ledger `events` (with their parsed `meta`); 0 for
-# a fact entitled outside the pulses the run processed.
+# recounted from the run's typed ledger events; 0 for a fact entitled outside
+# the pulses the run processed.
 ledgr_corporate_action_run_quantities <- function(con, snapshot_id, run_id, rows, selected, replay) {
   instrument_ids <- DBI::dbGetQuery(
     con,

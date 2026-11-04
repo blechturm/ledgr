@@ -112,9 +112,8 @@ ledgr_terminal_mark_meta <- function(resolved, valuation, ts) {
   write_off <- resolved$choice == "write_off"
   source <- as.character(valuation$source[ids])
   source[write_off] <- "write_off"
-  iso <- function(x) format(as.POSIXct(x, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-  source_ts <- iso(valuation$source_ts[ids])
-  source_ts[write_off | is.na(source_ts)] <- iso(ts)
+  source_ts <- as.POSIXct(valuation$source_ts[ids], tz = "UTC")
+  source_ts[write_off | is.na(source_ts)] <- as.POSIXct(ts, tz = "UTC")
   age <- as.integer(valuation$age[ids])
   age[write_off | is.na(age)] <- 0L
   list(source = source, source_ts = source_ts, age = age)
@@ -205,7 +204,7 @@ ledgr_disposition_post <- function(ids,
     disposition_choice = as.character(disposition_choice),
     disposition_basis = as.character(disposition_basis),
     mark_source = as.character(mark_source),
-    mark_source_ts_utc = as.POSIXct(mark_source_ts_utc, tz = "UTC"),
+    mark_source_ts_utc = mark_source_ts_utc,
     mark_age = as.integer(mark_age),
     haircut_fraction = as.numeric(haircut_fraction),
     position_before = before,

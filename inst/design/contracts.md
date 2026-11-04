@@ -283,7 +283,7 @@ changes no public API, stored format or identity.
 | rejection | `k`, `pos`, `emit`, `primary`, `reason_offset`, `reason_count`, `reason_code`, `resolved_price`, `exec_ts`, `position` | `emit` 1 (early) before 2 (affordability), each in decision order; at least one reason, `primary` the first; resolved price NA exactly for early rows; epoch NA exactly for `final_pulse_no_execution`; finite position | P3; P5 |
 | lot input | `operation` (1 fill, 3 opening, 4 disposition), `pos`, `side`, `qty`, `price`, `fee`, `position_before`, `realized_model_pnl` | distinct positions in one call; an opening has side 0, a signed non-zero quantity and a finite basis of either sign; a fill has side +1 or -1, positive quantity and price and a finite non-negative fee; a disposition has a non-negative price, zero fee and an optional replay witness | E, P1, P4 and the replay preparer; one kernel call |
 | applied row | `position_before`, `position_after`, `close_qty`, `open_qty`, `realized_close`, `realized_delta`, `event_realized`, `event_cost_basis` | finite; actual positions from lots; an opening closes and opens nothing and takes no Kahan step; the close/open split is checked against the lots before and after | the lot kernel; the calling boundary |
-| publication | `status`, `next_event_seq`, `event_id`, `run_id`, `ts_utc`, `event_type`, `instrument_id`, `side`, `qty`, `price`, `fee`, `meta_json`, `event_seq`, `cash_delta`, `position_delta`, `meta` | `WROTE` exactly when the block has rows, else `NO_OP`; contiguous sequences; IDs formatted once per block from run and sequence; existing tokens; `position_delta` the signed quantity; one metadata list per event; `meta_json` and `meta` keep their routed bytes | `ledgr_fill_event_payload()` at P4; the handler retains it |
+| publication | `status`, `next_event_seq` and the ordered typed `ledger_events` columns: common identity/execution, `cash_delta`, `position_delta`, `source`, `source_fact_id`, corporate-cash evidence and disposition evidence | `WROTE` exactly when the block has rows, else `NO_OP`; contiguous sequences; IDs formatted once per block from run and sequence; existing tokens; `position_delta` the signed quantity; non-applicable evidence is typed missing; no accounting JSON or metadata list | `ledgr_fill_event_payload()` at P4; the handler retains it |
 | leg | `event_seq`, `instrument_id`, `side`, `action`, `ts_utc`, `qty`, `price`, `fee`, `realized_pnl` | event order with CLOSE before OPEN, once each; the canonical fee split (`ledgr_fill_leg_fees()`); an OPEN leg realizes 0 | `ledgr_fill_leg_block()` at P4; the memory sink retains it |
 | diagnostics (staging) | `n`, `capacity` and the writer's per-row columns: `instrument_id`, `stage`, `outcome`, `reason_code`, `reasons`, `target`, `quantity`, `price`, `mark_source`, `mark_age`, `decision_ts_utc`, `execution_ts_utc`, `event_seq`, `target_before_risk`, `target_after_risk`, `position_before`, `position_after`, `feature_identity_json`, `detail_json` | `n` at most `capacity`; rules apply to the used prefix only; the persisted defaults and missingness (stage, outcome, mark source and feature identity may be NA; instrument, reason code, reasons, decision time and detail may not); `run_id`, `diagnostic_seq` and `ts_utc` are added at the drain | P1, P2, P3, the scheduled skip, P5 and E's stop installation; one pulse |
 | equity | `ts`, `cash`, `positions_value`, `realized_pnl`, `cost_basis`, `n` | rows preallocated to the pulse count; only the first `n` are valid, in strictly increasing time; values as valued | P1; E hands a frozen prefix |
@@ -468,10 +468,10 @@ changes no public API, stored format or identity.
   output handler holds that pending block until `flush_pulse_events()` writes
   it by index into the event buffer and publishes the complete pulse. No code
   may read the pending block before that flush except the handler-local
-  `record_accounting_fact()` for that same block, which writes its
-  event-order realized P&L and cost basis beside its rows and stages its legs
-  (`ledgr_fill_leg_block()`). Publication stages no per-fill or per-leg list;
-  the routed per-event `meta` list and `meta_json` keep their bytes. A
+  `record_accounting_fact()` for that same block, which stages only its
+  event-order fill legs (`ledgr_fill_leg_block()`); every durable accounting
+  effect and evidence value already lives in the typed publication block.
+  Publication stages no per-fill, per-leg or accounting-metadata list. A
   handler with no pending block treats the flush as a no-op. Live database
   writes keep one insert per fill through `ledgr_write_fill_events()`,
   compiled-accounting publication is unchanged, and P1's non-fill builders

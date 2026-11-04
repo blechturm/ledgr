@@ -348,8 +348,7 @@ a0_with_patches <- function(patches, expr) {
 
 # Memory-sink observation boundary: the only part of the harness the WS1 cut
 # may adapt. Per sweep candidate (run_id = candidate label) it must deliver
-# the sink's native output: events() with the typed attributes
-# ledgr_event_{cash_delta,position_delta,realized,cost_basis,meta}, the
+# the sink's native output: events() with the complete typed ledger columns,
 # retained diagnostics() (NULL when none), completion() (NULL in dense mode)
 # and the inline_summary() equity and fills. Since WS1 it wraps the one
 # output handler and observes only handlers built on a memory sink. Without an
@@ -398,13 +397,20 @@ a0_memory_tables <- function(observed, sw) {
     o <- observed[[rid]]
     e <- o$events
     n <- nrow(e)
-    typed <- function(name, empty) { v <- attr(e, name); if (is.null(v)) rep(empty, n) else v }
+    required <- ledgr:::ledgr_accounting_event_columns()
+    missing <- setdiff(required, names(e))
+    if (length(missing) > 0L) {
+      stop(sprintf(
+        "a0: memory events omit typed ledger columns: %s",
+        paste(missing, collapse = ", ")
+      ), call. = FALSE)
+    }
     df <- as.data.frame(e)
-    df$cash_delta <- typed("ledgr_event_cash_delta", NA_real_)
-    df$position_delta <- typed("ledgr_event_position_delta", NA_real_)
-    df$event_realized <- typed("ledgr_event_realized", NA_real_)
-    df$event_cost_basis <- typed("ledgr_event_cost_basis", NA_real_)
-    df$meta <- vapply(typed("ledgr_event_meta", list(NULL)), a0_flat, character(1))
+    if (n > 0L &&
+        (anyNA(df$cash_delta) || anyNA(df$position_delta))) {
+      stop("a0: typed memory events contain missing accounting effects", call. = FALSE)
+    }
+    df <- df[required]
     ev[[rid]] <- df
     if (!is.null(o$diagnostics)) dg[[rid]] <- as.data.frame(o$diagnostics)
     if (!is.null(o$completion)) cp[[rid]] <- as.data.frame(o$completion)

@@ -366,6 +366,29 @@ testthat::test_that("[LTB-0553] run readers retain late heterogeneous dispositio
   )
   withr::defer(close(bt))
 
+  opened <- ledgr:::ledgr_snapshot_connection(snapshot)
+  original_disposition <- DBI::dbGetQuery(
+    opened$con,
+    paste(
+      "SELECT ts_utc, mark_source_ts_utc FROM ledger_events",
+      "WHERE run_id = ? AND event_type = 'DISPOSITION'"
+    ),
+    params = list(bt$run_id)
+  )
+  testthat::expect_length(original_disposition$ts_utc, 1L)
+  testthat::expect_identical(
+    as.numeric(original_disposition$mark_source_ts_utc),
+    as.numeric(original_disposition$ts_utc)
+  )
+  testthat::expect_identical(
+    format(
+      original_disposition$mark_source_ts_utc,
+      "%Y-%m-%dT%H:%M:%SZ",
+      tz = "UTC"
+    ),
+    "2020-01-02T16:00:00Z"
+  )
+
   # Current publication shape.
   testthat::expect_no_error(ledgr_run_info(snapshot, bt$run_id))
   testthat::expect_no_error(ledgr_corporate_action_summary(bt))
@@ -374,7 +397,6 @@ testthat::test_that("[LTB-0553] run readers retain late heterogeneous dispositio
   # Put the first disposition after yyjsonr's former 100-row schema probe.
   # The added rows are valid, zero-effect accounting evidence, so all three
   # public readers must still retain the late disposition fields.
-  opened <- ledgr:::ledgr_snapshot_connection(snapshot)
   disposition <- DBI::dbGetQuery(
     opened$con,
     paste(

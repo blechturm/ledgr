@@ -574,9 +574,7 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
     )
     if (isTRUE(stage) && isTRUE(use_transaction) && is.function(sink$write_fill_live)) {
       if (identical(block$status, "WROTE")) {
-        rows <- as.data.frame(block[ledgr_output_event_columns], stringsAsFactors = FALSE)
-        rows$ts_utc <- as.POSIXct(rows$ts_utc, tz = "UTC")
-        validate_append(rows, commit_boundary = FALSE)
+        validate_append(block[ledgr_output_event_columns], commit_boundary = FALSE)
       }
       result <- sink$write_fill_live(block)
       if (identical(block$status, "WROTE")) {
@@ -589,9 +587,10 @@ ledgr_output_handler <- function(sink, .event_initial_capacity = 1024L) {
       return(result)
     }
     if (identical(block$status, "WROTE")) {
-      rows <- as.data.frame(block[ledgr_output_event_columns], stringsAsFactors = FALSE)
-      rows$ts_utc <- as.POSIXct(rows$ts_utc, tz = "UTC")
-      validate_append(rows, commit_boundary = isTRUE(stage))
+      validate_append(
+        block[ledgr_output_event_columns],
+        commit_boundary = isTRUE(stage)
+      )
     }
     if (isTRUE(stage)) stage_fill_block(block)
     block

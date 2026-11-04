@@ -342,11 +342,11 @@ fail through `ledgr_unsupported_accounting_model_error()` at
 `R/compiled-spot-fifo.R:47`.
 
 Event emission dispatch is handler-based. Durable runs implement
-`write_fill_events()` at `R/backtest-runner.R:478` and persist rows through the
-pending buffer flush at `R/backtest-runner.R:511`. Sweeps implement
-`write_fill_events()` at `R/sweep.R:1909`, keep typed event metadata in memory,
-and only serialize `meta_json` when callers materialize rows at
-`R/sweep.R:1602`.
+`write_fill_events()` on the shared output handler and persist complete typed
+blocks through the pending-buffer flush. Sweeps use the same handler with a
+memory sink and retain the same typed event columns. Neither path serializes
+an accounting metadata envelope; public ledger materialization exposes the
+stored typed columns directly.
 
 ### Availability Path
 
