@@ -671,6 +671,13 @@ against the current core and switched in one cut.
   builds that stage recorder under `dev/lean_core/`, observing `R/` from
   outside without changing it; later families reuse it. Public end-to-end
   parity starts with the P3 family and grows from there.
+- **Extension architecture first (maintainer, 2026-11-04).** No lean-core
+  code is written until the
+  [core extension architecture RFC](../rfc/README.md#core-extension-architecture)
+  is accepted; it decides how the core is later extended (OMS and order
+  types, short selling, asset classes, accounting events). If it changes a
+  structure the skeleton RFC binds, the skeleton synthesis is amended
+  before coding.
 - **One family per cut (maintainer, 2026-11-04).** Each family after the
   first checkpoint is its own cut (measure, cut, Codex cut review,
   implement), so each closes with its own budgets and review before the
