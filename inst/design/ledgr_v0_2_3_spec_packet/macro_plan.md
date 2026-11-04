@@ -663,6 +663,18 @@ against the current core and switched in one cut.
   state, sizing and risk; P3 restrictions, costs and affordability with
   P4/P5 publication; schedules and RNG; carry windows; sweep, workers and
   promotion.
+- **Stage parity before end-to-end (maintainer, 2026-11-04).** The lean
+  core cannot run a strategy end to end until P1 to P3 exist, so earlier
+  families are proven at their stage boundaries: each stage's inputs and
+  outputs are recorded once from the pinned build and the lean stage must
+  reproduce the outputs exactly from the same inputs. The first checkpoint
+  builds that stage recorder under `dev/lean_core/`, observing `R/` from
+  outside without changing it; later families reuse it. Public end-to-end
+  parity starts with the P3 family and grows from there.
+- **One family per cut (maintainer, 2026-11-04).** Each family after the
+  first checkpoint is its own cut (measure, cut, Codex cut review,
+  implement), so each closes with its own budgets and review before the
+  next starts.
 - **Every family close (A2, A4).** A microsecond budget set from the pinned
   baseline and a line budget for the code it adds; per-function profile
   samples and the line count are reported against both. A subtraction
