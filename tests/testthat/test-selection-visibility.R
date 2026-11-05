@@ -348,11 +348,10 @@ testthat::test_that("[LTB-0190] frozen flags use a constant number of grouped st
   testthat::expect_identical(query_count, one_run_queries)
   # The exact logical decoder reads grouped coverage, summary and trace
   # evidence, anchors compact decision order to the stored run universe, then
-  # performs one grouped equity read. The tenth query reads DuckDB's current
-  # memory limit so the exact order-validation query can restore the caller's
-  # setting after applying its bounded-memory cap. The important scale rule is
-  # that adding or repeating run IDs does not add store reads.
-  testthat::expect_identical(query_count, 10L)
+  # performs one grouped equity read. The rejected bounded-memory cap and its
+  # memory-limit read are absent. The important scale rule is that adding or
+  # repeating run IDs does not add store reads.
+  testthat::expect_identical(query_count, 9L)
   testthat::expect_identical(flags$run_id, ids)
   testthat::expect_identical(
     flags$valuation_state,
