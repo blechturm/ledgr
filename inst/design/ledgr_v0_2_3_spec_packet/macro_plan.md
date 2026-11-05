@@ -132,7 +132,12 @@ a cut is accepted, `tickets.yml` alone sequences it. Inventory IDs (C1, X3,
     (maintainer, 2026-10-31, after workstream 12 timed twice). After the
     surviving core is measured, WS14 provides the one bounded response to a
     material miss; milestone deferral is not permission to ship an
-    uninvestigated performance result.
+    uninvestigated performance result. **WS16 is excepted (maintainer,
+    2026-11-05):** speed and maintainability are the point of the lean
+    core, so each lean-core family closes against its own microsecond and
+    line budgets, set from the pinned baseline (lean-fold-core
+    [amendment A2](../rfc/rfc_lean_fold_core_v0_2_3_synthesis.md#amendment-maintainer-2026-11-03-acceptance-conditions)).
+    A budget miss is a finding that is fixed or explicitly accepted.
 17. **Hot-path bans are enforced by a test, not by prose.** Agents copy the
     nearest existing code more readily than they follow written rules, so
     one surviving instance of a banned pattern becomes the template for the
