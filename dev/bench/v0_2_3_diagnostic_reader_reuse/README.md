@@ -13,6 +13,13 @@ print, summary, point/history explanation, diagnostics and metrics. Each
 surface runs in a fresh R process. `check.R` checks shape and completeness;
 clocks and memory are evidence, not gates.
 
+The pre-correction record reproduces the issue. The candidate calls the order
+validator once for print, diagnostics and metrics and twice for summary and
+both explanation surfaces. Validation alone costs about 1.1 seconds per full
+call. Candidate peak working set is 2.76--3.16 GiB versus 0.32--2.40 GiB for
+the base, while the much larger private-byte figures show DuckDB reservation
+and are not resident-memory measurements.
+
 Run from the repository root against unpacked source trees:
 
 ```powershell

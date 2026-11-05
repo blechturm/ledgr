@@ -1,0 +1,13 @@
+"label","source_commit","surface","elapsed_sec","validator_calls","validator_elapsed_sec","result_bytes","peak_wset_mib","peak_private_mib"
+"base","0d6c0b11","diagnostics",2.36,0,0,591619136,2400.94921875,2532.11328125
+"base","0d6c0b11","history_explain",4.45,0,0,1070472,1023.05859375,1063.28125
+"base","0d6c0b11","metrics",0.13,0,0,9576,320.37109375,345.078125
+"base","0d6c0b11","point_explain",4.39,0,0,5040,1020.09375,1061.20703125
+"base","0d6c0b11","print",4.45,0,0,2152,1018.95703125,1059.9375
+"base","0d6c0b11","summary",4.5,0,0,54224,1019.30859375,1059.59765625
+"candidate","93e4b347","diagnostics",3.72,1,1.11,591619152,2757.40625,7766.78515625
+"candidate","93e4b347","history_explain",7.05,2,2.24,1070488,3163.890625,8196.5234375
+"candidate","93e4b347","metrics",1.53,1,1.12,9576,2762.08984375,7785.6171875
+"candidate","93e4b347","point_explain",5.94,2,1.15,5056,3161.3203125,8169.75
+"candidate","93e4b347","print",5.89,1,1.16,2216,3060.88671875,8074.2890625
+"candidate","93e4b347","summary",7.33,2,2.26,54272,3076.99609375,8125.90625

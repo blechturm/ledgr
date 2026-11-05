@@ -1,6 +1,6 @@
 args <- commandArgs(trailingOnly = TRUE)
 record_dir <- if (length(args) > 0L) args[[1L]] else file.path("dev", "bench", "v0_2_3_diagnostic_reader_reuse", "records", "pre_correction")
-build <- do.call(rbind, lapply(file.path(record_dir, c("base-build.csv", "candidate-build.csv")), utils::read.csv, stringsAsFactors = FALSE))
+build <- utils::read.csv(file.path(record_dir, "build-summary.csv"), stringsAsFactors = FALSE)
 readers <- utils::read.csv(file.path(record_dir, "reader-summary.csv"), stringsAsFactors = FALSE)
 stopifnot(nrow(build) == 2L, all(build$decision_shape_rows >= 3600000),
           identical(sort(unique(readers$label)), c("base", "candidate")), nrow(readers) == 12L,
