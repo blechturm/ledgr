@@ -241,8 +241,8 @@ logical decode itself refuses with the stable class after a warm proof under a
 connection-local 16 MB limit. It changes no memory setting in product code.
 
 The maintainer accepts this cold-memory residual as LDG-3209's explicit memory
-exception against v0.2.2 base `0d6c0b11`. The user-visible limit is one cold
-full-trace validation and decode per opened run handle: about 2.4 to 4.9 GiB
+exception against cut-entry base `0d6c0b11` (LDG-3200). The user-visible
+limit is one cold full-trace validation and decode per opened run handle: about 2.4 to 4.9 GiB
 peak on the largest private workload; the public dense cold record moves from
 320 to 1,445 MiB and from 0.13 to 1.52 seconds. LDG-3210 is reserved in the
 macro plan's later WS9b cut to reduce that cold cost without weakening exact

@@ -566,8 +566,9 @@ freezes behavior (synthesis Section 6).
   Reduce cold full-trace diagnostic validation/decode memory and time without
   weakening exact corruption refusal or adding a second reader. The accepted
   WS25 exception is the measured input: private largest-workload peak rises
-  from about 2.4 to 4.9 GiB against v0.2.2 base `0d6c0b11`; the public dense
-  cold read rises from 320 to 1,445 MiB and from 0.13 to 1.52 seconds.
+  from about 2.4 to 4.9 GiB against cut-entry base `0d6c0b11` (LDG-3200);
+  the public dense cold read rises from 320 to 1,445 MiB and from 0.13 to
+  1.52 seconds.
   `ledgr_run()` pays store-wide validation three times: registration and
   restart over an empty trace, then publication over the full trace; the first
   public read on the opened handle validates once more. The H1 private-commit
@@ -1023,8 +1024,9 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
   adds WS15 as a third reviewed workstream of that cut, sharing its store
   version; the cut writer may move WS15 into an adjacent prerequisite cut.
   Low-stakes choices are batched for the maintainer at acceptance.
-- Accepted Cut 11 is the named WS7 -> WS8 -> WS15 packet: workstreams 23-25
-  and nine operative tickets across LDG-3200-LDG-3209.
+- Completed Cut 11 is the named WS7 -> WS8 -> WS15 packet: workstreams 23-25
+  and nine operative tickets across LDG-3200-LDG-3209, closed by the
+  maintainer on 2026-11-05.
 - WS4a and WS4b are separately reviewed workstreams. Their focused design
   decides whether they use adjacent cuts or one ordered packet; either way,
   WS4b cannot begin or inherit evidence until WS4a is accepted.
