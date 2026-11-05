@@ -202,6 +202,37 @@ unclassified row; its sole remaining unowned row is the pre-existing
 `ledgr_strategy_schedule_sessions` entry. Separate fixed-context-half and
 run-axis-half mutations fail LTB-0558, and the public A0 remains byte-identical.
 
+## Diagnostic reader correction
+
+The private aggregate pass at product `1e6ae7b5` exposed repeated exact
+store-wide validation on public result reads. The public correction chain
+through `659c40de` keeps the full corruption check and reuses its proof only
+inside one opened durable handle whose run store, attached snapshot store,
+coverage and summary evidence are unchanged. Direct internal reads, in-memory
+stores and explicit transactions remain cold. The reproducible public record
+and unresolved cold-memory evidence are under
+`dev/bench/v0_2_3_diagnostic_reader_reuse/`.
+
+The final independent review returned `PASS_AFTER_PATCHES`. Exact correction
+`a18c7957` closes its three findings:
+
+- every DuckDB query on the logical validation/decode path uses one resource
+  boundary, and a real 90,000-row run under a 16 MB connection limit raises
+  `ledgr_diagnostic_resource_exhausted` without product-side memory mutation;
+- a same-handle attached-snapshot mutation invalidates the proof, while a
+  transaction-local repair of persisted corruption cannot publish a proof
+  that survives rollback;
+- the README gives fresh-directory commands for both committed records and
+  binds the exact eight-character `SOURCE_COMMIT`/`LEDGR_SOURCE_COMMIT`
+  identity convention.
+
+Failure-sensitive mutations confirm the three boundaries: one raw final
+decode query fails LTB-0565, removing the publish-side transaction guard fails
+LTB-0561, and dropping attached stores from the token fails LTB-0564. The
+focused decoder, split-store and documentation-contract suites pass. The
+4,419/4,875 MiB cold peaks are about 4.32/4.76 GiB; this correction does not
+claim to reduce them.
+
 ## Gates still open under LDG-3209
 
 The public harness and proof families are ready, but the following evidence was
