@@ -46,13 +46,19 @@ invisible(summary(bt))
 invisible(ledgr_run_explain(
   bt,
   meta$instrument_id[[1L]],
-  as.POSIXct(meta$ts_utc[[1L]], tz = "UTC")
+  as.POSIXct(
+    meta$ts_utc[[1L]],
+    format = "%Y-%m-%dT%H:%M:%OSZ",
+    tz = "UTC"
+  )
 ))
 invisible(ledgr_run_explain(bt, meta$instrument_id[[1L]]))
 invisible(ledgr_compute_metrics(bt))
 diagnostics <- ledgr_results(bt, "diagnostics")
 elapsed <- proc.time()[["elapsed"]] - started
 memory <- ps::ps_memory_info(ps::ps_handle())
+digest_diagnostics <- diagnostics
+digest_diagnostics$run_id <- "<run>"
 source_commit_file <- file.path(source_root, "SOURCE_COMMIT")
 source_commit_override <- Sys.getenv("LEDGR_SOURCE_COMMIT", unset = "")
 source_commit <- if (nzchar(source_commit_override)) {
@@ -76,7 +82,7 @@ record <- data.frame(
   validator_elapsed_sec = validator_elapsed,
   result_bytes = as.numeric(object.size(diagnostics)),
   result_sha256 = digest::digest(
-    diagnostics, algo = "sha256", serialize = TRUE
+    digest_diagnostics, algo = "sha256", serialize = TRUE
   ),
   peak_wset_mib = memory[["peak_wset"]] / 2^20,
   peak_private_mib = memory[["peak_pagefile"]] / 2^20,

@@ -29,7 +29,15 @@ value <- switch(
   surface,
   print = capture.output(print(bt)),
   summary = summary(bt),
-  point_explain = ledgr_run_explain(bt, meta$instrument_id[[1L]], as.POSIXct(meta$ts_utc[[1L]], tz = "UTC")),
+  point_explain = ledgr_run_explain(
+    bt,
+    meta$instrument_id[[1L]],
+    as.POSIXct(
+      meta$ts_utc[[1L]],
+      format = "%Y-%m-%dT%H:%M:%OSZ",
+      tz = "UTC"
+    )
+  ),
   history_explain = ledgr_run_explain(bt, meta$instrument_id[[1L]]),
   diagnostics = ledgr_results(bt, "diagnostics"),
   metrics = ledgr_compute_metrics(bt),
@@ -37,11 +45,17 @@ value <- switch(
 )
 elapsed <- proc.time()[["elapsed"]] - started
 memory <- ps::ps_memory_info(ps::ps_handle())
+digest_value <- value
+if (is.data.frame(digest_value) && "run_id" %in% names(digest_value)) {
+  digest_value$run_id <- "<run>"
+}
 record <- data.frame(
   label = meta$label[[1L]], source_commit = meta$source_commit[[1L]], surface = surface,
   elapsed_sec = elapsed, validator_calls = validator_calls, validator_elapsed_sec = validator_elapsed,
   result_bytes = as.numeric(object.size(value)),
-  result_sha256 = digest::digest(value, algo = "sha256", serialize = TRUE),
+  result_sha256 = digest::digest(
+    digest_value, algo = "sha256", serialize = TRUE
+  ),
   peak_wset_mib = memory[["peak_wset"]] / 2^20,
   peak_private_mib = memory[["peak_pagefile"]] / 2^20, stringsAsFactors = FALSE
 )

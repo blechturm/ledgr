@@ -100,6 +100,20 @@ implicit_n <- DBI::dbGetQuery(
   ),
   params = list(run_id)
 )$n[[1L]]
+first_decision <- DBI::dbGetQuery(
+  con,
+  paste(
+    "SELECT instrument_id, ts_utc FROM run_diagnostic_implicit",
+    "WHERE run_id = ? ORDER BY decision_seq LIMIT 1"
+  ),
+  params = list(run_id)
+)
+instrument_id <- as.character(first_decision$instrument_id[[1L]])
+ts_utc <- format(
+  as.POSIXct(first_decision$ts_utc[[1L]], tz = "UTC"),
+  "%Y-%m-%dT%H:%M:%OS6Z",
+  tz = "UTC"
+)
 physical_n <- DBI::dbGetQuery(
   con,
   "SELECT COUNT(*) AS n FROM run_diagnostics WHERE run_id = ?",

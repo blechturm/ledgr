@@ -40,7 +40,11 @@ invisible(
   ledgr:::ledgr_diagnostic_decision_order_bad(opened$con, bt$run_id)
 )
 if (is.null(plan) || nrow(plan) == 0L) stop("Decision-order EXPLAIN was not captured.")
-plan_rows <- apply(plan, 1L, paste, collapse = "\t")
+plan_rows <- unlist(strsplit(
+  paste(apply(plan, 1L, paste, collapse = "\t"), collapse = "\n"),
+  "\n",
+  fixed = TRUE
+))
 plan_rows <- gsub("[^ -~\\t]", "", plan_rows, perl = TRUE)
 lines <- c(
   paste0("source_commit=", meta$source_commit[[1L]]),
