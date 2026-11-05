@@ -1,0 +1,3 @@
+"label","source_commit","surface","elapsed_sec","validator_calls","validator_elapsed_sec","result_bytes","peak_wset_mib","peak_private_mib"
+"availability","93e4b347","diagnostics","9.44","1","6.84","591619136","4433.67578125","9110.22265625"
+"availability","d24b081e","diagnostics","5.23","1","2.85","591619136","2631.70703125","2769.95703125"

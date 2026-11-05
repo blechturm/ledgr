@@ -35,3 +35,35 @@ Run from the repository root against unpacked source trees:
 The base arm is commit `0d6c0b11`; the pre-correction candidate is clean head
 `93e4b347`. The committed record contains only aggregate counts, clocks,
 memory peaks and source identities. Stores stay outside version control.
+
+## Correction result
+
+Commit `d24b081e` keeps the exact logical-trace integrity check but reuses one
+successful validation within an opened run handle while its persisted summary,
+database file and write-ahead-log state are unchanged. A public six-surface
+sequence (print, summary, point and history explanation, metrics and diagnostic
+rows) therefore calls the store-wide validator once, not nine times. Registered
+corruption witnesses change the persisted state token and make the next public
+read validate and refuse.
+
+The dense 500 by 7,200 post record is in `records/post_correction`. Each
+fresh-process surface still performs one cold validation. Summary and both
+explanation surfaces fall from two validations to one; the same-handle sequence
+records one validation across all six surfaces. Peak working set for the full
+diagnostic materialization falls from 2,757 MiB to 2,587 MiB. The remaining
+diagnostic result itself is 592 MB in R.
+
+The one-call plan was also checked on a public availability-active fixture with
+the same 3.6-million-row logical shape and 600 complete membership sets. Against
+the exact pre-correction source (`93e4b347`), the exact corrected source reduces
+validator time from 6.84 to 2.85 seconds and peak working set from 4,434 to 2,632
+MiB. The cause of the former 4.9 GiB class peak was the exact membership/order
+validation query plus DuckDB's default memory reservation, not the logical
+decoder. The correction uses vectorized ASOF joins and caps only that query at
+1 GiB when the caller's configured limit is higher, restoring the previous
+limit on exit. A lower caller limit is never raised.
+
+Clocks are diagnostic rather than gates. The registered gates are the exact
+result/corruption tests, the one-validation call-count witness, and source-shape
+checks that reject the former correlated per-row membership subqueries and
+R-side materialization of the full logical trace.

@@ -1,0 +1,7 @@
+"label","source_commit","surface","elapsed_sec","validator_calls","validator_elapsed_sec","result_bytes","peak_wset_mib","peak_private_mib"
+"candidate","d24b081e","diagnostics","3.58","1","1.13","591619152","2586.9765625","2709.10546875"
+"candidate","d24b081e","history_explain","5.85","1","1.13","1070488","1724.43359375","1799.828125"
+"candidate","d24b081e","metrics","1.52","1","1.14","9576","1445.140625","1509.2421875"
+"candidate","d24b081e","point_explain","5.8","1","1.11","5056","1681.6328125","1806.9765625"
+"candidate","d24b081e","print","5.91","1","1.09","2216","1780.40625","1835.375"
+"candidate","d24b081e","summary","5.92","1","1.11","54272","1698.8828125","1809.515625"
