@@ -55,6 +55,14 @@ $record = Join-Path $scratch 'record'
   (Join-Path $protocol 'dev/bench/v0_2_3_diagnostic_reader_reuse/run_probe.R') `
   (Join-Path $scratch '0d6c0b11') (Join-Path $scratch '93e4b347') $record
 
+# The historical runner wrote one build row per arm. The checker consumes the
+# same two rows under their committed aggregate name.
+$build = foreach ($arm in @('base', 'candidate')) {
+  Import-Csv (Join-Path $record "$arm-build.csv")
+}
+$build | Export-Csv (Join-Path $record 'build-summary.csv') `
+  -NoTypeInformation
+
 & "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" `
   dev/bench/v0_2_3_diagnostic_reader_reuse/check.R $record
 ```

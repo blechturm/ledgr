@@ -152,7 +152,7 @@ ledgr_diagnostic_implicit_hold_block <- function(run_id,
 # than incrementally adding per-pulse floating-point subtotals.
 ledgr_diagnostic_summary_from_store <- function(con, run_id) {
   ledgr_diagnostic_require_coverage(con, run_id)
-  flags <- DBI::dbGetQuery(
+  flags <- ledgr_diagnostic_db_get_query(
     con,
     paste0(
       "SELECT COUNT(*) FILTER (WHERE stage = 'decision') AS decisions, ",
@@ -169,12 +169,12 @@ ledgr_diagnostic_summary_from_store <- function(con, run_id) {
   stale <- as.integer(flags$stale[[1L]])
   frozen <- as.integer(flags$frozen[[1L]])
   assumed <- as.integer(flags$assumed[[1L]])
-  rows <- DBI::dbGetQuery(
+  rows <- ledgr_diagnostic_db_get_query(
     con,
     "SELECT * FROM run_diagnostics WHERE run_id = ? AND stage = 'sizing' ORDER BY diagnostic_seq",
     params = list(run_id)
   )
-  decision_times <- DBI::dbGetQuery(
+  decision_times <- ledgr_diagnostic_db_get_query(
     con,
     paste0(
       "SELECT DISTINCT ts_utc FROM (", ledgr_diagnostic_logical_sql(),
@@ -269,7 +269,7 @@ ledgr_diagnostic_summary_read <- function(con, run_ids) {
   run_ids <- unique(as.character(run_ids))
   if (length(run_ids) == 0L) return(data.frame())
   marks <- paste(rep("?", length(run_ids)), collapse = ", ")
-  rows <- DBI::dbGetQuery(
+  rows <- ledgr_diagnostic_db_get_query(
     con,
     paste0("SELECT * FROM run_diagnostic_summary WHERE run_id IN (", marks, ")"),
     params = as.list(run_ids)

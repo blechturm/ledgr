@@ -1163,7 +1163,9 @@ testthat::test_that("[LTB-0565] every diagnostic query maps real DuckDB exhausti
     "ledgr_diagnostic_decision_order_bad",
     "ledgr_diagnostic_require_coverage",
     "ledgr_diagnostic_decode",
-    "ledgr_diagnostic_next_seq"
+    "ledgr_diagnostic_next_seq",
+    "ledgr_diagnostic_summary_from_store",
+    "ledgr_diagnostic_summary_read"
   )
   for (name in query_functions) {
     fn <- get(name, envir = asNamespace("ledgr"), inherits = FALSE)
@@ -1187,12 +1189,32 @@ testthat::test_that("[LTB-0565] every diagnostic query maps real DuckDB exhausti
     cost_model = ledgr_cost_zero()
   ), run_id = "diagnostic-real-resource-exhaustion")
   on.exit(close(bt), add = TRUE)
-  opened <- ledgr:::ledgr_backtest_read_connection(bt)
-  on.exit(opened$close(), add = TRUE)
-  DBI::dbExecute(opened$con, "SET memory_limit = '16MB'")
+  cold <- ledgr:::ledgr_backtest_read_connection(bt)
+  on.exit(cold$close(), add = TRUE)
+  DBI::dbExecute(cold$con, "SET memory_limit = '16MB'")
   testthat::expect_error(
-    ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id),
+    ledgr:::ledgr_diagnostic_decode(cold$con, bt$run_id),
     "exhausted DuckDB's available memory",
     class = "ledgr_diagnostic_resource_exhausted"
   )
+  cold$close()
+
+  # Seed an exact proof at the caller's ordinary limit, then lower only this
+  # fresh connection's limit.  Validation is reused, so this refusal comes
+  # from the final logical decode rather than an earlier integrity query.
+  warm <- ledgr:::ledgr_backtest_read_connection(bt)
+  on.exit(warm$close(), add = TRUE)
+  release <- ledgr:::ledgr_backtest_diagnostic_validation_scope(bt)
+  on.exit(release(), add = TRUE)
+  testthat::expect_no_error(
+    ledgr:::ledgr_diagnostic_require_coverage(warm$con, bt$run_id)
+  )
+  DBI::dbExecute(warm$con, "SET memory_limit = '16MB'")
+  testthat::expect_error(
+    ledgr:::ledgr_diagnostic_decode(warm$con, bt$run_id),
+    "exhausted DuckDB's available memory",
+    class = "ledgr_diagnostic_resource_exhausted"
+  )
+  release()
+  warm$close()
 })

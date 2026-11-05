@@ -219,6 +219,8 @@ The final independent review returned `PASS_AFTER_PATCHES`. Exact correction
 - every DuckDB query on the logical validation/decode path uses one resource
   boundary, and a real 90,000-row run under a 16 MB connection limit raises
   `ledgr_diagnostic_resource_exhausted` without product-side memory mutation;
+  the same run also seeds one exact proof before lowering a fresh connection's
+  local limit, proving that final logical decode maps the backend refusal;
 - a same-handle attached-snapshot mutation invalidates the proof, while a
   transaction-local repair of persisted corruption cannot publish a proof
   that survives rollback;
@@ -233,6 +235,16 @@ focused decoder, split-store and documentation-contract suites pass. The
 4,419/4,875 MiB cold peaks are about 4.32/4.76 GiB; this correction does not
 claim to reduce them.
 
+The maintainer accepts this cold-memory residual as LDG-3209's explicit memory
+exception against v0.2.2 base `0d6c0b11`. The user-visible limit is one cold
+full-trace validation and decode per opened run handle: about 2.4 to 4.9 GiB
+peak on the largest private workload; the public dense cold record moves from
+320 to 1,445 MiB and from 0.13 to 1.52 seconds. LDG-3210 is reserved in the
+macro plan's later WS9b cut to reduce that cold cost without weakening exact
+corruption refusal. For H1, a run/sweep ratio above 1.10x still needs causal
+attribution: excess caused by cold validation/decode is covered and disclosed
+by this exception; any other cause is a finding.
+
 ## Gates still open under LDG-3209
 
 The public harness and proof families are ready, but the following evidence was
@@ -242,6 +254,7 @@ not run or inferred:
 2. the rule-16 milestone timing record;
 3. the paired H1 public memory protocol.
 
-No E: data was read. LDG-3209 and Workstream 25 remain pending until the
-maintainer-run evidence is recorded and an independent close review accepts the
-complete workstream.
+No E: data was read. The memory exception is recorded, but LDG-3209 and
+Workstream 25 remain pending until the maintainer-run private rerun, rule-16
+milestone and H1 evidence are recorded and an independent close review accepts
+the complete workstream.

@@ -42,9 +42,6 @@ ledgr_diagnostic_query <- function(code) {
   tryCatch(
     force(code),
     error = function(cnd) {
-      if (inherits(cnd, "ledgr_diagnostic_resource_exhausted")) {
-        stop(cnd)
-      }
       message <- conditionMessage(cnd)
       if (grepl(
         "out of memory|failed to pin block|could not allocate",
