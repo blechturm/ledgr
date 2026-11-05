@@ -4986,7 +4986,7 @@ claims:
     source: "v0.2.3 Cut 11 LDG-3209; private-gate reader correction"
     scope: "One opened durable run handle validates one unchanged persisted diagnostic coverage/summary and store-file state at most once across every exported result table, point/history explanation, print, summary, metrics, valuation, completion and corporate-action reporting; direct internal reads, in-memory stores and explicit transactions remain cold, while changed or checkpointed state and a fresh or split-store handle still validate and refuse corrupt compact evidence"
     oracle_class: "Dense and availability-active compact runs, validator call counters across all exported reader surfaces, coverage and compact association mutations, an explicit-transaction mutation, a checkpointed fresh-handle mutation, a split-store mutation and an in-memory state-token refusal"
-    detecting_blocks: ["LTB-0561"]
+    detecting_blocks: ["LTB-0561", "LTB-0562", "LTB-0563", "LTB-0564"]
     promised_profile: "review"
     owner: "maintainer"
     protected_contract_or_defect: "Repeated exact order validation made public readers 2--20x slower and doubled peak memory at the private milestone shape, while an unconditional cache could hide corruption."

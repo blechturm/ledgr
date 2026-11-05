@@ -39,6 +39,7 @@
 "ledgr_cost_model_unspecified","R/cost-model.R",297,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_db_not_found","R/run-store.R",9,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_diagnostic_corrupt","R/diagnostic-codec.R",283,7,TRUE,FALSE,TRUE,TRUE,"documented_public"
+"ledgr_diagnostic_resource_exhausted","R/diagnostic-decoder.R",51,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_diagnostic_source_hash_mismatch","R/business-objective.R",683,1,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_distribution_adjusted_bars_unsupported","R/config-validate.R",413,2,TRUE,FALSE,TRUE,TRUE,"documented_public"
 "ledgr_duplicate_corporate_action_event","R/corporate-action-settlement.R",320,2,TRUE,FALSE,TRUE,TRUE,"documented_public"

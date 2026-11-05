@@ -346,6 +346,7 @@
 \alias{ledgr_snapshot_required}
 \alias{ledgr_snapshot_sessions_invalid}
 \alias{ledgr_diagnostic_corrupt}
+\alias{ledgr_diagnostic_resource_exhausted}
 \alias{ledgr_strategy_ambient_rng_not_supported}
 \alias{ledgr_strategy_ambient_rng_parallel}
 \alias{ledgr_strategy_eval_failed}
@@ -1269,6 +1270,8 @@ quarantine unacknowledged boundary.
 boundary.
 \item \code{ledgr_diagnostic_corrupt} reports that the durable diagnostic trace is
 not an exact, ordered logical record.
+\item \code{ledgr_diagnostic_resource_exhausted} reports that exact diagnostic
+validation or decoding exhausted the database engine's available memory.
 \item \code{ledgr_strategy_ambient_rng_not_supported} reports the strategy ambient
 rng not supported boundary.
 \item \code{ledgr_strategy_ambient_rng_parallel} reports the strategy ambient rng

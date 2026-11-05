@@ -959,6 +959,8 @@
 #'   boundary.
 #' - `ledgr_diagnostic_corrupt` reports that the durable diagnostic trace is
 #'   not an exact, ordered logical record.
+#' - `ledgr_diagnostic_resource_exhausted` reports that exact diagnostic
+#'   validation or decoding exhausted the database engine's available memory.
 #' - `ledgr_strategy_ambient_rng_not_supported` reports the strategy ambient
 #'   rng not supported boundary.
 #' - `ledgr_strategy_ambient_rng_parallel` reports the strategy ambient rng
@@ -1217,6 +1219,7 @@
 #' @aliases ledgr_snapshot_required
 #' @aliases ledgr_snapshot_sessions_invalid
 #' @aliases ledgr_diagnostic_corrupt
+#' @aliases ledgr_diagnostic_resource_exhausted
 #' @aliases ledgr_strategy_ambient_rng_not_supported
 #' @aliases ledgr_strategy_ambient_rng_parallel
 #' @aliases ledgr_strategy_eval_failed

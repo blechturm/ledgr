@@ -97,7 +97,7 @@ testthat::test_that("runner can use a SEALED snapshot and a subset universe; run
   testthat::expect_identical(run$snapshot_id[[1]], fx$snapshot_id)
 })
 
-testthat::test_that("[LTB-0561] runner validates split run and snapshot stores once", {
+testthat::test_that("[LTB-0564] runner validates split run and snapshot stores once", {
   fx <- make_snapshot_runner_db(status = "SEALED")
   run_path <- tempfile(fileext = ".duckdb")
   cfg <- runner_snapshot_config(

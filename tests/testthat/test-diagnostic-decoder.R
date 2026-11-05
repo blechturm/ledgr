@@ -969,7 +969,7 @@ testthat::test_that("[LTB-0561] public readers validate one stored diagnostic st
   DBI::dbExecute(opened$con, "CHECKPOINT")
 })
 
-testthat::test_that("[LTB-0561] availability readers share one exact handle proof", {
+testthat::test_that("[LTB-0562] availability readers share one exact handle proof", {
   snapshot <- scale_test_events_snapshot()
   on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
   bt <- ledgr_run(
@@ -1044,7 +1044,7 @@ testthat::test_that("[LTB-0561] availability readers share one exact handle proo
   testthat::expect_identical(scope_calls$n, 24L)
 })
 
-testthat::test_that("[LTB-0561] diagnostic query preserves caller memory setting", {
+testthat::test_that("[LTB-0563] diagnostic query preserves caller memory setting", {
   con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
   setting <- function() {
     DBI::dbGetQuery(
