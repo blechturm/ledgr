@@ -235,6 +235,11 @@ focused decoder, split-store and documentation-contract suites pass. The
 4,419/4,875 MiB cold peaks are about 4.32/4.76 GiB; this correction does not
 claim to reduce them.
 
+Final bounded correction `f64d5711` extends that same query boundary to the
+persisted-summary reader and terminal summary reduction, and proves the final
+logical decode itself refuses with the stable class after a warm proof under a
+connection-local 16 MB limit. It changes no memory setting in product code.
+
 The maintainer accepts this cold-memory residual as LDG-3209's explicit memory
 exception against v0.2.2 base `0d6c0b11`. The user-visible limit is one cold
 full-trace validation and decode per opened run handle: about 2.4 to 4.9 GiB
