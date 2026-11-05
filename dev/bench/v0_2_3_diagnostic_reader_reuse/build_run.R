@@ -37,10 +37,16 @@ physical_n <- DBI::dbGetQuery(
   con, "SELECT COUNT(*) AS n FROM run_diagnostics WHERE run_id = ?", params = list(run_id)
 )$n[[1L]]
 memory <- ps::ps_memory_info(ps::ps_handle())
+source_commit_file <- file.path(source_root, "SOURCE_COMMIT")
+source_commit <- if (file.exists(source_commit_file)) {
+  readLines(source_commit_file, n = 1L, warn = FALSE)
+} else {
+  system2("git", c("-C", shQuote(source_root), "rev-parse", "HEAD"), stdout = TRUE)[[1L]]
+}
 meta <- data.frame(
   label = label,
   source_root = source_root,
-  source_commit = system2("git", c("-C", shQuote(source_root), "rev-parse", "HEAD"), stdout = TRUE)[[1L]],
+  source_commit = source_commit,
   store = normalizePath(store, winslash = "/", mustWork = TRUE),
   snapshot_id = snapshot_id, run_id = run_id, instrument_id = instrument_id, ts_utc = ts_utc,
   instruments = n_instruments, sessions = n_sessions,
