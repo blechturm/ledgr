@@ -142,11 +142,11 @@ testthat::test_that("[LTB-0554] logical diagnostics own every production read", 
     },
     .package = "ledgr"
   )
-  testthat::expect_identical(coverage_call$instrument_id, "AAA")
-  testthat::expect_identical(
-    as.numeric(coverage_call$explain_ts_utc),
-    as.numeric(first_decision)
-  )
+  # The reader query remains bounded, while integrity validation is one full
+  # stored-state check shared by this handle. A filtered first check could not
+  # authorize the later full diagnostic read from the same cache entry.
+  testthat::expect_null(coverage_call$instrument_id)
+  testthat::expect_null(coverage_call$explain_ts_utc)
   expected <- decoded[
     decoded$instrument_id == "AAA" &
       ((decoded$stage == "decision" & decoded$ts_utc == first_decision) |
@@ -657,7 +657,14 @@ testthat::test_that("[LTB-0558] in-pulse implicit sequence order is exact", {
   testthat::expect_match(validator_source, "duckdb_register")
   testthat::expect_match(validator_source, "duckdb_unregister")
   testthat::expect_match(validator_source, "snapshot_membership_sets")
+  testthat::expect_match(validator_source, "ASOF LEFT JOIN member_states")
+  testthat::expect_match(validator_source, "ledgr_diagnostic_with_bounded_memory")
   testthat::expect_match(validator_source, "LIMIT 1")
+  testthat::expect_false(grepl(
+    "SELECT member_rank FROM member_states",
+    validator_source,
+    fixed = TRUE
+  ))
   testthat::expect_false(grepl("format(", validator_source, fixed = TRUE))
   testthat::expect_false(grepl("order(", validator_source, fixed = TRUE))
 })
@@ -775,4 +782,118 @@ testthat::test_that("[LTB-0560] dynamic context order has an independent anchor"
     "decision-order evidence is corrupt for run `dynamic-context-order`",
     class = "ledgr_diagnostic_corrupt"
   )
+})
+
+testthat::test_that("[LTB-0561] public readers validate one stored diagnostic state once", {
+  bars <- expand.grid(
+    ts_utc = as.POSIXct("2020-01-01", tz = "UTC") + 86400 * 0:3,
+    instrument_id = c("AAA", "BBB"),
+    KEEP.OUT.ATTRS = FALSE,
+    stringsAsFactors = FALSE
+  )
+  bars <- bars[order(bars$ts_utc, bars$instrument_id), , drop = FALSE]
+  bars$open <- bars$high <- bars$low <- bars$close <- 10
+  bars$volume <- 1000
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  bt <- ledgr_run(ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$hold(),
+    opening = ledgr_opening(cash = 1000),
+    cost_model = ledgr_cost_zero()
+  ), run_id = "diagnostic-validation-reuse")
+  on.exit(close(bt), add = TRUE)
+
+  calls <- new.env(parent = emptyenv())
+  calls$n <- 0L
+  original <- ledgr:::ledgr_diagnostic_decision_order_bad
+  testthat::local_mocked_bindings(
+    ledgr_diagnostic_decision_order_bad = function(...) {
+      calls$n <- calls$n + 1L
+      original(...)
+    },
+    .package = "ledgr"
+  )
+  first_ts <- bars$ts_utc[[1L]]
+  opened_before <- ledgr:::ledgr_backtest_read_connection(bt)
+  on.exit(opened_before$close(), add = TRUE)
+  memory_limit_before <- DBI::dbGetQuery(
+    opened_before$con,
+    "SELECT current_setting('memory_limit') AS value"
+  )$value[[1L]]
+  testthat::expect_no_error(ledgr_run_explain(bt, "AAA", first_ts))
+  testthat::expect_identical(calls$n, 1L)
+  testthat::expect_no_error(ledgr_run_explain(bt, "AAA"))
+  testthat::expect_no_error(capture.output(print(bt)))
+  testthat::expect_no_error(capture.output(summary(bt)))
+  testthat::expect_no_error(ledgr_compute_metrics(bt))
+  testthat::expect_no_error(ledgr_results(bt, "diagnostics"))
+  testthat::expect_identical(calls$n, 1L)
+  testthat::expect_identical(
+    DBI::dbGetQuery(
+      opened_before$con,
+      "SELECT current_setting('memory_limit') AS value"
+    )$value[[1L]],
+    memory_limit_before
+  )
+
+  # Changing the persisted state token invalidates the handle cache. Coverage
+  # remains the authority, so the first following public read refuses.
+  opened <- ledgr:::ledgr_backtest_read_connection(bt)
+  on.exit(opened$close(), add = TRUE)
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_coverage SET logical_count = logical_count + 1",
+      "WHERE run_id = ?"
+    ),
+    params = list(bt$run_id)
+  )
+  testthat::expect_error(
+    ledgr_results(bt, "diagnostics"),
+    "coverage is corrupt",
+    class = "ledgr_diagnostic_corrupt"
+  )
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_coverage SET logical_count = logical_count - 1",
+      "WHERE run_id = ?"
+    ),
+    params = list(bt$run_id)
+  )
+
+  # The run/snapshot store stamp changes on a direct compact-row write, so the
+  # already-opened handle cannot hide corruption behind its prior proof.
+  row <- DBI::dbGetQuery(
+    opened$con,
+    paste(
+      "SELECT decision_seq, target FROM run_diagnostic_implicit",
+      "WHERE run_id = ? ORDER BY decision_seq LIMIT 1"
+    ),
+    params = list(bt$run_id)
+  )
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET target = target + 1",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(bt$run_id, row$decision_seq[[1L]])
+  )
+  testthat::expect_error(
+    ledgr_results(bt, "diagnostics"),
+    class = "ledgr_diagnostic_corrupt"
+  )
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET target = ?",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(row$target[[1L]], bt$run_id, row$decision_seq[[1L]])
+  )
+  reopened <- ledgr_run_open(snapshot, bt$run_id)
+  on.exit(close(reopened), add = TRUE)
+  testthat::expect_no_error(ledgr_results(reopened, "diagnostics"))
 })

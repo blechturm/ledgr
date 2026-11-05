@@ -433,6 +433,8 @@ ledgr_compute_metrics <- function(bt,
                                   metrics = "standard",
                                   metric_context = NULL,
                                   risk_free_rate = NULL) {
+  release_validation <- ledgr_backtest_diagnostic_validation_scope(bt)
+  on.exit(release_validation(), add = TRUE)
   out <- ledgr_compute_metrics_internal(
     bt,
     metrics = metrics,
@@ -651,6 +653,8 @@ print.ledgr_backtest <- function(x, ...) {
   if (!inherits(x, "ledgr_backtest")) {
     rlang::abort("`x` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
+  release_validation <- ledgr_backtest_diagnostic_validation_scope(x)
+  on.exit(release_validation(), add = TRUE)
 
   cfg <- x$config
   initial_cash <- cfg$backtest$initial_cash
@@ -835,6 +839,8 @@ summary.ledgr_backtest <- function(object,
   if (!inherits(object, "ledgr_backtest")) {
     rlang::abort("`object` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
+  release_validation <- ledgr_backtest_diagnostic_validation_scope(object)
+  on.exit(release_validation(), add = TRUE)
   release <- ledgr_backtest_hold(object)
   on.exit(release(), add = TRUE)
   ledgr_backtest_ensure_snapshot(object)
@@ -1218,6 +1224,12 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ...) {
   }
 
   what <- ledgr_match_result_table(what)
+  release_validation <- if (identical(what, "diagnostics")) {
+    ledgr_backtest_diagnostic_validation_scope(x)
+  } else {
+    function() invisible(FALSE)
+  }
+  on.exit(release_validation(), add = TRUE)
   opened <- ledgr_backtest_read_connection(x)
   con <- opened$con
   on.exit(opened$close(), add = TRUE)

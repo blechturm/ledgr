@@ -18,6 +18,8 @@ new_ledgr_backtest <- function(run_id, db_path, config) {
   state$db_path <- db_path
   state$closed <- FALSE
   state$auto_checkpointed <- FALSE
+  state$diagnostic_validation_depth <- 0L
+  state$diagnostic_validation_cache <- new.env(hash = TRUE, parent = emptyenv())
   ledgr_backtest_register_finalizer(state)
 
   structure(
@@ -137,6 +139,8 @@ backtest_state <- function(bt) {
     state$db_path <- bt$db_path
     state$closed <- FALSE
     state$auto_checkpointed <- FALSE
+    state$diagnostic_validation_depth <- 0L
+    state$diagnostic_validation_cache <- new.env(hash = TRUE, parent = emptyenv())
     ledgr_backtest_register_finalizer(state)
     bt$.state <- state
   }
@@ -198,6 +202,7 @@ ledgr_backtest_read_connection <- function(bt) {
         ledgr_prepare_snapshot_source_tables(con, snapshot_path, bt$db_path)
       }
     }
+    attr(con, "ledgr_diagnostic_validation_state") <- backtest_state(bt)
     con
   }
 
@@ -249,6 +254,26 @@ ledgr_backtest_read_connection <- function(bt) {
       invisible(TRUE)
     }
   )
+}
+
+# Public result surfaces share one exact diagnostic validation per opened run
+# handle and stored diagnostic state. Direct internal decoder calls do not enter
+# this scope, so corruption probes remain cold validations.
+ledgr_backtest_diagnostic_validation_scope <- function(bt) {
+  state <- backtest_state(bt)
+  state$diagnostic_validation_depth <-
+    as.integer(state$diagnostic_validation_depth %||% 0L) + 1L
+  released <- FALSE
+  function() {
+    if (!released) {
+      state$diagnostic_validation_depth <- max(
+        0L,
+        as.integer(state$diagnostic_validation_depth %||% 0L) - 1L
+      )
+      released <<- TRUE
+    }
+    invisible(TRUE)
+  }
 }
 
 #' Close a backtest result connection

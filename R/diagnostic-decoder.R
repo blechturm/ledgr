@@ -34,6 +34,38 @@ ledgr_diagnostic_logical_sql <- function() {
   )
 }
 
+ledgr_duckdb_memory_limit_bytes <- function(value) {
+  match <- regexec(
+    "^([0-9]+(?:[.][0-9]+)?) (B|KiB|MiB|GiB|TiB)$",
+    as.character(value)
+  )
+  parts <- regmatches(as.character(value), match)[[1L]]
+  if (length(parts) != 3L) return(NA_real_)
+  scale <- c(B = 1, KiB = 2^10, MiB = 2^20, GiB = 2^30, TiB = 2^40)
+  as.numeric(parts[[2L]]) * unname(scale[[parts[[3L]]]])
+}
+
+ledgr_diagnostic_with_bounded_memory <- function(con, code) {
+  prior <- DBI::dbGetQuery(
+    con,
+    "SELECT current_setting('memory_limit') AS value"
+  )$value[[1L]]
+  cap <- 2^30
+  changed <- is.finite(ledgr_duckdb_memory_limit_bytes(prior)) &&
+    ledgr_duckdb_memory_limit_bytes(prior) > cap
+  if (changed) {
+    DBI::dbExecute(con, "SET memory_limit = '1GB'")
+    on.exit(
+      DBI::dbExecute(
+        con,
+        paste("SET memory_limit =", DBI::dbQuoteString(con, prior))
+      ),
+      add = TRUE
+    )
+  }
+  force(code)
+}
+
 # Validate the compact decision order wholly inside DuckDB. The only R-side
 # inputs are one run's already-authoritative configuration axis and universe
 # rule; the query returns at most one offending run/issue row. In particular,
@@ -150,13 +182,12 @@ ledgr_diagnostic_decision_order_bad <- function(con,
     "available_from, MAX(event_rank) OVER (PARTITION BY run_id ORDER BY available_from ",
     "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS complete_rank ",
     "FROM complete_event_points), decision_header AS (SELECT d.*, rm.snapshot_id, ",
-    "rm.universe_id, COALESCE((SELECT member_rank FROM member_states m WHERE ",
-    "m.run_id = d.run_id AND m.instrument_id = d.instrument_id AND ",
-    "m.available_from <= d.ts_utc ORDER BY m.available_from DESC LIMIT 1), 0) ",
-    "AS member_rank, COALESCE((SELECT complete_rank FROM complete_states c WHERE ",
+    "rm.universe_id, COALESCE(m.member_rank, 0) AS member_rank, ",
+    "COALESCE(c.complete_rank, 0) AS complete_rank FROM decision_rows d ",
+    "JOIN run_meta rm USING (run_id) ASOF LEFT JOIN member_states m ON ",
+    "m.run_id = d.run_id AND m.instrument_id = d.instrument_id ",
+    "AND m.available_from <= d.ts_utc ASOF LEFT JOIN complete_states c ON ",
     "c.run_id = d.run_id AND c.available_from <= d.ts_utc ",
-    "ORDER BY c.available_from DESC LIMIT 1), 0) AS complete_rank ",
-    "FROM decision_rows d JOIN run_meta rm USING (run_id) ",
     "WHERE rm.uses_membership), interval_ranked AS (SELECT d.*, ",
     "m.fact_id AS interval_fact_id, m.member AS interval_member, ROW_NUMBER() OVER ",
     "(PARTITION BY d.run_id, d.ts_utc, d.instrument_id ORDER BY ",
@@ -204,10 +235,13 @@ ledgr_diagnostic_decision_order_bad <- function(con,
     "SELECT run_id, issue FROM issues WHERE issue IS NOT NULL ",
     "ORDER BY run_id, issue LIMIT 1"
   )
-  bad <- DBI::dbGetQuery(
+  bad <- ledgr_diagnostic_with_bounded_memory(
     con,
-    query,
-    params = c(as.list(run_ids), as.list(run_ids), target_params)
+    DBI::dbGetQuery(
+      con,
+      query,
+      params = c(as.list(run_ids), as.list(run_ids), target_params)
+    )
   )
   bad[seq_len(min(1L, nrow(bad))), c("run_id", "issue"), drop = FALSE]
 }
@@ -223,6 +257,63 @@ ledgr_diagnostic_require_coverage <- function(con,
     paste0("SELECT run_id, logical_count, codec_rule_version FROM run_diagnostic_coverage WHERE run_id IN (", marks, ")"),
     params = as.list(run_ids)
   )
+  state <- attr(con, "ledgr_diagnostic_validation_state", exact = TRUE)
+  cache <- if (is.environment(state) &&
+      as.integer(state$diagnostic_validation_depth %||% 0L) > 0L &&
+      is.environment(state$diagnostic_validation_cache)) {
+    state$diagnostic_validation_cache
+  } else {
+    NULL
+  }
+  cache_key <- paste(sort(unique(as.character(run_ids)), method = "radix"), collapse = "\r")
+  validation_state <- NULL
+  if (!is.null(cache)) {
+    summaries <- ledgr_diagnostic_summary_read(con, run_ids)
+    databases <- DBI::dbGetQuery(
+      con,
+      paste(
+        "SELECT database_name, path FROM duckdb_databases()",
+        "WHERE path IS NOT NULL AND path <> '' ORDER BY database_name"
+      )
+    )
+    store_paths <- unique(c(
+      as.character(databases$path),
+      paste0(as.character(databases$path), ".wal")
+    ))
+    if (length(store_paths) == 0L) {
+      # In-memory databases expose no independent mutation token. Correctness
+      # wins over reuse: every logical read validates them cold.
+      cache <- NULL
+    } else {
+      store_info <- file.info(store_paths)
+      store_state <- data.frame(
+        path = store_paths,
+        exists = !is.na(store_info$size),
+        size = as.numeric(store_info$size),
+        mtime = as.numeric(store_info$mtime),
+        stringsAsFactors = FALSE
+      )
+      coverage_state <- coverage[
+        order(as.character(coverage$run_id), method = "radix"),
+        c("run_id", "logical_count", "codec_rule_version"),
+        drop = FALSE
+      ]
+      summary_state <- summaries[
+        order(as.character(summaries$run_id), method = "radix"),
+        c("run_id", "summary_hash"),
+        drop = FALSE
+      ]
+      validation_state <- list(
+        coverage = coverage_state,
+        summary = summary_state,
+        stores = store_state
+      )
+      if (exists(cache_key, envir = cache, inherits = FALSE) &&
+          identical(get(cache_key, envir = cache, inherits = FALSE), validation_state)) {
+        return(invisible(TRUE))
+      }
+    }
+  }
   missing <- setdiff(run_ids, as.character(coverage$run_id))
   if (length(missing) > 0L ||
       any(coverage$codec_rule_version != ledgr_diagnostic_codec_rule_version)) {
@@ -363,6 +454,9 @@ ledgr_diagnostic_require_coverage <- function(con,
       class = "ledgr_diagnostic_corrupt"
     )
   }
+  if (!is.null(cache)) {
+    assign(cache_key, validation_state, envir = cache)
+  }
   invisible(TRUE)
 }
 
@@ -373,9 +467,7 @@ ledgr_diagnostic_decode <- function(con, run_ids, stage = NULL, outcome = NULL,
   run_ids <- unique(as.character(run_ids))
   ledgr_diagnostic_require_coverage(
     con,
-    run_ids,
-    instrument_id = instrument_id,
-    explain_ts_utc = explain_ts_utc
+    run_ids
   )
   where <- character()
   params <- list()
