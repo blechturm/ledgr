@@ -20,7 +20,42 @@ for (label in names(arms)) {
   for (surface in c("print", "summary", "point_explain", "history_explain", "diagnostics", "metrics")) {
     run("measure_surface.R", c(arms[[label]], build, surface, file.path(output_dir, paste0(label, "-", surface, ".csv"))))
   }
+  run(
+    "measure_sequence.R",
+    c(
+      arms[[label]], build,
+      file.path(output_dir, paste0(label, "-same-handle-sequence.csv"))
+    )
+  )
+  run("build_availability_run.R", c(arms[[label]], output_dir, label))
+  availability_build <- file.path(
+    output_dir, paste0(label, "-availability-build.csv")
+  )
+  run(
+    "measure_surface.R",
+    c(
+      arms[[label]], availability_build, "diagnostics",
+      file.path(output_dir, paste0(label, "-availability-diagnostics.csv"))
+    )
+  )
+  run(
+    "measure_plan.R",
+    c(
+      arms[[label]], availability_build,
+      file.path(output_dir, paste0(label, "-availability-plan.txt"))
+    )
+  )
 }
-surface_files <- list.files(output_dir, pattern = "-(print|summary|point_explain|history_explain|diagnostics|metrics)\\.csv$", full.names = TRUE)
+surface_files <- unlist(lapply(
+  names(arms),
+  function(label) file.path(
+    output_dir,
+    paste0(
+      label, "-",
+      c("print", "summary", "point_explain", "history_explain", "diagnostics", "metrics"),
+      ".csv"
+    )
+  )
+))
 summary <- do.call(rbind, lapply(surface_files, utils::read.csv, stringsAsFactors = FALSE))
 utils::write.csv(summary, file.path(output_dir, "reader-summary.csv"), row.names = FALSE); print(summary)

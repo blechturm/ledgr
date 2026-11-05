@@ -54,12 +54,16 @@ diagnostics <- ledgr_results(bt, "diagnostics")
 elapsed <- proc.time()[["elapsed"]] - started
 memory <- ps::ps_memory_info(ps::ps_handle())
 source_commit_file <- file.path(source_root, "SOURCE_COMMIT")
-source_commit <- if (file.exists(source_commit_file)) {
+source_commit_override <- Sys.getenv("LEDGR_SOURCE_COMMIT", unset = "")
+source_commit <- if (nzchar(source_commit_override)) {
+  source_commit_override
+} else if (file.exists(source_commit_file)) {
   readLines(source_commit_file, n = 1L, warn = FALSE)
 } else {
   system2(
     "git",
-    c("-C", shQuote(source_root), "rev-parse", "HEAD"),
+    c("-c", "safe.directory=*", "-C", shQuote(source_root),
+      "rev-parse", "HEAD"),
     stdout = TRUE
   )[[1L]]
 }
@@ -71,6 +75,9 @@ record <- data.frame(
   validator_calls = validator_calls,
   validator_elapsed_sec = validator_elapsed,
   result_bytes = as.numeric(object.size(diagnostics)),
+  result_sha256 = digest::digest(
+    diagnostics, algo = "sha256", serialize = TRUE
+  ),
   peak_wset_mib = memory[["peak_wset"]] / 2^20,
   peak_private_mib = memory[["peak_pagefile"]] / 2^20,
   stringsAsFactors = FALSE

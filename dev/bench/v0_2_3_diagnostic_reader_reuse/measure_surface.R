@@ -40,7 +40,9 @@ memory <- ps::ps_memory_info(ps::ps_handle())
 record <- data.frame(
   label = meta$label[[1L]], source_commit = meta$source_commit[[1L]], surface = surface,
   elapsed_sec = elapsed, validator_calls = validator_calls, validator_elapsed_sec = validator_elapsed,
-  result_bytes = as.numeric(object.size(value)), peak_wset_mib = memory[["peak_wset"]] / 2^20,
+  result_bytes = as.numeric(object.size(value)),
+  result_sha256 = digest::digest(value, algo = "sha256", serialize = TRUE),
+  peak_wset_mib = memory[["peak_wset"]] / 2^20,
   peak_private_mib = memory[["peak_pagefile"]] / 2^20, stringsAsFactors = FALSE
 )
 utils::write.csv(record, output, row.names = FALSE); print(record)
