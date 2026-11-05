@@ -68,9 +68,12 @@ than the cut-entry base. Fixed-basket no-fill and sparse remain about 2.5
 times slower than v0.2.2. That premium predates this cut: it is the Cut 6
 milestone's measured cost of routing fixed baskets through the canonical
 substrate, which is routed to WS14. Against the cut-entry base, no-fill and
-sparse cells are 5-16 percent slower. Three cells exceed the protocol's 1.10
-disposition trigger (declared no-fill, fixed sparse, declared sparse). By
-rule 16 they are disclosed here for maintainer disposition, not gated.
+sparse cells are 5-16 percent slower. Five cell comparisons exceed the
+protocol's 1.10 disposition trigger: fixed no-fill and fixed sparse against
+v0.2.2, and declared no-fill, fixed sparse and declared sparse against
+`0d6c0b11`. The maintainer disposed of them on 2026-11-05: timing
+regressions are not fixed in this version, which moves to the lean-core
+reimplementation.
 
 ## Fill-heavy stage profile (the four WS8 hotspots)
 
@@ -137,13 +140,17 @@ Top self-time functions at `0d6c0b11` are `ledgr_carrier_problem` (119
 samples) and `ledgr_fold_diagnostic_rows` (52). On the candidate they are
 `ledgr_carrier_problem` (78) and `ledgr_fold_diagnostic_segment` (70).
 
-On this fixed-basket quiet run the compact trace is not compact. The new
-implicit table stores one row per instrument per pulse, physical rows equal
-logical rows, and the store is 34 percent larger than at the cut-entry base.
-The resume cursor table is gone. The public correction probe showed 3.6
-million logical rows in 7,201 physical rows on the declared-universe shape,
-so the compact form evidently depends on the universe shape. This is
-reported for the close review; the milestone does not diagnose it.
+Stored diagnostic rows equal logical rows. The writer stores one typed
+`run_diagnostic_implicit` row per clean decision, on every universe shape
+(`R/availability-diagnostic-writer.R`, `R/diagnostic-codec.R`). Here that
+is 72,000 implicit rows plus 7,201 residual `run_diagnostics` rows, giving
+79,201 logical rows per run. The declared-universe reader record is the same:
+its "7,201 physical rows" counts only `run_diagnostics` next to 3,600,000
+implicit rows (`availability-build-summary.csv`, `implicit_rows`). The typed
+form replaces per-row JSON; it does not reduce the row count. On this
+hold-only run the store is 34 percent larger than at the cut-entry base, and
+the resume cursor table is gone. The final close review records the size
+increase as an observation. No accepted claim bounds the row count.
 
 ## Limits
 
