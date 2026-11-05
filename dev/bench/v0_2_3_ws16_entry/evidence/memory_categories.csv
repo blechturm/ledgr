@@ -1,0 +1,85 @@
+"run","shape","at","category","mib"
+"mem_500x1260_1","ws16_mem_500x1260","fold entry","feature payload",5.21585083007812
+"mem_500x1260_2","ws16_mem_500x1260","fold entry","feature payload",5.21585083007812
+"mem_500x2520_1","ws16_mem_500x2520","fold entry","feature payload",10.3540191650391
+"mem_500x2520_2","ws16_mem_500x2520","fold entry","feature payload",10.3540191650391
+"mem_500x5040_1","ws16_mem_500x5040","fold entry","feature payload",20.6303558349609
+"mem_500x5040_2","ws16_mem_500x5040","fold entry","feature payload",20.6303558349609
+"noverify_500x5040_1","ws16_mem_500x5040","fold entry","feature payload",20.6303558349609
+"mem_500x1260_1","ws16_mem_500x1260","fold exit","lots and final state",0.0617446899414062
+"mem_500x1260_2","ws16_mem_500x1260","fold exit","lots and final state",0.0617446899414062
+"mem_500x2520_1","ws16_mem_500x2520","fold exit","lots and final state",0.0664443969726562
+"mem_500x2520_2","ws16_mem_500x2520","fold exit","lots and final state",0.0664443969726562
+"mem_500x5040_1","ws16_mem_500x5040","fold exit","lots and final state",0.0706558227539062
+"mem_500x5040_2","ws16_mem_500x5040","fold exit","lots and final state",0.0706558227539062
+"noverify_500x5040_1","ws16_mem_500x5040","fold exit","lots and final state",0.0706558227539062
+"mem_500x1260_1","ws16_mem_500x1260","fold entry","lots and opening state",0.0519180297851562
+"mem_500x1260_2","ws16_mem_500x1260","fold entry","lots and opening state",0.0519180297851562
+"mem_500x2520_1","ws16_mem_500x2520","fold entry","lots and opening state",0.0519180297851562
+"mem_500x2520_2","ws16_mem_500x2520","fold entry","lots and opening state",0.0519180297851562
+"mem_500x5040_1","ws16_mem_500x5040","fold entry","lots and opening state",0.0519180297851562
+"mem_500x5040_2","ws16_mem_500x5040","fold entry","lots and opening state",0.0519180297851562
+"noverify_500x5040_1","ws16_mem_500x5040","fold entry","lots and opening state",0.0519180297851562
+"mem_500x1260_1","ws16_mem_500x1260","fold entry","other",0.288848876953125
+"mem_500x1260_2","ws16_mem_500x1260","fold entry","other",0.288848876953125
+"mem_500x2520_1","ws16_mem_500x2520","fold entry","other",0.419387817382813
+"mem_500x2520_2","ws16_mem_500x2520","fold entry","other",0.419387817382813
+"mem_500x5040_1","ws16_mem_500x5040","fold entry","other",0.68084716796875
+"mem_500x5040_2","ws16_mem_500x5040","fold entry","other",0.68084716796875
+"noverify_500x5040_1","ws16_mem_500x5040","fold entry","other",0.68084716796875
+"mem_500x1260_1","ws16_mem_500x1260","fold exit","other",0.00270843505859375
+"mem_500x1260_2","ws16_mem_500x1260","fold exit","other",0.00270843505859375
+"mem_500x2520_1","ws16_mem_500x2520","fold exit","other",0.00347137451171875
+"mem_500x2520_2","ws16_mem_500x2520","fold exit","other",0.00347137451171875
+"mem_500x5040_1","ws16_mem_500x5040","fold exit","other",0.00537872314453125
+"mem_500x5040_2","ws16_mem_500x5040","fold exit","other",0.00537872314453125
+"noverify_500x5040_1","ws16_mem_500x5040","fold exit","other",0.00537872314453125
+"mem_500x1260_1","ws16_mem_500x1260","fold exit","output buffers (handler)",1.05641937255859
+"mem_500x1260_2","ws16_mem_500x1260","fold exit","output buffers (handler)",1.05641937255859
+"mem_500x2520_1","ws16_mem_500x2520","fold exit","output buffers (handler)",1.83987426757812
+"mem_500x2520_2","ws16_mem_500x2520","fold exit","output buffers (handler)",1.83987426757812
+"mem_500x5040_1","ws16_mem_500x5040","fold exit","output buffers (handler)",2.92318725585937
+"mem_500x5040_2","ws16_mem_500x5040","fold exit","output buffers (handler)",2.92318725585937
+"noverify_500x5040_1","ws16_mem_500x5040","fold exit","output buffers (handler)",2.92318725585937
+"mem_500x1260_1","ws16_mem_500x1260","fold exit","output: equity record",0.048980712890625
+"mem_500x1260_2","ws16_mem_500x1260","fold exit","output: equity record",0.048980712890625
+"mem_500x2520_1","ws16_mem_500x2520","fold exit","output: equity record",0.0970458984375
+"mem_500x2520_2","ws16_mem_500x2520","fold exit","output: equity record",0.0970458984375
+"mem_500x5040_1","ws16_mem_500x5040","fold exit","output: equity record",0.19317626953125
+"mem_500x5040_2","ws16_mem_500x5040","fold exit","output: equity record",0.19317626953125
+"noverify_500x5040_1","ws16_mem_500x5040","fold exit","output: equity record",0.19317626953125
+"mem_500x1260_1","ws16_mem_500x1260","fold entry","provider and schedule",0.466789245605468
+"mem_500x1260_2","ws16_mem_500x1260","fold entry","provider and schedule",0.466789245605468
+"mem_500x2520_1","ws16_mem_500x2520","fold entry","provider and schedule",0.709037780761719
+"mem_500x2520_2","ws16_mem_500x2520","fold entry","provider and schedule",0.709037780761719
+"mem_500x5040_1","ws16_mem_500x5040","fold entry","provider and schedule",1.19353485107422
+"mem_500x5040_2","ws16_mem_500x5040","fold entry","provider and schedule",1.19353485107422
+"noverify_500x5040_1","ws16_mem_500x5040","fold entry","provider and schedule",1.19353485107422
+"mem_500x1260_1","ws16_mem_500x1260","fold entry","retained views (history memo)",0
+"mem_500x1260_2","ws16_mem_500x1260","fold entry","retained views (history memo)",0
+"mem_500x2520_1","ws16_mem_500x2520","fold entry","retained views (history memo)",0
+"mem_500x2520_2","ws16_mem_500x2520","fold entry","retained views (history memo)",0
+"mem_500x5040_1","ws16_mem_500x5040","fold entry","retained views (history memo)",0
+"mem_500x5040_2","ws16_mem_500x5040","fold entry","retained views (history memo)",0
+"noverify_500x5040_1","ws16_mem_500x5040","fold entry","retained views (history memo)",0
+"mem_500x1260_1","ws16_mem_500x1260","fold entry","source/history: bar planes",26.4606170654296
+"mem_500x1260_2","ws16_mem_500x1260","fold entry","source/history: bar planes",26.4606170654296
+"mem_500x2520_1","ws16_mem_500x2520","fold entry","source/history: bar planes",52.8964691162109
+"mem_500x2520_2","ws16_mem_500x2520","fold entry","source/history: bar planes",52.8964691162109
+"mem_500x5040_1","ws16_mem_500x5040","fold entry","source/history: bar planes",105.768173217773
+"mem_500x5040_2","ws16_mem_500x5040","fold entry","source/history: bar planes",105.768173217773
+"noverify_500x5040_1","ws16_mem_500x5040","fold entry","source/history: bar planes",105.768173217773
+"mem_500x1260_1","ws16_mem_500x1260","fold entry","source/history: facts and axes",0.446708679199218
+"mem_500x1260_2","ws16_mem_500x1260","fold entry","source/history: facts and axes",0.446708679199218
+"mem_500x2520_1","ws16_mem_500x2520","fold entry","source/history: facts and axes",0.687995910644532
+"mem_500x2520_2","ws16_mem_500x2520","fold entry","source/history: facts and axes",0.687995910644532
+"mem_500x5040_1","ws16_mem_500x5040","fold entry","source/history: facts and axes",1.17057037353516
+"mem_500x5040_2","ws16_mem_500x5040","fold entry","source/history: facts and axes",1.17057037353516
+"noverify_500x5040_1","ws16_mem_500x5040","fold entry","source/history: facts and axes",1.17057037353516
+"mem_500x1260_1","ws16_mem_500x1260","fold entry","stack objects >= 1 MB (may share)",64.6057128906249
+"mem_500x1260_2","ws16_mem_500x1260","fold entry","stack objects >= 1 MB (may share)",64.6057128906249
+"mem_500x2520_1","ws16_mem_500x2520","fold entry","stack objects >= 1 MB (may share)",128.367065429688
+"mem_500x2520_2","ws16_mem_500x2520","fold entry","stack objects >= 1 MB (may share)",128.367065429688
+"mem_500x5040_1","ws16_mem_500x5040","fold entry","stack objects >= 1 MB (may share)",255.889770507812
+"mem_500x5040_2","ws16_mem_500x5040","fold entry","stack objects >= 1 MB (may share)",255.889770507812
+"noverify_500x5040_1","ws16_mem_500x5040","fold entry","stack objects >= 1 MB (may share)",255.889770507812

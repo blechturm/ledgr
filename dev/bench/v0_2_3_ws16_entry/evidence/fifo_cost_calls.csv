@@ -1,0 +1,9 @@
+"caller","block_rows","part","calls","rows","reps","median_pass_s","us_per_call","us_per_row"
+"ledgr_fold_fill_candidate","10-49","input_validation",361,16036,64,0.00874999999999998,24.2382271468143,0.545647293589423
+"ledgr_fold_fill_candidate","10-49","kernel",361,16036,8,0.0800000000000001,221.606648199446,4.98877525567474
+"ledgr_fold_fill_candidate","50+","input_validation",888,51689,32,0.0234375,26.3935810810811,0.45343303217319
+"ledgr_fold_fill_candidate","50+","kernel",888,51689,4,0.215,242.117117117117,4.15949234846872
+"ledgr_replay_accounting_events","10-49","input_validation",363,16089,64,0.00875000000000004,24.1046831955924,0.543849835291195
+"ledgr_replay_accounting_events","10-49","kernel",363,16089,8,0.0800000000000001,220.38567493113,4.97234135123377
+"ledgr_replay_accounting_events","50+","input_validation",887,51636,32,0.0228125000000001,25.718714768884,0.441794484468203
+"ledgr_replay_accounting_events","50+","kernel",887,51636,4,0.215,242.3900789177,4.1637617166318

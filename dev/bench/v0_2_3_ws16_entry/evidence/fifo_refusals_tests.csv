@@ -1,0 +1,7 @@
+"source","caller","operation","class","n"
+"tests","<direct>","disposition","ledgr_invalid_accounting_event",4
+"tests","<direct>","disposition","ledgr_lot_state_invariant",2
+"tests","<direct>","fill","ledgr_invalid_lot_fill",18
+"tests","<direct>","fill","ledgr_lot_state_invariant",8
+"tests","ledgr_fold_fill_candidate","fill","ledgr_invalid_lot_fill",4
+"tests","ledgr_fold_fill_candidate","fill","ledgr_lot_state_invariant",2

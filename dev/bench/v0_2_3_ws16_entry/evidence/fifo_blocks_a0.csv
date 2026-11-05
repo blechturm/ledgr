@@ -1,0 +1,11 @@
+"source","caller","operation","block_rows","n"
+"a0","ledgr_disposition_post","disposition","1",7
+"a0","ledgr_fold_fill_candidate","fill","1",52
+"a0","ledgr_fold_fill_candidate","fill","2-9",4
+"a0","ledgr_lot_book_from_opening","opening","1",13
+"a0","ledgr_lot_book_from_opening","opening","2-9",14
+"a0","ledgr_replay_accounting_events","disposition","1",9
+"a0","ledgr_replay_accounting_events","fill","1",74
+"a0","ledgr_replay_accounting_events","fill","2-9",6
+"a0","ledgr_replay_accounting_events","opening","1",17
+"a0","ledgr_replay_accounting_events","opening","2-9",18
