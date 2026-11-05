@@ -123,8 +123,10 @@ instead of leaking an unclassed backend error.
 
 The reproducible availability-active record is in
 `records/post_review_correction`. It uses 500 instruments, 7,200 sessions and
-600 complete membership sets: 3.6 million logical decision rows represented by
-7,201 physical diagnostic rows. Both arms have the same fixture hash, decoded
+600 complete membership sets: 3.6 million logical decision rows stored as
+3,600,000 typed implicit rows plus 7,201 residual `run_diagnostics` rows. The
+builder's `physical_rows` column counts only those residual rows, not the typed
+implicit rows. Both arms have the same fixture hash, decoded
 result size (591,619,152 bytes) and normalized result SHA-256.
 
 Across the public same-handle reader sequence, validation fell from 17 calls and

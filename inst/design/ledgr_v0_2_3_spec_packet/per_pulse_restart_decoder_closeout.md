@@ -1,9 +1,9 @@
 # WS25 public candidate closeout: restart and compact diagnostics
 
 Source boundary: Cut 11, LDG-3206 through LDG-3209. LDG-3206 through
-LDG-3208 are complete on the public candidate. LDG-3209 remains open for the
-maintainer-run private rebuild, the rule-16 milestone clocks and the H1 memory
-gate. This is therefore a candidate record, not Workstream 25 acceptance.
+LDG-3208 are complete on the public candidate. LDG-3209's private rebuild,
+rule-16 milestone clocks and H1 memory gate are recorded below; the ticket and
+Workstream 25 remain pending maintainer acceptance.
 
 ## Fresh-attempt boundary (LDG-3206)
 
@@ -250,16 +250,32 @@ corruption refusal. For H1, a run/sweep ratio above 1.10x still needs causal
 attribution: excess caused by cold validation/decode is covered and disclosed
 by this exception; any other cause is a finding.
 
-## Gates still open under LDG-3209
+The covered cost is also paid inside `ledgr_run()`: store-wide validation runs
+at registration (`R/run-registration.R:88`, empty trace), restart
+(`R/run-resume.R:44`, empty trace) and publication
+(`R/output-handler.R:143-144` through `R/diagnostic-codec.R:154`, full trace).
+The opened handle's first public read then validates once more. The H1 private-
+commit peak rises inside the registration and publication calls.
 
-The public harness and proof families are ready, but the following evidence was
-not run or inferred:
+## Final LDG-3209 gates
 
-1. the private Sharadar rebuild and aggregate comparison;
-2. the rule-16 milestone timing record;
-3. the paired H1 public memory protocol.
+The maintainer-run records now close all three evidence gates:
 
-No E: data was read. The memory exception is recorded, but LDG-3209 and
-Workstream 25 remain pending until the maintainer-run private rerun, rule-16
-milestone and H1 evidence are recorded and an independent close review accepts
-the complete workstream.
+1. **Private rerun, PASS.** ledgr-research `8f86376`,
+   `experiments/v0_2_2-reference/data/ws25c`, and
+   `check.R data/ws25c ws25c` report `WS25C_PRIVATE_GATE_CHECK_OK`: all 14 runs
+   exit 0, 195 tables are `IDENTICAL`, 12 typed ledgers are
+   `ACCEPTED_TYPED_LEDGER`, and the snapshot hash is `e8cbb805`.
+2. **Rule-16 milestone, recorded.** Product `1debb248` plus evidence correction
+   `2ac44aa4` records `dev/bench/v0_2_3_cut11_milestone/README.md` and all three
+   timing records. Five cell comparisons exceed 1.10; the maintainer accepts
+   them in this version and moves timing remediation to the lean-core rewrite.
+3. **H1, exception used.** ledgr-research `a09c604`, `d56f951` and `4b49566`
+   record the preregistration, sampler correction after stopped attempt 1, and
+   final attribution. Four of five ratios pass. Single-run parent private
+   commit is 2.066x and the checker prints `H1_GATE_EXCEEDED`; the excess is
+   attributed to cold validation and covered by the LDG-3209 exception.
+
+No E: data was read in the public implementation or review sessions. Final
+independent review `close_review_25_final.md` returns `PASS_AFTER_PATCHES`.
+LDG-3209 and Workstream 25 remain pending maintainer acceptance only.

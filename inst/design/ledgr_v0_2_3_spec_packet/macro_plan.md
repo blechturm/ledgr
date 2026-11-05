@@ -567,9 +567,13 @@ freezes behavior (synthesis Section 6).
   weakening exact corruption refusal or adding a second reader. The accepted
   WS25 exception is the measured input: private largest-workload peak rises
   from about 2.4 to 4.9 GiB against v0.2.2 base `0d6c0b11`; the public dense
-  cold read rises from 320 to 1,445 MiB and from 0.13 to 1.52 seconds. The ID
-  is routed here for the next WS9b cut and is not operative implementation
-  authority before that cut is written and accepted.
+  cold read rises from 320 to 1,445 MiB and from 0.13 to 1.52 seconds.
+  `ledgr_run()` pays store-wide validation three times: registration and
+  restart over an empty trace, then publication over the full trace; the first
+  public read on the opened handle validates once more. The H1 private-commit
+  peak rises inside registration and publication. The ID is routed here for
+  the next WS9b cut and is not operative implementation authority before that
+  cut is written and accepted.
 
 ### WS10. Economics (C11, C12a, U2, X2): design and implementation
 
