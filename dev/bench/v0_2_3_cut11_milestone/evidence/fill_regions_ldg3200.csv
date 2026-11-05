@@ -1,0 +1,9 @@
+"build","region","seconds","share"
+"ldg3200","run outside stages",1.69,0.227
+"ldg3200","P apply",1.48,0.199
+"ldg3200","P commit",1.24,0.167
+"ldg3200","results read",1.07,0.144
+"ldg3200","P decide",0.78,0.105
+"ldg3200","E observe/settle",0.71,0.096
+"ldg3200","P plan",0.45,0.061
+"ldg3200","other",0.01,0.001

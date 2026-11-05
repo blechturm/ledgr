@@ -1,0 +1,8 @@
+"build","region","seconds","share"
+"v022","P apply",4.29,0.302
+"v022","run outside stages",3.36,0.236
+"v022","results read",2.27,0.16
+"v022","P commit",1.96,0.138
+"v022","P plan",1.66,0.117
+"v022","P decide",0.66,0.046
+"v022","E observe/settle",0.02,0.001

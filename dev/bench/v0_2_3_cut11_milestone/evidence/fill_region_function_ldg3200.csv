@@ -1,0 +1,124 @@
+"build","region","innermost_ledgr","seconds","share"
+"ldg3200","P apply","ledgr_fill_event_payload",0.76,0.102
+"ldg3200","run outside stages","ledgr_fold_envelope",0.74,0.1
+"ldg3200","results read","ledgr_prepare_accounting_events",0.54,0.073
+"ldg3200","P commit","ledgr_store_append",0.46,0.062
+"ldg3200","E observe/settle","ledgr_fold_stage_observe_settle",0.36,0.048
+"ldg3200","P commit","ledgr_fold_stage_commit",0.29,0.039
+"ldg3200","results read","ledgr_json_read_nested",0.19,0.026
+"ldg3200","P apply","ledgr_json_write_canonical_v2",0.16,0.022
+"ldg3200","P apply","ledgr_lot_apply",0.14,0.019
+"ldg3200","E observe/settle","ledgr_carrier_problem",0.13,0.017
+"ldg3200","run outside stages","ledgr_ttr_raw_call",0.12,0.016
+"ldg3200","P apply","ledgr_carrier_problem",0.11,0.015
+"ldg3200","P apply","ledgr_position_fact_fill_bar",0.11,0.015
+"ldg3200","P commit","ledgr_carrier_problem",0.09,0.012
+"ldg3200","P decide","ledgr_carrier_problem",0.08,0.011
+"ldg3200","P plan","ledgr_carrier_problem",0.08,0.011
+"ldg3200","P commit","ledgr_fold_diagnostic_rows",0.08,0.011
+"ldg3200","P decide","ledgr_fold_stage_decide",0.08,0.011
+"ldg3200","run outside stages","ledgr_history_input_carry_calculation",0.08,0.011
+"ldg3200","results read","ledgr_lot_apply",0.08,0.011
+"ldg3200","P decide","ledgr_validate_strategy_targets",0.08,0.011
+"ldg3200","E observe/settle","ledgr_availability_stable_ids",0.07,0.009
+"ldg3200","P decide","ledgr_availability_validate_strategy_targets",0.07,0.009
+"ldg3200","P plan","ledgr_fold_diagnostic_rows",0.07,0.009
+"ldg3200","P commit","ledgr_fold_flush_pulse_block",0.07,0.009
+"ldg3200","P decide","ledgr_fold_staging_write",0.07,0.009
+"ldg3200","results read","ledgr_lot_input",0.07,0.009
+"ldg3200","P decide","ledgr_pulse_context_current_targets",0.07,0.009
+"ldg3200","run outside stages","ledgr_store_append",0.07,0.009
+"ldg3200","E observe/settle","ledgr_carrier_provider_view",0.06,0.008
+"ldg3200","P commit","ledgr_event_buffer_setv",0.06,0.008
+"ldg3200","P apply","ledgr_fill_meta_rows",0.06,0.008
+"ldg3200","run outside stages","ledgr_history_segments_materialize",0.06,0.008
+"ldg3200","P decide","ledgr_call_strategy_fn",0.05,0.007
+"ldg3200","P plan","ledgr_fold_build_availability_pulse_plan",0.05,0.007
+"ldg3200","P decide","ledgr_fold_diagnostic_rows",0.05,0.007
+"ldg3200","P plan","ledgr_fold_plan_event_kinds",0.05,0.007
+"ldg3200","P decide","ledgr_pulse_context_feature_readable",0.05,0.007
+"ldg3200","P plan","ledgr_carrier_execution_view",0.04,0.005
+"ldg3200","results read","ledgr_extract_fills_impl",0.04,0.005
+"ldg3200","run outside stages","ledgr_feature_plane_exceptions",0.04,0.005
+"ldg3200","P plan","ledgr_fold_stage_plan",0.04,0.005
+"ldg3200","P plan","ledgr_fold_staging_write",0.04,0.005
+"ldg3200","run outside stages","ledgr_history_feature_inputs",0.04,0.005
+"ldg3200","run outside stages","ledgr_history_substrate_bar_matrices",0.04,0.005
+"ldg3200","run outside stages","ledgr_precompute_fetch_bars_frame",0.04,0.005
+"ldg3200","run outside stages","ledgr_projection_pulse_names",0.04,0.005
+"ldg3200","run outside stages","ledgr_strategy_forbidden_do_call_targets",0.04,0.005
+"ldg3200","E observe/settle","ledgr_fold_equity_append",0.03,0.004
+"ldg3200","run outside stages","ledgr_history_feature_frame",0.03,0.004
+"ldg3200","run outside stages","ledgr_history_feature_runs",0.03,0.004
+"ldg3200","run outside stages","ledgr_history_feature_terminal_breaks",0.03,0.004
+"ldg3200","E observe/settle","ledgr_history_substrate_bar_packet",0.03,0.004
+"ldg3200","P commit","ledgr_json_write_canonical_v2",0.03,0.004
+"ldg3200","P apply","ledgr_lot_applied",0.03,0.004
+"ldg3200","results read","ledgr_lot_applied",0.03,0.004
+"ldg3200","run outside stages","ledgr_store_read_markers",0.03,0.004
+"ldg3200","P commit","ledgr_strategy_state_apply_values",0.03,0.004
+"ldg3200","P commit","ledgr_strategy_state_field",0.03,0.004
+"ldg3200","P decide","ledgr_strategy_state_view",0.03,0.004
+"ldg3200","P apply","ledgr_assert_whole_second_utc",0.02,0.003
+"ldg3200","P decide","ledgr_attach_feature_helpers",0.02,0.003
+"ldg3200","P commit","ledgr_canonical_json_encode",0.02,0.003
+"ldg3200","P plan","ledgr_carrier_segments",0.02,0.003
+"ldg3200","results read","ledgr_duckdb_driver",0.02,0.003
+"ldg3200","P commit","ledgr_fold_diagnostic_block",0.02,0.003
+"ldg3200","P apply","ledgr_fold_fill_candidate",0.02,0.003
+"ldg3200","run outside stages","ledgr_function_fingerprint",0.02,0.003
+"ldg3200","run outside stages","ledgr_history_feature_calculate",0.02,0.003
+"ldg3200","run outside stages","ledgr_history_required_field_admission",0.02,0.003
+"ldg3200","run outside stages","ledgr_history_substrate_terminal_planes",0.02,0.003
+"ldg3200","E observe/settle","ledgr_history_view",0.02,0.003
+"ldg3200","P apply","ledgr_lot_add_realized",0.02,0.003
+"ldg3200","results read","ledgr_lot_apply_blocks",0.02,0.003
+"ldg3200","P apply","ledgr_lot_input",0.02,0.003
+"ldg3200","run outside stages","ledgr_normalize_feature_series_output",0.02,0.003
+"ldg3200","results read","ledgr_open_duckdb_with_retry",0.02,0.003
+"ldg3200","P decide","ledgr_refresh_pulse_context_lookup",0.02,0.003
+"ldg3200","run outside stages","ledgr_run_fold_impl",0.02,0.003
+"ldg3200","run outside stages","ledgr_run_snapshot_guard",0.02,0.003
+"ldg3200","results read","ledgr_store_append",0.02,0.003
+"ldg3200","P commit","ledgr_strategy_state_encode",0.02,0.003
+"ldg3200","P decide","ledgr_validate_post_risk_quantities",0.02,0.003
+"ldg3200","P decide","$.ledgr_pulse_context",0.01,0.001
+"ldg3200","other","(none)",0.01,0.001
+"ldg3200","run outside stages","ledgr_availability_calendar",0.01,0.001
+"ldg3200","P commit","ledgr_availability_marked_gross",0.01,0.001
+"ldg3200","run outside stages","ledgr_availability_read_table",0.01,0.001
+"ldg3200","P plan","ledgr_availability_restrictions",0.01,0.001
+"ldg3200","P decide","ledgr_availability_validate_short_exposure",0.01,0.001
+"ldg3200","P decide","ledgr_carrier_new",0.01,0.001
+"ldg3200","P decide","ledgr_carrier_p2_input",0.01,0.001
+"ldg3200","P plan","ledgr_carrier_segment_problem",0.01,0.001
+"ldg3200","P decide","ledgr_carrier_segment_text",0.01,0.001
+"ldg3200","P apply","ledgr_cash_scan",0.01,0.001
+"ldg3200","run outside stages","ledgr_checkpoint_duckdb",0.01,0.001
+"ldg3200","E observe/settle","ledgr_fold_positions_snapshot",0.01,0.001
+"ldg3200","P commit","ledgr_fold_reconciliation_detail",0.01,0.001
+"ldg3200","P apply","ledgr_fold_stage_apply",0.01,0.001
+"ldg3200","P commit","ledgr_fold_staging_write",0.01,0.001
+"ldg3200","run outside stages","ledgr_history_compute_feature_series",0.01,0.001
+"ldg3200","run outside stages","ledgr_history_feature_segment",0.01,0.001
+"ldg3200","run outside stages","ledgr_indicator_normalize_required_fields",0.01,0.001
+"ldg3200","results read","ledgr_lot_add_realized",0.01,0.001
+"ldg3200","P apply","ledgr_lot_dust_tolerance_rows",0.01,0.001
+"ldg3200","results read","ledgr_lot_dust_tolerance_rows",0.01,0.001
+"ldg3200","results read","ledgr_lot_fill",0.01,0.001
+"ldg3200","run outside stages","ledgr_open_duckdb_with_retry",0.01,0.001
+"ldg3200","P plan","ledgr_plan_affordability",0.01,0.001
+"ldg3200","P plan","ledgr_plan_groups",0.01,0.001
+"ldg3200","P plan","ledgr_plan_refuse_first",0.01,0.001
+"ldg3200","P plan","ledgr_plan_resolve",0.01,0.001
+"ldg3200","run outside stages","ledgr_prepare_snapshot_runtime_views",0.01,0.001
+"ldg3200","P decide","ledgr_pulse_context_asset_fields",0.01,0.001
+"ldg3200","P decide","ledgr_pulse_context_cache_set",0.01,0.001
+"ldg3200","P decide","ledgr_pulse_context_lazy_field",0.01,0.001
+"ldg3200","results read","ledgr_replay_accounting_events",0.01,0.001
+"ldg3200","run outside stages","ledgr_schema_validation_signature",0.01,0.001
+"ldg3200","P decide","ledgr_strategy_result",0.01,0.001
+"ldg3200","P commit","ledgr_strategy_state_validate_value",0.01,0.001
+"ldg3200","run outside stages","ledgr_time_now",0.01,0.001
+"ldg3200","run outside stages","ledgr_ttr_build_input",0.01,0.001
+"ldg3200","run outside stages","ledgr_write_strategy_provenance",0.01,0.001

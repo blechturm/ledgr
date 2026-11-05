@@ -1,0 +1,121 @@
+"build","region","innermost_ledgr","seconds","share"
+"cad309f4","run outside stages","ledgr_fold_envelope",0.45,0.079
+"cad309f4","run outside stages","ledgr_diagnostic_query",0.34,0.06
+"cad309f4","E observe/settle","ledgr_fold_stage_observe_settle",0.29,0.051
+"cad309f4","E observe/settle","ledgr_carrier_problem",0.22,0.039
+"cad309f4","P plan","ledgr_store_append",0.22,0.039
+"cad309f4","P plan","ledgr_fold_stage_plan",0.19,0.033
+"cad309f4","P apply","ledgr_prepare_accounting_events",0.19,0.033
+"cad309f4","run outside stages","ledgr_store_append",0.16,0.028
+"cad309f4","results read","ledgr_lot_apply",0.15,0.026
+"cad309f4","P apply","ledgr_lot_apply",0.14,0.025
+"cad309f4","P commit","ledgr_event_buffer_setv",0.13,0.023
+"cad309f4","P decide","ledgr_fold_stage_decide",0.13,0.023
+"cad309f4","P commit","ledgr_fold_stage_commit",0.12,0.021
+"cad309f4","P plan","ledgr_carrier_problem",0.08,0.014
+"cad309f4","run outside stages","ledgr_history_segments_materialize",0.08,0.014
+"cad309f4","results read","ledgr_prepare_accounting_events",0.08,0.014
+"cad309f4","P decide","$.ledgr_pulse_context",0.07,0.012
+"cad309f4","P decide","ledgr_availability_validate_strategy_targets",0.07,0.012
+"cad309f4","P plan","ledgr_carrier_segments",0.07,0.012
+"cad309f4","P decide","ledgr_fold_diagnostic_segment",0.07,0.012
+"cad309f4","P plan","ledgr_fold_diagnostic_segment",0.07,0.012
+"cad309f4","P apply","ledgr_position_fact_fill_bar",0.07,0.012
+"cad309f4","P decide","ledgr_pulse_context_current_targets",0.07,0.012
+"cad309f4","P apply","ledgr_carrier_problem",0.06,0.011
+"cad309f4","P commit","ledgr_fold_diagnostic_rows",0.06,0.011
+"cad309f4","run outside stages","ledgr_ttr_raw_call",0.06,0.011
+"cad309f4","P decide","ledgr_validate_strategy_targets",0.06,0.011
+"cad309f4","P plan","ledgr_carrier_execution_view",0.05,0.009
+"cad309f4","P commit","ledgr_carrier_problem",0.05,0.009
+"cad309f4","P decide","ledgr_carrier_problem",0.05,0.009
+"cad309f4","P commit","ledgr_fold_diagnostic_segment",0.05,0.009
+"cad309f4","P commit","ledgr_fold_flush_pulse_block",0.05,0.009
+"cad309f4","P plan","ledgr_fold_plan_event_kinds",0.05,0.009
+"cad309f4","P apply","ledgr_fold_stage_apply",0.05,0.009
+"cad309f4","run outside stages","ledgr_history_required_field_admission",0.05,0.009
+"cad309f4","run outside stages","ledgr_ttr_build_input",0.05,0.009
+"cad309f4","P commit","ledgr_availability_marked_gross",0.04,0.007
+"cad309f4","E observe/settle","ledgr_availability_stable_ids",0.04,0.007
+"cad309f4","P plan","ledgr_diagnostic_segment_at",0.04,0.007
+"cad309f4","results read","ledgr_extract_fills_impl",0.04,0.007
+"cad309f4","P plan","ledgr_fold_build_availability_pulse_plan",0.04,0.007
+"cad309f4","P plan","ledgr_fold_staging_add_residual",0.04,0.007
+"cad309f4","P commit","ledgr_fold_staging_write",0.04,0.007
+"cad309f4","run outside stages","ledgr_history_feature_inputs",0.04,0.007
+"cad309f4","P apply","ledgr_lot_dust_tolerance_rows",0.04,0.007
+"cad309f4","P apply","ledgr_lot_input",0.04,0.007
+"cad309f4","run outside stages","ledgr_precompute_fetch_bars_frame",0.04,0.007
+"cad309f4","run outside stages","ledgr_projection_pulse_names",0.04,0.007
+"cad309f4","P decide","ledgr_call_strategy_fn",0.03,0.005
+"cad309f4","E observe/settle","ledgr_carrier_provider_view",0.03,0.005
+"cad309f4","P plan","ledgr_diagnostic_implicit_hold_block",0.03,0.005
+"cad309f4","run outside stages","ledgr_feature_plane_exceptions",0.03,0.005
+"cad309f4","P commit","ledgr_fold_diagnostic_block",0.03,0.005
+"cad309f4","run outside stages","ledgr_history_feature_calculate",0.03,0.005
+"cad309f4","run outside stages","ledgr_history_substrate_bar_matrices",0.03,0.005
+"cad309f4","results read","ledgr_lot_dust_tolerance_rows",0.03,0.005
+"cad309f4","results read","as_tibble.ledgr_backtest",0.02,0.004
+"cad309f4","P decide","ledgr_attach_feature_helpers",0.02,0.004
+"cad309f4","E observe/settle","ledgr_availability_restrictions",0.02,0.004
+"cad309f4","P plan","ledgr_availability_restrictions",0.02,0.004
+"cad309f4","P plan","ledgr_diagnostic_clean_hold",0.02,0.004
+"cad309f4","P apply","ledgr_fill_event_payload",0.02,0.004
+"cad309f4","E observe/settle","ledgr_fold_equity_append",0.02,0.004
+"cad309f4","run outside stages","ledgr_history_feature_frame",0.02,0.004
+"cad309f4","run outside stages","ledgr_history_feature_runs",0.02,0.004
+"cad309f4","run outside stages","ledgr_history_feature_segment",0.02,0.004
+"cad309f4","run outside stages","ledgr_history_feature_terminal_breaks",0.02,0.004
+"cad309f4","run outside stages","ledgr_history_input_carry_calculation",0.02,0.004
+"cad309f4","results read","ledgr_lot_input",0.02,0.004
+"cad309f4","results read","ledgr_open_duckdb_with_retry",0.02,0.004
+"cad309f4","P plan","ledgr_plan_resolve",0.02,0.004
+"cad309f4","P apply","ledgr_position_facts_apply",0.02,0.004
+"cad309f4","P decide","ledgr_pulse_context_feature_readable",0.02,0.004
+"cad309f4","P decide","ledgr_pulse_context_id_to_idx",0.02,0.004
+"cad309f4","results read","ledgr_store_append",0.02,0.004
+"cad309f4","run outside stages","ledgr_store_read_markers",0.02,0.004
+"cad309f4","other","(none)",0.01,0.002
+"cad309f4","P apply","ledgr_accounting_empty_columns",0.01,0.002
+"cad309f4","P commit","ledgr_accounting_empty_columns",0.01,0.002
+"cad309f4","P apply","ledgr_assert_whole_second_utc",0.01,0.002
+"cad309f4","run outside stages","ledgr_availability_calendar",0.01,0.002
+"cad309f4","run outside stages","ledgr_availability_diagnostic_columns",0.01,0.002
+"cad309f4","P plan","ledgr_carrier_segment_rows",0.01,0.002
+"cad309f4","P decide","ledgr_carrier_segment_text",0.01,0.002
+"cad309f4","run outside stages","ledgr_deparse_one",0.01,0.002
+"cad309f4","P plan","ledgr_diagnostic_clean_fill",0.01,0.002
+"cad309f4","P plan","ledgr_diagnostic_implicit_block",0.01,0.002
+"cad309f4","P plan","ledgr_diagnostic_implicit_columns",0.01,0.002
+"cad309f4","results read","ledgr_duckdb_driver",0.01,0.002
+"cad309f4","P decide","ledgr_ensure_pulse_context_accessors",0.01,0.002
+"cad309f4","P plan","ledgr_fill_publication_deltas",0.01,0.002
+"cad309f4","P commit","ledgr_fold_staging_add",0.01,0.002
+"cad309f4","run outside stages","ledgr_history_substrate_for_experiment",0.01,0.002
+"cad309f4","E observe/settle","ledgr_history_substrate_is",0.01,0.002
+"cad309f4","P decide","ledgr_is_strategy_intermediate",0.01,0.002
+"cad309f4","P apply","ledgr_lot_add_realized",0.01,0.002
+"cad309f4","results read","ledgr_lot_add_realized",0.01,0.002
+"cad309f4","results read","ledgr_lot_apply_blocks",0.01,0.002
+"cad309f4","results read","ledgr_lot_side",0.01,0.002
+"cad309f4","run outside stages","ledgr_normalize_feature_series_output",0.01,0.002
+"cad309f4","run outside stages","ledgr_open_duckdb_with_retry",0.01,0.002
+"cad309f4","P plan","ledgr_plan_affordability",0.01,0.002
+"cad309f4","P plan","ledgr_plan_groups",0.01,0.002
+"cad309f4","P plan","ledgr_plan_kind_text",0.01,0.002
+"cad309f4","P plan","ledgr_plan_refuse_first",0.01,0.002
+"cad309f4","P decide","ledgr_pulse_context_lazy_field",0.01,0.002
+"cad309f4","run outside stages","ledgr_run_equity_prefix_commit",0.01,0.002
+"cad309f4","run outside stages","ledgr_run_registration",0.01,0.002
+"cad309f4","run outside stages","ledgr_run_snapshot_guard",0.01,0.002
+"cad309f4","run outside stages","ledgr_run_snapshot_history_start",0.01,0.002
+"cad309f4","run outside stages","ledgr_runtime_projection",0.01,0.002
+"cad309f4","run outside stages","ledgr_snapshot_close",0.01,0.002
+"cad309f4","run outside stages","ledgr_snapshot_info",0.01,0.002
+"cad309f4","run outside stages","ledgr_store_path",0.01,0.002
+"cad309f4","P decide","ledgr_strategy_result",0.01,0.002
+"cad309f4","P commit","ledgr_strategy_state_apply_values",0.01,0.002
+"cad309f4","P commit","ledgr_strategy_state_field",0.01,0.002
+"cad309f4","run outside stages","ledgr_ttr_match_rule",0.01,0.002
+"cad309f4","P apply","ledgr_whole_second_posix",0.01,0.002
+"cad309f4","run outside stages","ledgr_write_strategy_provenance",0.01,0.002
