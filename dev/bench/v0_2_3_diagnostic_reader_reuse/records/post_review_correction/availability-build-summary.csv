@@ -1,0 +1,3 @@
+"label","source_commit","instruments","sessions","membership_sets","decision_shape_rows","fixture_sha256","implicit_rows","physical_rows","build_elapsed_sec","peak_wset_mib","peak_private_mib"
+"base","93e4b347",500,7200,600,3600000,"f0e37a9894394e7f5893e2a893b6a1ecbbf59337791eba8b9f8833d4ee3061cc",3600000,7201,251.46,5072.94140625,5313.4609375
+"candidate","f4ead35d",500,7200,600,3600000,"f0e37a9894394e7f5893e2a893b6a1ecbbf59337791eba8b9f8833d4ee3061cc",3600000,7201,245.52,5760.12109375,6057.72265625

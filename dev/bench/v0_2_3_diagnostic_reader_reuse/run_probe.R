@@ -39,6 +39,16 @@ for (label in names(arms)) {
     )
   )
   run(
+    "measure_sequence.R",
+    c(
+      arms[[label]], availability_build,
+      file.path(
+        output_dir,
+        paste0(label, "-availability-same-handle-sequence.csv")
+      )
+    )
+  )
+  run(
     "measure_plan.R",
     c(
       arms[[label]], availability_build,
@@ -59,3 +69,27 @@ surface_files <- unlist(lapply(
 ))
 summary <- do.call(rbind, lapply(surface_files, utils::read.csv, stringsAsFactors = FALSE))
 utils::write.csv(summary, file.path(output_dir, "reader-summary.csv"), row.names = FALSE); print(summary)
+
+bind_records <- function(files, output) {
+  rows <- do.call(rbind, lapply(files, utils::read.csv, stringsAsFactors = FALSE))
+  utils::write.csv(rows, file.path(output_dir, output), row.names = FALSE)
+  rows
+}
+availability_build <- bind_records(
+  file.path(output_dir, paste0(names(arms), "-availability-build.csv")),
+  "availability-build-summary.csv"
+)
+availability_reader <- bind_records(
+  file.path(output_dir, paste0(names(arms), "-availability-diagnostics.csv")),
+  "availability-reader-summary.csv"
+)
+availability_sequence <- bind_records(
+  file.path(
+    output_dir,
+    paste0(names(arms), "-availability-same-handle-sequence.csv")
+  ),
+  "availability-sequence-summary.csv"
+)
+print(availability_build)
+print(availability_reader)
+print(availability_sequence)

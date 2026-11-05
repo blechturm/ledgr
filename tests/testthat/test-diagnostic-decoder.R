@@ -1013,6 +1013,35 @@ testthat::test_that("[LTB-0561] availability readers share one exact handle proo
     }
   }
   testthat::expect_identical(calls$n, 1L)
+
+  # Each exported reader owns the validation scope explicitly.  This is
+  # separate from the one-call assertion above: a nested reader may otherwise
+  # make a missing outer scope look correct by warming the same handle proof.
+  scope_calls <- new.env(parent = emptyenv())
+  scope_calls$n <- 0L
+  original_scope <- ledgr:::ledgr_backtest_diagnostic_validation_scope
+  testthat::with_mocked_bindings(
+    {
+      testthat::expect_no_error(ledgr_valuation_summary(bt))
+      testthat::expect_no_error(ledgr_run_completion(bt))
+      testthat::expect_no_error(ledgr_corporate_action_summary(bt))
+      for (what in c(
+        "equity", "returns", "fills", "trades", "ledger", "diagnostics",
+        "availability"
+      )) {
+        testthat::expect_no_error(ledgr_results(bt, what))
+        testthat::expect_no_error(tibble::as_tibble(bt, what = what))
+      }
+    },
+    ledgr_backtest_diagnostic_validation_scope = function(bt) {
+      scope_calls$n <- scope_calls$n + 1L
+      original_scope(bt)
+    },
+    .package = "ledgr"
+  )
+  # Three standalone readers, plus an outer and inner scope for each
+  # ledgr_results() call, plus one direct as_tibble() scope for each table.
+  testthat::expect_identical(scope_calls$n, 24L)
 })
 
 testthat::test_that("[LTB-0561] diagnostic query preserves caller memory setting", {

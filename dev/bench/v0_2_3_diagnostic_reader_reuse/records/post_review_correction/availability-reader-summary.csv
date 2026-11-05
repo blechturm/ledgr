@@ -1,0 +1,3 @@
+"label","source_commit","surface","elapsed_sec","validator_calls","validator_elapsed_sec","result_bytes","result_sha256","peak_wset_mib","peak_private_mib"
+"base","93e4b347","diagnostics",9.1,1,6.65,591619152,"3d80dee898c7f13ae9aebcd97c90e08222c36f2224a8edf112586faaebb93c44",4418.640625,9408.2890625
+"candidate","f4ead35d","diagnostics",4.94,1,2.42,591619152,"3d80dee898c7f13ae9aebcd97c90e08222c36f2224a8edf112586faaebb93c44",4874.984375,9440.5078125
