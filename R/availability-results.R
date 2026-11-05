@@ -155,6 +155,8 @@ ledgr_run_completion <- function(bt) {
   if (!inherits(bt, "ledgr_backtest")) {
     rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
+  release_validation <- ledgr_backtest_diagnostic_validation_scope(bt)
+  on.exit(release_validation(), add = TRUE)
   opened <- ledgr_backtest_read_connection(bt)
   on.exit(opened$close(), add = TRUE)
   info <- ledgr_run_completion_info(opened$con, bt$run_id)

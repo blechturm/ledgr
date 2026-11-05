@@ -129,24 +129,16 @@ testthat::test_that("[LTB-0554] logical diagnostics own every production read", 
       instrument_id = "AAA",
       explain_ts_utc = first_decision
     ),
-    ledgr_diagnostic_require_coverage = function(
-      con, run_ids, instrument_id = NULL, explain_ts_utc = NULL
-    ) {
-      coverage_call$instrument_id <- instrument_id
-      coverage_call$explain_ts_utc <- explain_ts_utc
-      original_coverage(
-        con, run_ids,
-        instrument_id = instrument_id,
-        explain_ts_utc = explain_ts_utc
-      )
+    ledgr_diagnostic_require_coverage = function(con, run_ids) {
+      coverage_call$calls <- as.integer(coverage_call$calls %||% 0L) + 1L
+      original_coverage(con, run_ids)
     },
     .package = "ledgr"
   )
   # The reader query remains bounded, while integrity validation is one full
   # stored-state check shared by this handle. A filtered first check could not
   # authorize the later full diagnostic read from the same cache entry.
-  testthat::expect_null(coverage_call$instrument_id)
-  testthat::expect_null(coverage_call$explain_ts_utc)
+  testthat::expect_identical(coverage_call$calls, 1L)
   expected <- decoded[
     decoded$instrument_id == "AAA" &
       ((decoded$stage == "decision" & decoded$ts_utc == first_decision) |
@@ -658,7 +650,7 @@ testthat::test_that("[LTB-0558] in-pulse implicit sequence order is exact", {
   testthat::expect_match(validator_source, "duckdb_unregister")
   testthat::expect_match(validator_source, "snapshot_membership_sets")
   testthat::expect_match(validator_source, "ASOF LEFT JOIN member_states")
-  testthat::expect_match(validator_source, "ledgr_diagnostic_with_bounded_memory")
+  testthat::expect_match(validator_source, "ledgr_diagnostic_query")
   testthat::expect_match(validator_source, "LIMIT 1")
   testthat::expect_false(grepl(
     "SELECT member_rank FROM member_states",
@@ -827,7 +819,17 @@ testthat::test_that("[LTB-0561] public readers validate one stored diagnostic st
   testthat::expect_no_error(capture.output(print(bt)))
   testthat::expect_no_error(capture.output(summary(bt)))
   testthat::expect_no_error(ledgr_compute_metrics(bt))
-  testthat::expect_no_error(ledgr_results(bt, "diagnostics"))
+  result_tables <- c(
+    "equity", "returns", "fills", "trades", "ledger", "diagnostics",
+    "availability"
+  )
+  for (what in result_tables) {
+    testthat::expect_no_error(ledgr_results(bt, what))
+    testthat::expect_no_error(tibble::as_tibble(bt, what = what))
+  }
+  testthat::expect_no_error(ledgr_run_completion(bt))
+  testthat::expect_no_error(ledgr_valuation_summary(bt))
+  testthat::expect_no_error(ledgr_corporate_action_summary(bt))
   testthat::expect_identical(calls$n, 1L)
   testthat::expect_identical(
     DBI::dbGetQuery(
@@ -896,4 +898,183 @@ testthat::test_that("[LTB-0561] public readers validate one stored diagnostic st
   reopened <- ledgr_run_open(snapshot, bt$run_id)
   on.exit(close(reopened), add = TRUE)
   testthat::expect_no_error(ledgr_results(reopened, "diagnostics"))
+  testthat::expect_identical(calls$n, 2L)
+  testthat::expect_no_error(ledgr_results(reopened, "diagnostics"))
+  testthat::expect_identical(calls$n, 2L)
+  close(reopened)
+
+  # Direct internal decodes deliberately remain cold. Only a public run-handle
+  # scope can reuse its exact persisted-state proof.
+  direct_before <- calls$n
+  testthat::expect_no_error(
+    ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id)
+  )
+  testthat::expect_no_error(
+    ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id)
+  )
+  testthat::expect_identical(calls$n, direct_before + 2L)
+
+  # A would-be cache hit inside an explicit transaction validates cold. An
+  # uncommitted corruption therefore cannot hide behind the handle proof.
+  release_tx <- ledgr:::ledgr_backtest_diagnostic_validation_scope(bt)
+  on.exit(release_tx(), add = TRUE)
+  testthat::expect_no_error(
+    ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id)
+  )
+  DBI::dbBegin(opened$con)
+  testthat::expect_true(
+    ledgr:::ledgr_diagnostic_explicit_transaction(opened$con)
+  )
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET target = target + 1",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(bt$run_id, row$decision_seq[[1L]])
+  )
+  testthat::expect_error(
+    ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id),
+    class = "ledgr_diagnostic_corrupt"
+  )
+  DBI::dbRollback(opened$con)
+  release_tx()
+
+  # A checkpoint can remove the WAL, so the durable main-file stamp itself
+  # must invalidate the proof. A fresh handle then refuses the first read.
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET target = target + 1",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(bt$run_id, row$decision_seq[[1L]])
+  )
+  DBI::dbExecute(opened$con, "CHECKPOINT")
+  corrupted <- ledgr_run_open(snapshot, bt$run_id)
+  on.exit(close(corrupted), add = TRUE)
+  testthat::expect_error(
+    ledgr_results(corrupted, "diagnostics"),
+    class = "ledgr_diagnostic_corrupt"
+  )
+  close(corrupted)
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET target = ?",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(row$target[[1L]], bt$run_id, row$decision_seq[[1L]])
+  )
+  DBI::dbExecute(opened$con, "CHECKPOINT")
+})
+
+testthat::test_that("[LTB-0561] availability readers share one exact handle proof", {
+  snapshot <- scale_test_events_snapshot()
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  bt <- ledgr_run(
+    ledgr_experiment(
+      snapshot,
+      function(ctx, params) ctx$hold(),
+      universe = ledgr_universe_members("u"),
+      valuation_policy = ledgr_valuation_stale(),
+      opening = ledgr_opening(cash = 1000),
+      cost_model = ledgr_cost_zero()
+    ),
+    run_id = "diagnostic-validation-availability"
+  )
+  on.exit(close(bt), add = TRUE)
+
+  calls <- new.env(parent = emptyenv())
+  calls$n <- 0L
+  original <- ledgr:::ledgr_diagnostic_decision_order_bad
+  testthat::local_mocked_bindings(
+    ledgr_diagnostic_decision_order_bad = function(...) {
+      calls$n <- calls$n + 1L
+      original(...)
+    },
+    .package = "ledgr"
+  )
+
+  testthat::expect_no_error(ledgr_valuation_summary(bt))
+  testthat::expect_identical(calls$n, 1L)
+  for (i in seq_len(2L)) {
+    testthat::expect_no_error(ledgr_run_completion(bt))
+    testthat::expect_no_error(ledgr_corporate_action_summary(bt))
+    testthat::expect_no_error(capture.output(print(bt)))
+    testthat::expect_no_error(capture.output(summary(bt)))
+    testthat::expect_no_error(ledgr_compute_metrics(bt))
+    for (what in c(
+      "equity", "returns", "fills", "trades", "ledger", "diagnostics",
+      "availability"
+    )) {
+      testthat::expect_no_error(ledgr_results(bt, what))
+      testthat::expect_no_error(tibble::as_tibble(bt, what = what))
+    }
+  }
+  testthat::expect_identical(calls$n, 1L)
+})
+
+testthat::test_that("[LTB-0561] diagnostic query preserves caller memory setting", {
+  con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
+  setting <- function() {
+    DBI::dbGetQuery(
+      con,
+      "SELECT current_setting('memory_limit') AS value"
+    )$value[[1L]]
+  }
+  original <- setting()
+  on.exit({
+    DBI::dbExecute(
+      con,
+      paste("SET memory_limit =", DBI::dbQuoteString(con, original))
+    )
+    DBI::dbDisconnect(con, shutdown = TRUE)
+  }, add = TRUE)
+
+  DBI::dbExecute(con, "SET memory_limit = '3000MB'")
+  before <- setting()
+  testthat::expect_identical(
+    ledgr:::ledgr_diagnostic_query(setting()),
+    before
+  )
+  testthat::expect_identical(setting(), before)
+
+  testthat::expect_error(
+    ledgr:::ledgr_diagnostic_query(stop("ordinary")),
+    "ordinary"
+  )
+  testthat::expect_identical(setting(), before)
+
+  interrupted <- FALSE
+  tryCatch(
+    ledgr:::ledgr_diagnostic_query(rlang::interrupt()),
+    interrupt = function(cnd) interrupted <<- TRUE
+  )
+  testthat::expect_true(interrupted)
+  testthat::expect_identical(setting(), before)
+
+  DBI::dbExecute(con, "SET memory_limit = '512MiB'")
+  before <- setting()
+  testthat::expect_identical(
+    ledgr:::ledgr_diagnostic_query(setting()),
+    before
+  )
+  testthat::expect_identical(setting(), before)
+  testthat::expect_error(
+    ledgr:::ledgr_diagnostic_query(
+      stop("Out of Memory Error: synthetic witness")
+    ),
+    "exhausted DuckDB's available memory",
+    class = "ledgr_diagnostic_resource_exhausted"
+  )
+
+  coverage <- data.frame(
+    run_id = character(), logical_count = integer(),
+    codec_rule_version = integer()
+  )
+  summaries <- data.frame(run_id = character(), summary_hash = character())
+  testthat::expect_null(
+    ledgr:::ledgr_diagnostic_persisted_state(con, coverage, summaries)
+  )
 })

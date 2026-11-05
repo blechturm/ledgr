@@ -1224,11 +1224,7 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ...) {
   }
 
   what <- ledgr_match_result_table(what)
-  release_validation <- if (identical(what, "diagnostics")) {
-    ledgr_backtest_diagnostic_validation_scope(x)
-  } else {
-    function() invisible(FALSE)
-  }
+  release_validation <- ledgr_backtest_diagnostic_validation_scope(x)
   on.exit(release_validation(), add = TRUE)
   opened <- ledgr_backtest_read_connection(x)
   con <- opened$con
@@ -1355,6 +1351,11 @@ as_tibble.ledgr_backtest <- function(x, what = "equity", ...) {
 ledgr_results <- function(bt, what = c(
     "equity", "returns", "fills", "trades", "ledger", "diagnostics", "availability"
 )) {
+  if (!inherits(bt, "ledgr_backtest")) {
+    rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
+  }
+  release_validation <- ledgr_backtest_diagnostic_validation_scope(bt)
+  on.exit(release_validation(), add = TRUE)
   what <- ledgr_match_result_table(what)
   ledgr_result_table(tibble::as_tibble(bt, what = what), what = what)
 }

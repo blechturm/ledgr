@@ -34,36 +34,92 @@ ledgr_diagnostic_logical_sql <- function() {
   )
 }
 
-ledgr_duckdb_memory_limit_bytes <- function(value) {
-  match <- regexec(
-    "^([0-9]+(?:[.][0-9]+)?) (B|KiB|MiB|GiB|TiB)$",
-    as.character(value)
+# The integrity query must not mutate a caller-owned DuckDB setting. DuckDB
+# reports memory_limit in a rounded display form, so SET/restore cannot recover
+# an arbitrary custom value losslessly. Keep the vectorized SQL plan and turn
+# a resource refusal into a stable ledgr condition instead.
+ledgr_diagnostic_query <- function(code) {
+  tryCatch(
+    force(code),
+    error = function(cnd) {
+      message <- conditionMessage(cnd)
+      if (grepl(
+        "out of memory|failed to pin block|could not allocate",
+        message,
+        ignore.case = TRUE
+      )) {
+        rlang::abort(
+          paste(
+            "Diagnostic integrity validation exhausted DuckDB's available",
+            "memory."
+          ),
+          class = "ledgr_diagnostic_resource_exhausted",
+          parent = cnd
+        )
+      }
+      stop(cnd)
+    }
   )
-  parts <- regmatches(as.character(value), match)[[1L]]
-  if (length(parts) != 3L) return(NA_real_)
-  scale <- c(B = 1, KiB = 2^10, MiB = 2^20, GiB = 2^30, TiB = 2^40)
-  as.numeric(parts[[2L]]) * unname(scale[[parts[[3L]]]])
 }
 
-ledgr_diagnostic_with_bounded_memory <- function(con, code) {
-  prior <- DBI::dbGetQuery(
+# DuckDB allocates one transaction id per statement outside an explicit
+# transaction and reuses the id inside one. A cache hit therefore needs only
+# this constant-size probe to refuse reuse while uncommitted state could be
+# visible on the connection.
+ledgr_diagnostic_explicit_transaction <- function(con) {
+  first <- DBI::dbGetQuery(
     con,
-    "SELECT current_setting('memory_limit') AS value"
-  )$value[[1L]]
-  cap <- 2^30
-  changed <- is.finite(ledgr_duckdb_memory_limit_bytes(prior)) &&
-    ledgr_duckdb_memory_limit_bytes(prior) > cap
-  if (changed) {
-    DBI::dbExecute(con, "SET memory_limit = '1GB'")
-    on.exit(
-      DBI::dbExecute(
-        con,
-        paste("SET memory_limit =", DBI::dbQuoteString(con, prior))
-      ),
-      add = TRUE
+    "SELECT current_transaction_id() AS transaction_id"
+  )$transaction_id[[1L]]
+  second <- DBI::dbGetQuery(
+    con,
+    "SELECT current_transaction_id() AS transaction_id"
+  )$transaction_id[[1L]]
+  identical(first, second)
+}
+
+ledgr_diagnostic_persisted_state <- function(con, coverage, summaries) {
+  databases <- DBI::dbGetQuery(
+    con,
+    paste(
+      "SELECT database_name, path FROM duckdb_databases()",
+      "ORDER BY database_name"
     )
-  }
-  force(code)
+  )
+  current <- as.character(DBI::dbGetQuery(
+    con,
+    "SELECT current_database() AS database_name"
+  )$database_name[[1L]])
+  user_database <- !(as.character(databases$database_name) %in% c("system", "temp"))
+  databases <- databases[user_database, , drop = FALSE]
+  db_paths <- as.character(databases$path)
+  main <- which(as.character(databases$database_name) == current)
+  durable <- length(main) == 1L && length(db_paths) > 0L &&
+    all(!is.na(db_paths) & nzchar(db_paths) & db_paths != ":memory:") &&
+    all(file.exists(db_paths))
+  if (!durable) return(NULL)
+
+  store_paths <- unique(c(db_paths, paste0(db_paths, ".wal")))
+  store_info <- file.info(store_paths)
+  list(
+    coverage = coverage[
+      order(as.character(coverage$run_id), method = "radix"),
+      c("run_id", "logical_count", "codec_rule_version"),
+      drop = FALSE
+    ],
+    summary = summaries[
+      order(as.character(summaries$run_id), method = "radix"),
+      c("run_id", "summary_hash"),
+      drop = FALSE
+    ],
+    stores = data.frame(
+      path = store_paths,
+      exists = !is.na(store_info$size),
+      size = as.numeric(store_info$size),
+      mtime = as.numeric(store_info$mtime),
+      stringsAsFactors = FALSE
+    )
+  )
 }
 
 # Validate the compact decision order wholly inside DuckDB. The only R-side
@@ -71,10 +127,7 @@ ledgr_diagnostic_with_bounded_memory <- function(con, code) {
 # rule; the query returns at most one offending run/issue row. In particular,
 # no implicit diagnostic row or per-row timestamp/string key crosses the DBI
 # boundary.
-ledgr_diagnostic_decision_order_bad <- function(con,
-                                                run_ids,
-                                                instrument_id = NULL,
-                                                explain_ts_utc = NULL) {
+ledgr_diagnostic_decision_order_bad <- function(con, run_ids) {
   if (length(run_ids) == 0L) {
     return(data.frame(run_id = character(), issue = character()))
   }
@@ -127,25 +180,6 @@ ledgr_diagnostic_decision_order_bad <- function(con,
   )
   relation <- as.character(DBI::dbQuoteIdentifier(con, relation_name))
 
-  target_where <- character()
-  target_params <- list()
-  if (!is.null(instrument_id)) {
-    target_where <- c(target_where, "instrument_id = ?")
-    target_params <- c(target_params, list(as.character(instrument_id)))
-  }
-  if (!is.null(explain_ts_utc)) {
-    target_where <- c(target_where, "ts_utc = ?")
-    target_params <- c(
-      target_params,
-      list(as.POSIXct(explain_ts_utc, tz = "UTC"))
-    )
-  }
-  target_sql <- if (length(target_where) > 0L) {
-    paste("WHERE", paste(target_where, collapse = " AND "))
-  } else {
-    ""
-  }
-
   query <- paste0(
     "WITH run_meta AS (SELECT DISTINCT run_id, snapshot_id, universe_id, ",
     "uses_membership, CAST(axis_size AS BIGINT) AS axis_size FROM ", relation,
@@ -158,9 +192,7 @@ ledgr_diagnostic_decision_order_bad <- function(con,
     ") AND stage = 'decision' AND instrument_id <> '' UNION ALL ",
     "SELECT run_id, ts_utc, instrument_id, decision_seq, decision_order, TRUE ",
     "FROM run_diagnostic_implicit WHERE run_id IN (", marks,
-    ")), target_pulses AS (SELECT DISTINCT run_id, ts_utc FROM logical_decisions ",
-    target_sql, "), decision_rows AS (SELECT d.* FROM logical_decisions d ",
-    "JOIN target_pulses p USING (run_id, ts_utc)), header_ranked AS (",
+    ")), decision_rows AS (SELECT * FROM logical_decisions), header_ranked AS (",
     "SELECT rm.run_id, rm.snapshot_id, rm.universe_id, h.set_id, h.complete, ",
     "h.effective_from, h.knowledge_time, ROW_NUMBER() OVER (PARTITION BY rm.run_id ",
     "ORDER BY h.effective_from, h.knowledge_time, h.set_id) AS header_rank ",
@@ -235,21 +267,17 @@ ledgr_diagnostic_decision_order_bad <- function(con,
     "SELECT run_id, issue FROM issues WHERE issue IS NOT NULL ",
     "ORDER BY run_id, issue LIMIT 1"
   )
-  bad <- ledgr_diagnostic_with_bounded_memory(
-    con,
+  bad <- ledgr_diagnostic_query(
     DBI::dbGetQuery(
       con,
       query,
-      params = c(as.list(run_ids), as.list(run_ids), target_params)
+      params = c(as.list(run_ids), as.list(run_ids))
     )
   )
   bad[seq_len(min(1L, nrow(bad))), c("run_id", "issue"), drop = FALSE]
 }
 
-ledgr_diagnostic_require_coverage <- function(con,
-                                              run_ids,
-                                              instrument_id = NULL,
-                                              explain_ts_utc = NULL) {
+ledgr_diagnostic_require_coverage <- function(con, run_ids) {
   if (length(run_ids) == 0L) return(invisible(TRUE))
   marks <- paste(rep("?", length(run_ids)), collapse = ", ")
   coverage <- DBI::dbGetQuery(
@@ -269,48 +297,22 @@ ledgr_diagnostic_require_coverage <- function(con,
   validation_state <- NULL
   if (!is.null(cache)) {
     summaries <- ledgr_diagnostic_summary_read(con, run_ids)
-    databases <- DBI::dbGetQuery(
-      con,
-      paste(
-        "SELECT database_name, path FROM duckdb_databases()",
-        "WHERE path IS NOT NULL AND path <> '' ORDER BY database_name"
-      )
+    validation_state <- ledgr_diagnostic_persisted_state(
+      con, coverage, summaries
     )
-    store_paths <- unique(c(
-      as.character(databases$path),
-      paste0(as.character(databases$path), ".wal")
-    ))
-    if (length(store_paths) == 0L) {
-      # In-memory databases expose no independent mutation token. Correctness
-      # wins over reuse: every logical read validates them cold.
+    if (is.null(validation_state)) {
+      # A missing main path, missing store stat, or in-memory database exposes
+      # no independent persisted-state token. Correctness wins over reuse.
       cache <- NULL
     } else {
-      store_info <- file.info(store_paths)
-      store_state <- data.frame(
-        path = store_paths,
-        exists = !is.na(store_info$size),
-        size = as.numeric(store_info$size),
-        mtime = as.numeric(store_info$mtime),
-        stringsAsFactors = FALSE
-      )
-      coverage_state <- coverage[
-        order(as.character(coverage$run_id), method = "radix"),
-        c("run_id", "logical_count", "codec_rule_version"),
-        drop = FALSE
-      ]
-      summary_state <- summaries[
-        order(as.character(summaries$run_id), method = "radix"),
-        c("run_id", "summary_hash"),
-        drop = FALSE
-      ]
-      validation_state <- list(
-        coverage = coverage_state,
-        summary = summary_state,
-        stores = store_state
-      )
       if (exists(cache_key, envir = cache, inherits = FALSE) &&
           identical(get(cache_key, envir = cache, inherits = FALSE), validation_state)) {
-        return(invisible(TRUE))
+        if (!ledgr_diagnostic_explicit_transaction(con)) {
+          return(invisible(TRUE))
+        }
+        # An uncommitted change can be visible only to this connection. Drop
+        # the persisted-state proof and validate the transaction cold.
+        rm(list = cache_key, envir = cache)
       }
     }
   }
@@ -362,19 +364,7 @@ ledgr_diagnostic_require_coverage <- function(con,
       class = "ledgr_diagnostic_corrupt"
     )
   }
-  association_where <- ""
   association_params <- as.list(run_ids)
-  if (!is.null(instrument_id)) {
-    association_where <- paste0(association_where, " AND i.instrument_id = ?")
-    association_params <- c(association_params, list(as.character(instrument_id)))
-  }
-  if (!is.null(explain_ts_utc)) {
-    association_where <- paste0(association_where, " AND i.ts_utc = ?")
-    association_params <- c(
-      association_params,
-      list(as.POSIXct(explain_ts_utc, tz = "UTC"))
-    )
-  }
   association <- DBI::dbGetQuery(
     con,
     paste0(
@@ -383,7 +373,7 @@ ledgr_diagnostic_require_coverage <- function(con,
       "LEFT JOIN snapshot_bars b ON b.snapshot_id = r.snapshot_id ",
       "AND b.instrument_id = i.instrument_id AND b.ts_utc = i.ts_utc ",
       "LEFT JOIN ledger_events e ON e.run_id = i.run_id AND e.event_seq = i.event_seq ",
-      "WHERE i.run_id IN (", marks, ")", association_where, " AND (",
+      "WHERE i.run_id IN (", marks, ") AND (",
       "i.decision_mark_source <> 'current_close' OR i.decision_mark_age <> 0 OR ",
       "b.ts_utc IS NULL OR b.close IS DISTINCT FROM i.decision_price OR ",
       "(i.execution_seq IS NOT NULL AND (",
@@ -433,12 +423,7 @@ ledgr_diagnostic_require_coverage <- function(con,
       class = "ledgr_diagnostic_corrupt"
     )
   }
-  order_bad <- ledgr_diagnostic_decision_order_bad(
-    con,
-    run_ids,
-    instrument_id = instrument_id,
-    explain_ts_utc = explain_ts_utc
-  )
+  order_bad <- ledgr_diagnostic_decision_order_bad(con, run_ids)
   if (nrow(order_bad) > 0L) {
     label <- if (identical(order_bad$issue[[1L]], "sequence")) {
       "sequence"
@@ -455,7 +440,17 @@ ledgr_diagnostic_require_coverage <- function(con,
     )
   }
   if (!is.null(cache)) {
-    assign(cache_key, validation_state, envir = cache)
+    # Validation registers and removes a temporary axis relation. Capture the
+    # store token after that work so the proof describes the persisted state
+    # that later public reads will observe.
+    summaries <- ledgr_diagnostic_summary_read(con, run_ids)
+    validation_state <- ledgr_diagnostic_persisted_state(
+      con, coverage, summaries
+    )
+    if (!is.null(validation_state) &&
+        !ledgr_diagnostic_explicit_transaction(con)) {
+      assign(cache_key, validation_state, envir = cache)
+    }
   }
   invisible(TRUE)
 }

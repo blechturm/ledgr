@@ -97,7 +97,7 @@ testthat::test_that("runner can use a SEALED snapshot and a subset universe; run
   testthat::expect_identical(run$snapshot_id[[1]], fx$snapshot_id)
 })
 
-testthat::test_that("runner can use separate snapshot artifact and run ledger databases", {
+testthat::test_that("[LTB-0561] runner validates split run and snapshot stores once", {
   fx <- make_snapshot_runner_db(status = "SEALED")
   run_path <- tempfile(fileext = ".duckdb")
   cfg <- runner_snapshot_config(
@@ -115,7 +115,19 @@ testthat::test_that("runner can use separate snapshot artifact and run ledger da
     config = cfg
   )
   close(bt)
+  calls <- new.env(parent = emptyenv())
+  calls$n <- 0L
+  original_order <- ledgr:::ledgr_diagnostic_decision_order_bad
+  testthat::local_mocked_bindings(
+    ledgr_diagnostic_decision_order_bad = function(...) {
+      calls$n <- calls$n + 1L
+      original_order(...)
+    },
+    .package = "ledgr"
+  )
   testthat::expect_no_error(utils::capture.output(summary(bt)))
+  testthat::expect_no_error(ledgr_results(bt, "diagnostics"))
+  testthat::expect_identical(calls$n, 1L)
   testthat::expect_no_error(
     ledgr:::ledgr_backtest_terminal_evidence(bt)
   )
@@ -146,8 +158,9 @@ testthat::test_that("runner can use separate snapshot artifact and run ledger da
     ),
     params = list("run-snapshot-split-db", implicit$decision_seq[[1L]])
   )
+  DBI::dbExecute(reopened$con, "CHECKPOINT")
   testthat::expect_error(
-    ledgr:::ledgr_diagnostic_decode(reopened$con, "run-snapshot-split-db"),
+    ledgr_results(bt, "diagnostics"),
     class = "ledgr_diagnostic_corrupt"
   )
   DBI::dbExecute(
@@ -162,6 +175,7 @@ testthat::test_that("runner can use separate snapshot artifact and run ledger da
       implicit$decision_seq[[1L]]
     )
   )
+  DBI::dbExecute(reopened$con, "CHECKPOINT")
   reopened$close()
   gc()
   Sys.sleep(0.05)

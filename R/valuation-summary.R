@@ -54,6 +54,8 @@ ledgr_valuation_summary <- function(bt, con = NULL) {
   if (!inherits(bt, "ledgr_backtest")) {
     rlang::abort("`bt` must be a ledgr_backtest object.", class = "ledgr_invalid_backtest")
   }
+  release_validation <- ledgr_backtest_diagnostic_validation_scope(bt)
+  on.exit(release_validation(), add = TRUE)
   if (!ledgr_availability_config_active(bt$config)) {
     return(ledgr_valuation_summary_object(list(valuation_state = "not_applicable")))
   }
