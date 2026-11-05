@@ -29,6 +29,51 @@ an architecture note, or a spec packet.
 
 ## Open
 
+<a id="2026-11-05-adapters-mizu-python-bridge"></a>
+### 2026-11-05 [adapters] mizu: shared-memory sweep staging and a Python model bridge
+
+mizu 0.1.0 (Posit, 2026-11-05) is a same-machine process pool for R and
+Python over lock-free shared memory, by the author of mirai. It is
+experimental, on CRAN under MIT, and runs on Windows through Win32 file
+mappings. Its headline claims are about 0.8 us per task against about 100 us
+for mirai, and zero-copy views for vectors and frames above 32 KB. Neither
+claim was checked here. It suggests two uses for ledgr.
+
+Sweep staging. Per-task overhead does not matter, because one sweep task is a
+whole candidate run. Memory does: `ledgr_parallel_mirai_stage_history()`
+serializes the history projection into every worker, so summed private
+memory grows with the worker count. This is the earlier "mori as transport,
+not hot lookup" entry. SPIKE-7 found that `mori::share()` crosses the mirai
+boundary on Windows, but fold-like lookup was slower than with plain
+matrices. mizu adds nothing here over mori with mirai. Revisit only with a
+measurement of today's prepared-accessor fold reading shared vectors: the H1
+sweep shape at 2 and 4 workers, bit-identical results, judged on summed
+private commit.
+
+Python model inference in a strategy. A `function(ctx, params)` that calls a
+Python pool on every pulse works, but it has the wrong shape:
+
+- the pool handle is environment state that preflight cannot fingerprint;
+- the model weights are outside `strategy_hash`, so a retrained model reruns
+  under the same identity;
+- a model trained past the scoring start is lookahead that ledgr cannot see.
+
+The ledgr shape treats a fixed model's output as a causal feature:
+
+- it is computed in one batched call over the history;
+- the model's identity goes into the feature fingerprint;
+- a declared training cutoff is checked against the scoring range.
+
+That is the feature-adapter shape planned for `ledgr_ind_ttr()`, or the
+prediction-table route in item 3 of "General ML-strategy preparedness".
+Multithreaded BLAS and GPU inference may not be bit-reproducible, and the
+replay checks require that they are. For one batched call, reticulate is
+simpler. mizu earns its place through process isolation, or when several
+workers share one model. Either way this belongs in a sister package after
+CRAN, not in the core.
+
+This entry authorizes no implementation.
+
 <a id="2026-11-04-research-snapshot-trial-accounting"></a>
 ### 2026-11-04 [research] Snapshot-scoped trial accounting and snapshot-chain holdout
 
