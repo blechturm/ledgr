@@ -131,6 +131,61 @@ testthat::test_that("[LTB-0564] runner validates split run and snapshot stores o
   testthat::expect_no_error(
     ledgr:::ledgr_backtest_terminal_evidence(bt)
   )
+  # The proof token covers the attached snapshot store as well as the run
+  # store.  Mutating a referenced current-close value on the same handle must
+  # invalidate that proof and make the next public read refuse.
+  snapshot_drv <- duckdb::duckdb()
+  snapshot_con <- DBI::dbConnect(snapshot_drv, dbdir = fx$path)
+  snapshot_row <- DBI::dbGetQuery(
+    snapshot_con,
+    paste(
+      "SELECT instrument_id, ts_utc, close FROM snapshot_bars",
+      "WHERE snapshot_id = ? AND instrument_id = 'AAA'",
+      "ORDER BY ts_utc LIMIT 1"
+    ),
+    params = list(fx$snapshot_id)
+  )
+  DBI::dbExecute(
+    snapshot_con,
+    paste(
+      "UPDATE snapshot_bars SET close = close + 1",
+      "WHERE snapshot_id = ? AND instrument_id = ? AND ts_utc = ?"
+    ),
+    params = list(
+      fx$snapshot_id,
+      snapshot_row$instrument_id[[1L]],
+      snapshot_row$ts_utc[[1L]]
+    )
+  )
+  DBI::dbExecute(snapshot_con, "CHECKPOINT")
+  DBI::dbDisconnect(snapshot_con, shutdown = TRUE)
+  duckdb::duckdb_shutdown(snapshot_drv)
+  gc()
+  Sys.sleep(0.05)
+  testthat::expect_error(
+    ledgr_results(bt, "diagnostics"),
+    class = "ledgr_diagnostic_corrupt"
+  )
+  snapshot_drv <- duckdb::duckdb()
+  snapshot_con <- DBI::dbConnect(snapshot_drv, dbdir = fx$path)
+  DBI::dbExecute(
+    snapshot_con,
+    paste(
+      "UPDATE snapshot_bars SET close = ?",
+      "WHERE snapshot_id = ? AND instrument_id = ? AND ts_utc = ?"
+    ),
+    params = list(
+      snapshot_row$close[[1L]],
+      fx$snapshot_id,
+      snapshot_row$instrument_id[[1L]],
+      snapshot_row$ts_utc[[1L]]
+    )
+  )
+  DBI::dbExecute(snapshot_con, "CHECKPOINT")
+  DBI::dbDisconnect(snapshot_con, shutdown = TRUE)
+  duckdb::duckdb_shutdown(snapshot_drv)
+  gc()
+  Sys.sleep(0.05)
   # A fresh run-store connection must re-attach the sealed snapshot source
   # before the logical decoder validates compact current-close evidence.
   reopened <- ledgr:::ledgr_backtest_read_connection(bt)

@@ -20,20 +20,75 @@ call. Candidate peak working set is 2.76--3.16 GiB versus 0.32--2.40 GiB for
 the base, while the much larger private-byte figures show DuckDB reservation
 and are not resident-memory measurements.
 
-Run from the repository root against unpacked source trees:
+The committed records are never run in place. Reproduce them into a fresh
+temporary directory from the repository root. Source archives have no `.git`
+directory, so each one must carry a `SOURCE_COMMIT` file containing the exact
+eight-character short hash. `LEDGR_SOURCE_COMMIT` is the equivalent override
+for a one-arm script, but it must be unset for the two-arm runner because its
+single value cannot identify both source trees.
+
+The pre-correction record used the protocol as committed at `c62adf83`, base
+`0d6c0b11` and candidate `93e4b347`:
 
 ```powershell
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$scratch = Join-Path $env:TEMP "ledgr-diagnostic-pre-$stamp"
+New-Item -ItemType Directory -Path $scratch | Out-Null
+foreach ($commit in @('0d6c0b11', '93e4b347')) {
+  $dest = Join-Path $scratch $commit
+  New-Item -ItemType Directory -Path $dest | Out-Null
+  git archive --format=tar --output="$dest.tar" $commit
+  tar -xf "$dest.tar" -C $dest
+  [IO.File]::WriteAllText(
+    (Join-Path $dest 'SOURCE_COMMIT'), $commit,
+    [Text.UTF8Encoding]::new($false)
+  )
+}
+$protocol = Join-Path $scratch 'protocol'
+New-Item -ItemType Directory -Path $protocol | Out-Null
+git archive --format=tar --output="$protocol.tar" c62adf83 -- `
+  dev/bench/v0_2_3_diagnostic_reader_reuse
+tar -xf "$protocol.tar" -C $protocol
+Remove-Item Env:LEDGR_SOURCE_COMMIT -ErrorAction SilentlyContinue
+$record = Join-Path $scratch 'record'
 & "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" `
-  dev/bench/v0_2_3_diagnostic_reader_reuse/run_probe.R `
-  C:/tmp/ledgr-base-0d6c0b11 C:/tmp/ledgr-candidate `
-  dev/bench/v0_2_3_diagnostic_reader_reuse/records/pre_correction
+  (Join-Path $protocol 'dev/bench/v0_2_3_diagnostic_reader_reuse/run_probe.R') `
+  (Join-Path $scratch '0d6c0b11') (Join-Path $scratch '93e4b347') $record
 
 & "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" `
-  dev/bench/v0_2_3_diagnostic_reader_reuse/check.R
+  dev/bench/v0_2_3_diagnostic_reader_reuse/check.R $record
+```
+
+The post-review record used base `93e4b347`, candidate `f4ead35d` and the
+protocol as committed with the record at `de0f0efa`:
+
+```powershell
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$scratch = Join-Path $env:TEMP "ledgr-diagnostic-post-$stamp"
+New-Item -ItemType Directory -Path $scratch | Out-Null
+foreach ($commit in @('93e4b347', 'f4ead35d')) {
+  $dest = Join-Path $scratch $commit
+  New-Item -ItemType Directory -Path $dest | Out-Null
+  git archive --format=tar --output="$dest.tar" $commit
+  tar -xf "$dest.tar" -C $dest
+  [IO.File]::WriteAllText(
+    (Join-Path $dest 'SOURCE_COMMIT'), $commit,
+    [Text.UTF8Encoding]::new($false)
+  )
+}
+$protocol = Join-Path $scratch 'protocol'
+New-Item -ItemType Directory -Path $protocol | Out-Null
+git archive --format=tar --output="$protocol.tar" de0f0efa -- `
+  dev/bench/v0_2_3_diagnostic_reader_reuse
+tar -xf "$protocol.tar" -C $protocol
+Remove-Item Env:LEDGR_SOURCE_COMMIT -ErrorAction SilentlyContinue
+$record = Join-Path $scratch 'record'
+& "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" `
+  (Join-Path $protocol 'dev/bench/v0_2_3_diagnostic_reader_reuse/run_probe.R') `
+  (Join-Path $scratch '93e4b347') (Join-Path $scratch 'f4ead35d') $record
 
 & "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" `
-  dev/bench/v0_2_3_diagnostic_reader_reuse/check.R `
-  dev/bench/v0_2_3_diagnostic_reader_reuse/records/post_review_correction
+  dev/bench/v0_2_3_diagnostic_reader_reuse/check.R $record
 ```
 
 The base arm is commit `0d6c0b11`; the pre-correction candidate is clean head
@@ -71,8 +126,9 @@ which validation fell from 6.65 to 2.42 seconds. These clocks describe the
 record and are not acceptance gates.
 
 The correction does **not** solve cold-read memory. Cold diagnostic peak working
-set was about 4,419 MiB on the base and 4,875 MiB on the candidate; the repeated
-sequence was about 5,217 and 5,326 MiB. The returned R object alone is about
+set was about 4,419 MiB (4.32 GiB) on the base and 4,875 MiB (4.76 GiB) on the
+candidate; the repeated sequence was about 5,217 and 5,326 MiB. The returned R
+object alone is about
 592 MB. The committed physical plan shows that exact validation still evaluates
 the full logical UNION with ASOF joins and window/order operators, with extremely
 large intermediate cardinality estimates. Public evidence can therefore assign

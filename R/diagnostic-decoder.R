@@ -42,6 +42,9 @@ ledgr_diagnostic_query <- function(code) {
   tryCatch(
     force(code),
     error = function(cnd) {
+      if (inherits(cnd, "ledgr_diagnostic_resource_exhausted")) {
+        stop(cnd)
+      }
       message <- conditionMessage(cnd)
       if (grepl(
         "out of memory|failed to pin block|could not allocate",
@@ -62,16 +65,23 @@ ledgr_diagnostic_query <- function(code) {
   )
 }
 
+# Every DuckDB statement on the logical diagnostic read/validation path passes
+# this boundary.  This keeps backend resource failures classed without
+# changing the caller-owned memory limit or masking ordinary query errors.
+ledgr_diagnostic_db_get_query <- function(con, statement, ...) {
+  ledgr_diagnostic_query(DBI::dbGetQuery(con, statement, ...))
+}
+
 # DuckDB allocates one transaction id per statement outside an explicit
 # transaction and reuses the id inside one. A cache hit therefore needs only
 # this constant-size probe to refuse reuse while uncommitted state could be
 # visible on the connection.
 ledgr_diagnostic_explicit_transaction <- function(con) {
-  first <- DBI::dbGetQuery(
+  first <- ledgr_diagnostic_db_get_query(
     con,
     "SELECT current_transaction_id() AS transaction_id"
   )$transaction_id[[1L]]
-  second <- DBI::dbGetQuery(
+  second <- ledgr_diagnostic_db_get_query(
     con,
     "SELECT current_transaction_id() AS transaction_id"
   )$transaction_id[[1L]]
@@ -79,14 +89,14 @@ ledgr_diagnostic_explicit_transaction <- function(con) {
 }
 
 ledgr_diagnostic_persisted_state <- function(con, coverage, summaries) {
-  databases <- DBI::dbGetQuery(
+  databases <- ledgr_diagnostic_db_get_query(
     con,
     paste(
       "SELECT database_name, path FROM duckdb_databases()",
       "ORDER BY database_name"
     )
   )
-  current <- as.character(DBI::dbGetQuery(
+  current <- as.character(ledgr_diagnostic_db_get_query(
     con,
     "SELECT current_database() AS database_name"
   )$database_name[[1L]])
@@ -132,7 +142,7 @@ ledgr_diagnostic_decision_order_bad <- function(con, run_ids) {
     return(data.frame(run_id = character(), issue = character()))
   }
   marks <- paste(rep("?", length(run_ids)), collapse = ", ")
-  metadata <- DBI::dbGetQuery(
+  metadata <- ledgr_diagnostic_db_get_query(
     con,
     paste0(
       "SELECT run_id, snapshot_id, config_json FROM runs WHERE run_id IN (",
@@ -267,12 +277,10 @@ ledgr_diagnostic_decision_order_bad <- function(con, run_ids) {
     "SELECT run_id, issue FROM issues WHERE issue IS NOT NULL ",
     "ORDER BY run_id, issue LIMIT 1"
   )
-  bad <- ledgr_diagnostic_query(
-    DBI::dbGetQuery(
-      con,
-      query,
-      params = c(as.list(run_ids), as.list(run_ids))
-    )
+  bad <- ledgr_diagnostic_db_get_query(
+    con,
+    query,
+    params = c(as.list(run_ids), as.list(run_ids))
   )
   bad[seq_len(min(1L, nrow(bad))), c("run_id", "issue"), drop = FALSE]
 }
@@ -280,7 +288,7 @@ ledgr_diagnostic_decision_order_bad <- function(con, run_ids) {
 ledgr_diagnostic_require_coverage <- function(con, run_ids) {
   if (length(run_ids) == 0L) return(invisible(TRUE))
   marks <- paste(rep("?", length(run_ids)), collapse = ", ")
-  coverage <- DBI::dbGetQuery(
+  coverage <- ledgr_diagnostic_db_get_query(
     con,
     paste0("SELECT run_id, logical_count, codec_rule_version FROM run_diagnostic_coverage WHERE run_id IN (", marks, ")"),
     params = as.list(run_ids)
@@ -332,7 +340,7 @@ ledgr_diagnostic_require_coverage <- function(con, run_ids) {
       class = "ledgr_diagnostic_corrupt"
     )
   }
-  counts <- DBI::dbGetQuery(
+  counts <- ledgr_diagnostic_db_get_query(
     con,
     paste0(
       "SELECT run_id, COUNT(*) AS n, COUNT(DISTINCT diagnostic_seq) AS distinct_n, ",
@@ -365,7 +373,7 @@ ledgr_diagnostic_require_coverage <- function(con, run_ids) {
     )
   }
   association_params <- as.list(run_ids)
-  association <- DBI::dbGetQuery(
+  association <- ledgr_diagnostic_db_get_query(
     con,
     paste0(
       "SELECT DISTINCT i.run_id FROM run_diagnostic_implicit i ",
@@ -400,7 +408,7 @@ ledgr_diagnostic_require_coverage <- function(con, run_ids) {
       class = "ledgr_diagnostic_corrupt"
     )
   }
-  order_bad <- DBI::dbGetQuery(
+  order_bad <- ledgr_diagnostic_db_get_query(
     con,
     paste0(
       "SELECT run_id, COUNT(*) AS bad FROM (",
@@ -497,7 +505,7 @@ ledgr_diagnostic_decode <- function(con, run_ids, stage = NULL, outcome = NULL,
     params <- c(params, list(time, time))
   }
   order <- if (length(run_ids) > 1L) "run_id, diagnostic_seq" else "diagnostic_seq"
-  rows <- DBI::dbGetQuery(
+  rows <- ledgr_diagnostic_db_get_query(
     con,
     paste(
       "SELECT * FROM (", ledgr_diagnostic_logical_sql(), ") logical",
@@ -512,7 +520,7 @@ ledgr_diagnostic_decode <- function(con, run_ids, stage = NULL, outcome = NULL,
 }
 
 ledgr_diagnostic_next_seq <- function(con, run_id) {
-  row <- DBI::dbGetQuery(
+  row <- ledgr_diagnostic_db_get_query(
     con,
     paste0(
       "SELECT GREATEST(",

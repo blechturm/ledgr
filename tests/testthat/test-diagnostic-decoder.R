@@ -650,7 +650,9 @@ testthat::test_that("[LTB-0558] in-pulse implicit sequence order is exact", {
   testthat::expect_match(validator_source, "duckdb_unregister")
   testthat::expect_match(validator_source, "snapshot_membership_sets")
   testthat::expect_match(validator_source, "ASOF LEFT JOIN member_states")
-  testthat::expect_match(validator_source, "ledgr_diagnostic_query")
+  # The shared DB query boundary now owns resource mapping for this query and
+  # every other validation/decode statement.
+  testthat::expect_match(validator_source, "ledgr_diagnostic_db_get_query")
   testthat::expect_match(validator_source, "LIMIT 1")
   testthat::expect_false(grepl(
     "SELECT member_rank FROM member_states",
@@ -940,6 +942,49 @@ testthat::test_that("[LTB-0561] public readers validate one stored diagnostic st
   DBI::dbRollback(opened$con)
   release_tx()
 
+  # A validation that succeeds only because an explicit transaction repairs
+  # durable corruption must not publish a proof for the persisted state.  The
+  # rollback exposes the corruption again and the next read must validate and
+  # refuse it rather than reuse the transaction-local result.
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET target = target + 1",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(bt$run_id, row$decision_seq[[1L]])
+  )
+  DBI::dbExecute(opened$con, "CHECKPOINT")
+  release_publish <- ledgr:::ledgr_backtest_diagnostic_validation_scope(bt)
+  on.exit(release_publish(), add = TRUE)
+  DBI::dbBegin(opened$con)
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET target = ?",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(row$target[[1L]], bt$run_id, row$decision_seq[[1L]])
+  )
+  testthat::expect_no_error(
+    ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id)
+  )
+  DBI::dbRollback(opened$con)
+  testthat::expect_error(
+    ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id),
+    class = "ledgr_diagnostic_corrupt"
+  )
+  release_publish()
+  DBI::dbExecute(
+    opened$con,
+    paste(
+      "UPDATE run_diagnostic_implicit SET target = ?",
+      "WHERE run_id = ? AND decision_seq = ?"
+    ),
+    params = list(row$target[[1L]], bt$run_id, row$decision_seq[[1L]])
+  )
+  DBI::dbExecute(opened$con, "CHECKPOINT")
+
   # A checkpoint can remove the WAL, so the durable main-file stamp itself
   # must invalidate the proof. A fresh handle then refuses the first read.
   DBI::dbExecute(
@@ -1105,5 +1150,49 @@ testthat::test_that("[LTB-0563] diagnostic query preserves caller memory setting
   summaries <- data.frame(run_id = character(), summary_hash = character())
   testthat::expect_null(
     ledgr:::ledgr_diagnostic_persisted_state(con, coverage, summaries)
+  )
+})
+
+testthat::test_that("[LTB-0565] every diagnostic query maps real DuckDB exhaustion", {
+  # Keep every query on the validation/decode path behind the one backend
+  # boundary.  The executable witness below then proves that a real DuckDB
+  # refusal, rather than only a synthetic R error, reaches the public class.
+  query_functions <- c(
+    "ledgr_diagnostic_explicit_transaction",
+    "ledgr_diagnostic_persisted_state",
+    "ledgr_diagnostic_decision_order_bad",
+    "ledgr_diagnostic_require_coverage",
+    "ledgr_diagnostic_decode",
+    "ledgr_diagnostic_next_seq"
+  )
+  for (name in query_functions) {
+    fn <- get(name, envir = asNamespace("ledgr"), inherits = FALSE)
+    testthat::expect_false(
+      grepl("DBI::dbGetQuery", paste(deparse(body(fn)), collapse = "\n"), fixed = TRUE),
+      info = name
+    )
+  }
+
+  bars <- as.data.frame(ledgr_sim_bars(
+    n_instruments = 100L,
+    n_days = 900L,
+    seed = 20261105L
+  ))
+  snapshot <- ledgr_snapshot_from_df(bars)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  bt <- ledgr_run(ledgr_experiment(
+    snapshot,
+    function(ctx, params) ctx$hold(),
+    opening = ledgr_opening(cash = 1000),
+    cost_model = ledgr_cost_zero()
+  ), run_id = "diagnostic-real-resource-exhaustion")
+  on.exit(close(bt), add = TRUE)
+  opened <- ledgr:::ledgr_backtest_read_connection(bt)
+  on.exit(opened$close(), add = TRUE)
+  DBI::dbExecute(opened$con, "SET memory_limit = '16MB'")
+  testthat::expect_error(
+    ledgr:::ledgr_diagnostic_decode(opened$con, bt$run_id),
+    "exhausted DuckDB's available memory",
+    class = "ledgr_diagnostic_resource_exhausted"
   )
 })
