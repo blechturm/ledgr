@@ -1,0 +1,146 @@
+"stage","object","field","mode","n","via","workloads"
+"E_flush","fold_state","diagnostic_seq","read",5997,"ledgr_fold_diagnostic_block ledgr_fold_flush_pulse_block",10
+"E_flush","fold_state","pending_segments","read",10123,"ledgr_fold_diagnostic_block ledgr_fold_flush_pulse_block",10
+"E_flush","fold_state","diagnostic_seq","write",1999,"ledgr_fold_flush_pulse_block",10
+"E_flush","fold_state","pending_segments","write",3998,"ledgr_fold_flush_pulse_block",10
+"E_stop","fold_state","affected_exposure","read",12,"ledgr_fold_state_validate",1
+"E_stop","fold_state","cash","read",16,"ledgr_fold_state_validate",1
+"E_stop","fold_state","current_stage","read",20,"ledgr_fold_state_validate",1
+"E_stop","fold_state","current_ts","read",12,"ledgr_fold_state_validate",1
+"E_stop","fold_state","diagnostic_seq","read",20,"ledgr_fold_state_validate",1
+"E_stop","fold_state","equity_facts","read",8,"ledgr_carrier_problem ledgr_fold_state_validate",1
+"E_stop","fold_state","event_seq","read",20,"ledgr_fold_state_validate",1
+"E_stop","fold_state","frozen_set","read",12,"ledgr_fold_state_validate",1
+"E_stop","fold_state","full_run","read",16,"ledgr_fold_state_validate",1
+"E_stop","fold_state","last_executed","read",12,"ledgr_fold_state_validate",1
+"E_stop","fold_state","last_fully_valued","read",12,"ledgr_fold_state_validate",1
+"E_stop","fold_state","lot_state","read",12,"ledgr_fold_state_validate ledgr_lot_book_problem",1
+"E_stop","fold_state","pending_segments","read",132,"ledgr_carrier_problem ledgr_fold_apply_stop ledgr_fold_staging_write ledgr_fold_state_validate",1
+"E_stop","fold_state","position_facts","read",20,"ledgr_fold_state_validate",1
+"E_stop","fold_state","positions","read",28,"ledgr_fold_state_validate",1
+"E_stop","fold_state","processed","read",20,"ledgr_fold_state_validate",1
+"E_stop","fold_state","state_axis","read",12,"ledgr_fold_state_validate",1
+"E_stop","fold_state","state_axis_changed","read",16,"ledgr_fold_state_validate",1
+"E_stop","fold_state","status","read",20,"ledgr_fold_state_validate",1
+"E_stop","fold_state","stop_reason","read",12,"ledgr_fold_state_validate",1
+"E_stop","fold_state","strategy_state","read",8,"ledgr_fold_state_validate",1
+"E_stop","fold_state","telemetry_idx","read",20,"ledgr_fold_state_validate",1
+"E_stop","fold_state","affected_exposure","write",4,"ledgr_fold_apply_stop",1
+"E_stop","fold_state","pending_segments","write",8,"ledgr_fold_apply_stop ledgr_fold_staging_write",1
+"E_stop","fold_state","status","write",4,"ledgr_fold_apply_stop",1
+"E_stop","fold_state","stop_reason","write",4,"ledgr_fold_apply_stop",1
+"P1","fold_state","cash","read",4039,"ledgr_carrier_problem ledgr_carrier_settlement_state ledgr_fold_equity_append",10
+"P1","fold_state","equity_facts","read",1998,"ledgr_fold_equity_append",10
+"P1","fold_state","event_seq","read",43,"ledgr_disposition_post ledgr_fold_stage_observe_settle",3
+"P1","fold_state","frozen_set","read",3996,"ledgr_fold_stage_observe_settle",10
+"P1","fold_state","lot_state","read",4039,"ledgr_carrier_settlement_state ledgr_fold_equity_append",10
+"P1","fold_state","pending_segments","read",310,"ledgr_fold_staging_add ledgr_fold_staging_write",1
+"P1","fold_state","position_facts","read",7,"ledgr_position_facts_apply",2
+"P1","fold_state","positions","read",6134,"ledgr_carrier_problem ledgr_carrier_settlement_install ledgr_carrier_settlement_state ledgr_fold_positions_snapshot ledgr_fold_stage_observe_settle",10
+"P1","fold_state","state_axis","read",1998,"ledgr_fold_stage_observe_settle",10
+"P1","fold_state","cash","write",43,"ledgr_carrier_settlement_install",3
+"P1","fold_state","current_stage","write",2002,"ledgr_fold_stage_observe_settle",10
+"P1","fold_state","equity_facts","write",1998,"ledgr_fold_stage_observe_settle",10
+"P1","fold_state","event_seq","write",43,"ledgr_fold_stage_observe_settle",3
+"P1","fold_state","frozen_set","write",1998,"ledgr_fold_stage_observe_settle",10
+"P1","fold_state","last_fully_valued","write",1998,"ledgr_fold_stage_observe_settle",10
+"P1","fold_state","lot_state","write",43,"ledgr_carrier_settlement_install",3
+"P1","fold_state","pending_segments","write",20,"ledgr_fold_staging_add ledgr_fold_staging_write",1
+"P1","fold_state","position_facts","write",7,"ledgr_carrier_settlement_install",2
+"P1","fold_state","positions","write",43,"ledgr_carrier_settlement_install",3
+"P1","services","availability_provider","read",2009,"ledgr_fold_stage_observe_settle",10
+"P1","services","corporate_action_plan","read",4128,"ledgr_fold_stage_observe_settle",10
+"P1","services","decision_due","read",2506,"ledgr_fold_stage_observe_settle",10
+"P1","services","execution_opportunities_posix","read",1998,"ledgr_fold_stage_observe_settle",10
+"P1","services","history_reader","read",5521,"ledgr_carrier_problem ledgr_fold_stage_observe_settle",10
+"P1","services","instrument_ids","read",4078,"ledgr_carrier_settlement_state ledgr_fold_positions_snapshot ledgr_fold_stage_observe_settle",10
+"P1","services","output_handler","read",11,"ledgr_disposition_post ledgr_fold_stage_observe_settle",3
+"P1","services","projection_pulse_idx","read",43,"ledgr_carrier_settlement_install",3
+"P1","services","run_id","read",11,"ledgr_accounting_rows",3
+"P1","services","terminal_policy","read",3,"ledgr_terminal_resolve",1
+"P1","services","valuation_state","read",2009,"ledgr_fold_stage_observe_settle",10
+"P2","fold_state","cash","read",3034,"ledgr_fold_stage_decide",10
+"P2","fold_state","lot_state","read",1517,"ledgr_position_fact_source",10
+"P2","fold_state","pending_segments","read",2015,"ledgr_fold_staging_add ledgr_fold_staging_write",10
+"P2","fold_state","position_facts","read",1517,"ledgr_position_fact_source",10
+"P2","fold_state","positions","read",1517,"ledgr_position_fact_source",10
+"P2","fold_state","strategy_state","read",1517,"ledgr_strategy_state_view",10
+"P2","fold_state","current_stage","write",3031,"ledgr_fold_stage_decide",10
+"P2","fold_state","pending_segments","write",130,"ledgr_fold_staging_add ledgr_fold_staging_write",10
+"P2","services","availability_feature_lookup_state","read",1517,"ledgr_attach_feature_helpers",10
+"P2","services","bar_axis","read",1517,"ledgr_position_fact_source",10
+"P2","services","context_build_counts","read",1517,"ledgr_refresh_pulse_context_lookup",10
+"P2","services","context_preparation_counts","read",1517,"ledgr_refresh_pulse_context_lookup",10
+"P2","services","execution_seed","read",1517,"ledgr_fold_stage_decide",10
+"P2","services","instrument_ids","read",4548,"ledgr_carrier_problem ledgr_filter_pulse_context_features ledgr_fold_stage_decide",10
+"P2","services","position_fact_unknown_basis_mask","read",1517,"ledgr_position_fact_source",10
+"P2","services","projection_pulse_idx","read",1517,"ledgr_fold_stage_decide",10
+"P2","services","pulse_notes","read",6083,"ledgr_fold_stage_decide",10
+"P2","services","pulse_seeds","read",1517,"ledgr_pulse_seed_at",10
+"P2","services","risk_plan","read",1514,"ledgr_apply_risk_plan",10
+"P2","services","run_id","read",1517,"ledgr_fold_stage_decide",10
+"P2","services","runtime_projection","read",1517,"ledgr_update_pulse_context_helpers",10
+"P2","services","strategy_call_signature","read",1517,"ledgr_call_strategy_fn",10
+"P2","services","strategy_fn","read",1517,"ledgr_call_strategy_fn",10
+"P2","services","strategy_is_functional","read",1517,"ledgr_fold_stage_decide",10
+"P2","services","strategy_params","read",191,"ledgr_call_strategy_fn ledgr_strategy_helper_validate_lookback",9
+"P3","fold_state","cash","read",3028,"ledgr_carrier_problem ledgr_fold_stage_plan ledgr_plan_affordability",10
+"P3","fold_state","diagnostic_seq","read",2671,"ledgr_fold_stage_plan",10
+"P3","fold_state","event_seq","read",2623,"ledgr_diagnostic_implicit_block ledgr_fold_diagnostic_segment",10
+"P3","fold_state","pending_segments","read",12209,"ledgr_fold_staging_add_residual ledgr_fold_staging_write",10
+"P3","fold_state","positions","read",1514,"ledgr_fold_stage_plan",10
+"P3","fold_state","current_stage","write",1514,"ledgr_fold_stage_plan",10
+"P3","fold_state","pending_segments","write",3094,"ledgr_fold_staging_add_residual ledgr_fold_staging_write",10
+"P3","services","availability_provider","read",1333,"ledgr_carrier_execution_view",10
+"P3","services","cost_resolver","read",1330,"ledgr_plan_resolve",10
+"P3","services","diagnostic_writer","read",4185,"ledgr_fold_stage_plan",10
+"P3","services","execution_epoch_valid","read",1478,"ledgr_fold_stage_plan",10
+"P3","services","execution_epochs","read",1514,"ledgr_fold_stage_plan",10
+"P3","services","instrument_ids","read",1514,"ledgr_fold_stage_plan",10
+"P3","services","run_id","read",2671,"ledgr_diagnostic_implicit_block ledgr_diagnostic_implicit_hold_block",10
+"P3","services","use_compiled_spot_fifo","read",3028,"ledgr_fold_plan_event_kinds ledgr_fold_stage_plan",10
+"P3_skip","fold_state","cash","read",481,"ledgr_carrier_problem",1
+"P3_skip","fold_state","positions","read",481,"ledgr_carrier_row_problem",1
+"P4","fold_state","cash","read",1999,"ledgr_fold_stage_apply ledgr_run_compiled_spot_fifo_batch",10
+"P4","fold_state","event_seq","read",2656,"ledgr_cpp_spot_fifo_batch ledgr_fill_event_payload ledgr_fold_stage_apply",10
+"P4","fold_state","lot_state","read",1330,"ledgr_lot_apply ledgr_run_compiled_spot_fifo_batch",10
+"P4","fold_state","position_facts","read",1330,"ledgr_position_facts_apply",10
+"P4","fold_state","positions","read",2007,"ledgr_fold_positions_snapshot ledgr_fold_stage_apply ledgr_run_compiled_spot_fifo_batch",10
+"P4","fold_state","cash","write",1995,"ledgr_fold_stage_apply",10
+"P4","fold_state","current_stage","write",1995,"ledgr_fold_stage_apply",10
+"P4","fold_state","event_seq","write",1330,"ledgr_fold_stage_apply",10
+"P4","fold_state","lot_state","write",1330,"ledgr_fold_stage_apply",10
+"P4","fold_state","position_facts","write",1330,"ledgr_fold_stage_apply",10
+"P4","fold_state","positions","write",1995,"ledgr_fold_stage_apply",10
+"P4","services","corporate_action_plan","read",2015,"ledgr_fold_stage_apply",10
+"P4","services","event_mode","read",1326,"ledgr_fold_stage_apply",10
+"P4","services","instrument_ids","read",1338,"ledgr_fold_positions_snapshot ledgr_fold_stage_apply ledgr_run_compiled_spot_fifo_batch",10
+"P4","services","output_handler","read",1995,"ledgr_fold_stage_apply",10
+"P4","services","position_fact_fill_axis","read",1330,"ledgr_position_fact_fill_bar",10
+"P4","services","pulses_posix","read",28,"ledgr_fold_stage_apply",2
+"P4","services","run_id","read",4,"ledgr_cpp_spot_fifo_batch",1
+"P4","services","use_compiled_spot_fifo","read",1995,"ledgr_fold_stage_apply",10
+"P5","fold_state","cash","read",5985,"ledgr_fold_stage_commit",10
+"P5","fold_state","last_executed","read",1330,"ledgr_fold_stage_commit",10
+"P5","fold_state","pending_segments","read",61845,"ledgr_fold_staging_add ledgr_fold_staging_write",10
+"P5","fold_state","positions","read",1995,"ledgr_fold_stage_commit",10
+"P5","fold_state","processed","read",7728,"ledgr_fold_stage_commit",10
+"P5","fold_state","strategy_state","read",1995,"ledgr_fold_stage_commit",10
+"P5","fold_state","telemetry_idx","read",34,"ledgr_fold_stage_commit",2
+"P5","fold_state","last_executed","write",1330,"ledgr_fold_stage_commit",10
+"P5","fold_state","pending_segments","write",3990,"ledgr_fold_staging_add ledgr_fold_staging_write",10
+"P5","fold_state","processed","write",1995,"ledgr_fold_stage_commit",10
+"P5","fold_state","state_axis","write",1995,"ledgr_fold_stage_commit",10
+"P5","fold_state","state_axis_changed","write",1995,"ledgr_fold_stage_commit",10
+"P5","fold_state","strategy_state","write",1995,"ledgr_fold_stage_commit",10
+"P5","fold_state","telemetry_idx","write",17,"ledgr_fold_stage_commit",2
+"P5","services","checkpoint_every","read",3864,"ledgr_fold_stage_commit",10
+"P5","services","diagnostic_writer","read",1995,"ledgr_fold_flush_pulse_block",10
+"P5","services","instrument_ids","read",1995,"ledgr_fold_stage_commit",10
+"P5","services","max_pulses","read",1995,"ledgr_fold_stage_commit",10
+"P5","services","output_handler","read",1995,"ledgr_fold_stage_commit",10
+"P5","services","run_id","read",1995,"ledgr_fold_flush_pulse_block",10
+"P5","services","strategy_state_declaration","read",1276,"ledgr_strategy_state_defaults ledgr_strategy_state_field",2
+"P5","services","strategy_state_default_scalars","read",1276,"ledgr_strategy_state_apply_values",2
+"P5","services","telemetry","read",17,"ledgr_fold_stage_commit",2
+"P5","services","telemetry_stride","read",3864,"ledgr_fold_stage_commit",10

@@ -4066,7 +4066,7 @@ tickets:
   - id: "LDG-3211"
     title: "Write the first-checkpoint interface table"
     workstream: 26
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: []
@@ -4104,7 +4104,11 @@ tickets:
       - "the tile-access and output-allocation adaptations of the existing history-read and feature-input services are recorded with a committed probe and its output, not by assumption, or the ticket returns NEEDS_TYPE_2"
       - "the five fixed boundaries, the six observable-data notes and the five-scenario check are present and add no field, placeholder or descriptor"
       - "the maintainer accepts the table line by line before any dev/lean_core/ code is committed; the table stays under 650 lines (raised from 450 by the maintainer on 2026-11-06)"
-    evidence: []
+    evidence:
+      - "inst/design/ledgr_v0_2_3_spec_packet/lean_core_interface.md (650 lines, under the 650-line cap the maintainer set on 2026-11-06): accepted by the maintainer on 2026-11-06 after a section-by-section review that applied every correction in place; it cites pin d5b3a151 by file:line and records, as lean-core notes, the accepted pulse plumbing amendment (debug-only internal checks, compact publication, LR-12 to LR-20) and the maintainer's time-value decision (epochs inside the fold, POSIXct at the output boundary)."
+      - "dev/bench/v0_2_3_ws16_interface/: field_probe.R records every services field and fold-state slot each stage reads or writes, including through helpers (field_reads_by_stage.csv), and classifies services fields by hashing their full serialization at the first stage call and at fold end over 45 folds of ten workloads (services_mutability.csv); tile_probe.R records every stored-plane access and full-axis allocation of the history-read and feature-input services on the WS42 fixture and the 40 x 504 momentum run (tile_access_by_site.csv). No function needs more than storage, fetch and allocation changes, so the ticket does not return NEEDS_TYPE_2."
+      - "Citations: a clean-context subagent checked about 225 file:line citations mechanically against the pinned source before the maintainer review (all corrected), and the pulse plumbing Type 1 final review spot-checked the rows it touched."
+      - "Validation placement follows the pulse plumbing amendment (c07e158d): per the maintainer's scope decision of 2026-11-06, the lean-core check column is filled for the fields this checkpoint's code touches (Sections 11 and 12.1); later families fill their own rows at their cuts. lean_core_load(lib, debug = FALSE) names the debug switch for this checkpoint."
   - id: "LDG-3212"
     title: "Build the stage recorder and its replay check"
     workstream: 26
