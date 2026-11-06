@@ -4,7 +4,8 @@ Role: living; current packet front door.
 Status: working; macro plan revision 12 records the accepted within-release
 order. Cuts 1, 2, 4, 5, 6, 7, 9, 10 and 11 are closed; Cut 11 implemented
 macro WS7, WS8 and WS15. Cut 12 is the draft WS16 first-checkpoint cut;
-its independent cut review and maintainer acceptance are next. Cut 6 (WS4b, one execution path) is
+its independent cut review (`CHANGES_REQUIRED`, R1-R5 applied) and focused
+re-review (`PASS`) are done; maintainer acceptance is next. Cut 6 (WS4b, one execution path) is
 implemented and accepted through `14252ffb`: its final independent Type 1
 confirmation is `PASS`, and workstream 14/LDG-3178 are complete. Cut 7 is the
 accepted WS5 strategy-authoring implementation cut (workstreams 15-18,

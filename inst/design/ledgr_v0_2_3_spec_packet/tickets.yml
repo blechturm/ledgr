@@ -1509,7 +1509,7 @@ cuts:
       seven shapes and the five-scenario affected-owner check.
       Finding-bearing reviews write packet files. A third correction round on
       one workstream stops for maintainer disposition.
-    cut_review: "CHANGES_REQUIRED in cut_review_12.md (independent clean-context Codex CLI, gpt-6.1-sol/high): R1-R5 required; all five exact patches applied. R1 exempts the recorder's pinned reference calls from the old-arithmetic ban, R2 permits copy-on-modify sharing, R3 compares retained public values instead of whole-context serialization, R4 keeps the existing history-read and feature-input services with tile-access adaptations only, R5 puts every timing gate on one Cut 12 protocol in dev/bench/timing/."
+    cut_review: "CHANGES_REQUIRED in cut_review_12.md (independent clean-context Codex CLI, gpt-6.1-sol/high): R1-R5 required; all five exact patches applied. R1 exempts the recorder's pinned reference calls from the old-arithmetic ban, R2 permits copy-on-modify sharing, R3 compares retained public values instead of whole-context serialization, R4 keeps the existing history-read and feature-input services with tile-access adaptations only, R5 puts every timing gate on one Cut 12 protocol in dev/bench/timing/. Focused re-review cut_review_12_rereview_1.md (same reviewer setup, clean context) returned PASS: all five applied, no new findings."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
