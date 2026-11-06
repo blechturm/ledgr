@@ -37,7 +37,7 @@ ws16_load_installed <- function(lib) {
   .libPaths(unique(c(lib, .libPaths())))
   Sys.setenv(R_LIBS = paste(.libPaths(), collapse = .Platform$path.sep))
   suppressPackageStartupMessages(library(ledgr))
-  if (!startsWith(normalizePath(find.package("ledgr"), winslash = "/"), lib)) {
+  if (!identical(normalizePath(find.package("ledgr"), winslash = "/"), normalizePath(file.path(lib, "ledgr"), winslash = "/"))) {
     stop("ledgr was not loaded from ", lib, call. = FALSE)
   }
   marker <- file.path(lib, "LEDGR_INSTALLED_FROM_COMMIT")
