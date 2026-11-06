@@ -552,7 +552,7 @@ Only these clock fields are dropped: `sample_start`, `pulse_start`,
 `t_feats`, `t_bars`, `t_ctx`, `t_strat`, `t_target`, `t_fill`, `t_event`,
 `t_state`, and the `telemetry` fields `t_pulse`, `t_bars`, `t_ctx`, `t_fill`,
 `t_state`, `t_feats`, `t_strat`, `t_target`, `t_event`, `t_exec`, `t_loop`
-and `t_pre`. Counters are compared.
+and `t_pre`. Counters are compared. Function source references are not.
 
 Replay check: re-run each pinned boundary on its frozen input, giving it only
 the fold-state slots and `services` fields that Sections 8 and 9 list for
