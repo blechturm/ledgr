@@ -172,38 +172,54 @@ including each fold's E setup, High performance plan, P-core affinity
 | | momentum 40 x 504 | fill-heavy 500 x 1,260 |
 | --- | ---: | ---: |
 | real loop today (edge-checks spike) | 1,954 | 5,988 |
-| skeleton, today's plumbing | 1,196 | 1,989 |
-| lean, pinned strategy check | 79 | 341 |
-| lean, restructured strategy check | 77 | 207 |
-| lean, restructured check, references instead of copies | 50 | 148 |
-| loop and five stage calls only | 4 | 3 |
+| skeleton, today's plumbing | 1,244 | 2,028 |
+| lean, pinned strategy check | 79 | 346 |
+| lean, restructured strategy check | 77 | 225 |
+| lean, restructured check, references instead of copies | 46 | 149 |
+| compact lean, loop only | 6 | 33 |
+| compact lean, with the output boundary | 22 | 71 |
+| loop and five stage calls only | 6 | 4 |
 
 What removing one part saves from the restructured lean fold (us per
-pulse; the clock resolves about 3 us on momentum and 1 us on fill-heavy):
+pulse). The clock resolves about 3 us on momentum and 1 us on fill-heavy;
+an earlier run of the same arms put the restructured lean fold at 207 on
+fill-heavy, so differences under about 20 us are not resolved:
 
 | part | momentum | fill-heavy |
 | --- | ---: | ---: |
-| fill event writes (54 fills per pulse on fill-heavy) | 4 | 81 |
-| of which event ID and run ID text | 2 | 26 |
-| copying stage outputs (vs passing references) | 28 | 59 |
-| diagnostic row writes | 30 | 11 |
-| equity row | 12 | 11 |
-| strategy check, restructured, with building its named vector | 0 | 6 |
-| `services` field reads | 4 | 2 |
+| fill event writes (54 fills per pulse on fill-heavy) | 2 | 104 |
+| of which event ID and run ID text | 0 | 33 |
+| copying stage outputs (vs passing references) | 32 | 76 |
+| diagnostic row writes | 32 | 43 |
+| equity row | 12 | 24 |
+| strategy check, restructured, with building its named vector | 0 | 35 |
+| `services` field reads | 2 | 2 |
+
+The compact lean fold (`fp_compact_fold()`) removes those costs together:
+stages pass references (the bound for reading prepared data by index), the
+strategy check is the restructured one, each fill is a compact typed record
+of seven values (sequence, instrument position, side, quantity, price, fee,
+execution time), each pulse's diagnostic rows stay its typed block, and
+equity goes into local vectors. The output boundary, once per run, builds
+the 31-column ledger with event IDs, run IDs, side text and the cash and
+position effects (`ledgr_fill_publication_deltas()`), and binds the
+diagnostic blocks: 39 us per fill-heavy pulse when spread over the run,
+about 49 ms per run.
 
 Every lean variant reproduces every event, diagnostic row and equity row
 exactly; dropping the reservation advance breaks the events
 (`evidence/lean_parity.csv`). Checking six 500 x 1,260 bar planes once at
 preparation takes 16 ms per run.
 
-The lean plumbing alone, 207 us per fill-heavy pulse, about equals PMwR's
-published whole backtest of the same shape (214 us, 2026-10-31 peer
-benchmark, another build). R itself is not the limit: the R floor spike
-(`dev/spikes/r_floor/`) runs the same 500 x 1,260 crossover with ledgr's
-fills, equity and cash in 48 us per pulse, about 103 with fixed-basket
-availability. The remaining plumbing cost is per-row and per-column R work
-in the writes (a 31-column ledger row per fill, a 23-column diagnostic row,
-text IDs) and N-wide copies of stage outputs.
+The first lean shape, 207 to 225 us per fill-heavy pulse, about equals
+PMwR's published whole backtest of the same shape (214 us, 2026-10-31 peer
+benchmark, another build). The compact shape costs 71 us including its
+output boundary. Adding the R floor spike's work for the same 500 x 1,260
+crossover (`dev/spikes/r_floor/`: 48 us per pulse with the strategy call,
+about 103 with fixed-basket availability) gives roughly 175 us per
+fill-heavy pulse for a lean core that keeps ledgr's full ledger and
+diagnostics, against 6 ms today. That is a sum of two separate
+measurements, not a run.
 
 ## What the lean core may take from this
 

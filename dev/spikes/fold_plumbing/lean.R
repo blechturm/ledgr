@@ -212,6 +212,108 @@ fp_lean_fold <- function(tape, blocks, copy = TRUE, check = "pinned", fills = TR
        equity = ledgr_fold_equity_prefix(equity))
 }
 
+
+# The compact lean fold: references instead of copies, the restructured
+# strategy check, each fill a compact typed record (sequence, instrument
+# position, side, quantity, price, fee, execution time), each pulse's
+# diagnostic rows kept as its typed block, equity written into local
+# vectors. With `boundary = TRUE` the ledger columns, event IDs and the cash
+# and position effects are built once after the loop, and the diagnostic
+# blocks bound, as the output boundary would.
+fp_compact_fold <- function(tape, blocks, boundary = TRUE) {
+  pulses <- tape$pulses
+  t_n <- length(pulses)
+  run_id <- tape$services$run_id
+  inst_ids <- tape$services$instrument_ids
+  plan <- fp_read_plan(tape)
+  locals <- list2env(as.list(tape$services), parent = baseenv())
+  for (f in setdiff(unlist(plan, use.names = FALSE), names(tape$services))) assign(f, NULL, envir = locals)
+  read <- lapply(plan, fp_reader_local, env = locals)
+  cap <- 1024L
+  f_seq <- integer(cap); f_pos <- integer(cap); f_side <- integer(cap)
+  f_qty <- numeric(cap); f_price <- numeric(cap); f_fee <- numeric(cap); f_ts <- numeric(cap)
+  n_fill <- 0L
+  diag <- vector("list", t_n)
+  eq_ts <- numeric(t_n); eq_cash <- numeric(t_n); eq_pv <- numeric(t_n)
+  eq_rpnl <- numeric(t_n); eq_basis <- numeric(t_n)
+  event_seq <- tape$init$event_seq
+
+  t0 <- ledgr_time_now()
+  for (i in seq_len(t_n)) {
+    ent <- pulses[[i]]
+    read$P1()
+    o <- ent$P1$observation
+    observed <- list(packet = o$packet, data = o$data, execution = ent$P1$execution)
+    e <- ent$equity
+    eq_ts[i] <- e$ts; eq_cash[i] <- e$cash; eq_pv[i] <- e$positions_value
+    eq_rpnl[i] <- e$realized_pnl; eq_basis[i] <- e$cost_basis
+    decided <- "P2" %in% ent$labels
+    if (decided) read$P2() else read$P2_skip()
+    decision <- ent$P2
+    if (decided) {
+      context_ids <- inst_ids[decision$context_pos]
+      sc_check(stats::setNames(decision$strategy_qty, context_ids), context_ids,
+               allow_empty = TRUE, trust_universe = TRUE)
+    }
+    if (decided) read$P3() else read$P3_skip()
+    fill <- ent$P3$batch$fill
+    read$P4()
+    for (call in ent$payload) {
+      rows <- call$i
+      n <- length(rows)
+      if (n_fill + n > cap) {
+        cap <- max(2L * cap, n_fill + n)
+        length(f_seq) <- cap; length(f_pos) <- cap; length(f_side) <- cap; length(f_qty) <- cap
+        length(f_price) <- cap; length(f_fee) <- cap; length(f_ts) <- cap
+      }
+      idx <- n_fill + seq_len(n)
+      full <- n == length(fill$k)
+      f_seq[idx] <- as.integer(event_seq) + seq_len(n) - 1L
+      f_pos[idx] <- if (full) fill$pos else fill$pos[rows]
+      f_side[idx] <- if (full) fill$side else fill$side[rows]
+      f_qty[idx] <- if (full) fill$qty else fill$qty[rows]
+      f_price[idx] <- if (full) fill$price else fill$price[rows]
+      f_fee[idx] <- if (full) fill$fee else fill$fee[rows]
+      f_ts[idx] <- if (full) fill$exec_ts else fill$exec_ts[rows]
+      n_fill <- n_fill + n
+      event_seq <- event_seq + n
+    }
+    read$P5()
+    if (length(blocks[[i]])) diag[[i]] <- blocks[[i]]
+  }
+  if (!boundary) {
+    return(list(elapsed = ledgr_time_elapsed(t0, ledgr_time_now()), pulses = t_n))
+  }
+
+  # Output boundary, once per run.
+  used <- seq_len(n_fill)
+  seq <- f_seq[used]
+  side <- f_side[used]
+  d <- ledgr_fill_publication_deltas(side, f_qty[used], f_price[used], f_fee[used])
+  events <- ledgr:::ledgr_accounting_empty_columns(n_fill)
+  events$event_id <- paste0(run_id, "_", sprintf("%08d", seq))
+  events$run_id <- rep(run_id, n_fill)
+  events$ts_utc <- f_ts[used]
+  events$event_type <- rep("FILL", n_fill)
+  events$instrument_id <- inst_ids[f_pos[used]]
+  events$side <- c("SELL", "BUY")[(side > 0L) + 1L]
+  events$qty <- f_qty[used]
+  events$price <- f_price[used]
+  events$fee <- f_fee[used]
+  events$event_seq <- seq
+  events$cash_delta <- d$cash_delta
+  events$position_delta <- d$position_delta
+  events$mark_source_ts_utc <- as.numeric(events$mark_source_ts_utc)
+  pulse_blocks <- unlist(diag, recursive = FALSE)
+  diagnostics <- lapply(stats::setNames(diag_cols, diag_cols), function(nm) {
+    unlist(lapply(pulse_blocks, function(b) b[[nm]]), use.names = FALSE)
+  })
+  elapsed <- ledgr_time_elapsed(t0, ledgr_time_now())
+  list(elapsed = elapsed, pulses = t_n, events = events, diagnostics = diagnostics,
+       equity = list(ts = eq_ts, cash = eq_cash, positions_value = eq_pv, realized_pnl = eq_rpnl,
+                     cost_basis = eq_basis, n = t_n))
+}
+
 same <- function(a, b) isTRUE(identical(unname(a), unname(b)))
 parity <- list()
 timing <- list()
@@ -226,8 +328,13 @@ for (w in names(tapes)) {
   variants <- list(lean = list(), lean_fast_check = list(check = "fast"),
                    lean_fast_check_references = list(check = "fast", copy = FALSE),
                    lean_gut_reservation = list(gut = "reservation"))
+  variants$lean_compact <- list(compact = TRUE)
   for (label in names(variants)) {
-    res <- do.call(fp_lean_fold, c(list(tape, blocks), variants[[label]]))
+    res <- if (isTRUE(variants[[label]]$compact)) {
+      fp_compact_fold(tape, blocks)
+    } else {
+      do.call(fp_lean_fold, c(list(tape, blocks), variants[[label]]))
+    }
     parity[[length(parity) + 1L]] <- data.frame(
       workload = w, variant = label, output = c("events", "diagnostic_rows", "equity"),
       rows = c(length(o$events$event_seq), length(oracle_diag$diagnostic_seq), o$equity$n),
@@ -248,6 +355,8 @@ for (w in names(tapes)) {
     fast_minus_diagnostics = function() fast(diagnostics = FALSE),
     fast_minus_equity = function() fast(equity_row = FALSE),
     fast_minus_field_reads = function() fast(reads = FALSE),
+    compact_with_output_boundary = function() fp_compact_fold(tape, blocks),
+    compact_loop_only = function() fp_compact_fold(tape, blocks, boundary = FALSE),
     loop_and_stage_calls_only = function() fp_lean_fold(tape, blocks, copy = FALSE, check = "none", fills = FALSE,
                                                         diagnostics = FALSE, equity_row = FALSE, reads = FALSE))
   for (a in names(arms)) for (k in 1:2) arms[[a]]()
