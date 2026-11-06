@@ -100,6 +100,8 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 <a id="contract-execution-fold-core"></a>
 ### Fold Core And Output Handlers
 
+Accepted change pending: [lean core pulse plumbing](decisions.md#lean-core-pulse-plumbing-checks).
+
 - The fold-core/output-handler boundary is a required architecture
   contract before sweep mode. The fold core is the deterministic per-pulse
   execution engine: pulse calendar order, context construction, feature lookup,
@@ -241,6 +243,8 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 
 <a id="contract-execution-fold-carrier"></a>
 ### Typed Fold Carrier
+
+Accepted change pending: [lean core pulse plumbing](decisions.md#lean-core-pulse-plumbing-checks).
 
 The carrier contract of the typed-fold-carrier synthesis (Section 4) as
 implemented in v0.2.3 cut 5 (LDG-3164 to LDG-3168), extended by the Cut 11
@@ -468,6 +472,8 @@ store-format binding.
 <a id="contract-execution-event-staging"></a>
 ### Event Staging And Parallel Sweeps
 
+Accepted change pending: [lean core pulse plumbing](decisions.md#lean-core-pulse-plumbing-checks).
+
 - The canonical R fold publishes a pulse's fills as one typed block
   (`ledgr_fill_event_payload()`): event IDs formatted once per block,
   contiguous event sequences and P3's carried cash and position effects. The
@@ -527,6 +533,8 @@ store-format binding.
 ### Cost Resolution And Accounting Events
 
 Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle).
+
+Accepted change pending: [lean core pulse plumbing](decisions.md#lean-core-pulse-plumbing-checks).
 
 - Cost resolution belongs inside the fold before any output handler sees
   events. Output handlers must not resolve, reinterpret, or rewrite fill
@@ -652,6 +660,8 @@ Accepted change pending: [OMS order lifecycle](decisions.md#oms-order-lifecycle)
 
 Accepted change pending:
 [objective-filtered walk-forward identity](decisions.md#objective-filtered-walk-forward-identity).
+
+Accepted change pending: [lean core pulse plumbing](decisions.md#lean-core-pulse-plumbing-checks).
 
 - Walk-forward evidence adds two identity layers over existing run and sweep
   identity. `candidate_key` identifies one fold/window/candidate evaluation and
@@ -1488,6 +1498,8 @@ Accepted change pending:
 <a id="contract-persistence-current-format"></a>
 ### Current Store Format
 
+Accepted change pending: [lean core pulse plumbing](decisions.md#lean-core-pulse-plumbing-checks).
+
 - Experiment-store schema 125 is the sole current store schema. It replaces
   the accounting event JSON envelope with the typed `ledger_events` columns
   bound by the accounting contract, and retains the canonical
@@ -1684,6 +1696,8 @@ Accepted change pending:
 
 <a id="contract-persistence-telemetry-and-recovery"></a>
 ### Telemetry And Recovery
+
+Accepted change pending: [lean core pulse plumbing](decisions.md#lean-core-pulse-plumbing-checks).
 
 - Completed and failed runs persist compact `run_telemetry`:
   `status`, `execution_mode`, elapsed seconds, and pulse count. Detailed per-component telemetry remains

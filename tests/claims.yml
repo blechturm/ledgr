@@ -4503,7 +4503,7 @@ claims:
     cheapest_adequate_lane: "Review: one in-process three-cut YAML fixture and no package run."
     overlapping_evidence: "LCL-0505 owns the v0.2.3 default packet path; LCL-0271 owns evidence-form validation after the ticket population is selected."
   - id: "LCL-0506"
-    source: "v0.2.3 Cut 1 LDG-3129; rfc_fold_execution_phase_ownership_v0_2_2_synthesis.md Sections 5.6 and 11 (R3); contracts.md Cost Resolution And Accounting Events"
+    source: "v0.2.3 Cut 1 LDG-3129; rfc_fold_execution_phase_ownership_v0_2_2_synthesis.md Sections 5.6 and 11 (R3); contracts.md Cost Resolution And Accounting Events; pending WS16 pulse-plumbing Sections 4 and 7, current shipped detector unchanged until switch"
     scope: "Every canonical-R fill-row publication path (buffered DuckDB, db_live and memory) takes its cash and position deltas from the one ledgr_fill_publication_deltas() computation, NO_OP rows never reach it, and the db_live writer keeps its validation order, sequence choice and transactional behavior"
     oracle_class: "Independent side, quantity, price and fee oracle over BUY, SELL, fee-free and NO_OP fills, plus a call-count and shifted-value witness through a mocked computation"
     detecting_blocks: ["LTB-0515", "LTB-0516"]
@@ -4515,7 +4515,7 @@ claims:
     cheapest_adequate_lane: "In-memory DuckDB and three handlers; fast."
     overlapping_evidence: "A0 check.R freezes the bytes of every published row; this claim owns the single-computation routing and the writer's surrounding behavior."
   - id: "LCL-0507"
-    source: "v0.2.3 Cut 1 LDG-3130; ws1_output_handler_design.md Sections 4 and 7; contracts.md Compiled Accounting Dispatch"
+    source: "v0.2.3 Cut 1 LDG-3130; ws1_output_handler_design.md Sections 4 and 7; contracts.md Compiled Accounting Dispatch; pending WS16 pulse-plumbing Sections 4 and 7, current shipped detector unchanged until switch"
     scope: "The compiled spot-FIFO dispatch guard admits exactly the handlers it admitted before WS1: a buffered DuckDB handler has no append_compiled_spot_batch binding and is refused, while the memory handler is admitted under the same buffered spec"
     oracle_class: "Negative dispatch witness with an absent-capability check and a positive control"
     detecting_blocks: ["LTB-0517"]
@@ -4527,7 +4527,7 @@ claims:
     cheapest_adequate_lane: "One in-memory DuckDB connection and two handler constructions; fast."
     overlapping_evidence: "test-execution-spec.R keeps the memory admission parity tests and the live-mode refusal; this claim owns the buffered DuckDB refusal."
   - id: "LCL-0508"
-    source: "v0.2.3 Cut 1 LDG-3130; ws1_output_handler_design.md Sections 3 to 5"
+    source: "v0.2.3 Cut 1 LDG-3130; ws1_output_handler_design.md Sections 3 to 5; pending WS16 pulse-plumbing Sections 4 and 7, current shipped detector unchanged until switch"
     scope: "One output handler exposes exactly today's 20 methods on a DuckDB sink (audit_log and db_live) and 25 on a memory sink, every member is a function, and the shared mechanisms (event column buffer, growth, fill staging, payload building) live only in the handler, not in either sink"
     oracle_class: "Frozen method-name sets and source-ownership predicates over the handler and both sinks"
     detecting_blocks: ["LTB-0518"]
@@ -4887,7 +4887,7 @@ claims:
     cheapest_adequate_lane: "One six-session two-instrument pulse snapshot plus source inspection; fast."
     overlapping_evidence: "Cut 9 claims own the public helper semantics and empty axis; this claim owns the direct materialization and single-read implementation boundary."
   - id: "LCL-0539"
-    source: "v0.2.3 Cut 11 LDG-3201 and LDG-3204; typed-accounting synthesis Sections 3.3-3.4 and 4"
+    source: "v0.2.3 Cut 11 LDG-3201 and LDG-3204; typed-accounting synthesis Sections 3.3-3.4 and 4; pending WS16 pulse-plumbing Sections 4 and 7, current shipped detector unchanged until switch"
     scope: "Schema 125 binds the literal wide ledger catalogue and direct typed producers; one prepared typed carrier validates those rows as grouped blocks, carries ordering state across fetch boundaries, exposes every effect and evidence field without a meta list, and replays partial closes, reversals, corporate cash and lifetime write-off with exact reconciliation; contracts, the fold manual and source comments contain no schema-124 accounting publication teaching"
     oracle_class: "Independently stated four-kind field matrix, table-driven vocabulary mutations, split-block replay and append-boundary mutations"
     detecting_blocks: ["LTB-0550"]

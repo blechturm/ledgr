@@ -1,6 +1,6 @@
 # Lean Core Pulse Plumbing: Decision Synthesis
 
-- Status: **proposed; not binding until accepted by the maintainer**. No implementation or acceptance installation is claimed.
+- Status: **accepted** by the maintainer on 2026-11-06 after the Type 1 final review (PASS_AFTER_PATCHES, patches applied in 0f531a04). Its Section 6 installation is applied in the acceptance commit; no implementation is claimed.
 - Mode: Decision synthesis, RFC cycle stage 7. Codex, 2026-11-06; author of neither seed v2 nor its co-written brief. The maintainer approved the Claude-drafted brief.
 - Reviewed tree: `ef8be540ec2860434fb1453a83e7faf1256e44ba`. Git confirms no `R/`, `src/` or `tests/` difference from `d5b3a151`; that old fold remains the frozen oracle and is not edited.
 - Inputs: [seed v2](rfc_lean_core_pulse_plumbing_v0_2_3_seed_v2.md), [Type 2 response](rfc_lean_core_pulse_plumbing_v0_2_3_response.md), [maintainer response review](rfc_lean_core_pulse_plumbing_v0_2_3_response_review.md), especially D1-D8. The review decisions govern over the seed.

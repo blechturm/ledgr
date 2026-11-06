@@ -25,6 +25,15 @@ The Rules Rest On, the Implementation Trace and the Concrete Examples
 are historical records of the v0.2.0.1 arc. Where a historical passage
 disagrees with a Rule, the Rule wins.
 
+**Amended 2026-11-06 (pulse plumbing):** the [pulse plumbing
+synthesis](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md)
+Section 6, accepted by the maintainer on 2026-11-06 after the Type 1
+final review (PASS_AFTER_PATCHES, patches applied in 0f531a04), adds
+lean-core text to the Rules, Sealed Snapshot Guarantee Graph, Scope
+Guards and Maintainer Checklist for the pending WS16 lean core only; see
+the local notices there and the [appended skeleton
+amendment](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing).
+
 You are about to write or review code that touches bars, facts, pulses,
 instruments, events, or diagnostics, and you need to know which shapes
 the arc has shown to be expensive in R and what to write instead. By the
@@ -145,6 +154,16 @@ one-caller extraction reduces risk or only adds surface.
 
 ## Rules
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core
+> only, the pulse-plumbing amendment supersedes the addressed clauses
+> below. Shipped behavior changes only at the switch; unrelated rules
+> and historical rejection reasons remain. See the [pulse plumbing
+> synthesis](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md)
+> and the [appended skeleton
+> amendment](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+
 - **Prepare before the loop; read primitives inside it.** Anything that
   can be resolved from canonical inputs once per run (facts into segment
   tables, bars into matrices, ids into an index) is compiled before the
@@ -200,7 +219,12 @@ one-caller extraction reduces risk or only adds surface.
   merely because another function received them. A join, alignment, user
   callback, deserialization, or synthetic-row step may invalidate a
   guarantee; name that edge and check the changed property there rather
-  than replaying every upstream validator.
+  than replaying every upstream validator. In the lean core, validate
+  external data and user-code returns at entry as early as possible. In
+  the lean core, trust ledgr’s internal transformations; their output
+  guarantees are module-test properties and debug assertions under R1.
+  Keep R3’s contracted economic refusals. Sealing and hash verification
+  remain mandatory.
 - **Boundary helpers stay at the boundary** (maintainer, 2026-11-03).
   Normalisers and validators written for untrusted input never run per
   pulse, fill or event on values a boundary already accepted. That
@@ -288,7 +312,9 @@ one-caller extraction reduces risk or only adds surface.
       conversion happens only in a few named boundary helpers, never ad
       hoc mid-path.
   3.  **Validate at construction.** Constructors check lengths, axis and
-      types once; consumers trust them.
+      types once; consumers trust them. In the lean core, validate at
+      external entry; internal constructors are tested per property and
+      checked in debug; retain contracted economic guards.
   4.  **Canonical R stays readable.** It is the normative oracle, so it
       is the version people read: plain vector code over cleverness. A
       later compiled path may be dense; the R path stays explainable.
@@ -346,6 +372,9 @@ one-caller extraction reduces risk or only adds surface.
   only fields that legitimately differ between the compared arms (store
   path, creation time, a generated ID that differs by design). A field
   that should match, such as a run ID fixed on both arms, is compared.
+  Pulse plumbing R8 explicitly authorizes mode removal and its
+  configuration/store identity changes; no other identity or API change
+  is implied.
 - **Measure before and after with the arc’s clocks.** Wall around the
   measured call in a fresh process, externally sampled peak working set,
   profiler shares as a decomposition only, and cold versus warm clocks
@@ -360,6 +389,10 @@ one-caller extraction reduces risk or only adds surface.
   that no probe executed is returned. The order is smallest runnable
   fork, run it, let failures generate at most ten cases, then freeze
   expected answers.
+- **In the lean core.** Pass immutable references/indexes and fresh
+  computed values; do not copy N-wide packets or reuse computed-output
+  buffers. Write compact records carrying P3 effects; expand bounded
+  committed chunks under R7-R10 and freeze recorder captures.
 
 ## Reference Costs
 
@@ -424,6 +457,16 @@ depends on the operation:
 
 ## Sealed Snapshot Guarantee Graph
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core
+> only, the pulse-plumbing amendment supersedes the addressed clauses
+> below. Shipped behavior changes only at the switch; unrelated rules
+> and historical rejection reasons remain. See the [pulse plumbing
+> synthesis](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md)
+> and the [appended skeleton
+> amendment](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+
 The optimization rule is not “skip validation.” It is “do not pay twice
 for the same established fact.” The snapshot contract already defines a
 trust boundary: adapters normalize untrusted inputs, sealing validates
@@ -458,6 +501,9 @@ flowchart TD
   M --> T
 ```
 
+In the lean core, node D (“Validate only the new derived property”) is
+“External entry check, R3 guard, or internal tests/debug”.
+
 The graph is a dependency graph, not a claim that sealing proves every
 useful property. A consumer may rely on a guarantee only when every
 upstream edge was actually traversed. A raw data frame, an unsealed
@@ -469,10 +515,13 @@ An internal helper that remains callable with arbitrary, unguarded
 objects must still fail closed on impossible states such as aligned `NA`
 timestamps. Trusting the sealed path removes repeated data-scale
 normalization; it does not license turning a defensive validator into a
-fail-open one. Direct epoch comparison is also stricter than
-whole-second string formatting for sub-second values. That is harmless
-only after the seal’s sub-second rejection has actually been traversed,
-or when the stricter behavior is bound deliberately.
+fail-open one. In the lean core, untrusted entry helpers fail closed;
+trusted internal helpers need not retain production defensive assertions
+under R1. Preserve sealing, hash verification and R3 refusals. Direct
+epoch comparison is also stricter than whole-second string formatting
+for sub-second values. That is harmless only after the seal’s sub-second
+rejection has actually been traversed, or when the stricter behavior is
+bound deliberately.
 
 | guarantee available after the guarded sealed boundary | established by | downstream consequence |
 |----|----|----|
@@ -505,6 +554,9 @@ already paid for. The reviewable setup/orchestration note in the active
 v0.2.0.1 packet records that exact recurrence and keeps its performance
 numbers non-binding until independent review.
 
+For lean-core internal transformations this dependency declaration names
+unit-test/debug guarantees, not additional runtime validators.
+
 When adding a validator, write its dependency declaration before its
 loop:
 
@@ -524,6 +576,16 @@ without traversing the boundary.
 
 ## Scope Guards
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core
+> only, the pulse-plumbing amendment supersedes the addressed clauses
+> below. Shipped behavior changes only at the switch; unrelated rules
+> and historical rejection reasons remain. See the [pulse plumbing
+> synthesis](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md)
+> and the [appended skeleton
+> amendment](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+
 This style does not license a package-wide collapse rewrite, a second
 execution engine, parallel pulse execution, durable expanded matrices,
 or a change to availability policy, schema, or public API. It does not
@@ -531,7 +593,9 @@ turn cold-path data frames (configuration, printing, one-off readers
 over small tables) into debt. It applies to code whose iteration count
 grows with bars, fact rows, instruments x pulses, events, diagnostics,
 or candidates, on ingest and seal, the fold, hydration, finalisation,
-and result readers.
+and result readers. Pulse plumbing R8 explicitly authorizes mode removal
+and its configuration/store identity changes; no other identity or API
+change is implied.
 
 ## Implementation Trace
 
@@ -723,11 +787,23 @@ One diagnostic block per pulse versus one frame per instrument:
 
 ## Maintainer Checklist
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core
+> only, the pulse-plumbing amendment supersedes the addressed clauses
+> below. Shipped behavior changes only at the switch; unrelated rules
+> and historical rejection reasons remain. See the [pulse plumbing
+> synthesis](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md)
+> and the [appended skeleton
+> amendment](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+
 - Does any loop’s iteration count grow with bars, fact rows, instruments
   x pulses, events, diagnostics, or candidates? If so, what does one
   iteration do, and does a vectorised form exist?
 - Which upstream boundary already validated these values, and is this
   code proving a new property or paying again for an old one?
+- Is this an external-entry check, an R3 product refusal or a debug-only
+  internal assertion, and which module tests cover its property?
 - Is any POSIXct value being formatted merely to compare, order, group,
   join, or align it? If so, keep it as POSIXct or an epoch vector.
 - Does any code that runs per pulse, fill or event touch POSIXct,

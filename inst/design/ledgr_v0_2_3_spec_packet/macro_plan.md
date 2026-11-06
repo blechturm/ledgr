@@ -44,6 +44,12 @@ Revision 12 records the Cut 12 routing (accepted 2026-11-06): workstreams 26, 27
 WS16's first checkpoint (interface table and stage recorder, FIFO kernel,
 memory preparation), measured from the d5b3a151 pin. The maintainer accepted
 the cut on 2026-11-06.
+Revision 13 records the
+[lean core pulse plumbing synthesis](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md),
+accepted by the maintainer on 2026-11-06 after the Type 1 final review
+(PASS_AFTER_PATCHES, patches applied in 0f531a04): its Section 6 amends rules
+15 and 16, WS16, WS14a and WS14 for the pending WS16 lean core only, with
+local notices at each amended section.
 Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
@@ -57,6 +63,16 @@ a cut is accepted, `tickets.yml` alone sequences it. Inventory IDs (C1, X3,
 ...) refer to the reconciliation.
 
 ## 1. Planning rules
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
 
 1. **Two tracks.** Decided work is implemented now; the remaining RFCs run
    beside it. A design finishes before the code it governs, not before all
@@ -117,7 +133,8 @@ a cut is accepted, `tickets.yml` alone sequences it. Inventory IDs (C1, X3,
 15. **Clarity is a design goal, reviewed like performance.** Representation
     changes follow the clarity rule in
     `manual/optimization_coding_style.qmd` (carrier contract, axis
-    discipline, construction-time validation, readable canonical R, small
+    discipline, external-entry validation, debug assertions and contracted
+    economic guards under R1-R5, readable canonical R, small
     explicit stages, commented indexing). The WS4a RFC includes the carrier
     contract table. The close reviews of WS4a, WS4b, WS7 and WS8 carry a
     cold-read item: a clean-context reviewer explains each changed stage
@@ -138,10 +155,10 @@ a cut is accepted, `tickets.yml` alone sequences it. Inventory IDs (C1, X3,
     material miss; milestone deferral is not permission to ship an
     uninvestigated performance result. **WS16 is excepted (maintainer,
     2026-11-05):** speed and maintainability are the point of the lean
-    core, so each lean-core family closes against its own microsecond and
-    line budgets, set from the pinned baseline (lean-fold-core
-    [amendment A2](../rfc/rfc_lean_fold_core_v0_2_3_synthesis.md#amendment-maintainer-2026-11-03-acceptance-conditions)).
-    A budget miss is a finding that is fixed or explicitly accepted.
+    core. WS16 uses frozen floor v1 and stage isolation under R11: each cut
+    sets cost-above-floor budgets on both reference workloads, a pinned
+    matched no-regression bar and a line budget; close reports all three,
+    profile samples and subtraction; any miss is fixed or explicitly accepted.
 17. **Hot-path bans are enforced by a test, not by prose.** Agents copy the
     nearest existing code more readily than they follow written rules, so
     one surviving instance of a banned pattern becomes the template for the
@@ -679,13 +696,24 @@ rebuilding; site deployed from the built artifact.
 
 ### WS16. Lean fold core (accepted synthesis)
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+
 The maintainer accepted the
 [lean fold core synthesis](../rfc/rfc_lean_fold_core_v0_2_3_synthesis.md)
 on 2026-11-03 with its acceptance amendment (A1 to A4, no cap); the
 independent [final review](../rfc/rfc_lean_fold_core_v0_2_3_final_review.md)
 passed after patch P1, which is applied. The current fold is replaced by a
 lean core with the same public behavior, grown and proven family by family
-against the current core and switched in one cut.
+against the current core and switched in one cut. The lean core preserves
+public behavior except the explicit pulse-plumbing ledger differences.
 
 - **Where.** `dev/lean_core/`, excluded from the package. Nothing in `R/`
   imports, calls, dispatches to or falls back to it before the switch.
@@ -711,6 +739,12 @@ against the current core and switched in one cut.
   builds that stage recorder under `dev/lean_core/`, observing `R/` from
   outside without changing it; later families reuse it. Public end-to-end
   parity starts with the P3 family and grows from there.
+- **[Pulse plumbing](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md)
+  (maintainer, 2026-11-06).** R1-R13 govern validation, ownership, compact
+  publication and debug mode. Module tests cover the Section 4 property
+  census; suite debug-on and parity debug-on/off, including workers, are
+  mandatory. Floor v1 stays frozen until post-switch WS14. The switch owns
+  this synthesis's Sections 4-7; the pin d5b3a151 is unchanged.
 - **Extension architecture first (maintainer, 2026-11-04).** No lean-core
   code is written until the
   [core extension architecture RFC](../rfc/README.md#core-extension-architecture)
@@ -734,11 +768,11 @@ against the current core and switched in one cut.
   first checkpoint is its own cut (measure, cut, Codex cut review,
   implement), so each closes with its own budgets and review before the
   next starts.
-- **Every family close (A2, A4).** A microsecond budget set from the pinned
-  baseline and a line budget for the code it adds; per-function profile
-  samples and the line count are reported against both. A subtraction
-  review comes first. Exceeding a budget is a finding that is fixed or
-  explicitly accepted by the maintainer.
+- **Every family close (A2, A4).** WS16 uses frozen floor v1 and stage
+  isolation under R11: each cut sets cost-above-floor budgets on both
+  reference workloads, a pinned matched no-regression bar and a line budget;
+  close reports all three, profile samples and subtraction; any miss is fixed
+  or explicitly accepted. A subtraction review comes first.
 - **Rules ledger (A3).** Every ledgr rule a parity failure surfaces goes
   into the [rules ledger](lean_core_rules_ledger.md). Before the switch each
   entry is written into `contracts.md` or changed deliberately with a
@@ -751,6 +785,16 @@ against the current core and switched in one cut.
   (WS14a, "Lean core switch").
 
 ### WS14a. Holistic core and test-suite review, subtraction cuts
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
 
 Each cut so far was reviewed on its own diff, and each fix added code: a
 check, a normalizer, a cache guard. No review has asked what the whole core
@@ -828,6 +872,12 @@ execution-sensitive economics cuts are held to rule 17 instead.
   (empty, or each remaining entry with an accepted reason) and its identity
   impact under rule 5. A finding that needs a behavior or contract change is
   routed to its owner, not done here.
+  The switch's frozen-test rule permits only individually approved mechanical
+  remaps and the semantic test dispositions explicitly authorized by pulse
+  plumbing Sections 4 and 7, with unchanged fixtures and retained witness
+  strength. Its enumerated behavior/identity/contract changes are an explicit
+  exception to the subtraction cut's no-behavior rule. Historical test and
+  evidence records are not rewritten.
 - **Test suite (maintainer, 2026-11-02).** The suite grew the same way: on
   2026-11-02 it held 221 test files and 81,023 test lines against 65,287
   product lines, about 1,300 blocks and 10,500 expectations, and the
@@ -901,6 +951,16 @@ execution-sensitive economics cuts are held to rule 17 instead.
   detected and the fast-lane time against its bound.
 
 ### WS14. Performance convergence checkpoint
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
 
 After the execution paths, strategy context, context frames, accounting
 readers and typed persistence have reached their surviving v0.2.3 shape and
@@ -995,7 +1055,8 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
   arithmetic are the cost. Decisions:
   - the lean core takes a lean R implementation of the same kernel,
     bit-identical to today's (2.2 to 2.5 times faster in the spike), with
-    validation once at a trusted boundary, and keeps the lot book in a typed
+    validation once at a trusted boundary (subject to R1-R5; contracted lot
+    refusals stay), and keeps the lot book in a typed
     representation inside the fold, converting only at its edges;
   - no new dependency for compiled kernels. quickr matched bit for bit and
     was 5 to 6 times faster, but adds Fortran, a young build-time tool and
@@ -1006,6 +1067,8 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
     decision this section already requires; that same change retires the
     opt-in `spot_fifo.cpp`, so ledgr keeps one R oracle and at most one
     compiled FIFO.
+  - Rebaseline floor v1 here after switch, retaining its frozen WS16 record;
+    compiled FIFO follows R12 and this section's existing Type 2 gate.
 - **Measured history-read cost (2026-11-03), review input.** On a real
   context from `ledgr_pulse_snapshot()`, `ledgr_history_matrix()` costs
   about 240 us for a 5-session bar window over 10 instruments and 450 us

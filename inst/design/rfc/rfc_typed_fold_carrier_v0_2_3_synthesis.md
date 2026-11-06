@@ -4,6 +4,13 @@ Role: record; decision synthesis, binding in its stated scope once accepted.
 Status: ACCEPTED by the maintainer 2026-10-30, after Type 1 final review
 PASS_AFTER_PATCHES (Claude) with P1-P3 applied in place; binding pending
 WS4a scope; not implemented.
+Amended 2026-11-06: the [pulse plumbing
+synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) Section 6,
+accepted by the maintainer on 2026-11-06 after the Type 1 final review
+(PASS_AFTER_PATCHES, patches applied in 0f531a04), amends the addressed
+clauses below for the pending WS16 lean core only; see the local notices and
+the [appended skeleton
+amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing).
 Mode: Decision synthesis, RFC cycle stage 7. Author: Codex (response author).
 Date: 2026-10-30. Brief: drafted by Claude for, and owned by, the maintainer.
 Baseline: `a86dbc228dae312129da31a6f872d294c00ad57d`; `R/` and contracts have
@@ -17,6 +24,25 @@ Citation aliases (paths relative to the repository):
 - **Authoring**: `inst/design/rfc/rfc_strategy_authoring_api_v0_2_3_synthesis.md`.
 - **Macro**: `inst/design/ledgr_v0_2_3_spec_packet/macro_plan.md`.
 - **Style**: `inst/design/manual/optimization_coding_style.qmd`.
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+>
+> For this record: "For the lean core, R1-R5 replace per-group/per-applied-row
+> internal runtime validation; R3 economic refusals stay. R7 retains P3's
+> single effect computation and replaces the retained publication block by
+> compact committed ranges; R9 and the prefix protocol replace its buffer
+> representation and preflush access rule. R8 explicitly supersedes
+> no-API/no-identity/no-schema assertions for mode retirement. R12 routes
+> later native residency through WS14; old WS4a scope/rejections remain
+> historical."
 
 ## 1. Corrections The Synthesis Author Owes
 
@@ -52,6 +78,16 @@ Citation aliases (paths relative to the repository):
 
 ## 2. Decision
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+
 Adopt seed v2 with Section 1 corrections: positional typed columns, one R lot
 implementation, columnar publication and bounded diagnostics, within E/P1-P5.
 Acceptance is not implementation (Macro:181-223; `inst/design/README.md:35-51`).
@@ -75,6 +111,16 @@ entry; preserve public examples and registered oracles (Macro:42-51; V2:430-436)
 ## 3. Bound Architecture
 
 ### 3.1 Axes, ownership and validation
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
 
 The fixed run axis is `execution$instrument_ids`. Context columns are in the
 provider's decision order, including held nonmembers; `context_pos[k]` maps
@@ -108,6 +154,16 @@ copy-on-modify; changing this requires scale evidence and a cut ownership proof
 
 ### 3.2 P1 observation and P2 decision
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+
 P1 keeps cash settlement, scheduled disposition, lifetime resolution,
 re-observation, valuation and equity order (Phase:146-171). Convert provider/
 valuation outputs once per produced view, reusing its mapping; do not rewrite
@@ -132,6 +188,16 @@ settle, value, bind the next boundary and commit (Phase:175-184;
 `inst/design/contracts.md:141-156`; `R/fold-engine.R:632-675`).
 
 ### 3.3 P3 planning and costs
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
 
 One candidate row per actionable context ordinal. Vectorize cost steps in
 their compiled order; preserve spread-adjusted unrounded notional fees and
@@ -158,6 +224,16 @@ no bit-mask ordering or vocabulary change (`R/availability-economics.R:334-341`;
 kinds still refuse before mutation (`R/fold-engine.R:205-234`).
 
 ### 3.4 One typed lot implementation, including replay
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
 
 Use flat segments and cached lot-derived aggregates. Consume FIFO sequentially
 within each instrument and vectorize across distinct instruments. Compact/grow
@@ -191,6 +267,16 @@ the C++ and its opt-in envelope remain unchanged
 
 ### 3.5 P4 application, publication and failure boundary
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+
 Bind the next corporate-action entitlement boundary before fills. Compute the
 canonical candidate lot block and ordered effect results without mutating
 owned state. A calculation/validation failure here leaves state and output
@@ -219,6 +305,16 @@ DDL, new evidence validator, fallback deletions or public readers
 
 ### 3.6 Diagnostics, equity and P5
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+
 Stages write typed pulse staging in emission order, reset after P5 or E stop
 drainage. Reserve a conservative pulse bound from axis size and known producer
 counts; use indexed slices and a used-row count, never replay the strategy to
@@ -246,6 +342,16 @@ opaque affected exposure stay; stop diagnostics use the same staging schema.
 Telemetry retains its present typed arrays (`R/fold-engine.R:1533-1558`).
 
 ## 4. Carrier Contract
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
 
 Types: D double, I integer, L logical, C character. Epoch = UTC seconds;
 money = existing accounting currency (USD here), units = signed instrument
@@ -318,6 +424,16 @@ dictionaries and feature locators without changing their semantics.
 
 ## 5. Evidence Before The Cut And Before Deletion
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+
 Existing evidence supports typed R on the measured shape: 27.17/27.07 us/fill
 wide/partial, not a universal limit (`dev/spikes/ws4a-carrier-probe/typed_lots_findings.md:5-23`).
 Fixed-fee identity exists; chained-cost identity and non-fill typed operations
@@ -356,6 +472,16 @@ logical witness; container layout is not an economics oracle (Response:255-263).
 
 ## 6. Rejected Items
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+
 - Run-axis padded targets: context alignment eliminates padding and matches validation (Section 1).
 - Native default or native-resident books: outside WS4a and unsupported by a necessity claim (Section 2).
 - A second FIFO until WS7: one typed implementation serves replay now (Section 3.4).
@@ -376,6 +502,16 @@ and detector names, with checked evidence before acceptance. Axes, ownership,
 stage access, operations, publication order and failure semantics are settled.
 
 ## 8. Future Obligations
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
 
 WS4b removes provider/valuation adapters, owns selective diagnostics after
 retained-row/sequence parity, and removes H5 reconciliation JSON. WS4b/WS5

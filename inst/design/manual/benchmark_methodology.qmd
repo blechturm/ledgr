@@ -10,6 +10,15 @@ the v0.2.0.1 four-phase peer clock (LDG-2732).
 remains in versioned spec packets and release-gate tickets. Public benchmark
 claims require explicit future scope; this article does not create them.
 
+**Amended 2026-11-06 (pulse plumbing):** the [pulse plumbing
+synthesis](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) Section 6,
+accepted by the maintainer on 2026-11-06 after the Type 1 final review
+(PASS_AFTER_PATCHES, patches applied in 0f531a04), adds WS16 family-budget
+text to Before/After Regression Gates and Attributing A Change With Profile
+Samples for the pending WS16 lean core only; see the local notices there and
+the [appended skeleton
+amendment](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing).
+
 This article explains how ledgr's local benchmark records are generated,
 checked, and used for release decisions. It complements
 `performance_arc_v0_1_8_x.qmd`: that article explains what the v0.1.8.7 to
@@ -204,6 +213,16 @@ this host.
 
 ## Before/After Regression Gates
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+
 A before/after regression gate asks whether a candidate tree is slower than a
 base tree by more than a stated bound. This section governs those paired
 gates only. It does not change the five-process descriptive baseline, the
@@ -336,7 +355,26 @@ invalid case and passing its controls. `dev/bench/timing/demo/frozen_inputs_demo
 edits the live harness during a smoke window and shows that later slots are
 unchanged, and that an edit to a frozen copy invalidates the attempt.
 
+WS16 family budgets use frozen floor v1 with only the owning stage active;
+other stages are stubs. Measure cost above floor on both reference workloads
+and a separate matched pinned no-regression comparison under R11. Charge
+floor-resident work once to its owning family. Include retained guards, copies
+and bounded output expansion in the declared boundary; report loop and
+boundary clocks separately. Per-function samples supplement these gated
+comparisons; WS16 is excepted from the milestone-only rule. Paired gates use
+the unchanged shared harness/protocol rules.
+
 ## Attributing A Change With Profile Samples
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
 
 Rule 16 of the v0.2.3 macro plan checks performance at milestones, not per
 workstream. A cut that removes or adds hot-path work still reports what it
@@ -373,6 +411,15 @@ The method:
 Sample counts are a decomposition, not a clock. They compare two arms on one
 workload, interval and host. They support no whole-run or public speed claim;
 those stay with the milestone measurements.
+
+WS16 family budgets use frozen floor v1 with only the owning stage active;
+other stages are stubs. Measure cost above floor on both reference workloads
+and a separate matched pinned no-regression comparison under R11. Charge
+floor-resident work once to its owning family. Include retained guards, copies
+and bounded output expansion in the declared boundary; report loop and
+boundary clocks separately. Per-function samples supplement these gated
+comparisons; WS16 is excepted from the milestone-only rule. Paired gates use
+the unchanged shared harness/protocol rules.
 
 ## Release-Gate Checks
 

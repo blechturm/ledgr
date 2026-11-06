@@ -11,6 +11,14 @@
   [amendment](#amendment-maintainer-2026-11-04-core-extension-architecture) from the accepted
   [core extension architecture synthesis](rfc_core_extension_architecture_v0_2_3_synthesis.md) Section 6. The D2
   coding gate is satisfied by that acceptance.
+- Amended 2026-11-06: the [pulse plumbing
+  amendment](#amendment-maintainer-2026-11-06-pulse-plumbing) from the
+  accepted [pulse plumbing
+  synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) Section 6,
+  accepted by the maintainer on 2026-11-06 after the Type 1 final review
+  (PASS_AFTER_PATCHES, patches applied in 0f531a04), amends Sections 1, 2, 4,
+  5.2, 5.3, 6 and 7 and qualifies the earlier amendments' preservation clauses
+  for the pending WS16 lean core only.
 - Parent: the accepted [lean fold core synthesis](rfc_lean_fold_core_v0_2_3_synthesis.md),
   especially Sections 2-5 and amendment A1.
 - Inputs: [seed v2](rfc_lean_core_skeleton_v0_2_3_seed_v2.md),
@@ -41,6 +49,21 @@
 > for the exact replacement scope. Other accepted rules remain in force.
 
 ## 1. Decision And Authority
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [amendment](#amendment-maintainer-2026-11-06-pulse-plumbing) in this record,
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+>
+> The pending-scope meaning of "public API ... identity unchanged" and of
+> "does not authorize ... format change or correctness-rule change" below is
+> replaced with: "Only R1-R13's enumerated check, write-mode, identity and
+> representation changes are authorized; every other public guarantee
+> remains."
 
 **Adopt the corrected v2 direction:** named small stages over positional typed
 data, one prepared representation using compact time-major tiles, and a first
@@ -90,6 +113,18 @@ the guarantees is not the optimization.
 > [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md#4-exact-amendments-for-acceptance);
 > see the [amendment](#amendment-2026-11-04-observable-data) in this record
 > for the exact replacement scope. Other accepted rules remain in force.
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [amendment](#amendment-maintainer-2026-11-06-pulse-plumbing) in this record,
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+>
+> Section 2 validation placement and Section 7's open validation-placement
+> question are superseded by R1-R5.
 
 Keep preparation, the envelope E, and P1-P5 as named functions with explicit
 inputs and outputs. Reuse snapshot creation, sealing and verification,
@@ -266,6 +301,17 @@ shorthand is not authority to narrow this API.
 
 ## 4. Public Views, Ownership And Publication
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [amendment](#amendment-maintainer-2026-11-06-pulse-plumbing) in this record,
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+>
+> Section 4 publication is R7-R10.
+
 The private pulse packet is positional; the public context remains the classed
 flat lazy `ctx`. Preserve aliases, strict unknown-field conditions,
 non-forcing enumeration, at-most-once column construction, helpers and frozen
@@ -351,6 +397,18 @@ read to satisfy memory accounting.
 
 ### 5.2 Complete R FIFO Operation And Refusal Family
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [amendment](#amendment-maintainer-2026-11-06-pulse-plumbing) in this record,
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+>
+> Section 5.2 applied-row checks and Section 6's "no dynamic checks" rejection
+> are qualified by R1/R3.
+
 Extend the lean arithmetic to openings, fills and dispositions, including
 replay, import and recovery inputs. The spike still calls the current kernel
 on unusual rows (`dev/spikes/lean_fifo/kernel.R:18`, `:103`); its successful
@@ -378,6 +436,17 @@ where it changes that order.
 
 ### 5.3 Stage Recorder
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [amendment](#amendment-maintainer-2026-11-06-pulse-plumbing) in this record,
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+>
+> Section 5.3 capture is R13.
+
 Include the reusable stage recorder required by Macro WS16's "Stage parity
 before end-to-end" (Macro:666-673) in this checkpoint's interface table and
 deliverables. That bullet owns its placement, reference capture, comparison
@@ -397,6 +466,18 @@ or a complete candidate strategy run. Contracts still prevail over recorded
 oracle behavior under Section 1.
 
 ## 6. Evidence Weight And Rejected Alternatives
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [amendment](#amendment-maintainer-2026-11-06-pulse-plumbing) in this record,
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+>
+> Section 5.2 applied-row checks and Section 6's "no dynamic checks" rejection
+> are qualified by R1/R3.
 
 The release-head source checks support P1-P6 and N1's semantic corrections.
 Adopt P7's evidence qualifications. This synthesis performed read-only source,
@@ -434,6 +515,18 @@ and metadata, for P2; budget setting remains with the parent and Macro.
 | Treat skeleton acceptance or a recorder-only start as permission to code before D2 | The extension architecture acceptance gate covers all lean-core code; any changed bound structure needs a prior synthesis amendment. |
 
 ## 7. Remaining Decisions And Routing
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [amendment](#amendment-maintainer-2026-11-06-pulse-plumbing) in this record,
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+>
+> Section 2 validation placement and Section 7's open validation-placement
+> question are superseded by R1-R5.
 
 **Open Questions Promoted To Spec-Cut / First Checkpoint:** the concrete field
 interface, recorder capture boundary and validation placement; tile width,
@@ -475,6 +568,18 @@ record.
 > see the [amendment](#amendment-2026-11-04-observable-data) in this record
 > for the exact replacement scope. Other accepted rules remain in force.
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [amendment](#amendment-maintainer-2026-11-06-pulse-plumbing) in this record,
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+>
+> References to earlier amendments leaving other sections unchanged are
+> qualified by this narrow supersession, not erased.
+
 The maintainer accepted the [core extension architecture synthesis](rfc_core_extension_architecture_v0_2_3_synthesis.md)
 on 2026-11-04. Its Section 6 supersedes Section 2.1 with the block below.
 Sections 1, 2 outside 2.1, and 3 to 7 are unchanged.
@@ -515,6 +620,18 @@ and parity for unchanged behavior. No future capability or speculative field
 is implemented here. D2's acceptance and amendment gate remains in force.
 
 ## Amendment (2026-11-04): observable data
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [amendment](#amendment-maintainer-2026-11-06-pulse-plumbing) in this record,
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+>
+> References to earlier amendments leaving other sections unchanged are
+> qualified by this narrow supersession, not erased.
 
 The maintainer accepted the
 [lean core observable data synthesis](rfc_lean_core_observable_data_v0_2_3_synthesis.md)
@@ -564,3 +681,180 @@ Add this fifth row to that table:
 Other Section 2.1 text and its four existing rows are unchanged. Section 3
 is unchanged: this amendment neither generalizes numeric tiles/admission
 to future data nor requires every later data kind to use that shape.
+
+## Amendment (maintainer, 2026-11-06): pulse plumbing
+
+The maintainer accepted the [lean core pulse plumbing
+synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) on 2026-11-06
+after the [Type 1 final
+review](rfc_lean_core_pulse_plumbing_v0_2_3_final_review.md)
+(PASS_AFTER_PATCHES, patches applied in 0f531a04). Its Section 6 amends
+Sections 1, 2, 4, 5.2, 5.3, 6 and 7 of this record for the pending WS16 lean
+core only, through the local notices in those sections, and qualifies the
+preservation clauses of the two earlier amendments. Shipped behavior changes
+only at the switch; unrelated rules and historical rejection reasons remain.
+
+Below are that synthesis's Section 3 rules R1-R13 and its Section 5
+failure-prefix protocol, verbatim. Section references inside them (Sections 4,
+5 and 7) refer to the pulse plumbing synthesis, and their `file:line`
+citations to its reviewed tree.
+
+### R1-R13
+
+**R1. Trust internal modules.** Internal hand-offs are not revalidated in
+production. Module tests exercise each output property, including empty,
+missing and overflow cases, using the response finding 2 census and Section 4
+below. An internal debug mode restores all removed assertions with their
+classes; the suite runs with it on, parity with it on and off, and recorder
+and parity workers set it explicitly. Debug changes assertions only, never
+arithmetic, ownership or publication. An untested module defect can escape in
+production; that trade-off is accepted. R3's product refusals are exceptions
+to assertion removal, not duplicate carrier scans.
+
+**R2. Check external entry early.** Preparation checks snapshot data, marks,
+prices, facts, provider vocabulary and every feature output, including custom
+indicator returns. Preserve accepted missingness and the separately accepted
+post-warmup NA decision; do not strengthen numerical admission. E checks
+cost/risk declarations from ledgr constructors, schedule, parameters, state
+declaration, imported/opening state and prepared execution epochs once.
+After each strategy invocation check its full targets, intent, sizing attributes
+and callback-exposed notes; check each dynamic history request where it enters.
+State updates keep their once-per-decided-pulse P5 acceptance/normalization
+boundary before installation, preserving refusal priority against P3/P4 work;
+earlier preparation of a validation result must not signal its refusal early.
+Stored ledger and deserialized/imported state keep complete entry checks.
+An internal state/stop assembled from accepted values is debug-only checked,
+including after E installs a stop. Do not call public validators again on those
+hand-offs. Precompute conditional-admission information early, but issue an
+R3 refusal only when its existing applicability and precedence require it.
+
+**R3. Retain product refusals.** Keep their classes, messages, stages and
+order: invalid/unaffordable execution requests, price/delta/epoch admission,
+risk-mark/equity and post-risk admissibility/short-exposure policy, unsupported
+economic kinds, lot input economic rules, overflow, transition/exhaustion and
+replay-witness failures, terminal/settlement refusals, the P3 affordability reconciliation stop, P5 cash reconciliation
+and nonfinite reconciliation values, staging capacity at its write point and
+event-buffer capacity at its existing refusal points (fills at P5). Preserve import/cached-total limits in
+**Typed Fold Carrier** (C:331); do not add all-book reductions. A full internal
+applied-row scan may go, but any predicate implementing a contracted lot
+overflow/invariant refusal stays in the kernel. D4 specifically removes the
+generic append validator for ledgr producers; R3 does not reinstall it under
+another name. Malformed internal-output assertions removed by R1/R4 are the
+enumerated oracle differences, not retained product refusals.
+
+**R4. No producer append check.** The fold's ledgr-owned producers, including
+P1, openings, fills and compiled publication, append without the accounting
+validator in production. Read preparation retains one grouped validator,
+including cross-fetch sequence/time state and replay reconciliation. Debug
+runs the write assertions without advancing publication state on failure.
+Do not build a prepared accounting object merely to obtain append metadata.
+
+**R5. Restructure kept checks.** Use one comparison for in-order target names;
+otherwise one `collapse::fmatch()` aligns them, as M:943 already requires.
+Keep every strategy-return refusal and its order, including empty-axis rules;
+do not revalidate ledgr's context axis. Check a signal callback's raw signals
+at its return and the resulting targets once across wrapper/P2, preserving
+standalone wrapper behavior. Do not trust a class/attribute as proof of a
+user-returned value. Run accounting kind sections only for present kinds;
+read preparation still produces the carrier it needs. The fill-mark_age gap
+is not corrected by this restructuring.
+
+**R6. Pass references and indexes.** Prepared data is immutable. Pass its
+positions and newly computed values without N-wide packet copies. Computed
+stage outputs remain fresh, not reused overwrite buffers. Mutable output
+buffers have one owner; public retained values are copied or never mutated.
+
+**R7. Compact owned records, bounded expansion.** Each fill retains sequence,
+instrument position, side, quantity, price, fee, execution epoch **and P3's
+already computed cash_delta and position_delta**. The latter may be immutable
+indexed columns, but must outlive their pending chunk. Output expansion formats
+IDs, side text and constant/missing columns; it never computes effects again.
+Diagnostic residuals retain typed varying columns plus pulse identity/offsets.
+Working output expands and drains by a fixed row bound and at normal or
+INCOMPLETE end, including an under-full final chunk. A pulse larger than the
+chunk is split without publishing an incomplete logical fill batch. Working
+storage is bounded by the chunk plus the prepared maximum pulse reservation;
+do not accumulate a run-long list of pulse blocks. Retained memory results,
+equity, source/history, lots and public views are accounted separately.
+Section 5's prefix protocol is part of this rule.
+
+**R8. One write path.** Retire db_live, the execution_mode argument, its control
+override, config field, stored columns and reader/printing fields. Durable
+writes use the in-memory chunk path within the invocation's one transaction;
+chunks are not transaction commits. There is no legacy mode selector, ignored
+compatibility argument or old-format reader. Change store version/fingerprint
+and configuration identity as Section 5 requires.
+
+**R9. Reserve, then commit.** Failed candidate calculation changes no handler
+state. P4 installs the successful book, reserves/writes compact rows, advances
+accepted sequence/time metadata and event sequence, records legs, then installs
+lot-derived positions and ordered cash, preserving the contracted order.
+P5 checks logical fill-event capacity before exposing the complete fill batch and
+legs. Reserved, accepted and publicly committed extents are distinct; no
+reader/flush/recorder sees an uncommitted suffix except the handler-local leg
+projection for its own accepted range. Growth preserves outstanding ranges;
+every reused row initializes every represented column/default. Debug append
+failure advances no accepted boundary or committed count. Workers are
+candidate-local. Handler failure aborts; no private-state rollback is promised.
+The existing compiled arm keeps its state/sequence-before-append order until
+its separately authorized WS14 replacement; R9 does not reorder that arm.
+
+**R10. Write only diagnostic residuals.** P2's decision/risk segments stay
+unexpanded until P3 certifies clean forms. Reserve logical positions for all
+rows; write residuals directly into typed pulse staging. Preserve defaults,
+keep gaps, logical offsets, codec associations, filters and sequence numbers.
+P5 or E-stop drains and resets staging; handed-out chunks are frozen. Capacity
+and R3 refusals retain their placement. No strategy replay supplies evidence.
+
+**R11. Frozen floor v1 and two budget tests.** FP/lean.R:223's compact fold at
+`2885596e` and its recorded 22/71 us boundary define floor v1, frozen for WS16;
+this is the first plumbing baseline, not a release called v1. Preserve its
+source and limitations. Measure each family's stage with every other stage a
+stub, with matched workload, check mode and boundary. At cut, set a microsecond
+budget for cost above floor v1 on both reference workloads from the family's
+probe plus a stated small margin, and a line budget. Also pin the matched
+old-stage boundary and no-regression bar before candidate scoring. Neither test
+substitutes for the other. Close reports excess cost, both comparisons, profile
+samples and lines. An overrun is fixed or explicitly accepted under L A2.
+Floor-resident work is charged to its owner: P2 strategy check; output IDs, empty evidence and diagnostic binding; P3 owns the effect computation floor v1 runs at its boundary (`FP/lean.R:292`). Do not subtract it twice or erase a
+regression by moving it between boundaries. Rebaseline only at WS14 after
+switch; use the shared harness for before/after gates.
+
+**R12. FIFO follows WS14.** Build the complete lean R operation/refusal family
+first and keep it as executable oracle. Only WS14's measured residual-cost
+route permits compiled FIFO; a focused Type 2 decision precedes a compiled
+default. Use existing cpp11/C++, no new dependency, `-ffp-contract=off`; keep
+the book resident in compiled form and convert only at boundaries. That change
+retires spot_fifo.cpp. No compiled stage is authorized merely by these timings.
+
+**R13. The recorder copies.** Freeze every captured value at its semantic
+stage boundary, including relevant state, committed outputs and refusal
+prefixes. Never retain a live environment or reused buffer as the record.
+Record mappings and explicit debug mode; selected-field tapes do not establish
+whole-boundary parity.
+
+### Failure-prefix protocol
+
+Adopt this
+protocol with R7-R10. It preserves contracted accepted economics and evidence;
+it does not promise retired live-mode transaction-local visibility or identical
+physical insert-failure timing. D6 deliberately changes those.
+
+| Boundary | Required behavior |
+| --- | --- |
+| Candidate calculation fails at fill j | No reservation, output/leg mutation, committed count, accepted append boundary or sequence advance. Evaluate only retained R3 earlier-row refusals in their old order; in debug also run earlier publication/append assertions without publishing. R4 intentionally removes those assertions from the production precedence chain (R/fold-engine.R:1454). |
+| Successful candidate, P4 publication or leg failure | Retain book/position-fact installation before publication and subsequent sequence/leg/positions/cash order (R/fold-engine.R:1476). A failed range is not committed or flushed; discard a failed memory candidate, rollback the entire durable invocation. No promise to restore installed private state. |
+| P5 event capacity | Keep ledgr_event_buffer_capacity_exceeded at P5, after P4's sequence/leg/state work and before fill visibility (R/output-handler.R:571). Reserving physical scratch space at P4 must not enforce that logical limit early. Chunk recycling must not change which rows count toward the limit. Today durable counts buffered fills since its last flush (`R/output-handler.R:673-686`) and memory counts every row, refusing P1 and compiled appends before P5 (`:699-705`, `:734-737`); the one-path counted population is a spec-cut choice, and any refusal difference is a ledger row. |
+| P1/opening/non-fill publication | Publish accepted effects at their existing semantic boundary, not the next P5. Preserve append-before-state-install and terminal/corporate-action ordering. Mixed producers and compiled ranges cannot overlap outstanding fill reservations. A materializing handler read expands only committed compact ranges. |
+| Normal P5, skip and multiple fill batches | Commit all accepted fill ranges for the pulse, then release legs in event order. Carry accepted last sequence/time independently of visible count and physical flush count, including multiple handler batches before P5. Flush full committed chunks once; never insert them again at final drain. |
+| INCOMPLETE mid-chunk | E installs the stop once, with its original processed-count meaning; drain prior pulse staging plus that stop's physical rows, logical coverage/implicit codec and every already accepted P1 non-fill row. Do not create P4/P5 effects for a pulse stopped in P1/P2/P3. Drain all earlier committed compact events and the under-full tail before completion evidence and transaction success; use the exact valued equity prefix and distinct last-valued/last-executed clocks. This follows R/fold-engine.R:1947,1980,2003,2033 and R/fold-phase-contract.R:197. |
+| Error/interrupt during any chunk/stop/final drain | Roll back all invocation writes, including earlier full chunks; preserve original condition and existing post-rollback exception/FAILED handling and refreshed diagnostic sequence (R/output-handler.R:93,118,643; R/fold-engine.R:2057-2083). No successful partial memory candidate; no worker durable writes or partially promotable interrupted sweep. |
+| Growth, reuse, recorder and requested outputs | Preserve reserved and accepted ranges, initialize dirty suffix/defaults, expose committed rows only, reset or discard failed handlers. The handler-local leg projection may inspect only its own accepted range before P5. Freeze recorder/public values. Output retention is separate from bounded working storage (R/output-handler.R:415,761,774). |
+
+Chunk size is a spec-cut choice. Required demonstrations include chunk size one,
+a pulse exceeding one chunk, multiple batches, P1 events followed by P2/P3 stop,
+growth/dirty reuse, append/leg/flush faults, skips, interrupts, and candidate
+isolation. Proposed lean behavior is unverified until those witnesses run.
+**Fold Evidence And Early Exit** (C:1524) requires normal INCOMPLETE completion
+to preserve the accepted prefix; treating it as a thrown-error rollback or
+flushing only full chunks would violate that contract.

@@ -47,9 +47,9 @@ the execution contracts in `inst/design/contracts.md`.
   sequences a cut; batches produce no evidence essay. Preserve consequential
   rejection reasons, cite stable contract rule-group addresses, and do not
   treat acceptance alone as a change to shipped behavior.
-- Contracts and specifications define semantics. Canonical R is the
-  normative executable oracle for optimized or compiled paths; runtime
-  default is a separate decision; divergence fails closed pending an RFC.
+- Contracts and specifications define semantics; canonical R is the normative executable oracle for optimized or compiled paths; runtime default is separate and divergence fails closed pending RFC.
+  In the lean core, validate external entry and retain contracted refusals in production; check internal hand-offs only in debug.
+  [Pulse plumbing](inst/design/rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) binds module-property tests, suite debug-on and parity debug-on/off.
 - Code on ingest, seal, fold, hydration, finalisation, or result-reader paths
   follows the optimization coding style in
   `inst/design/manual/optimization_coding_style.qmd` (reviewable draft):

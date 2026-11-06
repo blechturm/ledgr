@@ -3,6 +3,13 @@
 Role: record; decision synthesis, binding in its stated scope once accepted.
 Status: accepted by the maintainer on 2026-10-29 after final review
 PASS_AFTER_PATCHES (Codex) and in-place patches P1 to P5.
+Amended 2026-11-06: the [pulse plumbing
+synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) Section 6,
+accepted by the maintainer on 2026-11-06 after the Type 1 final review
+(PASS_AFTER_PATCHES, patches applied in 0f531a04), amends the addressed
+clauses below for the pending WS16 lean core only; see the local notices and
+the [appended skeleton
+amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing).
 Mode: Decision synthesis. Author: Claude (response author; author of neither
 seed). Date: 2026-10-29.
 Final review: `rfc_typed_accounting_event_boundary_v0_2_3_final_review.md`.
@@ -16,7 +23,36 @@ Baseline: `269553ca`. Inputs: seed v1, response v1, response review, seed v2
 accounting-core synthesis, `contracts.md`, the v0.2.3 macro plan, AGENTS.md
 and the optimization coding style.
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+>
+> For this record: "For ledgr-owned producers in the lean core, R4 removes
+> validation at append in production, including the nonpublishing assertion
+> path; debug retains it. Read validation, carried sequence/time boundaries
+> and lot-dependent replay reconciliation remain. R8 removes db_live from the
+> write-path census. The rejection of read-only validation is superseded for
+> these trusted producers; it still explains the earlier two-boundary
+> decision. Format/identity changes follow R8 and Section 5, not this record's
+> original WS7/WS8 identity statement."
+
 ## 1. Corrections The Synthesis Author Owes
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
 
 The response review's six corrections to the response hold against the tree
 and are bound here as the review states them.
@@ -45,6 +81,16 @@ memory candidate's production path (`output-handler.R:313-360`,
 `sweep.R:1884-1900`).
 
 ## 2. Decision
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
 
 Accept seed v2 with its four maintainer decisions and the corrections above.
 No third seed; no prerequisite spike. The scope is the event carrier shared
@@ -142,6 +188,16 @@ and non-negative; `mark_source_ts_utc` is a valid UTC timestamp; `mark_age`
 is a non-negative integer. Opening `price` keeps any finite value
 (maintainer decision 2).
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+
 Ordering carries across blocks. The validator takes the prior block's last
 `event_seq` and `ts_utc` at both boundaries: within a block `event_seq`
 strictly increases and `ts_utc` never decreases; a later block, whether
@@ -150,6 +206,16 @@ no earlier than the prior block's last. `event_seq` is unique per run. Any
 other type, source or non-null irrelevant field refuses.
 
 ### 3.4 One validator, two boundaries; reconciliation in replay
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
 
 One vectorized, grouped validator owns 3.3 as a sweep over a typed block:
 grouped by kind, no per-event loop, no one-row frames. Every producer calls
@@ -211,6 +277,16 @@ parity against the durable path on the supported candidate shapes is a
 registered claim, and a detector proves production still calls it.
 
 ### 3.6 Producers and write paths
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
 
 Producers publish typed columns directly: `ledgr_fill_event_payload()`
 (`backtest-runner.R:103`) and `ledgr_write_fill_events()`
@@ -287,6 +363,16 @@ WS8, typed persistence:
 
 ## 6. Evidence Before Old Paths Leave
 
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
+
 1. A checked-in literal census of producers, writers, readers, tests and
    docs that reference accounting event columns, derived from source.
 2. Independently calculated typed fixtures per kind: partial close, reversal,
@@ -326,6 +412,16 @@ WS8, typed persistence:
     own release-wide conclusions.
 
 ## 7. Rejected, One Line Each
+
+> Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
+> the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
+> behavior changes only at the switch; unrelated rules and historical
+> rejection reasons remain. See the [pulse plumbing
+> synthesis](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md) and the
+> [appended skeleton
+> amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing),
+> accepted by the maintainer on 2026-11-06 after the Type 1 final review
+> (PASS_AFTER_PATCHES, patches applied in 0f531a04).
 
 - A specialized fill-JSON encoder: optimizes a representation being removed.
 - Typed key-value metadata: the same parsing problem in another format.
