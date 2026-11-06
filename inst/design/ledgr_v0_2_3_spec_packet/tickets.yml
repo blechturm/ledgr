@@ -1375,6 +1375,133 @@ cuts:
       concern returns NEEDS_TYPE_2; a third correction round stops for maintainer
       disposition.
     cut_review: "CHANGES_REQUIRED in cut_review_11.md (independent clean-context Claude CLI, Opus/high): R1-R12 required ticket ordering, fingerprint, evidence, census and documentation patches. Focused confirmation returned PASS_AFTER_PATCHES; N1-N2's exact memory-gate and contract-ownership wording is applied and needs no further review. The maintainer accepted R13 as NA_real_ in the A0 avail_incomplete sweep/candidate annualized_return, matching the durable run metrics table; Cut 11 is operative."
+  - id: 12
+    name: "Lean core first checkpoint"
+    cut: "2026-11-06"
+    status: "draft"
+    accepted: null
+    opening: >-
+      Macro WS16 replaces the current fold with a lean core grown under
+      dev/lean_core/ and proven family by family against the pinned build.
+      Its first checkpoint is the complete lean R FIFO kernel and
+      memory-bounded preparation, both proven through one stage recorder that
+      later families reuse. Nothing in R/ changes. The cut-entry record shows
+      the starting point: the lot kernel costs about 4-5 us per fill row plus
+      25 us of input validation per block, and the process memory peak is set
+      by snapshot load, bar hydration as one long frame and store-wide
+      validation, not by the pulse loop.
+    authority: >-
+      macro_plan.md WS16 (every bullet, including A1-A4, stage parity before
+      end-to-end, one family per cut and escalation) and rule 16's WS16
+      exception; rfc_lean_fold_core_v0_2_3_synthesis.md Sections 2-7 and its
+      2026-11-03 amendment; rfc_lean_core_skeleton_v0_2_3_synthesis.md
+      Sections 1-5 with both amendments; rfc_core_extension_architecture_v0_2_3_synthesis.md
+      Sections 2 and 4; rfc_lean_core_observable_data_v0_2_3_synthesis.md
+      Sections 2-3; contracts.md typed fold carrier, accounting events, fold
+      core, pulse data, window start, strict features and release gates;
+      lean_core_rules_ledger.md; optimization_coding_style.qmd;
+      spike_protocol.md Sections 3-4 for the runner/checker/gut shape and
+      size stop signals.
+    measured_input: >-
+      dev/bench/v0_2_3_ws16_entry/ (ab8db95d) at reference pin d5b3a151, the
+      Cut 11 close; the private H1 library cad309f4 has identical product
+      code. (1) Stage inventory over the eight A0 workloads and a 40 x 504
+      momentum run: the fold-state slots each stage changes, its handler
+      calls, stop results and raised conditions, and static services reads of
+      13, 22, 8, 8 and 11 fields for P1-P5. (2) FIFO census of every
+      ledgr_lot_apply call: 256 A0 rows, 135,450 fill-heavy rows and 159,635
+      pinned-test-suite rows, covering every skeleton Section 5.2 kind except
+      a long opening with negative basis and a short opening with zero basis;
+      38 refusals in tests, six through the fold, where the earliest failing
+      row is found by bisection over block prefixes. (3) Kernel cost on the
+      2,499 captured fill-heavy calls on the quiet host: 222 and 242 us per
+      10-49 and 50+ row block (5.0 and 4.2 us per row) plus 24 and 26 us of
+      input validation; about 3 percent of the 8.94 s run and 43 percent of
+      the 0.69 s fills read. (4) Memory: peak private commit 564, 807-822 and
+      1,147-1,183 MiB at 500 x 1,260, 2,520 and 5,040 sessions and
+      4,677-4,707 MiB on private H1. The pulse loop sets no new peak; resident
+      bar planes, features and facts are about 128 MB and 455 MB. The peak
+      rises at snapshot load, at the bar hydration query and at store-wide
+      validation (+2,156-2,167 MiB private at publication, LDG-3210, WS9b).
+    decisions: >-
+      (1) The pin is d5b3a151, installed from git archive with the
+      LEDGR_INSTALLED_FROM_COMMIT marker; every reference capture checks it.
+      The old core is neither pruned nor optimized while WS16 runs
+      (maintainer, 2026-11-05); it changes only under WS16 escalation option
+      A. (2) No dev/lean_core/ code is committed before the interface table
+      (LDG-3211) is accepted. (3) A1: Claude writes the interface table, the
+      recorder, the FIFO kernel and the preparation, and the maintainer
+      reviews every line with Claude before each commit. Later agents copy
+      this code, so it is written to be copied. (4) Expected outputs come
+      only from running the pinned build, never from hand-written tables. The
+      recorder regenerates captures deterministically and commits manifests
+      of counts and digests; private captures stay on E: and only aggregates
+      are committed. (5) A2 budgets, proposed for acceptance: per FIFO block,
+      lean kernel plus its boundary validation at most 0.5x the pinned
+      kernel plus input validation on the same captured fill-heavy calls
+      (at most 123 us for 10-49 rows and 134 us for 50+ at the entry record),
+      and no captured operation group slower than pinned; FIFO at most 450 R
+      lines; preparation and each registered history read at most 1.0x
+      pinned on 500 x 5,040 and private H1; preparation at most 900 R lines;
+      recorder and comparison at most 500 R lines. Each family close reports
+      per-function profile samples and line counts; a miss is fixed or
+      explicitly accepted by the maintainer. (6) The memory claim is that
+      prepared working tiles and buffers stay within a working-set budget
+      declared in LDG-3215 and approved before preparation code, unchanged
+      across history lengths at fixed tile width and worker count. Every
+      other resident component, hydration included, is reported separately.
+      Tiles are not claimed to lower the peak set by snapshot load or
+      store-wide validation; those keep their owners (snapshot services;
+      LDG-3210 in WS9b). (7) The paired H1 history resource gate binds at the
+      switch cut, where a full lean run and sweep exist; this checkpoint
+      reports component peaks and neither passes nor waives that gate. (8)
+      Failing either the FIFO or the memory claim stops WS16 for maintainer
+      disposition (macro WS16).
+    identity_and_release_impact: >-
+      None. No file in R/, tests/, DESCRIPTION, NAMESPACE, vignettes or the
+      store format changes, and no dependency is added. dev/lean_core/ is
+      excluded from the package by .Rbuildignore and nothing in R/ calls it;
+      the temporary AGENTS.md note already covers it. Design impact: the new
+      packet file lean_core_interface.md and pending rules-ledger entries.
+    sequencing: >-
+      Three serial workstreams and seven tickets. Workstream 26 (LDG-3211 ->
+      LDG-3212) writes the interface table and then the recorder that both
+      later workstreams use. Workstream 27 (LDG-3213 -> LDG-3214) is the FIFO
+      family. Workstream 28 (LDG-3215 -> LDG-3216 -> LDG-3217) is memory
+      preparation and closes the checkpoint. WS27 and WS28 are independent in
+      evidence and run in series only because one author and one reviewer
+      write and read every line. While this cut is open, an
+      execution-sensitive WS10 cut waits or the lean core is rebased and
+      reproved (macro WS16).
+    out_of_scope: >-
+      Any change in R/ or tests/; pruning, fixing or optimizing the old core
+      outside option A; lean P1-P5 stages and end-to-end runs (later
+      families); sweeps, worker sharing and transport (WS9b and the sweep
+      family); LDG-3210's cold validation cost; snapshot load and
+      verification; compiled kernels, quickr or any new dependency; lazy lots;
+      an incremental feature API; restarting features or history at tile
+      edges; truncating or refusing a previously valid history request to fit
+      a memory budget; OMS, order-type, shorting, asset-class or
+      observable-data fields (the table carries notes, not fields);
+      contracts.md changes (ledger entries are added as pending and the
+      maintainer decides their dispositions before the switch).
+    workstreams: [26, 27, 28]
+    review_lifecycle: >-
+      An independent clean-context Codex CLI cut review first challenges
+      necessity, completeness, ticket grain, hidden product choices, the
+      proposed budgets and whether every acceptance item can fail; a design
+      concern returns NEEDS_TYPE_2. The maintainer reviews the interface table
+      and every ticket's code line by line with Claude before commit (A1).
+      Each workstream then receives one independent Type 1 close review from
+      a session other than the implementer. WS26 checks the table against the
+      pinned code and the recorder's replay and omission witnesses; WS27
+      checks kernel parity, refusal precedence, mutations, budgets and
+      subtraction; WS28 checks cross-edge parity, retained views, the memory
+      record, budgets and subtraction. The WS27 and WS28 reviews also walk the
+      seven shapes and the five-scenario affected-owner check.
+      Finding-bearing reviews write packet files. A third correction round on
+      one workstream stops for maintainer disposition.
+    cut_review: null
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -1610,6 +1737,33 @@ workstreams:
     depends_on_workstream: 24
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 25, after LDG-3209", reason: "One claim joins LDG-3206 through LDG-3209: pulse cursors/checkpoints/restore and ledgr.interrupt are gone; nonterminal attempts restart atomically from pulse one while terminal idempotence and completion publication recovery remain exact; all diagnostic consumers first move behind an exact logical decoder while physical rows are still complete; only then may the writer select a certified implicit form or explicit typed residual before row expansion; full/filtered diagnostics, explanations, summaries, sequence positions and economics reconstruct exactly without strategy code or writes; scheduled skips and irreducible sizing remain; retention and association are non-circular/no-lookahead; all proof families and the H1 memory gate pass or have explicit disposition; and the completed cut has one final schema-125 plus codec-binding fingerprint."}
+  - id: 26
+    name: "Lean core interface table and stage recorder (macro WS16)"
+    cut: 12
+    status: "pending"
+    accepted: null
+    close_review: null
+    depends_on_workstream: 25
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 26, after LDG-3212", reason: "One claim joins LDG-3211 and LDG-3212: the interface table names every field the first checkpoint reads or writes with type, axis, unit, invariant, producer, validator and owner, matched to the code at pin d5b3a151; the recorder captures each named boundary's complete semantic input and output from the pinned build as frozen values; re-running the pinned boundary function on each captured input, given only the fields the table names, reproduces the captured output exactly; and each registered capture omission makes that check or the comparison fail."}
+  - id: 27
+    name: "Lean R FIFO kernel (macro WS16 first checkpoint)"
+    cut: 12
+    status: "pending"
+    accepted: null
+    close_review: null
+    depends_on_workstream: 26
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 27, after LDG-3214", reason: "One claim joins LDG-3213 and LDG-3214: one lean R implementation applies every opening, fill and disposition for the fold, replay, import and recovery callers; it is bit-identical to the pinned kernel on every captured and generated call, including refusal class and message; it never calls the old arithmetic; every registered mutation fails; and after the subtraction review it meets its microsecond and line budgets or has an explicit maintainer acceptance."}
+  - id: 28
+    name: "Memory-bounded preparation (macro WS16 first checkpoint)"
+    cut: 12
+    status: "pending"
+    accepted: null
+    close_review: null
+    depends_on_workstream: 27
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 28, after LDG-3217", reason: "One claim joins LDG-3215 through LDG-3217: tile preparation reproduces the pinned fold-reader packets, feature series and evidence, and every registered public history read exactly, across tile edges placed at column-order change, entry, exit, re-entry, carry expiry and late knowledge, on the portable fixture, the three portable shapes and private H1; retained views are unchanged after tile recycling; the prepared working set stays inside the declared budget at every history length while every other resident component is reported; every registered mutation fails; and after the subtraction review it meets its budgets or has an explicit maintainer acceptance."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -3894,3 +4048,208 @@ tickets:
       - "Corrected-head private rerun: ledgr-research 8f86376, experiments/v0_2_2-reference/data/ws25c, and check.R data/ws25c ws25c report WS25C_PRIVATE_GATE_CHECK_OK; all 14 runs exit 0, 195 tables are IDENTICAL and 12 typed ledgers are ACCEPTED_TYPED_LEDGER, with snapshot hash e8cbb805."
       - "Rule-16 milestone: product 1debb248 plus evidence correction 2ac44aa4 records dev/bench/v0_2_3_cut11_milestone/README.md and all three timing records. Five cell comparisons exceed the 1.10 disposition trigger; the maintainer accepts them in v0.2.3 and moves timing remediation to the lean-core reimplementation."
       - "H1: ledgr-research a09c604 preregisters the protocol, d56f951 corrects the sampler after stopped attempt 1, and 4b49566 records the result and attribution. Four of five gated ratios pass; single-run parent private commit is 2.066x and H1_GATE_EXCEEDED. The excess is localized to cold validation inside the run, covered by the recorded LDG-3209 exception and disclosed; any other cause would remain a finding."
+  - id: "LDG-3211"
+    title: "Write the first-checkpoint interface table"
+    workstream: 26
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: >-
+      Write inst/design/ledgr_v0_2_3_spec_packet/lean_core_interface.md from
+      the code at pin d5b3a151, with the Typed Fold Carrier contract as the
+      semantic baseline. For the fold-state slots, every services field each
+      stage reads (including fields reached through helpers, which the static
+      inventory misses), the P1 packets, the lot book, lot input and applied
+      rows, and the prepared representation, name type, axis, unit,
+      invariant, producer, validator and owner. Classify each services field
+      as fixed for the run or mutable during it. Name the reused services,
+      the preparation input-access and output-allocation boundary that tiles
+      change, and validation placement, keeping the import and cached-total
+      validation limits of contracts.md lines 325-336. For each recorded
+      boundary (E, P1-P5, the scheduled-skip pair, stop installation, pulse
+      flush, ledgr_lot_apply, and the preparation boundaries: bar hydration,
+      substrate, feature series, fold-reader packets and the history read
+      service) name its complete semantic input and output, including
+      fold-state changes, handler calls, stop results and raised conditions,
+      the freezing rule, and the comparison rule with its clock-metadata
+      allowlist. Answer, by probing the pinned build, whether the existing
+      history read service and feature input service can be called on
+      tile-backed inputs or need a lean implementation, and why. Attach the
+      observable-data synthesis Section 2 notes to the preparation, P1 and
+      P2-view rows; record the five fixed boundaries and the five-scenario
+      affected-owner check. Fix the dev/lean_core/ layout and how lean code
+      loads beside the installed pinned build. Commits no code under
+      dev/lean_core/.
+    acceptance:
+      - "every row cites the pinned source by file:line; a field reached only through a helper is listed with that helper"
+      - "every services field is classified fixed or mutable with the code that shows it, and every mutable field has a freezing rule"
+      - "the reuse question for the history read and feature input services is answered by a committed probe and its output, not by assumption"
+      - "the five fixed boundaries, the six observable-data notes and the five-scenario check are present and add no field, placeholder or descriptor"
+      - "the maintainer accepts the table line by line before any dev/lean_core/ code is committed; the table stays under 450 lines"
+    evidence: []
+  - id: "LDG-3212"
+    title: "Build the stage recorder and its replay check"
+    workstream: 26
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3211"]
+    scope: >-
+      Under dev/lean_core/recorder/, capture every boundary the interface
+      table names from the pinned build (the installed library, or the pinned
+      source archive for the test-suite capture), refusing any other build. A
+      capture holds frozen copies of the complete input and output, never a
+      live environment or recycled buffer. Handler calls are recorded in
+      order with frozen arguments; a raised condition is recorded with its
+      class, message, and the state and handler calls before it. Write
+      captures to a caller-named directory and commit per-workload manifests
+      of boundary call counts and digests. Provide one comparison function
+      for every family: identical() over values, names, attributes, types
+      and order, ignoring only the table's clock allowlist. Provide a replay
+      check that re-runs the pinned boundary function on each captured input,
+      with a recording handler and with services and fold state reduced to
+      the fields the table names for that boundary, and compares the result
+      with the captured output. Workloads: the eight A0 workloads, the 40 x
+      504 momentum run and the fill-heavy 500 x 1,260 run. Reuse the workload
+      code in dev/bench/v0_2_3_ws16_entry/ and dev/bench/v0_2_3_output_freeze/
+      instead of copying it.
+    acceptance:
+      - "the replay check reproduces every captured call on all ten workloads exactly with inputs reduced to the table's fields; a stage that reads an unnamed field fails it"
+      - "regenerating the captures from the pinned build reproduces every committed manifest digest"
+      - "each registered omission fails the replay check or the comparison: one fold-state slot left out, one mutable services field captured by reference, handler calls ignored, only the return compared, a one-ulp change in one double, two event rows swapped, and a changed condition class"
+      - "recorder and comparison stay within 500 R lines; the runner, checker and omission demonstration follow spike_protocol.md Section 3"
+    evidence: []
+  - id: "LDG-3213"
+    title: "Write the lean FIFO kernel for every lot operation"
+    workstream: 27
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3212"]
+    scope: >-
+      Write dev/lean_core/fifo.R: one R implementation of opening, fill and
+      disposition over the typed lot book, serving the fold, replay, import
+      (opening) and recovery (disposition) callers named in the census.
+      Extend the lean-FIFO spike's arithmetic, not its two-kernel wrapper: it
+      never calls ledgr_lot_apply or any other old arithmetic, though
+      boundary validators may be shared. Validate once at the trusted
+      boundary, keep dynamic overflow and invariant refusals, and select the
+      earliest failing row and within-row refusal as the pinned kernel does.
+      Keep signed openings with finite basis of either sign, no opening cash
+      or Kahan step and unchanged compensation; zero-price dispositions that
+      exhaust lots, with replay witnesses; dust snaps, reversals, close/open
+      fee splits, cached nets and basis, event-order total basis and
+      compensated realized P&L, with ordered scalar scans where order
+      matters. Repeated instruments split into consecutive conflict-free
+      blocks; repeated openings are never merged and rows are never
+      reordered. Prove it at the ledgr_lot_apply boundary through the
+      recorder.
+    acceptance:
+      - "the whole book and every applied field are identical to the pinned kernel on every captured call from the A0 workloads, the fill-heavy run and the pinned test suite (159,635 rows), and on generated streams adding a long opening with negative basis, a short opening with zero basis, repeated-instrument streams and random conflict-free blocks"
+      - "every one of the 38 captured refusals and every generated refusal matches in class and message, including blocks whose failing row is not the first and rows with two violations"
+      - "no input book or input vector is modified, and no returned object aliases an input"
+      - "a source check finds no call from dev/lean_core/ into ledgr_lot_apply or the old operation wrappers"
+      - "each registered mutation fails parity: sum() or cumsum() for an ordered total, no dust snap, swapped close/open fee split, a Kahan step on openings, merged repeated openings, and last-row instead of earliest-row refusal"
+    evidence: []
+  - id: "LDG-3214"
+    title: "Close the FIFO family against its budgets"
+    workstream: 27
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-3213"]
+    scope: >-
+      Run the A4 subtraction review first (duplicated helpers, validation
+      repeated after the trusted boundary, a second representation of one
+      concept) and fix its findings here. Then time the lean kernel on the
+      captured fill-heavy calls with the fifo_cost.R method of
+      dev/bench/v0_2_3_ws16_entry/ on the registered quiet host, alternating
+      pinned and lean arms, and report per-function profile samples and the
+      line count. Add any rule a parity failure surfaced to the rules ledger
+      as pending, and record the five-scenario affected-owner check for the
+      kernel.
+    acceptance:
+      - "per block, lean kernel plus its boundary validation is at most 0.5x the pinned kernel plus input validation in both the 10-49 and 50+ buckets, and no captured operation group is slower than pinned in total; a miss is fixed or explicitly accepted by the maintainer"
+      - "the kernel and its validation stay within 450 R lines, and per-function profile samples are reported"
+      - "the subtraction findings, ledger entries and affected-owner check are recorded in this ticket's evidence"
+    evidence: []
+  - id: "LDG-3215"
+    title: "Build the cross-edge fixture and choose the tile design"
+    workstream: 28
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3214"]
+    scope: >-
+      Build a portable declared-session fixture whose events can sit on
+      either side of a chosen tile edge: changed column order, entry, exit,
+      re-entry and relisting, carry expiry, late-known facts, an explicit
+      off-axis history request, lookback = Inf, a finite lookback spanning
+      several tiles, and a min_observations window with carried and missing
+      values. Register the history-read request set (bar and feature matrix
+      and frame reads, including the 252-session x 500-instrument feature
+      window) and record pinned captures on the fixture, the portable 500 x
+      1,260, 2,520 and 5,040 shapes and private H1, with quiet-host pinned
+      clocks for preparation and each request. Then add a design note to the
+      interface table: tile width, resident-tile limit, backing access and
+      hydration by tile range, eviction, retained-view ownership, the feature
+      input and output adaptation, and the declared working-set budget,
+      choosing spilling only after a measurement of disk-backed tiles against
+      in-memory copies.
+    acceptance:
+      - "a script shows each listed fixture event within one session of an edge at two tile widths"
+      - "pinned captures and quiet clocks exist for the fixture, the three portable shapes and private H1; only private aggregates are committed"
+      - "the disk-backed versus in-memory measurement is recorded and the spilling choice cites it"
+      - "the maintainer approves the design note and its working-set budget line by line before preparation code is committed"
+    evidence: []
+  - id: "LDG-3216"
+    title: "Prepare tiles and prove exact reads across edges"
+    workstream: 28
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3215"]
+    scope: >-
+      Write dev/lean_core/prepare.R to the accepted design. Hydrate bars by
+      tile from the sealed, verified snapshot through existing snapshot
+      services; build tiles with one global instrument identity, explicit
+      absence, base masks, knowledge-epoch overlays and flat segment and
+      change-point columns; run the existing feature calculation with
+      adapted input access and output allocation, never restarting at an
+      edge; serve the fold-reader packets and the registered history reads
+      from tiles, reusing the existing read service where LDG-3211 found that
+      possible. Retained views are copies that tiles never write. Prove every
+      output through the recorder.
+    acceptance:
+      - "fold-reader packets, feature series values and evidence, and every registered history read, including admission, metadata and classes, are identical to the pinned captures on the fixture at two tile widths, on the three portable shapes and on private H1 (digests only for private)"
+      - "a history result and a context retained before tile recycling serialize identically at the end of the run"
+      - "each registered mutation fails parity: features restarted at an edge, admission from current membership, the cutoff overlay dropped, a retained view aliasing a recycled tile, and a finite request truncated at an edge"
+      - "lean preparation reads bars only through a verified snapshot handle, and nothing in R/ references dev/lean_core/"
+    evidence: []
+  - id: "LDG-3217"
+    title: "Record lean preparation memory and close the first checkpoint"
+    workstream: 28
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3216"]
+    scope: >-
+      Run the subtraction review first and fix its findings here. On 500 x
+      1,260, 2,520 and 5,040 and private H1 at fixed tile width, with one and
+      two harness-launched worker processes (no product transport), measure
+      source and history, feature payload, resident tiles, summaries,
+      transient copies, lots, retained views and output separately, with
+      parent, worker and process-tree peaks, using the memory_probe.R method
+      of dev/bench/v0_2_3_ws16_entry/ and its pinned arm. Time preparation and
+      the request set on the quiet host against the LDG-3215 pinned clocks
+      and report per-function profile samples and line counts. Add surfaced
+      rules to the ledger as pending and record the five-scenario
+      affected-owner check. Write the checkpoint's progress re-estimate for
+      the remaining families (macro WS16; a report, not a gate).
+    acceptance:
+      - "resident working tiles and buffers stay within the declared budget and do not grow with history length at fixed width and worker count; every other component and every peak is reported against the pinned arm"
+      - "preparation and each registered request are at most 1.0x pinned on 500 x 5,040 and private H1, and preparation stays within 900 R lines; a miss is fixed or explicitly accepted by the maintainer"
+      - "the record names the process-peak steps tiles do not move (snapshot load, store-wide validation) and their owners"
+      - "subtraction findings, ledger entries, the affected-owner check and the re-estimate are recorded, and the maintainer disposes the checkpoint before the P1 family is cut"
+    evidence: []

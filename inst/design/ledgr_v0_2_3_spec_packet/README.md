@@ -1,9 +1,10 @@
 # ledgr v0.2.3 Spec Packet
 
 Role: living; current packet front door.
-Status: working; macro plan revision 10 records the accepted within-release
+Status: working; macro plan revision 12 records the accepted within-release
 order. Cuts 1, 2, 4, 5, 6, 7, 9, 10 and 11 are closed; Cut 11 implemented
-macro WS7, WS8 and WS15. Cut 6 (WS4b, one execution path) is
+macro WS7, WS8 and WS15. Cut 12 is the draft WS16 first-checkpoint cut;
+its independent cut review and maintainer acceptance are next. Cut 6 (WS4b, one execution path) is
 implemented and accepted through `14252ffb`: its final independent Type 1
 confirmation is `PASS`, and workstream 14/LDG-3178 are complete. Cut 7 is the
 accepted WS5 strategy-authoring implementation cut (workstreams 15-18,
@@ -108,6 +109,13 @@ accepting the cold full-trace validation residual under the LDG-3209
 exception (reserved LDG-3210, later WS9b cut) and the rule-16 timing cells
 above the 1.10 trigger, whose remediation moves to the lean-core
 reimplementation.
+
+Cut 12 is the draft "Lean core first checkpoint" cut (workstreams 26-28,
+LDG-3211-LDG-3217) for macro WS16. It writes the interface table and a stage
+recorder against the `d5b3a151` pin, then the complete lean R FIFO kernel,
+then memory-bounded tile preparation, all under `dev/lean_core/` with no
+change in `R/`. Its entry record is `dev/bench/v0_2_3_ws16_entry/`. The cut
+authorizes no implementation until the maintainer accepts it.
 
 v0.2.3 is the cleanup, performance and research-authoring release that follows
 the published v0.2.2 point-in-time foundation. The macro plan and cut 1 were
