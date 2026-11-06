@@ -1430,10 +1430,10 @@ cuts:
       (maintainer, 2026-11-05); it changes only under WS16 escalation option
       A. (2) No dev/lean_core/ code is committed before the interface table
       (LDG-3211) is accepted. (3) A1: Claude writes the interface table, the
-      recorder, the FIFO kernel and the preparation. Before each ticket's
-      commit, an independent clean-context Codex CLI review checks the diff
-      first; its findings are fixed or answered, and then the maintainer
-      reviews every line with Claude. Later agents copy
+      recorder, the FIFO kernel and the preparation, and the maintainer
+      reviews every line with Claude before each commit. Each workstream's
+      close review is an independent clean-context Codex CLI code review,
+      iterated to PASS. Later agents copy
       this code, so it is written to be copied. (4) Expected outputs come
       only from running the pinned build, never from hand-written tables. The
       recorder regenerates captures deterministically and commits manifests
@@ -1500,15 +1500,11 @@ cuts:
       An independent clean-context Codex CLI cut review first challenges
       necessity, completeness, ticket grain, hidden product choices, the
       proposed budgets and whether every acceptance item can fail; a design
-      concern returns NEEDS_TYPE_2. Before each ticket's commit, an independent
-      clean-context Codex CLI review reads that ticket's diff (the interface
-      table and design note included) against its acceptance items, the
-      pinned source and, for code, the seven shapes. Its findings are fixed
-      or answered in the ticket evidence, iterating to PASS; a third
-      correction round goes to the maintainer. The maintainer then reviews
-      the corrected diff line by line with Claude before commit (A1).
-      Each workstream then receives one independent Type 1 close review from
-      a session other than the implementer. WS26 checks the table against the
+      concern returns NEEDS_TYPE_2. The maintainer reviews the interface table
+      and every ticket's code line by line with Claude before commit (A1).
+      Each workstream then receives one independent Type 1 close review: a
+      clean-context Codex CLI code review of the workstream's whole diff
+      against its acceptance items and the pinned source, iterated to PASS. WS26 checks the table against the
       pinned code and the recorder's replay and omission witnesses; WS27
       checks kernel parity, refusal precedence, mutations, budgets and
       subtraction; WS28 checks cross-edge parity, retained views, the memory
