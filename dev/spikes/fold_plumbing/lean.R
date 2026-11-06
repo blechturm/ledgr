@@ -50,6 +50,8 @@ ledgr_snapshot_close(snapshot)
 # Time the pinned functions, not the tape wrappers.
 commit <- ws16_load_source(pkg)
 source(file.path(fp_here, "sim.R"))
+# The restructured strategy check (dev/spikes/strategy_check/arms.R).
+source(file.path(fp_here, "..", "strategy_check", "arms.R"))
 
 decision_fields <- names(ledgr:::.ledgr_carrier_fields$decision)
 diag_cols <- names(tapes[[1L]]$oracle$diagnostics[[1L]])
@@ -101,10 +103,34 @@ fp_emitter <- function(fields, keep = character()) {
   f
 }
 
-fp_lean_fold <- function(tape, blocks, strategy_check = TRUE, gut = "") {
+# Fill events into reserved rows; `ids = FALSE` leaves the event ID and run
+# ID columns to be formatted at the output boundary instead.
+fp_lean_event_write <- function(ev, idx, run_id, fill, i, instrument_id, event_seq, ids = TRUE) {
+  if (ids) return(fp_event_write(ev, idx, run_id, fill, i, instrument_id, event_seq))
+  seq <- as.integer(event_seq) + seq_along(i) - 1L
+  c <- ev$cols
+  collapse::setv(c$ts_utc, idx, fill$exec_ts[i], vind1 = TRUE)
+  collapse::setv(c$event_type, idx, rep("FILL", length(i)), vind1 = TRUE)
+  collapse::setv(c$instrument_id, idx, instrument_id, vind1 = TRUE)
+  collapse::setv(c$side, idx, c("SELL", "BUY")[(fill$side[i] > 0L) + 1L], vind1 = TRUE)
+  collapse::setv(c$qty, idx, fill$qty[i], vind1 = TRUE)
+  collapse::setv(c$price, idx, fill$price[i], vind1 = TRUE)
+  collapse::setv(c$fee, idx, fill$fee[i], vind1 = TRUE)
+  collapse::setv(c$event_seq, idx, seq, vind1 = TRUE)
+  collapse::setv(c$cash_delta, idx, fill$cash_delta[i], vind1 = TRUE)
+  collapse::setv(c$position_delta, idx, fill$position_delta[i], vind1 = TRUE)
+}
+
+# Options, each removable for the breakdown:
+#   copy   stages emit fresh outputs (TRUE) or pass references to data that
+#          already exists, the bound for reading prepared data by index;
+#   check  "pinned", "fast" (restructured, universe trusted) or "none";
+#   fills, ids, diagnostics, equity, reads  as named.
+fp_lean_fold <- function(tape, blocks, copy = TRUE, check = "pinned", fills = TRUE, ids = TRUE,
+                         diagnostics = TRUE, equity_row = TRUE, reads = TRUE, gut = "") {
   pulses <- tape$pulses
   run_id <- tape$services$run_id
-  ids <- tape$services$instrument_ids
+  inst_ids <- tape$services$instrument_ids
   plan <- fp_read_plan(tape)
   locals <- list2env(as.list(tape$services), parent = baseenv())
   for (f in setdiff(unlist(plan, use.names = FALSE), names(tape$services))) assign(f, NULL, envir = locals)
@@ -126,40 +152,54 @@ fp_lean_fold <- function(tape, blocks, strategy_check = TRUE, gut = "") {
   for (i in seq_along(pulses)) {
     ent <- pulses[[i]]
     # P1: emit the observation; write the equity row.
-    read$P1()
+    if (reads) read$P1()
     o <- ent$P1$observation
-    observed <- list(packet = emit_packet(o$packet), data = emit_data(o$data),
-                     execution = emit_execution(ent$P1$execution))
-    e <- ent$equity
-    equity <- ledgr_fold_equity_append(equity, e$ts, e$cash, e$positions_value, e$realized_pnl, e$cost_basis)
+    observed <- if (copy) {
+      list(packet = emit_packet(o$packet), data = emit_data(o$data),
+           execution = emit_execution(ent$P1$execution))
+    } else {
+      list(packet = o$packet, data = o$data, execution = ent$P1$execution)
+    }
+    if (equity_row) {
+      e <- ent$equity
+      equity <- ledgr_fold_equity_append(equity, e$ts, e$cash, e$positions_value, e$realized_pnl, e$cost_basis)
+    }
     # P2: emit the decision; check the strategy output on a decided pulse.
     decided <- "P2" %in% ent$labels
-    if (decided) read$P2() else read$P2_skip()
-    decision <- emit_decision(ent$P2)
-    if (decided && strategy_check) {
-      context_ids <- ids[decision$context_pos]
-      ledgr_validate_strategy_targets(stats::setNames(decision$strategy_qty, context_ids), context_ids,
-                                      allow_empty = TRUE)
+    if (reads) { if (decided) read$P2() else read$P2_skip() }
+    decision <- if (copy) emit_decision(ent$P2) else ent$P2
+    if (decided && !identical(check, "none")) {
+      context_ids <- inst_ids[decision$context_pos]
+      targets <- stats::setNames(decision$strategy_qty, context_ids)
+      if (identical(check, "pinned")) {
+        ledgr_validate_strategy_targets(targets, context_ids, allow_empty = TRUE)
+      } else {
+        sc_check(targets, context_ids, allow_empty = TRUE, trust_universe = TRUE)
+      }
     }
     # P3: emit the plan.
-    if (decided) read$P3() else read$P3_skip()
+    if (reads) { if (decided) read$P3() else read$P3_skip() }
     b <- ent$P3$batch
-    planned <- list(expected_final_cash = b$expected_final_cash,
-                    economic_event_kinds = c(b$economic_event_kinds),
-                    fill = emit_fill(b$fill), rejection = emit_rejection(b$rejection))
+    planned <- if (copy) {
+      list(expected_final_cash = b$expected_final_cash,
+           economic_event_kinds = c(b$economic_event_kinds),
+           fill = emit_fill(b$fill), rejection = emit_rejection(b$rejection))
+    } else {
+      b
+    }
     # P4: write the fills into reserved event rows.
-    read$P4()
-    for (call in ent$payload) {
+    if (reads) read$P4()
+    if (fills) for (call in ent$payload) {
       n <- length(call$i)
       idx <- fp_event_reserve(ev, n)
       if (identical(gut, "reservation")) ev$reserved <- ev$reserved - n
-      fp_event_write(ev, idx, run_id, planned$fill, call$i, call$instrument_id, event_seq)
+      fp_lean_event_write(ev, idx, run_id, planned$fill, call$i, call$instrument_id, event_seq, ids)
       event_seq <- event_seq + n
     }
     # P5: commit the events; write the pulse's diagnostic rows.
-    read$P5()
+    if (reads) read$P5()
     ev$count <- ev$reserved
-    for (b in blocks[[i]]) fp_diag_write(ds, b)
+    if (diagnostics) for (b in blocks[[i]]) fp_diag_write(ds, b)
   }
   elapsed <- ledgr_time_elapsed(t0, ledgr_time_now())
   cols <- ledgr:::ledgr_output_event_columns
@@ -183,8 +223,11 @@ for (w in names(tapes)) {
     v <- unlist(lapply(o$diagnostics, function(b) b[[nm]]), use.names = FALSE)
     if (nm %in% diag_time) as.numeric(v) else v
   })
-  for (label in c("lean", "lean_gut_reservation")) {
-    res <- fp_lean_fold(tape, blocks, gut = if (grepl("gut", label)) "reservation" else "")
+  variants <- list(lean = list(), lean_fast_check = list(check = "fast"),
+                   lean_fast_check_references = list(check = "fast", copy = FALSE),
+                   lean_gut_reservation = list(gut = "reservation"))
+  for (label in names(variants)) {
+    res <- do.call(fp_lean_fold, c(list(tape, blocks), variants[[label]]))
     parity[[length(parity) + 1L]] <- data.frame(
       workload = w, variant = label, output = c("events", "diagnostic_rows", "equity"),
       rows = c(length(o$events$event_seq), length(oracle_diag$diagnostic_seq), o$equity$n),
@@ -193,10 +236,20 @@ for (w in names(tapes)) {
                     all(mapply(same, res$equity[c("ts", "cash", "positions_value", "realized_pnl", "cost_basis", "n")],
                                o$equity[c("ts", "cash", "positions_value", "realized_pnl", "cost_basis", "n")]))))
   }
+  fast <- function(...) fp_lean_fold(tape, blocks, check = "fast", ...)
   arms <- list(
     today = function() fp_fold(tape, "today"),
     lean = function() fp_lean_fold(tape, blocks),
-    lean_without_strategy_check = function() fp_lean_fold(tape, blocks, strategy_check = FALSE))
+    lean_fast_check = function() fast(),
+    fast_minus_copies = function() fast(copy = FALSE),
+    fast_minus_strategy_check = function() fp_lean_fold(tape, blocks, check = "none"),
+    fast_minus_fills = function() fast(fills = FALSE),
+    fast_minus_event_ids = function() fast(ids = FALSE),
+    fast_minus_diagnostics = function() fast(diagnostics = FALSE),
+    fast_minus_equity = function() fast(equity_row = FALSE),
+    fast_minus_field_reads = function() fast(reads = FALSE),
+    loop_and_stage_calls_only = function() fp_lean_fold(tape, blocks, copy = FALSE, check = "none", fills = FALSE,
+                                                        diagnostics = FALSE, equity_row = FALSE, reads = FALSE))
   for (a in names(arms)) for (k in 1:2) arms[[a]]()
   # Ten folds per measurement: one momentum fold takes about 30 ms, near
   # the 15.6 ms clock tick. The measurement includes each fold's E setup.
