@@ -44,6 +44,7 @@ data volume or allocation.
   ledgr's `t_loop` telemetry on the same host. Each component is measured
   by removing it alone (`today-validate` is `today` without checks, and so
   on).
+- `checks.R` times per-pulse checks (section below).
 - `check.R` reruns into a scratch directory, diffs the structural CSVs,
   checks the timing rows, requires the gutted path to fail and guards
   package scope.
@@ -117,6 +118,40 @@ momentum 75 KB today and 94 KB preallocated; fill-heavy 616 KB and 229 KB.
 - `Rprof()` on Windows reports about one seventh of the wall time at a 2 ms
   interval (pitfall 8 in the measurement notes). Its shares were used, its
   seconds were not.
+
+## Check-cost probe (`checks.R`), after the Type 2 response
+
+The response
+(`inst/design/rfc/rfc_lean_core_pulse_plumbing_v0_2_3_response.md`,
+finding 2) splits each per-pulse carrier check into conditions that can
+fail on data and conditions that hold by construction. `checks.R` times,
+on the same recorded pulses, today's full carrier checks against only the
+data conditions it keeps. Both variants also run the append check, which
+the typed accounting synthesis binds. P3's execution view is in neither.
+
+Microseconds per pulse, median of 5, High performance plan, P-core
+affinity (`evidence/checks_timing.csv`):
+
+| | momentum 40 x 504 | fill-heavy 500 x 1,260 |
+| --- | ---: | ---: |
+| today: full carrier checks + append check | 252 | 729 |
+| targeted: data checks only + append check | 18 | 307 |
+| full carrier checks alone | 238 | 389 |
+| data checks alone | 10 | 25 |
+| append check alone | 10 | 274 |
+
+The data checks cost about 4 to 6 percent of the full carrier checks. What
+remains is the append check: about 250 us for each published fill block on
+both workloads (momentum publishes on 21 of 504 pulses), largely
+independent of the block's 1 to 86 rows. That is a fixed cost of the
+validator's R implementation, not of its rules.
+
+Planted faults on one fill-heavy pulse (`evidence/checks_faults.csv`): both
+variants refuse a negative fill price, a missing cash effect and an
+infinite mark. Only the full checks refuse a `priced` flag that disagrees
+with its mark, a duplicated context position and fills out of decision
+order. Those three can only come from a ledgr defect; they are the
+detectors the debug switch would hold.
 
 ## What the lean core may take from this
 

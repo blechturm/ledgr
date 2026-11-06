@@ -1,0 +1,11 @@
+"workload","variant","us_per_pulse"
+"fill_heavy_500x1260","append_only",273.8
+"fill_heavy_500x1260","full",728.6
+"fill_heavy_500x1260","full_only",388.9
+"fill_heavy_500x1260","targeted",307.1
+"fill_heavy_500x1260","targeted_only",25.4
+"momentum_40x504","append_only",9.9
+"momentum_40x504","full",252
+"momentum_40x504","full_only",238.1
+"momentum_40x504","targeted",17.9
+"momentum_40x504","targeted_only",9.9

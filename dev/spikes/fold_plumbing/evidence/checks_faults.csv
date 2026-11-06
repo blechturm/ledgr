@@ -1,0 +1,8 @@
+"fault","full","targeted"
+"none","",""
+"fill_price_negative","Invalid internal plan: fill: a fill quantity, price or fee is out of range.","Invalid internal fill."
+"fill_cash_overflow","Invalid internal plan: fill: `cash_delta` contains a missing value.","Invalid internal fill."
+"packet_mark_infinite","Invalid internal decision packet: `mark` contains a non-finite value.","Invalid internal decision packet."
+"packet_priced_flag_wrong","Invalid internal decision packet: `priced` does not match the marks.",""
+"decision_context_duplicate","Invalid internal decision: `context_pos` is not unique run positions.",""
+"fill_order_swapped","Invalid internal plan: fill: fills are not in decision order.",""
