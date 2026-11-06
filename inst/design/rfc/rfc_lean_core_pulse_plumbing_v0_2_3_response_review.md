@@ -101,10 +101,15 @@ chunk is converted and written, not each pulse.
 fold is the skeleton's measured floor (22 and 71 us per pulse) and stays in
 the repository as a reference. "we should measure each new family against a
 floor skeleton in which the previous and past stages do nothing during
-implementation to isolate the stage we are developing." Each family close
-records its stage's cost over that floor, measured in a skeleton where every
-other stage is a stub. The figure is recorded, not gated; waste is cost
-above the floor that buys no guarantee.
+implementation to isolate the stage we are developing." A family's stage is
+measured in a skeleton where every other stage is a stub, and its cost over
+the floor is reported at the family close; waste is cost above the floor
+that buys no guarantee. The budget rule is unchanged: each family closes
+against microsecond and line budgets, and an overrun is fixed or explicitly
+accepted (lean fold core amendment A2, extension synthesis Section 4 step
+6, macro rule 16). What the microsecond budget is set against is decided in
+seed v2. (Revised 2026-11-06: the first wording, "recorded, not gated",
+contradicted A2 and was withdrawn.)
 
 **D8. Compiled FIFO stays on the table.** "We first build the R version as
 oracle then we potentially compile it." This is the macro plan's WS14 route:
