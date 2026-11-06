@@ -1,0 +1,7 @@
+"workload","table","rows","identical"
+"momentum","ledger",296,TRUE
+"momentum","equity",504,TRUE
+"momentum","diagnostics",2500,TRUE
+"fill_heavy","ledger",67725,TRUE
+"fill_heavy","equity",1260,TRUE
+"fill_heavy","diagnostics",699040,TRUE

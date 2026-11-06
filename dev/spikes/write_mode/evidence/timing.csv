@@ -1,0 +1,5 @@
+"mode","workload","loop_us_per_pulse","run_wall_s","r_heap_peak_mb","process_peak_wset_mb"
+"audit_log","fill_heavy",5996,9.445,231.2,1083.8
+"db_live","fill_heavy",153543.7,195.38,197.6,998.3
+"audit_log","momentum",1795.6,1.885,127,404
+"db_live","momentum",3452.4,2.73,126.6,404.6

@@ -1,0 +1,9 @@
+"mode","workload","rep","loop_us_per_pulse","run_wall_s","r_heap_peak_mb","process_peak_wset_mb"
+"audit_log","fill_heavy",1,5992.06349206349,10,231.5,1083.7578125
+"audit_log","fill_heavy",2,6000,8.89,230.8,1083.7578125
+"audit_log","momentum",1,1825.39682539683,2.46,127.5,403.97265625
+"audit_log","momentum",2,1765.87301587302,1.31,126.4,403.97265625
+"db_live","fill_heavy",1,153460.317460317,195.82,201.8,998.33984375
+"db_live","fill_heavy",2,153626.984126984,194.94,193.4,998.33984375
+"db_live","momentum",1,3452.38095238095,3.32,126.9,404.5703125
+"db_live","momentum",2,3452.38095238095,2.14,126.3,404.5703125
