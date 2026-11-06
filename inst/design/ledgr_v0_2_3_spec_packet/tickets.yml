@@ -1443,7 +1443,15 @@ cuts:
       and no captured operation group slower than pinned; FIFO at most 450 R
       lines; preparation and each registered history read at most 1.0x
       pinned on 500 x 5,040 and private H1; preparation at most 900 R lines;
-      recorder and comparison at most 500 R lines. Each family close reports
+      recorder and comparison at most 500 R lines. All timing gates use
+      dev/bench/timing/ through one Cut 12 protocol, reusing the entry
+      workload methods. LDG-3215 freezes matched preparation and full
+      public-request clock endpoints, pinned microsecond budgets and baseline
+      noise before LDG-3216 code; preparation includes tile hydration and
+      allocation. LDG-3214 and LDG-3217 compare alternating pinned and
+      candidate arms through that protocol. The 123/134 us figures are
+      rounded illustrations; FIFO gates use the caller/bucket ratios. Each
+      family close reports
       per-function profile samples and line counts; a miss is fixed or
       explicitly accepted by the maintainer. (6) The memory claim is that
       prepared working tiles and buffers stay within a working-set budget
@@ -1501,7 +1509,7 @@ cuts:
       seven shapes and the five-scenario affected-owner check.
       Finding-bearing reviews write packet files. A third correction round on
       one workstream stops for maintainer disposition.
-    cut_review: null
+    cut_review: "CHANGES_REQUIRED in cut_review_12.md (independent clean-context Codex CLI, gpt-6.1-sol/high): R1-R5 required; all five exact patches applied. R1 exempts the recorder's pinned reference calls from the old-arithmetic ban, R2 permits copy-on-modify sharing, R3 compares retained public values instead of whole-context serialization, R4 keeps the existing history-read and feature-input services with tile-access adaptations only, R5 puts every timing gate on one Cut 12 protocol in dev/bench/timing/."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -4073,9 +4081,11 @@ tickets:
       service) name its complete semantic input and output, including
       fold-state changes, handler calls, stop results and raised conditions,
       the freezing rule, and the comparison rule with its clock-metadata
-      allowlist. Answer, by probing the pinned build, whether the existing
-      history read service and feature input service can be called on
-      tile-backed inputs or need a lean implementation, and why. Attach the
+      allowlist. Probe the pinned history-read and feature-input services
+      and record the storage-access and output-allocation adaptations needed
+      for tiles, preserving their existing semantic services. If this cannot
+      satisfy the accepted boundaries, return NEEDS_TYPE_2 before
+      implementation. Attach the
       observable-data synthesis Section 2 notes to the preparation, P1 and
       P2-view rows; record the five fixed boundaries and the five-scenario
       affected-owner check. Fix the dev/lean_core/ layout and how lean code
@@ -4084,7 +4094,7 @@ tickets:
     acceptance:
       - "every row cites the pinned source by file:line; a field reached only through a helper is listed with that helper"
       - "every services field is classified fixed or mutable with the code that shows it, and every mutable field has a freezing rule"
-      - "the reuse question for the history read and feature input services is answered by a committed probe and its output, not by assumption"
+      - "the tile-access and output-allocation adaptations of the existing history-read and feature-input services are recorded with a committed probe and its output, not by assumption, or the ticket returns NEEDS_TYPE_2"
       - "the five fixed boundaries, the six observable-data notes and the five-scenario check are present and add no field, placeholder or descriptor"
       - "the maintainer accepts the table line by line before any dev/lean_core/ code is committed; the table stays under 450 lines"
     evidence: []
@@ -4148,8 +4158,8 @@ tickets:
     acceptance:
       - "the whole book and every applied field are identical to the pinned kernel on every captured call from the A0 workloads, the fill-heavy run and the pinned test suite (159,635 rows), and on generated streams adding a long opening with negative basis, a short opening with zero basis, repeated-instrument streams and random conflict-free blocks"
       - "every one of the 38 captured refusals and every generated refusal matches in class and message, including blocks whose failing row is not the first and rows with two violations"
-      - "no input book or input vector is modified, and no returned object aliases an input"
-      - "a source check finds no call from dev/lean_core/ into ledgr_lot_apply or the old operation wrappers"
+      - "kernel calls preserve all input values; later ordinary edits to returned books or applied vectors preserve retained inputs, and later input edits preserve retained results. Ordinary R copy-on-modify sharing is permitted; no shared column is written by reference"
+      - "the lean FIFO kernel and its candidate-side helpers never call ledgr_lot_apply, the old operation wrappers or other old arithmetic; the recorder's pinned reference capture and replay calls are exempt"
       - "each registered mutation fails parity: sum() or cumsum() for an ordered total, no dust snap, swapped close/open fee split, a Kahan step on openings, merged repeated openings, and last-row instead of earliest-row refusal"
     evidence: []
   - id: "LDG-3214"
@@ -4163,9 +4173,8 @@ tickets:
       Run the A4 subtraction review first (duplicated helpers, validation
       repeated after the trusted boundary, a second representation of one
       concept) and fix its findings here. Then time the lean kernel on the
-      captured fill-heavy calls with the fifo_cost.R method of
-      dev/bench/v0_2_3_ws16_entry/ on the registered quiet host, alternating
-      pinned and lean arms, and report per-function profile samples and the
+      captured fill-heavy calls using the timing protocol in Cut 12 decision
+      (5), and report per-function profile samples and the
       line count. Add any rule a parity failure surfaced to the rules ledger
       as pending, and record the five-scenario affected-owner check for the
       kernel.
@@ -4190,8 +4199,9 @@ tickets:
       values. Register the history-read request set (bar and feature matrix
       and frame reads, including the 252-session x 500-instrument feature
       window) and record pinned captures on the fixture, the portable 500 x
-      1,260, 2,520 and 5,040 shapes and private H1, with quiet-host pinned
-      clocks for preparation and each request. Then add a design note to the
+      1,260, 2,520 and 5,040 shapes and private H1. Freeze the pinned
+      preparation and request clocks, budgets and noise under the timing
+      protocol in Cut 12 decision (5). Then add a design note to the
       interface table: tile width, resident-tile limit, backing access and
       hydration by tile range, eviction, retained-view ownership, the feature
       input and output adaptation, and the declared working-set budget,
@@ -4199,7 +4209,7 @@ tickets:
       in-memory copies.
     acceptance:
       - "a script shows each listed fixture event within one session of an edge at two tile widths"
-      - "pinned captures and quiet clocks exist for the fixture, the three portable shapes and private H1; only private aggregates are committed"
+      - "pinned captures exist for the fixture, the three portable shapes and private H1, and the pinned clocks, microsecond budgets and noise are frozen in the Cut 12 protocol before LDG-3216 code; only private aggregates are committed"
       - "the disk-backed versus in-memory measurement is recorded and the spilling choice cites it"
       - "the maintainer approves the design note and its working-set budget line by line before preparation code is committed"
     evidence: []
@@ -4218,12 +4228,12 @@ tickets:
       change-point columns; run the existing feature calculation with
       adapted input access and output allocation, never restarting at an
       edge; serve the fold-reader packets and the registered history reads
-      from tiles, reusing the existing read service where LDG-3211 found that
-      possible. Retained views are copies that tiles never write. Prove every
+      from tiles through the existing semantic services with the accepted
+      tile-access adaptations. Retained views are copies that tiles never write. Prove every
       output through the recorder.
     acceptance:
       - "fold-reader packets, feature series values and evidence, and every registered history read, including admission, metadata and classes, are identical to the pinned captures on the fixture at two tile widths, on the three portable shapes and on private H1 (digests only for private)"
-      - "a history result and a context retained before tile recycling serialize identically at the end of the run"
+      - "a retained history result remains identical after tile recycling; re-reading the retained context's public columns and registered history requests after recycling reproduces the frozen values, names, types, classes and metadata from before recycling; private cache serialization is not compared"
       - "each registered mutation fails parity: features restarted at an edge, admission from current membership, the cutoff overlay dropped, a retained view aliasing a recycled tile, and a finite request truncated at an edge"
       - "lean preparation reads bars only through a verified snapshot handle, and nothing in R/ references dev/lean_core/"
     evidence: []
@@ -4242,8 +4252,8 @@ tickets:
       transient copies, lots, retained views and output separately, with
       parent, worker and process-tree peaks, using the memory_probe.R method
       of dev/bench/v0_2_3_ws16_entry/ and its pinned arm. Time preparation and
-      the request set on the quiet host against the LDG-3215 pinned clocks
-      and report per-function profile samples and line counts. Add surfaced
+      the request set using the timing protocol in Cut 12 decision (5), and
+      report per-function profile samples and line counts. Add surfaced
       rules to the ledger as pending and record the five-scenario
       affected-owner check. Write the checkpoint's progress re-estimate for
       the remaining families (macro WS16; a report, not a gate).
