@@ -1,0 +1,8 @@
+"patch","file","removes"
+"carrier_group_checks","R/fold-carrier.R","internal: every carrier group a stage hands on, the publication block, legs, staging and equity"
+"append_check_on_write","R/output-handler.R","internal under D4: every producer of a fold event is a ledgr module; the read check stays"
+"fill_payload_input_checks","R/backtest-runner.R","internal: P3's fill group and E's checked execution epochs"
+"fill_payload_epoch_check","R/backtest-runner.R","internal: execution epochs are prepared and checked once in E"
+"lot_applied_self_check","R/lot-accounting.R","internal: the kernel re-checking its own applied rows"
+"p5_cash_reconciliation","R/fold-engine.R","internal: P5 compares two of ledgr's own cash computations; the staged reconciliation row stays"
+"p5_reconciliation_check","R/fold-engine.R","internal: the gross-exposure reconciliation of the same values"

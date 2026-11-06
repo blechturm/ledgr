@@ -1,0 +1,10 @@
+"tree","workload","table","rows","identical_to_pinned"
+"edge","momentum","ledger",296,TRUE
+"edge","momentum","equity",504,TRUE
+"edge","momentum","diagnostics",2500,TRUE
+"edge","fill_heavy","ledger",67725,TRUE
+"edge","fill_heavy","equity",1260,TRUE
+"edge","fill_heavy","diagnostics",699040,TRUE
+"gut","momentum","ledger",296,TRUE
+"gut","momentum","equity",504,TRUE
+"gut","momentum","diagnostics",2500,FALSE

@@ -1,0 +1,5 @@
+"tree","workload","loop_us_per_pulse","run_wall_s","runs"
+"edge","fill_heavy",4984.1,7.99,6
+"pinned","fill_heavy",5988.1,9.24,6
+"edge","momentum",1388.9,1.2,6
+"pinned","momentum",1954.4,1.385,6
