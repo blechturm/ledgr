@@ -24,6 +24,9 @@
   clauses below for the pending WS16 lean core only; see the local notices and
   the [appended skeleton
   amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-06-pulse-plumbing).
+- Amended 2026-11-06 by the maintainer: A1's line-by-line code review is
+  replaced from LDG-3212 on; see the
+  [A1 amendment](#amendment-maintainer-2026-11-06-a1-review-of-the-first-family).
 
 > Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
 > the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
@@ -496,6 +499,9 @@ brief with line-by-line maintainer review, before any agent extends them.
 Later workstreams follow that structure. Agents copy the first code they
 see; the first code is the code meant to be copied.
 
+> Amended 2026-11-06 by the maintainer: see
+> [A1 review of the first family](#amendment-maintainer-2026-11-06-a1-review-of-the-first-family).
+
 > Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
 > the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
 > behavior changes only at the switch; unrelated rules and historical
@@ -543,3 +549,23 @@ escalations remain: failing the memory or kernel prerequisite, or needing a
 third correction round on any workstream, stops that work for maintainer
 disposition. The re-estimate after the first memory and kernel checkpoint is
 a progress report, not a gate.
+
+## Amendment (maintainer, 2026-11-06): A1 review of the first family
+
+The conceptual work for the first family is accepted: the skeleton, the core
+extension architecture, observable data, the pulse plumbing amendment and the
+first-checkpoint interface table, which the maintainer accepted line by line
+(LDG-3211). From LDG-3212 on, A1's "line-by-line maintainer review" of code is
+replaced:
+
+- The maintainer reviews designs and briefs, not code lines. Design notes
+  that a ticket's acceptance names for maintainer approval keep it, in
+  particular LDG-3215's tile design note and working-set budget.
+- Because the first family's code is the code later families copy, every
+  ticket of the first family (Cut 12, workstreams 26 to 28) receives a
+  clean-context Codex CLI code review of its diff, against its acceptance
+  items, the interface table and the pinned source, before it is committed,
+  iterated to PASS. A third correction round stops for maintainer
+  disposition.
+- Each workstream close keeps its Type 1 close review. Later families return
+  to the per-workstream code review alone.

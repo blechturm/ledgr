@@ -1504,8 +1504,12 @@ cuts:
       An independent clean-context Codex CLI cut review first challenges
       necessity, completeness, ticket grain, hidden product choices, the
       proposed budgets and whether every acceptance item can fail; a design
-      concern returns NEEDS_TYPE_2. The maintainer reviews the interface table
-      and every ticket's code line by line with Claude before commit (A1).
+      concern returns NEEDS_TYPE_2. The maintainer accepted the interface table
+      line by line (LDG-3211). From LDG-3212 on (A1 as amended by the
+      maintainer on 2026-11-06), the maintainer reviews designs and briefs, not
+      code lines, and every WS26-WS28 ticket receives a clean-context Codex CLI
+      code review of its diff before commit, iterated to PASS; LDG-3215's tile
+      design note keeps its maintainer approval.
       Each workstream then receives one independent Type 1 close review: a
       clean-context Codex CLI code review of the workstream's whole diff
       against its acceptance items and the pinned source, iterated to PASS. WS26 checks the table against the
