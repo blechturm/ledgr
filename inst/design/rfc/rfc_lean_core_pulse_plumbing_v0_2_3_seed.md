@@ -1,7 +1,11 @@
-# RFC: Lean Core Pulse Plumbing (v0.2.3), Seed v1
+# Proposed Amendment: Lean Core Pulse Plumbing (v0.2.3), Seed v1
 
-- Status: **seed v1** of an active RFC cycle
-  ([pipeline](README.md#lean-core-pulse-plumbing)). Not binding.
+- Status: **proposed amendment** to the accepted lean core skeleton
+  synthesis, seed v1 ([pipeline](README.md#lean-core-pulse-plumbing)). Not
+  binding. It goes through the review steps an amendment needs (a Type 2
+  response, a synthesis and a final review). On acceptance its Section 4 text
+  is appended to the skeleton synthesis as a dated amendment, as the
+  observable-data amendment was.
 - Authors: maintainer with Claude, 2026-11-06.
 - Parent: the accepted [lean core skeleton synthesis](rfc_lean_core_skeleton_v0_2_3_synthesis.md),
   which this seed proposes to amend. The rules it touches come from the
