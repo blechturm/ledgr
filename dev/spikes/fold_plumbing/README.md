@@ -32,8 +32,9 @@ data volume or allocation.
     pinned output handler.
   - `prealloc`: E allocates each stage output once at its largest size and
     the stubs overwrite it in place; P4 writes fills straight into reserved
-    event rows and P5 commits the count; fields are bound once as locals;
-    there are no per-pulse checks.
+    event rows and P5 commits the count, with no append check and no failure
+    protocol; fields are bound once as locals. The stage outputs and fills
+    are not checked per pulse; diagnostic staging keeps its pinned checks.
 
   Both variants use the pinned diagnostic staging and equity append, which
   already preallocate. Fill legs (`record_accounting_fact`) are left out of
@@ -74,7 +75,11 @@ What removing one component saves, in us per pulse (today / preallocated):
 | equity row | 40 / 20 | 0 / 16 |
 
 The checks overlap the fill path (the publication block is checked), so the
-rows do not add up to the total. Allocation per pulse, including E's setup:
+rows do not add up to the total. Each row removes a whole component: the
+check row turns off every carrier check and the append check together, and
+the diagnostic row removes staging and the pulse drain with their checks.
+They are ablations, not the saving of any particular design, and set no
+budgets. Allocation per pulse, including E's setup:
 momentum 75 KB today and 94 KB preallocated; fill-heavy 616 KB and 229 KB.
 
 ## What was learned about the package
@@ -93,11 +98,13 @@ momentum 75 KB today and 94 KB preallocated; fill-heavy 616 KB and 229 KB.
   interpreted work (a `get`, a `setv` and an `assign` per field), which
   both shapes pay.
 - The expensive plumbing is fixed per-call R overhead:
-  - per-pulse carrier checks: about 9 checks per pulse
-    (`evidence/check_census.csv`), each looping over its group's 6 to 33
-    fields;
-  - diagnostic staging: about 275 us per staging call (the Rprof share of
-    `ledgr_fold_staging_add`, about 46 percent, over 2 calls), because
+  - per-pulse carrier checks: about 9 checks per pulse in the skeleton,
+    about 10 in the real fill-heavy fold, which also checks P3's execution
+    view (`evidence/check_census.csv`), each looping over its group's 6 to
+    33 fields;
+  - diagnostic staging: roughly 275 us per staging call, an estimate from
+    an Rprof share (`ledgr_fold_staging_add`, about 46 percent, over 2
+    calls) that is not part of the recorded evidence, because
     `ledgr_fold_diagnostic_segment`, `_rows` and `_staging_write` each loop
     over about 30 columns. On momentum, 2 staging calls per pulse cost more
     than everything else together;
