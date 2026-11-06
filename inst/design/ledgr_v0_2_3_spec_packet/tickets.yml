@@ -4202,6 +4202,7 @@ tickets:
       kernel.
     acceptance:
       - "per block, lean kernel plus its boundary validation is at most 0.5x the pinned kernel plus input validation in both the 10-49 and 50+ buckets, and no captured operation group is slower than pinned in total; a miss is fixed or explicitly accepted by the maintainer"
+      - "R11 (pulse plumbing amendment): with every other stage a stub in floor v1, the lean kernel adds at most 113 us per pulse on fill-heavy 500 x 1,260 and 4.2 us on momentum 40 x 504 over its captured calls: the byte-compiled spike kernel's 98.4 and 3.7 us plus 15% (dev/bench/v0_2_3_cut12_floor_budget/, 2026-11-06); a miss is fixed or explicitly accepted by the maintainer"
       - "the kernel and its validation stay within 450 R lines, and per-function profile samples are reported"
       - "the subtraction findings, ledger entries and affected-owner check are recorded in this ticket's evidence"
     evidence: []
@@ -4228,11 +4229,16 @@ tickets:
       hydration by tile range, eviction, retained-view ownership, the feature
       input and output adaptation, and the declared working-set budget,
       choosing spilling only after a measurement of disk-backed tiles against
-      in-memory copies.
+      in-memory copies. Then, per R11 of the pulse plumbing amendment,
+      measure the chosen design's per-pulse reads (fold-reader packets and
+      the registered history reads) with every other stage a stub in floor
+      v1 on momentum 40 x 504 and fill-heavy 500 x 1,260, and freeze the
+      probe plus 15% as the per-pulse budget above floor v1.
     acceptance:
       - "a script shows each listed fixture event within one session of an edge at two tile widths"
       - "pinned captures exist for the fixture, the three portable shapes and private H1, and the pinned clocks, microsecond budgets and noise are frozen in the Cut 12 protocol before LDG-3216 code; only private aggregates are committed"
       - "the disk-backed versus in-memory measurement is recorded and the spilling choice cites it"
+      - "the floor-v1 per-pulse read budget on both workloads is frozen with its probe before LDG-3216 code"
       - "the maintainer approves the design note and its working-set budget line by line before preparation code is committed"
     evidence: []
   - id: "LDG-3216"
@@ -4282,6 +4288,7 @@ tickets:
     acceptance:
       - "resident working tiles and buffers stay within the declared budget and do not grow with history length at fixed width and worker count; every other component and every peak is reported against the pinned arm"
       - "preparation and each registered request are at most 1.0x pinned on 500 x 5,040 and private H1, and preparation stays within 900 R lines; a miss is fixed or explicitly accepted by the maintainer"
+      - "per-pulse reads stay within LDG-3215's floor-v1 budget on both workloads; a miss is fixed or explicitly accepted by the maintainer"
       - "the record names the process-peak steps tiles do not move (snapshot load, store-wide validation) and their owners"
       - "subtraction findings, ledger entries, the affected-owner check and the re-estimate are recorded, and the maintainer disposes the checkpoint before the P1 family is cut"
     evidence: []
