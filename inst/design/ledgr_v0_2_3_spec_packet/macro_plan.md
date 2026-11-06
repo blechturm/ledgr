@@ -40,10 +40,10 @@ Revision 11 records the maintainer's 2026-11-03 acceptance of the lean fold
 core synthesis with its amendment: a lean core grows under `dev/lean_core/`
 as WS16 after the WS7/WS8/WS15 cut, WS14a's product subtraction cut becomes
 the atomic switch cut, and there is no cap.
-Revision 12 records the draft Cut 12 routing: workstreams 26, 27 and 28 own
+Revision 12 records the Cut 12 routing (accepted 2026-11-06): workstreams 26, 27 and 28 own
 WS16's first checkpoint (interface table and stage recorder, FIFO kernel,
-memory preparation), measured from the d5b3a151 pin. Cut acceptance remains a
-maintainer decision; this routing alone authorizes no implementation.
+memory preparation), measured from the d5b3a151 pin. The maintainer accepted
+the cut on 2026-11-06.
 Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
@@ -1042,8 +1042,8 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
   checkpoint. With WS16, the product cut is the lean core switch cut.
 - WS16 runs as reviewed workstreams under `dev/lean_core/`, each cut on its
   own; none changes `R/` until the switch cut.
-- Draft Cut 12 is WS16's first checkpoint: workstreams 26-28 and
-  LDG-3211-LDG-3217. It remains non-operative until maintainer acceptance.
+- Cut 12 is WS16's first checkpoint: workstreams 26-28 and
+  LDG-3211-LDG-3217, accepted by the maintainer on 2026-11-06.
 - WS14 is conditional on its checkpoint: one measurement/disposition cut,
   with at most one bounded product-optimization workstream before the final
   release rehearsal.

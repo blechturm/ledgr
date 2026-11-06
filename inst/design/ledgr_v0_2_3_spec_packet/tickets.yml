@@ -1378,8 +1378,12 @@ cuts:
   - id: 12
     name: "Lean core first checkpoint"
     cut: "2026-11-06"
-    status: "draft"
-    accepted: null
+    status: "accepted"
+    accepted: >-
+      2026-11-06 by the maintainer after the independent cut review
+      (CHANGES_REQUIRED, R1-R5 applied) and its focused PASS re-review,
+      including the decision (5) budgets, the decision (6) memory claim and
+      the decision (7) H1 gate at the switch.
     opening: >-
       Macro WS16 replaces the current fold with a lean core grown under
       dev/lean_core/ and proven family by family against the pinned build.
