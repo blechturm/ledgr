@@ -305,7 +305,7 @@ assembled state and the state after a stop are checked only in debug mode
 | `current_ts` | POSIXct scalar | time | the current pulse | E `:1931` | E exception diagnostic `:2071` |
 | `pending_segments` | diagnostics staging (carrier) | rows | used prefix valid; capacity fixed in E `:1795-1797` | stages via `ledgr_fold_staging_add`, `_add_residual`, `_write` (`R/fold-carrier.R:876-928`); E stop; flush drains `R/fold-engine.R:286-287` | flush; P1-P5; P2 skip `:673`; E stop `R/fold-phase-contract.R:201` |
 | `equity_facts` | equity record (carrier) | money; epoch | rows preallocated to the pulse count | P1 `R/fold-engine.R:633` (`R/fold-carrier.R:979`) | P1; E result `R/fold-engine.R:2096` |
-| `diagnostic_seq` | integer scalar | rows | non-negative; rows drained so far | flush `:288` | P3, flush |
+| `diagnostic_seq` | integer scalar | rows | non-negative; rows drained so far | flush `:288` | P3, flush; P5 through the flush it calls `:1599` |
 | `telemetry_idx` | integer scalar | samples | non-negative | P5 `:1635` | P5 |
 
 `current_stage`, `current_ts` and `pending_segments` change on every pulse,
