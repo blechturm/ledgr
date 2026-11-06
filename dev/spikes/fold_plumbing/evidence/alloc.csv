@@ -1,0 +1,5 @@
+"workload","variant","kb_per_pulse"
+"momentum_40x504","today",74.8
+"momentum_40x504","prealloc",93.5
+"fill_heavy_500x1260","today",616.2
+"fill_heavy_500x1260","prealloc",229

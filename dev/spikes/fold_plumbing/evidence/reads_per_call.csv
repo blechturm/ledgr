@@ -1,0 +1,15 @@
+"workload","stage","reads_per_call","distinct_fields"
+"momentum_40x504","P1",11,7
+"momentum_40x504","P2",21,17
+"momentum_40x504","P2_skip",0,0
+"momentum_40x504","P3",12,8
+"momentum_40x504","P3_skip",0,0
+"momentum_40x504","P4",3,3
+"momentum_40x504","P5",9,7
+"fill_heavy_500x1260","P1",11,7
+"fill_heavy_500x1260","P2",21,16
+"fill_heavy_500x1260","P2_skip",0,0
+"fill_heavy_500x1260","P3",12,8
+"fill_heavy_500x1260","P3_skip",0,0
+"fill_heavy_500x1260","P4",6,6
+"fill_heavy_500x1260","P5",11,9
