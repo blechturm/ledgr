@@ -4103,7 +4103,7 @@ tickets:
       - "every services field is classified fixed or mutable with the code that shows it, and every mutable field has a freezing rule"
       - "the tile-access and output-allocation adaptations of the existing history-read and feature-input services are recorded with a committed probe and its output, not by assumption, or the ticket returns NEEDS_TYPE_2"
       - "the five fixed boundaries, the six observable-data notes and the five-scenario check are present and add no field, placeholder or descriptor"
-      - "the maintainer accepts the table line by line before any dev/lean_core/ code is committed; the table stays under 450 lines"
+      - "the maintainer accepts the table line by line before any dev/lean_core/ code is committed; the table stays under 650 lines (raised from 450 by the maintainer on 2026-11-06)"
     evidence: []
   - id: "LDG-3212"
     title: "Build the stage recorder and its replay check"
