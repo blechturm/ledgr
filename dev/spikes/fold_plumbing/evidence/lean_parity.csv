@@ -1,0 +1,13 @@
+"workload","variant","output","rows","identical"
+"momentum_40x504","lean","events",296,TRUE
+"momentum_40x504","lean","diagnostic_rows",1284,TRUE
+"momentum_40x504","lean","equity",504,TRUE
+"momentum_40x504","lean_gut_reservation","events",296,FALSE
+"momentum_40x504","lean_gut_reservation","diagnostic_rows",1284,TRUE
+"momentum_40x504","lean_gut_reservation","equity",504,TRUE
+"fill_heavy_500x1260","lean","events",67725,TRUE
+"fill_heavy_500x1260","lean","diagnostic_rows",1369,TRUE
+"fill_heavy_500x1260","lean","equity",1260,TRUE
+"fill_heavy_500x1260","lean_gut_reservation","events",67725,FALSE
+"fill_heavy_500x1260","lean_gut_reservation","diagnostic_rows",1369,TRUE
+"fill_heavy_500x1260","lean_gut_reservation","equity",1260,TRUE

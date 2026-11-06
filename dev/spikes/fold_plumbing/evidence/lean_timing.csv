@@ -1,0 +1,8 @@
+"workload","arm","us_per_pulse"
+"fill_heavy_500x1260","lean",338.9
+"fill_heavy_500x1260","lean_without_strategy_check",198.4
+"fill_heavy_500x1260","prep_data_check_ms_once",16
+"fill_heavy_500x1260","today",2068.3
+"momentum_40x504","lean",81.3
+"momentum_40x504","lean_without_strategy_check",75.4
+"momentum_40x504","today",1297.6

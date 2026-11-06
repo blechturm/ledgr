@@ -44,7 +44,7 @@ data volume or allocation.
   ledgr's `t_loop` telemetry on the same host. Each component is measured
   by removing it alone (`today-validate` is `today` without checks, and so
   on).
-- `checks.R` times per-pulse checks (section below).
+- `checks.R` times per-pulse checks and `lean.R` the lean floor (sections below).
 - `check.R` reruns into a scratch directory, diffs the structural CSVs,
   checks the timing rows, requires the gutted path to fail and guards
   package scope.
@@ -152,6 +152,42 @@ infinite mark. Only the full checks refuse a `priced` flag that disagrees
 with its mark, a duplicated context position and fills out of decision
 order. Those three can only come from a ledgr defect; they are the
 detectors the debug switch would hold.
+
+## Lean floor probe (`lean.R`)
+
+The fold in the proposed lean shape, with stages that emit their data and do
+no work, on the same recorded pulses. Each stage builds its outputs fresh
+with one `list()` call per group; P4 writes fills into reserved event rows,
+P5 commits the count and writes the pulse's diagnostic rows straight into
+typed columns; fixed `services` fields are locals. The only per-pulse check
+is the pinned strategy target check (`ledgr_validate_strategy_targets`) on
+decided pulses (response review D1-D4). The availability target check,
+which needs P2's provider view, is not in the probe.
+
+Microseconds per pulse, median of 5 measurements of ten folds each,
+including each fold's E setup, High performance plan, P-core affinity
+(`evidence/lean_timing.csv`):
+
+| | momentum 40 x 504 | fill-heavy 500 x 1,260 |
+| --- | ---: | ---: |
+| real loop today (edge-checks spike) | 1,954 | 5,988 |
+| real loop, edge checks only (edge-checks spike) | 1,389 | 4,984 |
+| skeleton, today's plumbing | 1,298 | 2,068 |
+| skeleton, lean plumbing | 81 | 339 |
+| of which the strategy target check | 6 | 141 |
+
+The lean skeleton reproduces every event, diagnostic row and equity row
+exactly, and dropping the reservation advance breaks the events
+(`evidence/lean_parity.csv`). Checking six 500 x 1,260 bar planes once at
+preparation takes 16 ms per run, about 13 us per pulse.
+
+Moving the data in the lean shape costs 16 to 25 times less than today's
+plumbing. On fill-heavy the largest remaining item is the strategy target
+check on 500 names. Adding the R floor spike's work floor for the same
+500 x 1,260 crossover (`dev/spikes/r_floor/`: 48 us per pulse with the
+strategy call, about 103 with fixed-basket availability semantics) gives a
+rough lean-core floor of about 0.45 ms per fill-heavy pulse against 6 ms
+today. That is a sum of two separate measurements, not a run.
 
 ## What the lean core may take from this
 
