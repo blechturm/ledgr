@@ -1770,7 +1770,7 @@ workstreams:
     cut: 12
     status: "pending"
     accepted: null
-    close_review: null
+    close_review: "Independent clean-context Codex CLI close review (Type 1, wrong answers only), round 1 CHANGES_REQUIRED (dev/lean_core/parity/evidence/ws27_close_review_round1.md): no kernel mismatch in 2,935 captured calls in both debug modes (all 37 unmocked kernel refusals), 39 input refusals with debug on and 2,500 extreme-value cases; all six mutations detected; gate record passes the current checker; 343 code lines. One evidence finding: LDG-3213 cited 2,240 generated-stream steps and 125 refusals where fifo_streams.csv records 1,560 and 181; corrected in 792f8227. Narrow round 2 PASS (ws27_close_review_round2.md): the corrected line and every other LDG-3213/LDG-3214 evidence number match their cited files. Awaiting maintainer acceptance."
     depends_on_workstream: 26
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 27, after LDG-3214", reason: "One claim joins LDG-3213 and LDG-3214: one lean R implementation applies every opening, fill and disposition for the fold, replay, import and recovery callers; it is bit-identical to the pinned kernel on every captured and generated call, including refusal class and message; it never calls the old arithmetic; every registered mutation fails; and after the subtraction review it meets its microsecond and line budgets or has an explicit maintainer acceptance."}
