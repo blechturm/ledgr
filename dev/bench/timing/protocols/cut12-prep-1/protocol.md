@@ -64,8 +64,8 @@ Private runs report counts and digests only.
 
 Sixteen cells: `prep`, `r1`-`r6` on `500x5040` and on `h1` (Cut 12
 decision (5)), and `prep` on the two intraday shapes (`prep_i5`,
-`prep_i20`, added at the maintainer's request for long, thin data). Five
-alternating pairs. A/A bound 1.0 marks a noise observation; in LDG-3217's
+`prep_i20`, added at the maintainer's request for long, thin data). Eight
+alternating pairs, the harness minimum. A/A bound 1.0 marks a noise observation; in LDG-3217's
 gate a cell passes at a median ratio of at most 1.0.
 
 ## Frozen pinned values
