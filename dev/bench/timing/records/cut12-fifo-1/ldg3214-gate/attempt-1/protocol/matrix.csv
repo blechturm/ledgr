@@ -1,0 +1,5 @@
+cell,workload,clock,args,pairs
+fold_10_49,fifo_block,block,caller=fold;bucket=10-49;reps=64,8
+fold_50plus,fifo_block,block,caller=fold;bucket=50+;reps=24,8
+replay_10_49,fifo_block,block,caller=replay;bucket=10-49;reps=64,8
+replay_50plus,fifo_block,block,caller=replay;bucket=50+;reps=24,8

@@ -1,0 +1,3 @@
+"workload","kernel","pulses","kernel_calls","fills","parity_calls","fallbacks","rounds","reps","pinned_us_per_pulse","candidate_us_per_pulse","candidate_us_per_pulse_min","candidate_us_per_pulse_max","budget_us_per_pulse","within_budget"
+"momentum_40x504","lean",504,21,296,21,NA,7,500,8,3.8,3.8,3.9,4.2,TRUE
+"fill_heavy_500x1260","lean",1260,1249,67725,1249,NA,7,5,228.6,103.2,101.6,104.8,113.2,TRUE
