@@ -7,7 +7,10 @@
 # function and pulse. A lean read path must produce the same stream.
 #
 #   Rscript dev/lean_core/parity/prep_digests.R --lib=<pinned library> --out=<dir>
-#     [--manifests=<dir>] [--workloads=id,...] [--against=<dir>]
+#     [--manifests=<dir>] [--workloads=id,...] [--against=<dir>] [--lean]
+#
+# --lean runs each workload on lean preparation (prepare.R,
+# lean_prepare_install(), restored after the workload).
 #
 # <out>/<workload>_reads.csv holds the per-call stream (not committed);
 # <manifests>/prep_digests.csv holds per workload and function the call count,
@@ -97,7 +100,8 @@ against <- pd_arg("against")
 rows <- list()
 for (id in ids) {
   t0 <- proc.time()[["elapsed"]]
-  s <- pd_stream(id)
+  restore <- if ("--lean" %in% commandArgs(TRUE)) lean$lean_prepare_install() else function() NULL
+  s <- tryCatch(pd_stream(id), finally = restore())
   utils::write.csv(s, file.path(out, paste0(id, "_reads.csv")), row.names = FALSE)
   for (fn in c("all", unique(s$fn))) {
     k <- if (fn == "all") s else s[s$fn == fn, ]
