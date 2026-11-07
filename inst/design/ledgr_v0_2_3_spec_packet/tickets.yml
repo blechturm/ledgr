@@ -1759,18 +1759,18 @@ workstreams:
   - id: 26
     name: "Lean core interface table and stage recorder (macro WS16)"
     cut: 12
-    status: "pending"
-    accepted: null
-    close_review: null
+    status: "complete"
+    accepted: "2026-11-07 by the maintainer, taking the third correction round (macro governance: a third round goes to the maintainer) on the replay evidence instead of a fourth review."
+    close_review: "Independent clean-context Codex CLI close review (Type 1, wrong answers only). Round 1 CHANGES_REQUIRED (dev/lean_core/recorder/evidence/ws26_close_review_round1.md): the comparison did not pair environments one to one, so split sharing between closures passed, and ignored environment and binding locks; fixed in 29f25683, every registered capture replays clean under it (eabd0cd4, replay_strict_compare.csv: 23,224 records). Round 2 CHANGES_REQUIRED (ws26_close_review_round2.md): an atomic value with an equivalent environment attribute was falsely rejected and an early identical() let it skip the pairing; fixed in 3f2f6553 (attributes compared before bare payloads). Round 3 CHANGES_REQUIRED (ws26_close_review_round3.md): removing attributes cleared the S4 flag, so a strategy branching on isS4() replayed clean against a corrupted capture; fixed in b36a4a59 (the flag compared first). The round-3 witness is rejected; the 13 registered captures and the fixture, 500 x 1,260/2,520/5,040 and intraday preparation captures replay clean under the final comparison; private H1 (18,557 calls) replays clean under round 2's (replay_prep.csv). b38d2130 also stops the recorder logging handler and writer calls outside every recorded boundary (a quadratic cost in boundary-subset captures); full-capture manifests are byte-identical."
     depends_on_workstream: 25
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 26, after LDG-3212", reason: "One claim joins LDG-3211 and LDG-3212: the interface table names every field the first checkpoint reads or writes with type, axis, unit, invariant, producer, validator and owner, matched to the code at pin d5b3a151; the recorder captures each named boundary's complete semantic input and output from the pinned build as frozen values; re-running the pinned boundary function on each captured input, given only the fields the table names, reproduces the captured output exactly; and each registered capture omission makes that check or the comparison fail."}
   - id: 27
     name: "Lean R FIFO kernel (macro WS16 first checkpoint)"
     cut: 12
-    status: "pending"
-    accepted: null
-    close_review: "Independent clean-context Codex CLI close review (Type 1, wrong answers only), round 1 CHANGES_REQUIRED (dev/lean_core/parity/evidence/ws27_close_review_round1.md): no kernel mismatch in 2,935 captured calls in both debug modes (all 37 unmocked kernel refusals), 39 input refusals with debug on and 2,500 extreme-value cases; all six mutations detected; gate record passes the current checker; 343 code lines. One evidence finding: LDG-3213 cited 2,240 generated-stream steps and 125 refusals where fifo_streams.csv records 1,560 and 181; corrected in 792f8227. Narrow round 2 PASS (ws27_close_review_round2.md): the corrected line and every other LDG-3213/LDG-3214 evidence number match their cited files. Awaiting maintainer acceptance."
+    status: "complete"
+    accepted: "2026-11-07 by the maintainer after the narrow round 2 PASS (ws27_close_review_round2.md)."
+    close_review: "Independent clean-context Codex CLI close review (Type 1, wrong answers only), round 1 CHANGES_REQUIRED (dev/lean_core/parity/evidence/ws27_close_review_round1.md): no kernel mismatch in 2,935 captured calls in both debug modes (all 37 unmocked kernel refusals), 39 input refusals with debug on and 2,500 extreme-value cases; all six mutations detected; gate record passes the current checker; 343 code lines. One evidence finding: LDG-3213 cited 2,240 generated-stream steps and 125 refusals where fifo_streams.csv records 1,560 and 181; corrected in 792f8227. Narrow round 2 PASS (ws27_close_review_round2.md): the corrected line and every other LDG-3213/LDG-3214 evidence number match their cited files."
     depends_on_workstream: 26
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 27, after LDG-3214", reason: "One claim joins LDG-3213 and LDG-3214: one lean R implementation applies every opening, fill and disposition for the fold, replay, import and recovery callers; it is bit-identical to the pinned kernel on every captured and generated call, including refusal class and message; it never calls the old arithmetic; every registered mutation fails; and after the subtraction review it meets its microsecond and line budgets or has an explicit maintainer acceptance."}
