@@ -2,7 +2,9 @@
 # identical() over values, names, attributes, types and order. Dropped: the
 # table's clock fields, only at their owners' paths (lc_clock_paths()), and
 # function source references (srcref, srcfile, wholeSrcref). Environments and
-# closures are compared by content. Returns NULL, or the first difference.
+# closures are compared by content, lock state and sharing: each environment
+# pairs with exactly one environment on the other side. Returns NULL, or the
+# first difference.
 
 # Where the clock fields live: a stage's timing locals (its value, P1's
 # observation, the arguments that hand them on) and the telemetry environment.
@@ -23,15 +25,27 @@ lc_compare <- function(x, y, clock, owners = character(), path = "", seen = new.
   if (is.environment(x) || is.environment(y)) {
     if (!is.environment(x) || !is.environment(y)) return(diff("environment vs non-environment"))
     if (lc_special_env(x) || lc_special_env(y)) return(if (!identical(x, y)) diff("different special environment"))
-    pair <- paste(rlang::obj_address(x), rlang::obj_address(y))
-    if (!is.null(seen[[pair]])) return(NULL)
-    assign(pair, TRUE, envir = seen)
+    # Environments must correspond one to one across the whole graph, so two
+    # closures that share state on one side share it on the other (WS26 close
+    # review finding 1).
+    kx <- paste0("x:", rlang::obj_address(x))
+    ky <- paste0("y:", rlang::obj_address(y))
+    mx <- seen[[kx]]
+    my <- seen[[ky]]
+    if (!is.null(mx) || !is.null(my)) {
+      if (identical(mx, ky) && identical(my, kx)) return(NULL)
+      return(diff("environment sharing differs"))
+    }
+    assign(kx, ky, envir = seen)
+    assign(ky, kx, envir = seen)
+    if (environmentIsLocked(x) != environmentIsLocked(y)) return(diff("environment locked in one only"))
     nx <- setdiff(sort(ls(x, all.names = TRUE), method = "radix"), drop)
     ny <- setdiff(sort(ls(y, all.names = TRUE), method = "radix"), drop)
     if (!identical(nx, ny)) return(diff(paste("binding names differ:", paste(setdiff(union(nx, ny), intersect(nx, ny)), collapse = ","))))
     for (n in nx) {
       ax <- bindingIsActive(n, x)
       if (ax != bindingIsActive(n, y)) return(diff(paste0("binding ", n, " active in one only")))
+      if (bindingIsLocked(n, x) != bindingIsLocked(n, y)) return(diff(paste0("binding ", n, " locked in one only")))
       vx <- if (ax) activeBindingFunction(n, x) else get(n, envir = x)
       vy <- if (ax) activeBindingFunction(n, y) else get(n, envir = y)
       d <- lc_compare(vx, vy, clock, owners, paste0(path, "$", n), seen)
