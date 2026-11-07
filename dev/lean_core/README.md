@@ -132,13 +132,19 @@ reading every public request shape on every decision pulse. Evidence
 - A large atomic leaf (stored separately by the binding store) whose
   attribute is an environment shared with another binding thaws as two
   copies, so the sharing is lost (Codex round 2, synthetic witness; no
-  registered workload contains one).
-- The round-2 read-only check (a fresh thaw of the input) was verified on
-  every workload except fill-heavy, whose last full replay predates it;
-  rerun fill-heavy with the next table change.
+  registered workload contains one). Since the WS26 close review the
+  comparison pairs environments one to one, so such a capture would fail
+  replay rather than pass silently.
 - Review: Codex round 1 (eight findings, all fixed) and a narrow round 2
   limited to wrong answers (`recorder/evidence/codex_review_round*.md`).
-  Round-1 items outside that question were not re-reviewed.
+  Round-1 items outside that question were not re-reviewed. The WS26 close
+  review (`recorder/evidence/ws26_close_review_round1.md`) found that the
+  comparison ignored environment sharing and lock state; both are now
+  compared, and every existing capture replays clean under the stricter
+  comparison, fill-heavy's full replay included
+  (`recorder/evidence/replay_strict_compare.csv`, 23,224 records over the
+  ten default workloads, the history fixture and the preparation fixture and
+  500 x 1,260 captures).
 
 ## FIFO kernel (LDG-3213)
 
