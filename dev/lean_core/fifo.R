@@ -76,15 +76,21 @@ lean_lot_input <- function(operation, pos, side, qty, price, fee = 0,
   if (.lean_debug) ledgr_lot_input(operation, pos, side, qty, price, fee, position_before, realized_model_pnl)
   m <- length(pos)
   fee <- rep_len(fee, m)
-  bad <- anyNA(pos) || any(pos < 1L) || anyNA(side) ||
-    any(!is.finite(qty)) || any(!is.finite(price)) || any(!is.finite(fee)) || any(fee < 0)
+  # One message for every rule, so their order is free. min() and one sum()
+  # (non-finite or overflowing) replace the element-wise predicates; the
+  # exact finiteness checks run only when the sum is not finite or a value
+  # is not double (a mistyped value still refuses here, as pinned).
+  bad <- m > 0L && (anyNA(pos) || anyNA(side) || min(pos) < 1L ||
+    (!(is.double(qty) && is.double(price) && is.double(fee) && is.finite(sum(qty, price, fee))) &&
+       (any(!is.finite(qty)) || any(!is.finite(price)) || any(!is.finite(fee)))) ||
+    min(fee) < 0)
   if (!bad) {
     bad <- if (identical(operation, .lean_opening)) {
-      any(side != 0L) || any(qty == 0) || any(fee != 0)
+      m > 0L && (any(side != 0L) || any(qty == 0) || any(fee != 0))
     } else if (identical(operation, .lean_fill)) {
-      any(side != 1L & side != -1L) || any(qty <= 0) || any(price <= 0)
+      m > 0L && (any(side != 1L & side != -1L) || min(qty) <= 0 || min(price) <= 0)
     } else if (identical(operation, .lean_disposition)) {
-      any(side != 1L & side != -1L) || any(qty <= 0) || any(price < 0) || any(fee != 0)
+      m > 0L && (any(side != 1L & side != -1L) || min(qty) <= 0 || min(price) < 0 || any(fee != 0))
     } else {
       TRUE
     }
@@ -134,7 +140,7 @@ lean_fill_leg_fees <- function(fee, close_qty, open_qty) {
 lean_lot_apply <- function(book, input) {
   pos <- input$pos
   m <- length(pos)
-  if (any(pos > length(book$offset))) {
+  if (m > 0L && max(pos) > length(book$offset)) {
     rlang::abort("A lot operation names a position outside the book axis.",
                  class = "ledgr_invalid_lot_fill")
   }
@@ -150,6 +156,8 @@ lean_lot_apply <- function(book, input) {
   q <- book$lot_qty
   p <- book$lot_price
   off <- book$offset
+  # Each row's segment offset, fixed until the segments grow (below).
+  base <- off[pos]
   cap <- book$capacity
   head <- book$head[pos]
   tail <- book$tail[pos]
@@ -168,35 +176,32 @@ lean_lot_apply <- function(book, input) {
   close_qty <- numeric(m)
   realized_close <- numeric(m)
   basis_delta <- numeric(m)
-  active <- which(consuming & head <= tail & q[off[pos] + head] * side < 0)
+  active <- which(consuming & head <= tail & q[base + head] * side < 0)
   while (length(active) > 0L) {
     a <- active
     if (debug) steps[a] <- steps[a] + 1L
-    slot <- off[pos[a]] + head[a]
+    slot <- base[a] + head[a]
     old <- q[slot]
     old_price <- p[slot]
-    buy <- side[a] > 0L
+    s <- side[a]
     current <- abs(old)
     take <- pmin(current, remaining[a])
-    # Buy closes a short: (old price - price) * take; sell: (price - old) * take.
-    diff <- price[a] - old_price
-    diff[buy] <- old_price[buy] - price[a][buy]
-    realized_close[a] <- realized_close[a] + diff * take
-    tp <- take * old_price
-    bd <- basis_delta[a]
-    bd[buy] <- bd[buy] + tp[buy]
-    bd[!buy] <- bd[!buy] - tp[!buy]
-    basis_delta[a] <- bd
+    # Buy closes a short: (old price - price) * take; sell: (price - old) *
+    # take. The side (+1 or -1) carries the sign: negation and a product
+    # with +-1 are exact, so these are the pinned operations bit for bit.
+    realized_close[a] <- realized_close[a] + ((price[a] - old_price) * -s) * take
+    basis_delta[a] <- basis_delta[a] + s * (take * old_price)
     current <- current - take
     left <- remaining[a] - take
     close_qty[a] <- close_qty[a] + take
-    # Dust snap: a remainder or lot within eps * scale of zero is zero.
-    tol <- lean_lot_tol(quantity[a], take, current, left)
+    # Dust snap: a remainder or lot within eps * scale of zero is zero. The
+    # pinned scale also takes |take| and |left|; both are at most the row's
+    # quantity (take <= remaining <= quantity), so they never set the max.
+    tol <- lean_lot_tol(quantity[a], current)
     left[abs(left) <= tol] <- 0
     remaining[a] <- left
     consumed <- current <= tol
-    new_signed <- current
-    new_signed[buy] <- -current[buy]
+    new_signed <- -s * current
     new_signed[consumed] <- 0
     written <- new_signed
     written[consumed] <- NA_real_
@@ -205,7 +210,7 @@ lean_lot_apply <- function(book, input) {
     net[a] <- (net[a] - old) + new_signed
     head[a] <- head[a] + consumed
     rest <- a[remaining[a] > 0 & head[a] <= tail[a]]
-    active <- rest[which(q[off[pos[rest]] + head[rest]] * side[rest] < 0)]
+    active <- rest[which(q[base[rest] + head[rest]] * side[rest] < 0)]
   }
   open_qty <- as.numeric(remaining)
 
@@ -215,9 +220,13 @@ lean_lot_apply <- function(book, input) {
   tail[reset] <- 0L
   live <- tail - head + 1L
   realized_delta <- realized_close - fee
-  # A fill's closing results, kept for its overflow check (copy on modify).
-  basis_closing <- basis_delta
-  net_closing <- net
+  # A fill's closing results matter only to its overflow check: kept (copy
+  # on modify) only when one sum() says some value is not finite.
+  closing_nonfinite <- !is.finite(sum(realized_delta, basis_delta, net))
+  if (closing_nonfinite) {
+    basis_closing <- basis_delta
+    net_closing <- net
+  }
 
   # Appended lots: an opening's signed quantity at its basis (no realized
   # step, no cash), or a consuming row's remainder on its own side.
@@ -226,9 +235,7 @@ lean_lot_apply <- function(book, input) {
   if (length(a) > 0L) {
     signed <- quantity[a]
     cons_a <- consuming[a]
-    signed[cons_a] <- open_qty[a][cons_a]
-    short_a <- cons_a & side[a] < 0L
-    signed[short_a] <- -open_qty[a][short_a]
+    signed[cons_a] <- side[a][cons_a] * open_qty[a][cons_a]
     bd <- signed * price[a]
     bd[cons_a] <- basis_delta[a][cons_a] + bd[cons_a]
     basis_delta[a] <- bd
@@ -269,13 +276,17 @@ lean_lot_apply <- function(book, input) {
   # refuses at its closing overflow or, after its through check, at a later
   # overflow; a non-finite compensation reaches only the last row. From a
   # corrupt book a non-finite result is a state invariant instead.
-  fill <- op == .lean_fill
   overflow <- integer()
-  nonfinite <- !is.finite(sum(position_before, net, close_qty, open_qty, realized_close,
-                              realized_delta, event_realized, event_cost_basis,
-                              basis_closing, net_closing, new_basis, comp))
+  nonfinite <- closing_nonfinite ||
+    !is.finite(sum(position_before, net, close_qty, open_qty, realized_close,
+                   realized_delta, event_realized, event_cost_basis, new_basis, comp))
   if (nonfinite) {
-    closing_overflow <- fill & !(is.finite(realized_delta) & is.finite(basis_closing) & is.finite(net_closing))
+    fill <- op == .lean_fill
+    closing_overflow <- if (closing_nonfinite) {
+      fill & !(is.finite(realized_delta) & is.finite(basis_closing) & is.finite(net_closing))
+    } else {
+      logical(m)
+    }
     late_overflow <- fill & !closing_overflow & !(is.finite(new_basis) & is.finite(net) &
       is.finite(event_cost_basis) & is.finite(event_realized))
     if (m > 0L && fill[[m]] && !is.finite(comp)) late_overflow[[m]] <- !closing_overflow[[m]]
@@ -292,7 +303,7 @@ lean_lot_apply <- function(book, input) {
   bad_through <- integer()
   through <- which(consuming & open_qty > 0 & live > 0L)
   if (length(through) > 0L) {
-    front <- sign(q[off[pos[through]] + head[through]])
+    front <- sign(q[base[through] + head[through]])
     bad_through <- through[is.na(front) | front != side[through]]
   }
   d <- which(op == .lean_disposition)
@@ -343,13 +354,13 @@ lean_lot_apply <- function(book, input) {
     k <- compact
     moved <- rep.int(k, live[k])
     j <- sequence(live[k])
-    src <- off[pos[moved]] + head[moved] + j - 1L
-    dst <- off[pos[moved]] + j
+    src <- base[moved] + head[moved] + j - 1L
+    dst <- base[moved] + j
     q[dst] <- q[src]
     p[dst] <- p[src]
     spare <- cap[pos[k]] - live[k]
     cleared <- rep.int(k, spare)
-    clear <- off[pos[cleared]] + live[cleared] + sequence(spare)
+    clear <- base[cleared] + live[cleared] + sequence(spare)
     q[clear] <- NA_real_
     p[clear] <- NA_real_
     head[k] <- 1L

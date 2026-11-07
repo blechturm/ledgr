@@ -251,7 +251,16 @@ The rules:
   `git archive` and installed with `R CMD INSTALL` into its own library.
   Every measured process loads ledgr from its arm's library and records the
   loaded namespace path and the arm's commit stamp; the checker refuses a row
-  that loaded the other arm.
+  that loaded the other arm. A gate on code outside the package (the WS16
+  lean core) names it with `--candidate-overlay=<repository paths>`: the
+  runner exports those paths at the harness commit, hands every workload the
+  export and the slot's arm (`args$.overlay`, `args$.arm`) and appends the
+  trees to the candidate's product, so both arms may install one commit. The
+  protocol's workload runs overlay code only in the candidate arm; the base
+  arm may read the overlay's fixtures. It returns `overlay_arm`, the arm whose
+  code it timed; a slot whose workload does not fails, so a protocol that
+  ignores the overlay cannot turn a same-commit record into a gate. The
+  checker verifies the trees against the harness commit.
 - **Pairing.** Each slot is one fresh R process for one cell and one arm.
   Within a pair every cell runs once per arm, the two arms back to back, base
   first in odd pairs and candidate first in even pairs. The checker verifies

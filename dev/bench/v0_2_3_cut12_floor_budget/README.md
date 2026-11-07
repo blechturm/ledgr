@@ -21,3 +21,16 @@ The spike is 0.41x pinned on fill-heavy, so LDG-3214's 0.5x bar is
 reachable in R. Run uncompiled (JIT off), the same spike measured 254 us,
 slower than pinned: a probe must compile both arms. The preparation family's
 per-pulse budget is set in LDG-3215 once its tile design exists.
+
+## FIFO family close (LDG-3214)
+
+| Script | Output | Question |
+| --- | --- | --- |
+| `fifo_probe.R <lib> <caps> 7 lean` | `evidence/fifo_lean.csv` | R11: the lean kernel plus its input boundary per pulse against the budgets above |
+| `fifo_groups.R <lib> <caps> <tests> 7` | `evidence/fifo_groups.csv` | Decision (5): no operation x bucket group (opening, fill, disposition x 1-9, 10-49, 50+) over every capture slower than pinned in total; descriptive |
+| `fifo_profile.R <lib> <caps> 10` | `evidence/fifo_profile.csv` | per-function sample shares of the lean kernel on the fill-heavy calls |
+
+The per-bucket fill-heavy gate runs through the shared harness,
+`dev/bench/timing/protocols/cut12-fifo-1/`. `fifo_probe.R` in `spike` mode
+reproduces the budget run above; its timing column is now named
+`candidate_us_per_pulse`.

@@ -10,7 +10,7 @@
 #
 # Usage: Rscript --no-init-file measure.R --protocol=<dir> --lib=<arm library>
 #   --slot=<n> --pair=<k> --arm=base|candidate --cell=<cell> --work=<dir>
-#   --out=<row csv> [--test-kill]
+#   --out=<row csv> [--test-kill] [--overlay=<exported overlay dir>]
 #
 # --test-kill is the interruption demonstration's hook: the process kills
 # itself after loading ledgr, before the workload, so no row is written. The
@@ -53,9 +53,18 @@ measure <- function() {
   row$clock <<- cell$clock
   workloads <- new.env()
   sys.source(file.path(protocol$dir, "workloads.R"), envir = workloads)
-  result <- get(cell$workload, envir = workloads, inherits = FALSE)(timing_parse_args(cell$args), opt("work"))
+  args <- timing_parse_args(cell$args)
+  # A candidate-overlay window (runner.R --candidate-overlay) hands the
+  # workload the exported overlay and the slot's arm.
+  if (is.character(opt("overlay"))) args[c(".overlay", ".arm")] <- list(opt("overlay"), row$arm)
+  result <- get(cell$workload, envir = workloads, inherits = FALSE)(args, opt("work"))
   seconds <- result$seconds[cell$clock]
   if (length(seconds) != 1L || is.na(names(seconds))) stop("workload did not report clock ", cell$clock)
+  # Only a workload that runs the overlay may separate two arms on one
+  # commit: it must name the arm whose code it timed, or the slot fails.
+  if (is.character(opt("overlay")) && !identical(result$overlay_arm, row$arm)) {
+    stop("workload did not report running the overlay for arm ", row$arm)
+  }
   work <- as.character(result$work)
   if (length(work) != 1L || is.na(work) || !nzchar(trimws(work))) stop("workload did not report its work string")
   row$seconds <<- sprintf("%.17g", as.double(seconds))

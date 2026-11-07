@@ -21,6 +21,11 @@
 #   --disposition-role=<role>    of the earlier attempt, who wrote it (maintainer or agent) and,
 #   --disposition-ref=<ref>      for a gate, the maintainer decision it rests on
 #   --test-kill-slot=<n>         interruption demonstration: slot n's process kills itself
+#   --candidate-overlay=<p,...>  repository paths (e.g. dev/lean_core) exported at the harness
+#                                commit and handed to every slot's workload as args$.overlay,
+#                                with args$.arm; the candidate arm is its commit plus these
+#                                trees, so one commit on both arms is a gate, not an A/A record.
+#                                The workload must return overlay_arm (measure.R fails the slot)
 #
 # The benchmark manual's "Before/After Regression Gates" states the host,
 # input, attempt and persistence rules this script applies; the sections
@@ -62,10 +67,18 @@ local({
 
   shas <- c(base = git("rev-parse", "--verify", paste0(opt("base"), "^{commit}")),
     candidate = git("rev-parse", "--verify", paste0(opt("candidate"), "^{commit}")))
-  mode <- if (identical(shas[["base"]], shas[["candidate"]])) "aa" else "gate"
-
   # Each input file must equal its source's text at the harness commit.
   harness_commit <- git("rev-parse", "HEAD")[[1L]]
+
+  # The candidate overlay: committed trees at the harness commit, recorded as
+  # path=tree pairs and appended to the candidate's product identity.
+  overlay_paths <- trimws(strsplit(opt("candidate-overlay", ""), ",", fixed = TRUE)[[1L]])
+  overlay_paths <- overlay_paths[nzchar(overlay_paths)]
+  overlay <- if (!length(overlay_paths)) "none" else paste(vapply(overlay_paths, function(p) {
+    tree <- tryCatch(git("rev-parse", "--verify", paste0(harness_commit, ":", p)), error = function(e) refuse(conditionMessage(e)))
+    paste0(p, "=", tree[[1L]])
+  }, ""), collapse = ";")
+  mode <- if (identical(shas[["base"]], shas[["candidate"]]) && overlay == "none") "aa" else "gate"
   harness_source <- timing_repo_path(here, repo)
   protocol_source <- timing_repo_path(protocol$dir, repo)
   sources <- timing_input_sources(harness_source, protocol_source)
@@ -119,6 +132,13 @@ local({
     message(utc(), " installing ", arm, " ", shas[[arm]])
     libs[[arm]] <- install_arm(arm, shas[[arm]])
   }
+  overlay_dir <- ""
+  if (overlay != "none") {
+    zip <- file.path(tempdir(), "overlay.zip")
+    git(c("archive", "--format=zip", "-o", shQuote(zip), harness_commit, shQuote(overlay_paths)))
+    utils::unzip(zip, exdir = file.path(tempdir(), "overlay"))
+    overlay_dir <- normalizePath(file.path(tempdir(), "overlay"), winslash = "/")
+  }
   probe <- check_root("host check before the window")
 
   # -------------------------------------------------------------------------
@@ -153,8 +173,9 @@ local({
     harness_commit = harness_commit, harness_source = harness_source, protocol_source = protocol_source,
     inputs_start = inputs_start, inputs_end = "",
     base_commit = shas[["base"]], base_product = product(shas[["base"]]), base_lib = libs[["base"]],
-    candidate_commit = shas[["candidate"]], candidate_product = product(shas[["candidate"]]),
-    candidate_lib = libs[["candidate"]],
+    candidate_commit = shas[["candidate"]],
+    candidate_product = paste(c(product(shas[["candidate"]]), if (overlay != "none") paste0("overlay:", overlay)), collapse = ";"),
+    candidate_lib = libs[["candidate"]], overlay = overlay,
     root_id = root$id, root_affinity = sprintf("%.0f", root$affinity), plan_guid = probe$plan_guid,
     cpu = probe$cpu_name, logical_cores = as.character(parallel::detectCores()), R_version = R.version.string,
     os = paste(Sys.info()[c("sysname", "release", "version")], collapse = " "),
@@ -205,7 +226,8 @@ local({
     cmd <- c("--no-init-file", shQuote(file.path(frozen_harness, "measure.R")),
       shQuote(paste0("--protocol=", frozen_protocol)), shQuote(paste0("--lib=", libs[[s$arm]])),
       paste0("--slot=", s$slot), paste0("--pair=", s$pair), paste0("--arm=", s$arm), shQuote(paste0("--cell=", s$cell)),
-      shQuote(paste0("--out=", out)), if (identical(s$slot, kill_slot)) "--test-kill")
+      shQuote(paste0("--out=", out)), if (identical(s$slot, kill_slot)) "--test-kill",
+      if (nzchar(overlay_dir)) shQuote(paste0("--overlay=", overlay_dir)))
     launched <- as.double(Sys.time())
     status <- timing_with_slot_dir(work_dir, s$slot, function(slot_dir) {
       system2(rscript, c(cmd, shQuote(paste0("--work=", slot_dir))), stdout = log, stderr = log)

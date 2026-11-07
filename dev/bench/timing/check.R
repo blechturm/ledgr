@@ -15,7 +15,8 @@
 #
 # --aa checks a self-versus-self record (both arms one commit): validity
 # only, with each cell's ratio reported as a noise observation. In gate mode
-# an A/A record always fails. Exit status 0 means PASS (gate) or VALID (A/A).
+# an A/A record always fails. A record with a candidate overlay is a gate even
+# when both arms install one commit. Exit status 0 means PASS (gate) or VALID (A/A).
 #
 # Usage: Rscript dev/bench/timing/check.R --protocol=<folder> --record=<attempt dir> [--aa]
 
@@ -60,7 +61,7 @@ timing_check <- function(protocol_dir, record, aa = FALSE, repo) {
       s[[field]] <- NA_character_
     }
   }
-  for (field in c("disposition_role", "disposition_ref")) if (is.null(s[[field]])) s[[field]] <- "none"
+  for (field in c("disposition_role", "disposition_ref", "overlay")) if (is.null(s[[field]])) s[[field]] <- "none"
   if (!identical(s$protocol, protocol$id)) fail("protocol changed", sprintf("record ran protocol %s", s$protocol))
   if (!identical(s$status, "complete")) fail("attempt status", sprintf("%s: %s", s$status, s$status_reason))
   blank <- function(x) is.na(x) || !nzchar(trimws(x)) || identical(trimws(x), "none")
@@ -83,7 +84,23 @@ timing_check <- function(protocol_dir, record, aa = FALSE, repo) {
     timing_verify_inputs(repo, s$harness_commit, timing_input_files(file.path(record, "harness"), file.path(record, "protocol")),
       timing_input_sources(s$harness_source, s$protocol_source))
   if (saved != "verified") fail("inputs changed", sprintf("saved copies: %s", saved))
-  same_tree <- identical(s$base_commit, s$candidate_commit) || identical(s$base_product, s$candidate_product)
+  # A candidate overlay (runner.R --candidate-overlay) must name the harness
+  # commit's trees and be the candidate product's suffix; it alone separates
+  # two arms on one commit.
+  if (!identical(s$overlay, "none")) {
+    pairs <- strsplit(strsplit(s$overlay, ";", fixed = TRUE)[[1L]], "=", fixed = TRUE)
+    trees <- vapply(pairs, function(p) {
+      out <- suppressWarnings(system2("git", c("-C", shQuote(repo), "rev-parse", "--verify",
+        shQuote(paste0(s$harness_commit, ":", p[[1L]]))), stdout = TRUE, stderr = FALSE))
+      if (is.null(attr(out, "status")) && length(out) == 1L) out else NA_character_
+    }, "")
+    if (!identical(unname(trees), vapply(pairs, `[`, "", 2L)) ||
+        !endsWith(s$candidate_product, paste0(";overlay:", s$overlay))) {
+      fail("overlay", sprintf("overlay %s is not the harness commit's trees or the candidate product", s$overlay))
+    }
+  }
+  same_tree <- (identical(s$base_commit, s$candidate_commit) && identical(s$overlay, "none")) ||
+    identical(s$base_product, s$candidate_product)
   if (aa && !(same_tree && identical(s$mode, "aa"))) fail("not an A/A record", "--aa needs both arms on one commit")
   if (!aa && (same_tree || !identical(s$mode, "gate"))) {
     fail("A/A record presented as a gate", sprintf("base %s, candidate %s", s$base_commit, s$candidate_commit))

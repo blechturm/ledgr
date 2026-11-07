@@ -1,7 +1,7 @@
 "mutation","line","streams_differing","fill_heavy_calls_differing","example_stream","fails_parity"
-"ordered_total_by_sum",257,5,1249,"random_conflict_free_1",TRUE
-"no_dust_snap",195,1,0,"dust_snaps",TRUE
-"swapped_fee_split",126,9,0,"long_opening_negative_basis",TRUE
-"kahan_step_on_openings",258,1,0,"kahan_carried_compensation",TRUE
-"merged_repeated_openings",433,6,0,"repeated_instruments",TRUE
-"last_row_refusal",318,1,0,"refuse_earliest_row",TRUE
+"ordered_total_by_sum",264,5,1249,"random_conflict_free_1",TRUE
+"no_dust_snap",201,1,0,"dust_snaps",TRUE
+"swapped_fee_split",132,9,0,"long_opening_negative_basis",TRUE
+"kahan_step_on_openings",265,1,0,"kahan_carried_compensation",TRUE
+"merged_repeated_openings",444,6,0,"repeated_instruments",TRUE
+"last_row_refusal",329,1,0,"refuse_earliest_row",TRUE
