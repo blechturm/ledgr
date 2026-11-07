@@ -90,6 +90,9 @@ lc_compare <- function(x, y, clock, owners = character(), path = "", seen = new.
   # when the objects are identical, then the payloads are compared without
   # them, so equivalent environment attributes neither fail a correct replay
   # nor skip the pairing (WS26 close review round 2).
+  # The S4 flag is not an attribute and stripping attributes clears it, so
+  # it is compared first (WS26 close review round 3).
+  if (isS4(x) != isS4(y)) return(diff("S4 in one only"))
   ax <- attributes(x)
   ay <- attributes(y)
   if (is.null(ax) && is.null(ay)) {

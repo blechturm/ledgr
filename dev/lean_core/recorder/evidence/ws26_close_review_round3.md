@@ -1,0 +1,17 @@
+CHANGES_REQUIRED
+
+Narrow Type 1 re-review at `3f2f65537c4f2d26c93fa66bb857856034362d91`. One executed finding remains.
+
+1. **[P2] Stripping attributes erases the S4 flag and accepts behaviorally different strategy state.** Location: `dev/lean_core/recorder/compare.R:100-101`.
+
+   Ran [s4_capture.R](round3/s4_capture.R). An instance of a class extending `numeric` and an S3 numeric vector constructed with the same value and class attribute both have `typeof() == "double"` and identical attributes, but `isS4()` is respectively `TRUE` and `FALSE`, and `identical()` rejects them. Attribute comparison succeeds; `attributes(v) <- NULL` then clears the S4 flag, and the bare-payload comparison incorrectly returns `NULL` in both directions.
+
+   The witness also captures three P2 calls through the pinned `d5b3a151` build, using the small A0 acquisition fixture and public snapshot/experiment/run APIs. The strategy closes over that S4 numeric marker and returns `ctx$hold()` when `isS4(marker)`, otherwise `ctx$hold() * 0`; both branches return full named numeric targets. The clean capture replays **3/3** calls successfully. Changing only the marker in the first record's frozen expected output to the S3 vector, while retaining its numeric payload and complete attributes, still replays **3/3** successfully. The input and pinned boundary function are unchanged. The first record's complete expected/actual output comparison returns `NULL`, although invoking those two captured strategy states with the same hold context produces **`AAA = 0` versus `AAA = 2`**.
+
+   [fresh_replay.R](round3/fresh_replay.R) independently runs the production recorder's `run.R --replay` in fresh R processes. Both clean and corrupted captures again pass **3/3**, without the witness's class registration or workload code present in those processes. Evidence: [capture output](round3/s4_capture.txt), [fresh-process output](round3/fresh_replay.txt), and [corrupted fresh replay](round3/s4_corrupted_fresh_replay.csv).
+
+   Retain the S4 distinction when comparing payloads; it is not represented in `attributes()` and must survive normalization. This violates interface-table Section 14's complete-output comparison and its inclusion of P2 strategy closure state. The preserved execution rule group is [Fold Core And Output Handlers](../ws26-close/inst/design/contracts.md#contract-execution-fold-core). Per the brief, a further correction goes to the maintainer.
+
+Round-2 verification passed: adapted copies of [atomic_attribute_capture.R](round3/atomic_attribute_capture.R) and [graph_probe.R](round3/graph_probe.R) change only output destinations, the run ID and the assertions describing the corrected verdicts. Equivalent atomic environment attributes replay **3/3**, including fresh-process replay. Split sharing through atomic/list attributes, parents and active-binding functions is rejected in both directions; the identical-atomic-object bypass is also rejected ([capture output](round3/atomic_attribute_capture.txt), [graph output](round3/graph_probe.txt)).
+
+Additional [payload probes](round3/payload_probe.txt) correctly reject the exercised factor, Date, POSIXct, difftime, dimensions, names, storage-type, missing-value, S4-slot and external-pointer differences. All new scripts, captures and outputs are under `round3/`; no worktree files or registered tests were edited, and other host R processes were left alone.
