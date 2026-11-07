@@ -97,7 +97,10 @@ lc_prep_fixture_params <- list(long = 30L, mid = 12L, short = 10L, min_obs = 8L,
 #   R7, R8 (fixture only): bar frame and feature matrix, lookback = Inf
 # With params$trade the strategy then trades monthly top-n momentum (the
 # registered H1 strategy, as dev/bench/v0_2_3_ws16_entry/workloads.R).
+# With params$read_at (intraday shapes, where schedules refuse more than one
+# pulse per session) it reads only on pulses whose time ends with it.
 lc_prep_strategy <- function(ctx, params) {
+  if (!is.null(params$read_at) && !endsWith(ctx$ts_utc, params$read_at)) return(ctx$hold())
   ledgr::ledgr_history_matrix(ctx, bar = "close", lookback = params$long)
   ledgr::ledgr_history_matrix(ctx, feature = params$feature, lookback = params$long)
   ledgr::ledgr_history_frame(ctx, bar = "close", lookback = params$mid, instruments = "decision_axis",
@@ -134,4 +137,34 @@ lc_prep_shape_experiment <- function(snapshot, universe = NULL) {
     args$valuation_policy <- ledgr::ledgr_valuation_stale(5L)
   }
   do.call(ledgr::ledgr_experiment, args)
+}
+
+# Long and thin intraday shapes: rectangular 5-minute bars (78 per weekday,
+# closes 14:35-21:00 UTC, whole seconds) on the bar-native clock, so every
+# bar is a pulse. The request set reads once a day, at the 21:00 close, with
+# lookbacks in bars: 30 days, 5 days, 1 day.
+lc_prep_intraday_snapshot <- function(n_inst, n_days, db_path, snapshot_id, seed = 20261107L) {
+  days <- seq(as.Date("2015-01-05"), by = "day", length.out = ceiling(n_days * 7 / 5) + 7L)
+  days <- days[!format(days, "%u") %in% c("6", "7")][seq_len(n_days)]
+  ts <- as.POSIXct(paste(rep(days, each = 78L), "14:30:00"), tz = "UTC") + rep(300 * seq_len(78L), n_days)
+  old <- if (exists(".Random.seed", globalenv())) get(".Random.seed", globalenv())
+  on.exit(if (is.null(old)) rm(".Random.seed", envir = globalenv()) else assign(".Random.seed", old, globalenv()))
+  set.seed(seed)
+  ids <- sprintf("I%02d", seq_len(n_inst))
+  bars <- do.call(rbind, lapply(seq_len(n_inst), function(i) {
+    close <- round((50 + 10 * i) * exp(cumsum(stats::rnorm(length(ts), 0, 0.001))), 8L)
+    data.frame(instrument_id = ids[[i]], ts_utc = ts, open = round(close * (1 - 0.0002), 8L),
+               high = round(close * 1.0005, 8L), low = round(close * 0.9995, 8L), close = close,
+               volume = round(1000 + 100 * stats::runif(length(ts)), 8L))
+  }))
+  ledgr::ledgr_snapshot_from_df(bars, db_path = db_path, snapshot_id = snapshot_id)
+}
+
+lc_prep_intraday_params <- list(long = 2340L, mid = 390L, short = 78L, min_obs = 60L, feature = "ret",
+                                off_axis = "I01", all_history = FALSE, trade = FALSE, read_at = "T21:00:00Z")
+
+lc_prep_intraday_experiment <- function(snapshot) {
+  ledgr::ledgr_experiment(snapshot, lc_prep_strategy,
+                          features = ledgr::ledgr_feature_map(ret = ledgr::ledgr_ind_returns(78L)),
+                          opening = ledgr::ledgr_opening(cash = 1e6), cost_model = ledgr::ledgr_cost_zero())
 }

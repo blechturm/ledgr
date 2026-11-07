@@ -115,6 +115,9 @@ lc_workloads <- c(
   prep_500x1260 = function() lc_prep_shape_run(1260L),
   prep_500x2520 = function() lc_prep_shape_run(2520L),
   prep_500x5040 = function() lc_prep_shape_run(5040L),
+  prep_intraday_1x100k = function() lc_prep_intraday_run(1L, 1290L),
+  prep_intraday_5x100k = function() lc_prep_intraday_run(5L, 1290L),
+  prep_intraday_20x50k = function() lc_prep_intraday_run(20L, 645L),
   prep_h1 = function() {
     state <- jsonlite::read_json(lc_arg("state") %||% stop("prep_h1 needs --state=", call. = FALSE),
                                  simplifyVector = TRUE)
@@ -125,6 +128,17 @@ lc_workloads <- c(
     lc_prep_shape_open_run(db, state$snapshot_id, universe = state$universe_id)
   }
 )
+
+lc_prep_intraday_run <- function(n_inst, n_days) {
+  id <- sprintf("lc_prep_intraday_%dx%d", n_inst, n_days)
+  db <- file.path(work, paste0(id, ".duckdb"))
+  if (file.exists(db)) unlink(db)
+  ledgr::ledgr_snapshot_close(lc_prep_intraday_snapshot(n_inst, n_days, db, id))
+  snapshot <- ledgr::ledgr_snapshot_open(db, id, verify = TRUE)
+  on.exit(ledgr::ledgr_snapshot_close(snapshot))
+  close(ledgr::ledgr_run(lc_prep_intraday_experiment(snapshot), params = lc_prep_intraday_params,
+                         run_id = "lc-prep", seed = 1L))
+}
 
 lc_prep_shape_run <- function(days) {
   db <- file.path(work, sprintf("prep_500x%d.duckdb", days))

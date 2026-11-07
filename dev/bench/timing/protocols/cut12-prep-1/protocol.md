@@ -15,6 +15,7 @@ directory, outside both clocks:
 | --- | --- |
 | `500x5040` | the WS16 entry momentum snapshot, 500 simulated instruments on 5,040 declared sessions, built in the slot |
 | `h1` | the private H1 store of `build-state.json` (WS25 rebuild `cad309f4`, product code identical to the pin), copied into the slot |
+| `intraday_5x100k`, `intraday_20x50k` | long and thin: 5 instruments x 100,620 and 20 x 50,310 rectangular 5-minute bars on the bar-native clock, built in the slot (`lc_prep_intraday_snapshot`); the request set reads once a day at the 21:00 close with lookbacks of 2,340, 390 and 78 bars and holds |
 
 It opens the store with `verify = TRUE` and runs the registered request set
 (`dev/lean_core/parity/prep_fixture.R`, `lc_prep_strategy`, copied into
@@ -61,7 +62,9 @@ Private runs report counts and digests only.
 
 ## Cells
 
-Fourteen cells: `prep`, `r1`-`r6` on `500x5040` and on `h1`. Five
+Sixteen cells: `prep`, `r1`-`r6` on `500x5040` and on `h1` (Cut 12
+decision (5)), and `prep` on the two intraday shapes (`prep_i5`,
+`prep_i20`, added at the maintainer's request for long, thin data). Five
 alternating pairs. A/A bound 1.0 marks a noise observation; in LDG-3217's
 gate a cell passes at a median ratio of at most 1.0.
 

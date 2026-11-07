@@ -8,7 +8,8 @@
 #   memory    copying the tile's columns out of resident full planes
 # and what a lookback = Inf read pays to bring back every evicted tile.
 #
-#   Rscript tile_backing.R --lib=<pinned library> --store=<sealed store> --id=<snapshot id> --out=<csv> [--private]
+#   Rscript tile_backing.R --lib=<pinned library> --store=<sealed store> --id=<snapshot id> --out=<csv>
+#     [--widths=63,126,252] [--private]
 #
 # The store is opened read-only through the verified handle and never
 # changed. With --private only aggregates are written (no identifiers).
@@ -57,7 +58,8 @@ spill <- tempfile(fileext = ".bin")
 on.exit(unlink(spill))
 
 rows <- list()
-for (w in c(63L, 126L, 252L)) {
+widths <- as.integer(strsplit(arg("widths", "63,126,252"), ",")[[1L]])
+for (w in widths) {
   starts <- seq.int(1L, t_all, by = w)
   for (rep in 1:3) {
     for (s in starts) {

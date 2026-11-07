@@ -34,3 +34,18 @@ The per-bucket fill-heavy gate runs through the shared harness,
 `dev/bench/timing/protocols/cut12-fifo-1/`. `fifo_probe.R` in `spike` mode
 reproduces the budget run above; its timing column is now named
 `candidate_us_per_pulse`.
+
+## Preparation family (LDG-3215)
+
+`tile_backing.R` measures where an evicted tile comes back from, per tile of
+W sessions x all instruments (six bar planes and one feature plane): the
+pinned bar query on the tile's range plus the pivot (`hydrate`), a run-local
+binary file written and read back (`spill`), and a copy out of resident full
+planes (`memory`), with what a `lookback = Inf` read pays to bring back every
+tile. The 500 x 5,040 store is the cut12-prep-1 snapshot; H1 writes
+aggregates only.
+
+```sh
+Rscript tile_backing.R --lib=<pinned library> --store=<sealed store> --id=<snapshot id> --out=evidence/tile_backing_500x5040.csv
+Rscript tile_backing.R --lib=<pinned library> --store=<copy of the H1 store> --id=<snapshot id> --private --out=evidence/tile_backing_h1.csv
+```

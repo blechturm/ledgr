@@ -13,3 +13,5 @@ r3_h1,cut12_prep,r3,shape=h1;state=E:/ledgr-data/sharadar/experiments/WS25-priva
 r4_h1,cut12_prep,r4,shape=h1;state=E:/ledgr-data/sharadar/experiments/WS25-private-gate/rebuild-cad309f4/build-state.json,5
 r5_h1,cut12_prep,r5,shape=h1;state=E:/ledgr-data/sharadar/experiments/WS25-private-gate/rebuild-cad309f4/build-state.json,5
 r6_h1,cut12_prep,r6,shape=h1;state=E:/ledgr-data/sharadar/experiments/WS25-private-gate/rebuild-cad309f4/build-state.json,5
+prep_i5,cut12_prep,prep,shape=intraday_5x100k,5
+prep_i20,cut12_prep,prep,shape=intraday_20x50k,5

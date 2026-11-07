@@ -23,6 +23,7 @@
 # digests only.
 
 cut12_prep_strategy <- function(ctx, params) {
+  if (!is.null(params$read_at) && !endsWith(ctx$ts_utc, params$read_at)) return(ctx$hold())
   ledgr::ledgr_history_matrix(ctx, bar = "close", lookback = params$long)
   ledgr::ledgr_history_matrix(ctx, feature = params$feature, lookback = params$long)
   ledgr::ledgr_history_frame(ctx, bar = "close", lookback = params$mid, instruments = "decision_axis",
@@ -61,10 +62,37 @@ cut12_prep_snapshot <- function(n_inst, n_days, db_path, snapshot_id, seed = 202
                                 facts = ledgr::ledgr_facts(sessions), price_basis = "split_adjusted")
 }
 
+# The long and thin intraday shapes (dev/lean_core/parity/prep_fixture.R,
+# lc_prep_intraday_snapshot): rectangular 5-minute bars on the bar-native clock.
+cut12_prep_intraday_snapshot <- function(n_inst, n_days, db_path, snapshot_id, seed = 20261107L) {
+  days <- seq(as.Date("2015-01-05"), by = "day", length.out = ceiling(n_days * 7 / 5) + 7L)
+  days <- days[!format(days, "%u") %in% c("6", "7")][seq_len(n_days)]
+  ts <- as.POSIXct(paste(rep(days, each = 78L), "14:30:00"), tz = "UTC") + rep(300 * seq_len(78L), n_days)
+  old <- if (exists(".Random.seed", globalenv())) get(".Random.seed", globalenv())
+  on.exit(if (is.null(old)) rm(".Random.seed", envir = globalenv()) else assign(".Random.seed", old, globalenv()))
+  set.seed(seed)
+  ids <- sprintf("I%02d", seq_len(n_inst))
+  bars <- do.call(rbind, lapply(seq_len(n_inst), function(i) {
+    close <- round((50 + 10 * i) * exp(cumsum(stats::rnorm(length(ts), 0, 0.001))), 8L)
+    data.frame(instrument_id = ids[[i]], ts_utc = ts, open = round(close * (1 - 0.0002), 8L),
+               high = round(close * 1.0005, 8L), low = round(close * 0.9995, 8L), close = close,
+               volume = round(1000 + 100 * stats::runif(length(ts)), 8L))
+  }))
+  ledgr::ledgr_snapshot_from_df(bars, db_path = db_path, snapshot_id = snapshot_id)
+}
+
+cut12_prep_intraday_shapes <- list(intraday_1x100k = c(1L, 1290L), intraday_5x100k = c(5L, 1290L),
+                                   intraday_20x50k = c(20L, 645L))
+
 cut12_prep <- function(args, work_dir) {
   ns <- asNamespace("ledgr")
   store <- file.path(work_dir, "store.duckdb")
-  if (identical(args$shape, "500x5040")) {
+  intraday <- cut12_prep_intraday_shapes[[args$shape]]
+  if (!is.null(intraday)) {
+    id <- sprintf("lc_prep_intraday_%dx%d", intraday[[1L]], intraday[[2L]])
+    ledgr::ledgr_snapshot_close(cut12_prep_intraday_snapshot(intraday[[1L]], intraday[[2L]], store, id))
+    universe <- NULL
+  } else if (identical(args$shape, "500x5040")) {
     id <- "cut12_prep_500x5040"
     ledgr::ledgr_snapshot_close(cut12_prep_snapshot(500L, 5040L, store, id))
     universe <- NULL
@@ -81,17 +109,25 @@ cut12_prep <- function(args, work_dir) {
                            params = list(id))$id
   DBI::dbDisconnect(con, shutdown = TRUE)
   snapshot <- ledgr::ledgr_snapshot_open(store, id, verify = TRUE)
-  exp_args <- list(snapshot, cut12_prep_strategy,
-                   features = ledgr::ledgr_feature_map(ret = ledgr::ledgr_ind_returns(252L)),
-                   schedule = ledgr::ledgr_schedule_month_start(), opening = ledgr::ledgr_opening(cash = 1e6),
-                   cost_model = ledgr::ledgr_cost_zero())
-  if (!is.null(universe)) {
-    exp_args$universe <- ledgr::ledgr_universe_members(universe)
-    exp_args$valuation_policy <- ledgr::ledgr_valuation_stale(5L)
+  if (!is.null(intraday)) {
+    exp <- ledgr::ledgr_experiment(snapshot, cut12_prep_strategy,
+                                   features = ledgr::ledgr_feature_map(ret = ledgr::ledgr_ind_returns(78L)),
+                                   opening = ledgr::ledgr_opening(cash = 1e6), cost_model = ledgr::ledgr_cost_zero())
+    params <- list(long = 2340L, mid = 390L, short = 78L, min_obs = 60L, feature = "ret", off_axis = first,
+                   all_history = FALSE, trade = FALSE, read_at = "T21:00:00Z")
+  } else {
+    exp_args <- list(snapshot, cut12_prep_strategy,
+                     features = ledgr::ledgr_feature_map(ret = ledgr::ledgr_ind_returns(252L)),
+                     schedule = ledgr::ledgr_schedule_month_start(), opening = ledgr::ledgr_opening(cash = 1e6),
+                     cost_model = ledgr::ledgr_cost_zero())
+    if (!is.null(universe)) {
+      exp_args$universe <- ledgr::ledgr_universe_members(universe)
+      exp_args$valuation_policy <- ledgr::ledgr_valuation_stale(5L)
+    }
+    exp <- do.call(ledgr::ledgr_experiment, exp_args)
+    params <- list(long = 252L, mid = 63L, short = 21L, min_obs = 15L, feature = "ret", off_axis = first,
+                   all_history = FALSE, trade = TRUE, lookback = 252L, n = 20L)
   }
-  exp <- do.call(ledgr::ledgr_experiment, exp_args)
-  params <- list(long = 252L, mid = 63L, short = 21L, min_obs = 15L, feature = "ret", off_axis = first,
-                 all_history = FALSE, trade = TRUE, lookback = 252L, n = 20L)
 
   now <- function() as.numeric(Sys.time())
   sha <- function(x) digest::digest(serialize(x, NULL, version = 2L), algo = "sha256", serialize = FALSE)
