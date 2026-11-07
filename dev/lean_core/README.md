@@ -199,7 +199,9 @@ Rscript dev/lean_core/recorder/run.R --lib=<pinned library> --captures=<dir> --o
 ```
 
 Manifests: `recorder/manifests/prep_*.csv` (counts and digests only; private
-H1's capture stays on E:).
+H1's capture stays on E:). Replay evidence: `recorder/evidence/replay_prep.csv`
+(every call of every preparation capture passes; each row names the
+comparison it ran under).
 
 The long and thin intraday shapes (`prep_intraday_1x100k`, `_5x100k`,
 `_20x50k`: 5-minute bars on the bar-native clock, the request set read once
