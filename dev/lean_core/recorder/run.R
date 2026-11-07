@@ -45,6 +45,7 @@ lean_core_source(lean, c(file.path(bench, "v0_2_3_ws16_entry", "common.R"),
 # their environment chain there and the recorder never freezes the recorder.
 source(file.path(bench, "v0_2_3_ws16_entry", "workloads.R"))
 source(file.path(bench, "v0_2_3_output_freeze", "lib.R"))
+source(file.path(lc_here, "..", "parity", "prep_fixture.R"))
 # Byte compilation would change a closure's serialization between pulses.
 invisible(compiler::enableJIT(0L))
 # Taken before any wrapper is installed.
@@ -100,8 +101,50 @@ lc_workloads <- c(
     run <- fx$ws42_capture_run(reader = reader, run_id = "lc-history")
     close(run$bt)
     ledgr::ledgr_snapshot_close(run$fixture$snapshot)
+  },
+  # LDG-3215 preparation captures (parity/prep_fixture.R): the cross-edge
+  # fixture, the three portable shapes and, with --state=, private H1, each
+  # issuing the registered request set on every decided pulse.
+  prep_fixture = function() {
+    db <- file.path(work, "prep_fixture.duckdb")
+    if (file.exists(db)) unlink(db)
+    fx <- lc_prep_fixture(db)
+    on.exit(ledgr::ledgr_snapshot_close(fx$snapshot))
+    close(ledgr::ledgr_run(fx$exp, params = lc_prep_fixture_params, run_id = "lc-prep-fixture", seed = 1L))
+  },
+  prep_500x1260 = function() lc_prep_shape_run(1260L),
+  prep_500x2520 = function() lc_prep_shape_run(2520L),
+  prep_500x5040 = function() lc_prep_shape_run(5040L),
+  prep_h1 = function() {
+    state <- jsonlite::read_json(lc_arg("state") %||% stop("prep_h1 needs --state=", call. = FALSE),
+                                 simplifyVector = TRUE)
+    db <- file.path(work, "prep_h1.duckdb")
+    if (file.exists(db)) unlink(db)
+    if (!file.copy(state$snapshot_path, db)) stop("could not copy the sealed snapshot", call. = FALSE)
+    on.exit(unlink(db), add = TRUE)
+    lc_prep_shape_open_run(db, state$snapshot_id, universe = state$universe_id)
   }
 )
+
+lc_prep_shape_run <- function(days) {
+  db <- file.path(work, sprintf("prep_500x%d.duckdb", days))
+  if (file.exists(db)) unlink(db)
+  ledgr::ledgr_snapshot_close(ws16_momentum_snapshot(500L, days, db, sprintf("lc_prep_500x%d", days)))
+  lc_prep_shape_open_run(db, sprintf("lc_prep_500x%d", days))
+}
+
+# Opens a sealed store with verification and runs the request-set strategy;
+# the explicitly named instrument is the store's first ID (never printed).
+lc_prep_shape_open_run <- function(db, snapshot_id, universe = NULL) {
+  con <- DBI::dbConnect(duckdb::duckdb(), db, read_only = TRUE)
+  first <- DBI::dbGetQuery(con, "SELECT min(instrument_id) AS id FROM snapshot_instruments WHERE snapshot_id = ?",
+                           params = list(snapshot_id))$id
+  DBI::dbDisconnect(con, shutdown = TRUE)
+  snapshot <- ledgr::ledgr_snapshot_open(db, snapshot_id, verify = TRUE)
+  on.exit(ledgr::ledgr_snapshot_close(snapshot))
+  close(ledgr::ledgr_run(lc_prep_shape_experiment(snapshot, universe), params = lc_prep_shape_params(first),
+                         run_id = "lc-prep", seed = 1L))
+}
 
 # Captures one workload into <captures>/<name>.rds; returns its manifest.
 # --boundaries=lot,packet captures only those boundaries (see capture.R lc_boundaries).
@@ -128,7 +171,9 @@ lc_rscript <- function(args) {
 }
 
 if (sys.nframe() == 0L) {
-  ids <- strsplit(lc_arg("workloads", paste(setdiff(names(lc_workloads), "history_fixture"), collapse = ",")), ",")[[1L]]
+  # The default is the table check's workload set; preparation captures are named explicitly.
+  table_check <- setdiff(names(lc_workloads), c("history_fixture", grep("^prep_", names(lc_workloads), value = TRUE)))
+  ids <- strsplit(lc_arg("workloads", paste(table_check, collapse = ",")), ",")[[1L]]
   by_reference <- lc_arg("by-reference")
   if (!is.null(by_reference)) {
     for (id in ids) lc_capture_workload(id, by_reference, name = paste0(id, "_byref"))

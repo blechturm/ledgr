@@ -166,3 +166,28 @@ and inputs independent under later edits, fill leg fees equal to
 `ledgr_fill_leg_fees()`. It runs the generated streams (`fifo_streams.R`),
 the six registered mutations of `fifo.R` (each must fail) and a static scan of
 the ledgr functions the lean code calls. Evidence: `parity/evidence/`.
+
+## Preparation fixture and request set (LDG-3215)
+
+`parity/prep_fixture.R` holds the cross-edge fixture and the registered
+history-read request set (`lc_prep_strategy`, R1-R8). The fixture has six
+instruments on 96 declared sessions; its exit while held (changed column
+order), entry, re-entry, listing, relisting, carry expiry, late-known fact,
+off-axis request and `min_observations` window with carried and missing
+values all sit within one session of an edge shared by tile widths 8 and 12
+(after sessions 24, 48 and 72). `parity/prep_edges.R` derives each event
+from the fixture's input frames and checks it
+(`parity/evidence/prep_edges.csv`).
+
+The recorder runs it as `prep_fixture`, and the portable shapes as
+`prep_500x1260`, `prep_500x2520` and `prep_500x5040` (the WS16 entry
+momentum snapshot with the request set on each monthly decision); with
+`--state=<build-state.json>`, `prep_h1` runs the private H1 store. These are
+named explicitly and are not part of the default table-check run:
+
+```sh
+Rscript dev/lean_core/recorder/run.R --lib=<pinned library> --captures=<dir> --out=<dir> --manifests=<dir> --workloads=prep_fixture --boundaries=hydrate,substrate,features,reader,packet,history_read,history_frame,history_matrix
+```
+
+Manifests: `recorder/manifests/prep_*.csv` (counts and digests only; private
+H1's capture stays on E:).
