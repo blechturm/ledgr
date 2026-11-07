@@ -4276,7 +4276,14 @@ tickets:
       (collapse::fmatch, measured about 1 ms per 252 x 500 tile below base
       match(), maintainer 2026-11-07), and, measured against base R in this
       ticket, working-tile derivation per instrument, each instrument's
-      gathered feature input and multi-tile read assembly.
+      gathered feature input and multi-tile read assembly. Working order
+      (maintainer 2026-11-07): before writing code, list every place the
+      pinned read path uses an absolute session column (cutoff_col,
+      pulse_columns, carry-source positions, dependency_first, C++ row and
+      column indices); iterate on the fixture captures at both widths, then
+      500 x 1,260, before the large shapes; the parity runner compares each
+      shape in its own R process in parallel, as do the mutations, and never
+      overlaps a timing window.
     acceptance:
       - "fold-reader packets, feature series values and evidence, and every registered history read, including admission, metadata and classes, are identical to the pinned captures on the fixture at two tile widths, on the three portable shapes and on private H1 (digests only for private)"
       - "a retained history result remains identical after tile recycling; re-reading the retained context's public columns and registered history requests after recycling reproduces the frozen values, names, types, classes and metadata from before recycling; private cache serialization is not compared"
