@@ -1,0 +1,7 @@
+"ledgr_function","allowed"
+"ledgr_accounting_event_error",TRUE
+"ledgr_lot_applied",TRUE
+"ledgr_lot_blocks",TRUE
+"ledgr_lot_book_problem",TRUE
+"ledgr_lot_book_validate",TRUE
+"ledgr_lot_input",TRUE

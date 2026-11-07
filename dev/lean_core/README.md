@@ -139,3 +139,30 @@ reading every public request shape on every decision pulse. Evidence
 - Review: Codex round 1 (eight findings, all fixed) and a narrow round 2
   limited to wrong answers (`recorder/evidence/codex_review_round*.md`).
   Round-1 items outside that question were not re-reviewed.
+
+## FIFO kernel (LDG-3213)
+
+`fifo.R` is the one lean lot kernel: `lean_lot_input()` (the trusted input
+boundary: economic rules in production, `ledgr_lot_input()`'s shape and
+distinct-position checks in debug), `lean_lot_apply(book, input)` (same
+arguments, result and refusals as the pinned `ledgr_lot_apply()`), the
+operation wrappers `lean_lot_opening/fill/disposition()`, the block driver
+`lean_lot_apply_blocks()` and the leg-fee split `lean_fill_leg_fees()`. It
+calls no pinned arithmetic; it shares `ledgr_lot_input`, `ledgr_lot_applied`,
+`ledgr_lot_book_problem`, `ledgr_lot_book_validate`,
+`ledgr_accounting_event_error` and `ledgr_lot_blocks`.
+
+```sh
+Rscript dev/lean_core/recorder/run.R --lib=<pinned library> --captures=<caps> --out=<tmp> --manifests=<tmp> --boundaries=lot
+Rscript dev/lean_core/parity/fifo_capture_tests.R --src=<pinned source archive> --out=<tests>   # about 25 minutes
+Rscript dev/lean_core/parity/fifo_parity.R --lib=<pinned library> --captures=<caps> --tests=<tests> --out=dev/lean_core/parity/evidence
+Rscript dev/lean_core/parity/fifo_check.R --lib=<pinned library> --captures=<caps> --tests=<tests> --scratch=<empty dir>
+```
+
+`fifo_parity.R` compares every captured call (A0 workloads, momentum,
+fill-heavy, the pinned test suite) with debug off and on: the whole result or
+the condition's class and message `identical()`, inputs unchanged, results
+and inputs independent under later edits, fill leg fees equal to
+`ledgr_fill_leg_fees()`. It runs the generated streams (`fifo_streams.R`),
+the six registered mutations of `fifo.R` (each must fail) and a static scan of
+the ledgr functions the lean code calls. Evidence: `parity/evidence/`.
