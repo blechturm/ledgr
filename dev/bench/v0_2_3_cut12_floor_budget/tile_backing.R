@@ -34,10 +34,11 @@ t_all <- length(axis)
 fields <- c("open", "high", "low", "close", "volume")
 now <- function() as.numeric(Sys.time())
 
-# Time-major planes for a frame of bars over the sessions `cols`.
+# Time-major planes for a frame of bars over the sessions `cols` (positions by
+# collapse::fmatch, about 1 ms per 252 x 500 tile below base match()).
 pivot <- function(rows, cols) {
-  i <- match(rows$instrument_id, ids)
-  j <- match(as.numeric(rows$ts_utc), as.numeric(axis[cols]))
+  i <- collapse::fmatch(rows$instrument_id, ids)
+  j <- collapse::fmatch(as.numeric(rows$ts_utc), as.numeric(axis[cols]))
   out <- lapply(fields, function(f) {
     m <- matrix(NA_real_, length(cols), n)
     m[cbind(j, i)] <- rows[[f]]
@@ -95,6 +96,67 @@ for (w in widths) {
     }
   }
 }
+# Whole hydration passes over every tile, three ways, alternating, 3 reps:
+#   per_tile  one pinned query per tile range (the rows above)
+#   stream    one query ordered by time, fetched a tile's rows at a time
+#   long      the pin's one query for the whole history, then sliced
+# Each pass builds every tile and checks it against the full planes; the
+# rows held in R at once are its hydration memory.
+placeholders <- paste(rep("?", n), collapse = ", ")
+stream_sql <- sprintf(paste("SELECT instrument_id, ts_utc, open, high, low, close, volume FROM snapshot_bars",
+                            "WHERE snapshot_id = ? AND instrument_id IN (%s) AND ts_utc >= ? AND ts_utc <= ?",
+                            "ORDER BY ts_utc, instrument_id"), placeholders)
+check_tile <- function(tile, cols) {
+  if (!identical(tile, lapply(full[1:6], function(m) m[cols, , drop = FALSE]))) stop("pass tile differs")
+}
+pass <- function(mode, w) {
+  starts <- seq.int(1L, t_all, by = w)
+  held <- 0
+  t0 <- now()
+  if (mode == "per_tile") {
+    for (s in starts) {
+      cols <- seq.int(s, min(s + w - 1L, t_all))
+      r <- ns$ledgr_precompute_fetch_bars_frame(snapshot, ids, axis[[cols[[1L]]]], axis[[cols[[length(cols)]]]])
+      held <- max(held, nrow(r))
+      check_tile(pivot(r, cols), cols)
+    }
+  } else if (mode == "stream") {
+    res <- DBI::dbSendQuery(con, stream_sql, params = c(list(arg("id")), as.list(ids), list(axis[[1L]], axis[[t_all]])))
+    buf <- NULL
+    for (s in starts) {
+      cols <- seq.int(s, min(s + w - 1L, t_all))
+      end <- as.numeric(axis[[cols[[length(cols)]]]])
+      while ((is.null(buf) || !nrow(buf) || as.numeric(buf$ts_utc[[nrow(buf)]]) <= end) && !DBI::dbHasCompleted(res)) {
+        chunk <- DBI::dbFetch(res, n = w * n)
+        chunk$instrument_id <- as.character(chunk$instrument_id)
+        chunk$ts_utc <- as.POSIXct(chunk$ts_utc, tz = "UTC")
+        buf <- if (is.null(buf)) chunk else rbind(buf, chunk)
+      }
+      held <- max(held, nrow(buf))
+      take <- as.numeric(buf$ts_utc) <= end
+      check_tile(pivot(buf[take, , drop = FALSE], cols), cols)
+      buf <- buf[!take, , drop = FALSE]
+    }
+    DBI::dbClearResult(res)
+  } else {
+    r <- ns$ledgr_precompute_fetch_bars_frame(snapshot, ids, axis[[1L]], axis[[t_all]])
+    held <- nrow(r)
+    j <- collapse::fmatch(as.numeric(r$ts_utc), as.numeric(axis))
+    for (s in starts) {
+      cols <- seq.int(s, min(s + w - 1L, t_all))
+      check_tile(pivot(r[j >= cols[[1L]] & j <= cols[[length(cols)]], , drop = FALSE], cols), cols)
+    }
+  }
+  data.frame(width = w, mode = mode, ms = 1e3 * (now() - t0), rows_held = held)
+}
+passes <- list()
+for (w in widths) for (rep in 1:3) for (mode in c("per_tile", "stream", "long")[c(rep, rep %% 3 + 1, (rep + 1) %% 3 + 1)]) {
+  invisible(gc())
+  passes[[length(passes) + 1L]] <- pass(mode, w)
+}
+passes <- do.call(rbind, passes)
+pass_ms <- tapply(passes$ms, list(passes$width, passes$mode), stats::median)
+pass_rows <- tapply(passes$rows_held, list(passes$width, passes$mode), max)
 ledgr_snapshot_close(snapshot)
 raw <- do.call(rbind, rows)
 raw <- raw[raw$sessions == raw$width, ]  # full tiles only
@@ -107,7 +169,13 @@ summary <- do.call(rbind, lapply(split(raw, raw$width), function(d) data.frame(
   memory_ms = round(med(d$memory_ms), 2),
   inf_read_hydrate_ms = round(med(d$hydrate_ms) * ceiling(t_all / d$width[[1L]]), 0),
   inf_read_spill_ms = round(med(d$spill_read_ms) * ceiling(t_all / d$width[[1L]]), 0),
-  inf_read_memory_ms = round(med(d$memory_ms) * ceiling(t_all / d$width[[1L]]), 0))))
+  inf_read_memory_ms = round(med(d$memory_ms) * ceiling(t_all / d$width[[1L]]), 0),
+  pass_per_tile_ms = round(pass_ms[as.character(d$width[[1L]]), "per_tile"], 0),
+  pass_stream_ms = round(pass_ms[as.character(d$width[[1L]]), "stream"], 0),
+  pass_long_ms = round(pass_ms[as.character(d$width[[1L]]), "long"], 0),
+  rows_held_per_tile = pass_rows[as.character(d$width[[1L]]), "per_tile"],
+  rows_held_stream = pass_rows[as.character(d$width[[1L]]), "stream"],
+  rows_held_long = pass_rows[as.character(d$width[[1L]]), "long"])))
 print(summary, row.names = FALSE)
 out <- arg("out")
 if (!is.null(out)) utils::write.csv(summary, out, row.names = FALSE)

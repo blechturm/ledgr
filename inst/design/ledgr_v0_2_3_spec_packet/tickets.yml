@@ -4271,7 +4271,12 @@ tickets:
       edge; serve the fold-reader packets and the registered history reads
       from tiles through the existing semantic services with the accepted
       tile-access adaptations. Retained views are copies that tiles never write. Prove every
-      output through the recorder.
+      output through the recorder. Use collapse (already a dependency) for
+      the indexed and grouped work this adds: the hydration scatter
+      (collapse::fmatch, measured about 1 ms per 252 x 500 tile below base
+      match(), maintainer 2026-11-07), and, measured against base R in this
+      ticket, working-tile derivation per instrument, each instrument's
+      gathered feature input and multi-tile read assembly.
     acceptance:
       - "fold-reader packets, feature series values and evidence, and every registered history read, including admission, metadata and classes, are identical to the pinned captures on the fixture at two tile widths, on the three portable shapes and on private H1 (digests only for private)"
       - "a retained history result remains identical after tile recycling; re-reading the retained context's public columns and registered history requests after recycling reproduces the frozen values, names, types, classes and metadata from before recycling; private cache serialization is not compared"
