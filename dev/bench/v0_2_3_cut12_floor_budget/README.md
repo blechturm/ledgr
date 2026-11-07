@@ -49,3 +49,26 @@ aggregates only.
 Rscript tile_backing.R --lib=<pinned library> --store=<sealed store> --id=<snapshot id> --out=evidence/tile_backing_500x5040.csv
 Rscript tile_backing.R --lib=<pinned library> --store=<copy of the H1 store> --id=<snapshot id> --private --out=evidence/tile_backing_h1.csv
 ```
+
+`prep_read_probe.R` sets the family's R11 per-pulse budget. Floor v1 emits
+each pulse's packet from a tape, so the family's cost above it is its reads
+at their call sites: the fold reader's packet and view per pulse and the
+six registered history requests (cut12-prep-1, r1-r6) per decided pulse,
+issued before each reference workload's own strategy on its first feature.
+The tile design serves both through the pinned read services on tiles, so
+the probe is their pinned cost; finding a tile and assembling a slice must
+fit in the margin. Mask-plane construction inside a read is preparation and
+is not charged.
+
+`evidence/prep_read_budget.csv` (2026-11-07, High performance plan, P-core
+affinity, 5 rounds; microseconds per run pulse):
+
+| workload | pulses | decided | packet + view | six reads | probe | budget (+15%) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| momentum 40 x 504 | 504 | 23 | 40.9 | 187.5 | 228.4 | 262.7 |
+| fill-heavy 500 x 1,260 | 1,260 | 1,260 | 61.5 | 21,955.8 | 22,017.3 | 25,319.8 |
+
+The 252-session x 500-instrument feature window (r2) is half of the
+fill-heavy reads, 11.0 ms per decided pulse, as in cut12-prep-1's `r2_5040`
+(10.9 ms per call). LDG-3217 runs the probe with lean preparation installed
+against these budgets.

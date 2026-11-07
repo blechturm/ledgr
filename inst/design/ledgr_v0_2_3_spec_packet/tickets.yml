@@ -4222,7 +4222,7 @@ tickets:
   - id: "LDG-3215"
     title: "Build the cross-edge fixture and choose the tile design"
     workstream: 28
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3214"]
@@ -4253,7 +4253,13 @@ tickets:
       - "the disk-backed versus in-memory measurement is recorded and the spilling choice cites it"
       - "the floor-v1 per-pulse read budget on both workloads is frozen with its probe before LDG-3216 code"
       - "the maintainer approves the design note and its working-set budget line by line before preparation code is committed"
-    evidence: []
+    evidence:
+      - "Fixture and request set (2da5d76d): dev/lean_core/parity/prep_fixture.R puts every listed event within one session of an edge shared by tile widths 8 and 12; prep_edges.R derives the 19 events from the fixture's inputs and checks them (parity/evidence/prep_edges.csv, near_edge TRUE at both widths). The registered request set is lc_prep_strategy (r1-r6, plus lookback = Inf on the fixture)."
+      - "Pinned captures (20e58a30, 9b23ec1d, b38d2130): recorder/manifests/prep_{fixture,500x1260,500x2520,500x5040,h1}.csv capture every preparation and read boundary; the long intraday shapes (1 x 100k, 5 x 100k, 20 x 50k bars, added at the maintainer's request) capture preparation only, and their history reads are pinned as a digest stream of every public ledgr_history_matrix()/ledgr_history_frame() call (parity/prep_digests.R, parity/evidence/prep_digests.csv). recorder/evidence/replay_prep.csv: 52 boundaries, 42,785 calls, every replay identical. H1 commits counts and digests only; the captures stay on E:."
+      - "Frozen clocks (1a7187ba): cut12-prep-1 A/A record ldg3215-aa, d5b3a151 on both arms, 16 cells x 8 alternating pairs on the High performance plan with P-core affinity, all 256 slots ok, check.R --aa VALID. Pinned medians, microseconds per run or per request call and noise are in protocol.md. Cells of a second or more hold the pin within 1.5% at the median; the short r5/r6 cells move up to 4.5% at the median and 26% per pair on identical code, so a lean candidate matching the pin can miss bound 1.0 there by noise. The record stays private (its H1 work string carried final equity; workloads.R now digests it); raw.csv SHA-256 2df2c23b."
+      - "Spilling (4bdfe803, Section 12.3, tile_backing.R and evidence/tile_backing_*.csv): reading a spilled tile back costs what a memory copy costs (1.59 against 1.43 ms per tile at 500 x 5,040; 3.78 against 3.72 ms on H1), and re-querying the store is 15-20x slower per tile, so the design has no spill file."
+      - "R11 per-pulse budget (dev/bench/v0_2_3_cut12_floor_budget/prep_read_probe.R, evidence/prep_read_budget.csv, 5 rounds, High performance plan, P-core affinity): the pinned packet and view per pulse plus the six registered reads per decided pulse, in microseconds per run pulse, probe 228.4 on momentum 40 x 504 (budget 262.7) and 22,017.3 on fill-heavy 500 x 1,260 (budget 25,319.8); tile lookup and slice assembly must fit in the 15%."
+      - "Design note: lean_core_interface.md Section 12.3 (tile width max(252, ceiling(126000 / n)), source tiles resident, three working tiles plus a transient buffer, no spill, budget 4 x w x N x 32 B), approved by the maintainer on 2026-11-07 with the cell-sized width."
   - id: "LDG-3216"
     title: "Prepare tiles and prove exact reads across edges"
     workstream: 28
