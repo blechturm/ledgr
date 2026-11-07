@@ -86,9 +86,20 @@ lc_compare <- function(x, y, clock, owners = character(), path = "", seen = new.
     }
     return(NULL)
   }
-  if (identical(x, y)) return(NULL)
-  d <- lc_compare_attributes(attributes(x), attributes(y), clock, owners, paste0(path, "@"), seen)
-  if (!is.null(d)) return(d)
+  # Attributes go through the same comparison (and environment pairing) even
+  # when the objects are identical, then the payloads are compared without
+  # them, so equivalent environment attributes neither fail a correct replay
+  # nor skip the pairing (WS26 close review round 2).
+  ax <- attributes(x)
+  ay <- attributes(y)
+  if (is.null(ax) && is.null(ay)) {
+    if (identical(x, y)) return(NULL)
+  } else {
+    d <- lc_compare_attributes(ax, ay, clock, owners, paste0(path, "@"), seen)
+    if (!is.null(d)) return(d)
+    bare <- function(v) tryCatch({ attributes(v) <- NULL; v }, error = function(e) v)
+    if (identical(bare(x), bare(y))) return(NULL)
+  }
   i <- if (is.atomic(x) && length(x) == length(y)) which(xor(is.na(x), is.na(y)) | !is.na(x) & !is.na(y) & x != y)
   diff(if (length(i)) sprintf("element [%d] differs", i[[1L]]) else sprintf("%s values differ, length %d vs %d", typeof(x), length(x), length(y)))
 }

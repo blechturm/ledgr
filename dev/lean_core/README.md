@@ -138,9 +138,12 @@ reading every public request shape on every decision pulse. Evidence
 - Review: Codex round 1 (eight findings, all fixed) and a narrow round 2
   limited to wrong answers (`recorder/evidence/codex_review_round*.md`).
   Round-1 items outside that question were not re-reviewed. The WS26 close
-  review (`recorder/evidence/ws26_close_review_round1.md`) found that the
-  comparison ignored environment sharing and lock state; both are now
-  compared, and every existing capture replays clean under the stricter
+  review (`recorder/evidence/ws26_close_review_round*.md`) found that the
+  comparison ignored environment sharing and lock state, and that an atomic
+  value with an environment attribute was both falsely rejected and able to
+  skip the sharing check; all three are fixed (environments pair one to one,
+  attributes are compared before bare payloads), and every existing capture
+  replays clean under the stricter
   comparison, fill-heavy's full replay included
   (`recorder/evidence/replay_strict_compare.csv`, 23,224 records over the
   ten default workloads, the history fixture and the preparation fixture and
