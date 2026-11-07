@@ -40,7 +40,8 @@ lean_plane_new <- function(n, t, width, fill, dimnames = NULL) {
   p$dimnames <- dimnames
   p$orient <- lean_prep$orient
   k <- if (p$t > 0L) (p$t - 1L) %/% p$width + 1L else 0L
-  p$tiles <- vector("list", k)   # tile values
+  p$nt <- k                       # tile count
+  p$tiles <- new.env(parent = emptyenv())  # tile values by tile number, one binding each (writes in place)
   p$stored <- vector("list", k)  # global rows held by each tile, increasing
   p$rows <- vector("list", k)    # global row -> tile row, NA when not stored
   class(p) <- "lean_plane"
@@ -49,6 +50,10 @@ lean_plane_new <- function(n, t, width, fill, dimnames = NULL) {
 
 lean_tile_cols <- function(p, k) ((k - 1L) * p$width + 1L):min(k * p$width, p$t)
 
+# Tile k's values, or NULL. Each tile is its own binding in p$tiles, so a
+# write that takes the binding out first modifies the tile in place.
+lean_tile_v <- function(p, k) p$tiles[[as.character(k)]]
+
 # Installs tile k from `values`, rows `stored` x the tile's columns, given in
 # the pinned orientation.
 lean_plane_set <- function(p, k, stored, values) {
@@ -56,7 +61,7 @@ lean_plane_set <- function(p, k, stored, values) {
   rows[stored] <- seq_along(stored)
   p$stored[[k]] <- stored
   p$rows[[k]] <- rows
-  p$tiles[[k]] <- if (p$orient == "time") t(values) else values
+  assign(as.character(k), if (p$orient == "time") t(values) else values, envir = p$tiles)
   invisible(p)
 }
 
@@ -66,9 +71,9 @@ lean_plane_set <- function(p, k, stored, values) {
 # the least recently used; a tile older than every cached one, once three
 # are cached, is built into a transient buffer and not cached (Section 12.3).
 lean_tile_get <- function(p, k) {
-  if (!is.null(p$tiles[[k]])) {
+  if (!is.null(lean_tile_v(p, k))) {
     if (!is.null(p$build)) p$resident <- c(p$resident[p$resident != k], k)
-    return(list(v = p$tiles[[k]], rows = p$rows[[k]], stored = p$stored[[k]]))
+    return(list(v = lean_tile_v(p, k), rows = p$rows[[k]], stored = p$stored[[k]]))
   }
   if (is.null(p$build)) return(NULL)
   v <- p$build(k)
@@ -83,11 +88,11 @@ lean_tile_get <- function(p, k) {
   while (length(p$resident) > 3L) {
     old <- p$resident[[1L]]
     p$resident <- p$resident[-1L]
-    p$tiles[old] <- list(NULL)
+    p$tiles[[as.character(old)]] <- NULL
     p$rows[old] <- list(NULL)
     p$stored[old] <- list(NULL)
   }
-  list(v = p$tiles[[k]], rows = p$rows[[k]], stored = p$stored[[k]])
+  list(v = lean_tile_v(p, k), rows = p$rows[[k]], stored = p$stored[[k]])
 }
 
 lean_working_plane <- function(n, t, width, fill, build) {
@@ -171,17 +176,17 @@ lean_plane_index <- function(i, n, names) {
   tile <- (jj - 1L) %/% x$width + 1L
   for (at in split(seq_along(jj), tile)) {
     k <- tile[[at[[1L]]]]
-    if (is.null(x$tiles[[k]])) {
+    if (is.null(lean_tile_v(x, k))) {
       lean_plane_set(x, k, seq_len(x$n), matrix(x$fill, x$n, length(lean_tile_cols(x, k))))
     }
     m <- x$rows[[k]][ii]
     if (.lean_debug && anyNA(m)) stop("lean_plane: write to an unstored row", call. = FALSE)
     lc <- jj[at] - (k - 1L) * x$width
-    if (x$orient == "time") {
-      x$tiles[[k]][lc, m] <- t(value[, at, drop = FALSE])
-    } else {
-      x$tiles[[k]][m, lc] <- value[, at, drop = FALSE]
-    }
+    key <- as.character(k)
+    v <- x$tiles[[key]]
+    x$tiles[[key]] <- NULL
+    if (x$orient == "time") v[lc, m] <- t(value[, at, drop = FALSE]) else v[m, lc] <- value[, at, drop = FALSE]
+    x$tiles[[key]] <- v
   }
   x
 }
@@ -327,7 +332,7 @@ ledgr_history_substrate_bar_matrices <- function(bars, instrument_ids, axis) {
 ledgr_cpp_history_gap_runs <- function(stored) {
   if (!inherits(stored, "lean_plane")) return(get("ledgr_cpp_history_gap_runs", envir = asNamespace("ledgr"))(stored))
   cpp <- get("ledgr_cpp_history_gap_runs", envir = asNamespace("ledgr"))
-  parts <- lapply(seq_along(stored$tiles), function(k) {
+  parts <- lapply(seq_len(stored$nt), function(k) {
     cols <- lean_tile_cols(stored, k)
     r <- cpp(lean_plane_gather(stored, seq_len(stored$n), cols))
     list(row = rep.int(seq_len(stored$n), r$count), start = r$start + cols[[1L]] - 1L, end = r$end + cols[[1L]] - 1L)
@@ -359,7 +364,7 @@ ledgr_history_substrate_require_rectangular <- function(substrate, coverage_star
   if (!is.null(coverage_start)) keep <- substrate$axis >= ledgr_history_utc(coverage_start)
   observed <- substrate$bars$observed
   ok <- any(keep)
-  for (k in seq_along(observed$tiles)) {
+  for (k in seq_len(observed$nt)) {
     cols <- lean_tile_cols(observed, k)
     if (!any(keep[cols])) next
     if (length(observed$stored[[k]]) < observed$n || !all(lean_plane_gather(observed, seq_len(observed$n), cols[keep[cols]]))) {
@@ -454,8 +459,8 @@ ledgr_history_compute_feature_series <- function(substrate, definitions, calcula
 
 # Keeps, per tile, only the rows with a non-missing cell.
 lean_plane_compact <- function(p) {
-  for (k in seq_along(p$tiles)) {
-    v <- p$tiles[[k]]
+  for (k in seq_len(p$nt)) {
+    v <- lean_tile_v(p, k)
     if (is.null(v)) next
     held <- if (p$orient == "time") colSums(!is.na(v)) > 0L else rowSums(!is.na(v)) > 0L
     if (all(held)) next
@@ -550,7 +555,7 @@ ledgr_history_prepare_masks <- function(substrate, knowledge, instrument_idx, bl
   terminal_first <- rep.int(n_axis + 1L, n)
   false_runs <- get("ledgr_cpp_history_false_runs", envir = asNamespace("ledgr"))
   runs <- list()
-  for (k in seq_along(expected$tiles)) {
+  for (k in seq_len(expected$nt)) {
     cols <- lean_tile_cols(expected, k)
     for (rows in ends) {
       terminal <- ledgr_history_substrate_terminal_at(substrate, knowledge, cols, instrument_idx[rows])

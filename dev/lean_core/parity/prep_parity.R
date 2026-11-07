@@ -35,8 +35,8 @@ mutations <- list(
     "lean_pinned_ns(\"ledgr_history_prepare_masks\")(substrate, knowledge, instrument_idx, block)",
     "lean_pinned_ns(\"ledgr_history_prepare_masks\")(substrate, as.POSIXct(Inf, tz = \"UTC\"), instrument_idx, block)"),
   retained_view_aliasing_recycled_tile = c(
-    "    p$tiles[old] <- list(NULL)",
-    "    p$tiles[old] <- list(p$tiles[[k]]); next"),
+    "    p$tiles[[as.character(old)]] <- NULL",
+    "    p$tiles[[as.character(old)]] <- p$tiles[[as.character(k)]]; next"),
   finite_request_truncated_at_edge = c(
     "  for (at in split(seq_along(j), tile)) {",
     "  for (at in utils::tail(split(seq_along(j), tile), 1L)) {")
@@ -175,7 +175,7 @@ if (length(recs$history_read)) {
     if (inherits(x, "lean_plane")) list(x) else if (is.list(x)) Filter(function(y) inherits(y, "lean_plane"), x)
   }), recursive = FALSE))
   builds <- sum(vapply(working, function(p) p$builds, 0L))
-  tiles <- sum(vapply(working, function(p) length(p$tiles), 0L))
+  tiles <- sum(vapply(working, function(p) p$nt, 0L))
   note("retained", length(retained), lapply(retained, function(r) {
     if (!identical(serialize(r$plan, NULL), r$bytes)) return("retained result changed after recycling")
     again <- tryCatch(do.call(fn("ledgr_history_read_plan"), r$args), error = function(e) conditionMessage(e))
