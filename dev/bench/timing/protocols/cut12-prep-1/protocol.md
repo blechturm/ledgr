@@ -70,6 +70,40 @@ gate a cell passes at a median ratio of at most 1.0.
 
 ## Frozen pinned values
 
-Filled from the LDG-3215 A/A record before LDG-3216 code: per cell, the
-pinned median clock, its microseconds per call (requests) or per run
-(`prep`) and the A/A noise.
+From the LDG-3215 A/A record `records/cut12-prep-1/ldg3215-aa/attempt-1`
+(kept private, not committed: its `h1` work string carried final equity,
+which `workloads.R` now reports as a digest prefix; `raw.csv` SHA-256
+`2df2c23b5be48d727d817765aaa39259f3f225a9f104a5ee4e77860c131676e6`;
+2026-11-07, `d5b3a151` on both arms, High performance plan, affinity
+0xFFFF, 256 slots, all ok, `check.R --aa` VALID). Pinned median is over all
+16 runs of a cell; microseconds are per run (`prep`) or per request call
+(231 decided pulses on `500x5040`, 344 on `h1`). A/A ratio is median
+candidate over median base; pair range is the eight per-pair ratios;
+CV is the mean within-arm coefficient of variation.
+
+| cell | pinned median s | us | A/A ratio | pair range | CV % |
+| --- | ---: | ---: | ---: | --- | ---: |
+| `prep_5040` | 2.860 | 2,860,274 per run | 1.015 | 0.99-1.05 | 1.1 |
+| `r1_5040` | 0.1878 | 812.8 | 0.997 | 0.97-1.01 | 2.0 |
+| `r2_5040` | 2.516 | 10,890.9 | 1.003 | 0.98-1.02 | 1.0 |
+| `r3_5040` | 1.280 | 5,541.6 | 0.993 | 0.94-1.02 | 1.9 |
+| `r4_5040` | 0.9365 | 4,054.0 | 0.995 | 0.95-1.03 | 1.9 |
+| `r5_5040` | 0.1023 | 442.8 | 1.045 | 0.96-1.09 | 6.0 |
+| `r6_5040` | 0.1758 | 761.0 | 1.004 | 0.91-1.17 | 7.7 |
+| `prep_h1` | 10.71 | 10,705,856 per run | 1.011 | 0.98-1.03 | 1.5 |
+| `r1_h1` | 0.4892 | 1,421.9 | 0.998 | 0.96-1.07 | 2.8 |
+| `r2_h1` | 4.298 | 12,494.1 | 0.996 | 0.98-1.01 | 1.2 |
+| `r3_h1` | 2.017 | 5,864.2 | 0.998 | 0.99-1.01 | 0.7 |
+| `r4_h1` | 1.478 | 4,295.1 | 1.004 | 0.97-1.03 | 1.1 |
+| `r5_h1` | 0.1722 | 500.5 | 1.033 | 0.92-1.26 | 7.3 |
+| `r6_h1` | 0.2630 | 764.5 | 0.973 | 0.92-1.14 | 5.4 |
+| `prep_i5` | 3.187 | 3,186,596 per run | 1.001 | 0.97-1.02 | 1.1 |
+| `prep_i20` | 2.089 | 2,088,829 per run | 1.007 | 0.98-1.02 | 1.3 |
+
+Noise reading. Cells of a second or more hold the pin to within 1.5% at
+the median and 5% per pair. The four short request cells (`r5`, `r6`, both
+shapes; 0.1-0.3 s summed per run) move up to 4.5% at the median and 26% per
+pair on identical code, so a lean candidate that merely matches the pin can
+miss a 1.0 bound there by noise alone. With bound 1.0, `check.R --aa` labels
+every cell "beyond bound margin" (the margin is zero); the label carries no
+information in this record.

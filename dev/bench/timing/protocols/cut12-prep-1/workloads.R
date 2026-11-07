@@ -214,7 +214,10 @@ cut12_prep <- function(args, work_dir) {
   ledgr::ledgr_snapshot_close(snapshot)
   calls <- lengths(clk$digests)
   if (clk$k %% 6L != 0L || length(unique(calls)) != 1L) stop("request calls did not come in sets of six: ", clk$k)
-  work <- paste(args$shape, calls[[1L]], n_fills, format(eq$equity[nrow(eq)], digits = 17),
+  # The private H1 store reports its final equity as a digest prefix.
+  equity <- format(eq$equity[nrow(eq)], digits = 17)
+  if (identical(args$shape, "h1")) equity <- substr(sha(equity), 1L, 12L)
+  work <- paste(args$shape, calls[[1L]], n_fills, equity,
                 paste(vapply(clk$digests, function(d) substr(sha(d), 1L, 12L), ""), collapse = ","), sep = "|")
   list(seconds = c(prep = clk$prep, stats::setNames(clk$req, paste0("r", 1:6))), work = work)
 }
