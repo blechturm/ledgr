@@ -124,7 +124,7 @@ lc_workloads <- c(
     db <- file.path(work, "prep_h1.duckdb")
     if (file.exists(db)) unlink(db)
     if (!file.copy(state$snapshot_path, db)) stop("could not copy the sealed snapshot", call. = FALSE)
-    on.exit(unlink(db), add = TRUE)
+    # The copy stays until the next capture: the hydrate replay reads bars from it.
     lc_prep_shape_open_run(db, state$snapshot_id, universe = state$universe_id)
   }
 )
@@ -163,7 +163,14 @@ lc_prep_shape_open_run <- function(db, snapshot_id, universe = NULL) {
 # Captures one workload into <captures>/<name>.rds; returns its manifest.
 # --boundaries=lot,packet captures only those boundaries (see capture.R lc_boundaries).
 lc_only <- if (!is.null(lc_arg("boundaries"))) strsplit(lc_arg("boundaries"), ",")[[1L]]
+# The long intraday shapes capture preparation only: about 200,000 per-pulse
+# packets per 100k-bar shape would take hours to freeze and repeat what the
+# short shapes capture. Their history reads are checked by the digest stream
+# (parity/prep_digests.R).
+lc_workload_only <- stats::setNames(rep(list(c("hydrate", "substrate", "features", "reader")), 3L),
+                                    paste0("prep_intraday_", c("1x100k", "5x100k", "20x50k")))
 lc_capture_workload <- function(id, by_reference = character(), name = id, only = lc_only) {
+  if (!is.null(lc_workload_only[[id]])) only <- intersect(lc_workload_only[[id]], only %||% lc_workload_only[[id]])
   set.seed(1L)
   lean$lc_capture_begin(by_reference = by_reference, only = only)
   on.exit(lean$lc_rec$on <- FALSE)

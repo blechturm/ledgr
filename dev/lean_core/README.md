@@ -200,3 +200,20 @@ Rscript dev/lean_core/recorder/run.R --lib=<pinned library> --captures=<dir> --o
 
 Manifests: `recorder/manifests/prep_*.csv` (counts and digests only; private
 H1's capture stays on E:).
+
+The long and thin intraday shapes (`prep_intraday_1x100k`, `_5x100k`,
+`_20x50k`: 5-minute bars on the bar-native clock, the request set read once
+a day) capture preparation only (`hydrate`, `substrate`, `features`,
+`reader`; `run.R`, `lc_workload_only`). Every bar is a pulse, so a full
+capture would freeze about 200,000 packets per 100k-bar shape, hours of work
+that repeats what the short shapes already capture. Their history reads are
+checked by a digest stream instead: `parity/prep_digests.R` runs the fixture
+and the intraday shapes with the two public reads wrapped and records every
+call's function, pulse and SHA-256 in order; `--against=<dir>` compares a
+rerun (later, the lean read path) and stops at the first differing call.
+Manifest: `parity/evidence/prep_digests.csv` (calls, first and last pulse,
+one SHA-256 per workload and function).
+
+```sh
+Rscript dev/lean_core/parity/prep_digests.R --lib=<pinned library> --out=<dir> [--against=<reference dir>]
+```
