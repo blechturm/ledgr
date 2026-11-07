@@ -248,7 +248,9 @@ lc_thaw <- function(frozen, store, only = colnames(frozen$roots)) {
 # Handler and writer: logged calls
 
 lc_log_call <- function(object, method, f, args) {
-  if (!isTRUE(lc_rec$on) || lc_rec$depth > 0L) return(f())
+  # A record keeps only the calls made while its boundary is on the stack, so
+  # a call outside every recorded boundary (E not captured) is not logged.
+  if (!isTRUE(lc_rec$on) || lc_rec$depth > 0L || !length(lc_rec$stack)) return(f())
   # run_transaction only runs the fold's body; calls inside it are top level.
   through <- identical(method, "run_transaction")
   i <- length(lc_rec$calls) + 1L
