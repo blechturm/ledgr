@@ -1,0 +1,3 @@
+"shape","instruments","sessions","width","tiles","tile_mb","stored_share","hydrate_ms","spill_write_ms","spill_read_ms","memory_ms","inf_read_hydrate_ms","inf_read_spill_ms","inf_read_memory_ms","pass_per_tile_ms","pass_stream_ms","pass_long_ms","rows_held_per_tile","rows_held_stream","rows_held_long"
+"500x5040",500,5040,63,80,1.56,1,19.25,1.65,0.45,0.57,1540,36,46,1723,1197,1829,31500,63000,2520000
+"500x5040",500,5040,252,20,6.25,1,29.27,3.71,1.59,1.43,585,32,29,701,1414,799,126000,252000,2520000

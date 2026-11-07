@@ -476,6 +476,46 @@ calculation (`R/history-features.R:19`, `:282-407`); treatment and carry
 (`src/`); projection lookups (`R/runtime-projection.R`); the strategy context
 (`R/pulse-context.R`).
 
+### 12.3 Tile design (LDG-3215; approved by the maintainer on 2026-11-07, with the cell-sized width)
+
+Measured in `dev/bench/v0_2_3_cut12_floor_budget/` (`tile_backing.R`,
+`evidence/tile_backing_*.csv`: pinned build, quiet host, High performance
+plan; tile times are medians over full tiles); the pinned clocks it must meet are frozen in
+`dev/bench/timing/protocols/cut12-prep-1/`.
+
+**Two kinds of tile.** A *source tile* holds what preparation computes once
+and never changes: for one session range, the bar planes (`open`, `high`,
+`low`, `close`, `volume` double; `observed` logical) and each feature's
+output plane, as sessions x stored instruments, with a global-ID-to-column
+map. An instrument is stored in a tile when it has a bar or a non-missing
+feature cell in that range; an unstored instrument is explicit absence. A
+*working tile* holds the planes reads derive from source tiles and facts:
+the expected mask, the last barrier and one carry-source plane per bar field
+read, today's `history_memo` planes cut to one session range (4 bytes per
+cell each).
+
+| Choice | Value | Reason |
+| --- | --- | --- |
+| Tile width | max(252, ceiling(126,000 / instruments)) sessions, fixed per run from its instrument count: 252 at 500 instruments and on H1, 25,200 at 5 and 126,000 at 1; the fixture's parity runs also use 8 and 12 | A 252-session request, the largest registered daily lookback, touches at most two tiles. Each tile query has a fixed cost (8 ms at 5 instruments, 29 ms at 500 for 252 sessions, query and scatter), so a fixed session width fails long, thin data: 5 instruments x 100,620 five-minute bars at width 252 is 400 tiles and 3.2 s of queries against the pin's 3.6 s whole preparation (trial); at 25,200 it is 4 tiles and 0.10 s, and 20 x 50,310 at 6,300 is 8 tiles and 0.21 s. |
+| Hydration | one pinned bar query per tile session range through the verified handle (`ledgr_precompute_fetch_bars_frame` with the range), returning long rows that R scatters into the source tile by position (`collapse::fmatch`); duplicate bars refuse per range | Same rows and values as the long query, without the long frame (the entry record's +142-160 MiB at 500 x 5,040 and +1,009-1,081 MiB on H1). At the cell-sized width a full pass is the fastest measured or equal to it: 0.70 s at 500 x 5,040 and 1.88 s on H1, against 0.80 and 2.17 s for the pin's long query, holding 5% and 4% of its rows; 0.10 and 0.21 s on the intraday shapes, as the long query. Rejected: one streamed query fetched in chunks (wins only for narrow tiles: 0.33 against 3.2 s at width 252 on 5 x 100k; 1.41 s at 500 x 5,040, 3.5 s on H1 and 0.25 and 0.51 s on the intraday shapes at the cell-sized width); pivoting in DuckDB (trial host: 568 ms per 252 x 500 tile against 42 ms query plus 7 ms scatter, because moving a 3,001-column result into R costs 247 ms per tile even when pivoted once in advance, which also holds 265 MiB in DuckDB). Gap runs and carry sources carry their state across the edge. |
+| Source tiles | all resident in memory, never written after preparation | They are the source-history and feature-payload components, counted separately (skeleton 5.1). See the spilling row. |
+| Working tiles | at most 3 resident, least recently used evicted; rebuilt from source tiles on demand | The fold moves forward: the current, previous and next tiles serve a pulse's packets (`next_bar` crosses an edge) and every lookback up to 252. |
+| Older tiles | a read reaching past the resident working tiles (`lookback = Inf`, or more than 252 sessions) derives each older tile in one transient buffer, not cached | It does not evict the fold's working tiles. |
+| Spilling | none: no run-local file | Reading a tile back from a spill file costs what copying it from memory costs (1.59 against 1.43 ms per 6 MB tile at 500 x 5,040; 3.78 against 3.72 ms per 15 MB on H1) because the OS cache serves it, and it would move about 0.4 GB on H1 out of the process while the peak stays set by snapshot load and store-wide validation (Cut 12 decision 6). Re-querying the store instead is 15-20x slower per tile (29 against 1.4 ms at 500 x 5,040, 55 against 3.7 ms on H1; a full-history read 0.59 s against 0.03 s, and 1.6 s against 0.11 s). |
+| Feature input | per instrument, its prefix gathered across source tiles into one vector per field, then the existing calculation unchanged | Same sequence, knowledge ranges, restarts and arithmetic; no restart at an edge. The gathered row (sessions x 8 bytes per field) is a transient copy, reported. |
+| Feature output | each knowledge range written into that feature's source-tile planes | No sessions x instruments output matrix and no split-and-rebuild payload. |
+| Retained views | a view is the read service plus its cutoff; every returned value is a new R object gathered from tiles | Source tiles never change and working tiles are rebuilt, never edited in place, so a retained context re-reads the same values after recycling. |
+
+**Working-set budget.** At most four working-tile equivalents (three resident
+plus the transient one): 4 x width x instruments x 32 bytes, which is 16 MiB
+at up to 500 instruments (any shape, since width x instruments is then about
+126,000 cells) and 38 MiB on H1's 1,166. It does not change with
+history length at fixed width and worker count. The pin's whole-axis memo
+planes are about 30 MiB at 500 x 5,040 and 100 MiB on H1, and grow with
+history. Source tiles, feature payload, the transient feature-input row,
+request outputs, retained views and lots are reported separately in
+LDG-3217.
+
 ## 13. Validation placement
 
 > R1-R5 and pulse-plumbing Section 4 decide validation placement. For every
