@@ -129,6 +129,26 @@ cut12_prep <- function(args, work_dir) {
                    all_history = FALSE, trade = TRUE, lookback = 252L, n = 20L)
   }
 
+  # LDG-3217 gate (runner.R --candidate-overlay=dev/lean_core): the candidate
+  # arm binds lean preparation from the exported overlay before the clock
+  # wrappers, so `prep` times it at the same endpoints; byte-compiled like
+  # the installed pin, as cut12-fifo-1 does. Without an overlay (the A/A
+  # record) both arms run the pin.
+  arm <- args$.arm
+  restore_lean <- function() NULL
+  if (is.character(args$.overlay)) {
+    if (!isTRUE(arm %in% c("base", "candidate"))) stop("cut12-prep-1: unknown arm ", arm)
+    if (identical(arm, "candidate")) {
+      lean <- new.env(parent = ns)
+      lean$.lean_debug <- FALSE
+      sys.source(file.path(args$.overlay, "dev", "lean_core", "prepare.R"), envir = lean, keep.source = FALSE)
+      for (f in ls(lean, all.names = TRUE)) {
+        if (is.function(lean[[f]])) assign(f, compiler::cmpfun(lean[[f]]), envir = lean)
+      }
+      restore_lean <- lean$lean_prepare_install()
+    }
+  }
+
   now <- function() as.numeric(Sys.time())
   sha <- function(x) digest::digest(serialize(x, NULL, version = 2L), algo = "sha256", serialize = FALSE)
   clk <- new.env()
@@ -206,6 +226,8 @@ cut12_prep <- function(args, work_dir) {
     assign(name, originals[[name]], envir = ns)
     lockBinding(name, ns)
   }, add = TRUE)
+  # After the clock wrappers are removed (they captured the lean binding).
+  on.exit(restore_lean(), add = TRUE)
 
   bt <- ledgr::ledgr_run(exp, params = params, run_id = "cut12-prep", seed = 1L)
   n_fills <- nrow(ledgr::ledgr_results(bt, "fills"))
@@ -219,5 +241,7 @@ cut12_prep <- function(args, work_dir) {
   if (identical(args$shape, "h1")) equity <- substr(sha(equity), 1L, 12L)
   work <- paste(args$shape, calls[[1L]], n_fills, equity,
                 paste(vapply(clk$digests, function(d) substr(sha(d), 1L, 12L), ""), collapse = ","), sep = "|")
-  list(seconds = c(prep = clk$prep, stats::setNames(clk$req, paste0("r", 1:6))), work = work)
+  out <- list(seconds = c(prep = clk$prep, stats::setNames(clk$req, paste0("r", 1:6))), work = work)
+  if (is.character(args$.overlay)) out$overlay_arm <- arm
+  out
 }

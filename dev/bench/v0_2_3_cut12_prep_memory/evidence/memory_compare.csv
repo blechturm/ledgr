@@ -1,0 +1,9 @@
+"shape","workers","preparation_peak_mib_pinned","run_peak_mib_pinned","tree_peak_sampled_mib_pinned","tree_peak_bound_mib_pinned","preparation_peak_mib_lean","run_peak_mib_lean","tree_peak_sampled_mib_lean","tree_peak_bound_mib_lean","preparation_ratio","run_ratio","results_identical"
+"500x1260",1,455,605,498,708,456,594,481,698,1.002,0.982,TRUE
+"500x1260",2,473,608,939,1313,469,599,887,1288,0.992,0.985,TRUE
+"500x2520",1,602,826,539,930,577,817,529,921,0.958,0.989,TRUE
+"500x2520",2,612,811,1124,1718,578,815,1216,1728,0.944,1.005,TRUE
+"500x5040",1,988,1212,825,1315,879,1197,704,1300,0.89,0.988,TRUE
+"500x5040",2,988,1203,1752,2494,879,1194,1426,2488,0.89,0.993,TRUE
+"h1",1,2543,4693,1665,4796,1551,4678,3252,4781,0.61,0.997,TRUE
+"h1",2,2538,4698,3167,9484,1563,4688,4042,9469,0.616,0.998,TRUE

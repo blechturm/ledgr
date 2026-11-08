@@ -53,10 +53,12 @@ lean_bar_axis <- function(snapshot, universe, start, end, distinct = TRUE) {
 # whole-second times, the first chunk from `start` and the last to `end`, so
 # every row of the pin's long query is fetched exactly once. A duplicate
 # instrument/session bar is flagged and refused where the pin refuses it.
-lean_hydrate <- function(snapshot, universe, start, end, instrument_ids, axis) {
-  instrument_ids <- as.character(instrument_ids)
-  axis <- as.POSIXct(axis, tz = "UTC")
-  n <- length(instrument_ids)
+# Trusted inputs: `universe` is the experiment's character universe (the
+# planes' rows, and the query's instrument filter), `axis` UTC POSIXct, and
+# the fetched frame carries character ids, UTC POSIXct times and double
+# fields (the sealed schema), so nothing is converted here.
+lean_hydrate <- function(snapshot, universe, start, end, axis) {
+  n <- length(universe)
   t <- length(axis)
   chunk <- lean_prep$chunk %||% lean_chunk_width(n)
   fields <- c("open", "high", "low", "close", "volume")
@@ -67,7 +69,6 @@ lean_hydrate <- function(snapshot, universe, start, end, instrument_ids, axis) {
   planes$observed <- matrix(FALSE, n, t)
   duplicate <- FALSE
   fetched <- 0L
-  axis_num <- as.numeric(axis)
   for (c0 in if (t > 0L) seq.int(1L, t, by = chunk) else integer()) {
     c1 <- min(t, c0 + chunk - 1L)
     from <- if (c0 == 1L) start else axis[[c0]]
@@ -76,10 +77,13 @@ lean_hydrate <- function(snapshot, universe, start, end, instrument_ids, axis) {
                      ledgr_precomputed_coverage_error = function(e) NULL)
     if (is.null(rows)) next
     fetched <- fetched + nrow(rows)
-    r <- collapse::fmatch(as.character(rows$instrument_id), instrument_ids)
-    c <- collapse::fmatch(as.numeric(as.POSIXct(rows$ts_utc, tz = "UTC")), axis_num[c0:c1])
-    keep <- !is.na(r) & !is.na(c)
+    # The query filters to the universe, so every row has an instrument row;
+    # a bar off a declared-session axis has no column and is dropped.
+    r <- collapse::fmatch(rows$instrument_id, universe)
+    c <- collapse::fmatch(rows$ts_utc, axis[c0:c1])
+    keep <- !is.na(c)
     if (!any(keep)) next
+    if (.lean_debug && anyNA(r)) stop("lean_hydrate: a fetched bar is outside the universe", call. = FALSE)
     lin <- r[keep] + (c[keep] + c0 - 2L) * n
     if (anyDuplicated(lin)) duplicate <- TRUE
     v <- planes$observed
@@ -90,7 +94,7 @@ lean_hydrate <- function(snapshot, universe, start, end, instrument_ids, axis) {
     for (f in fields) {
       v <- planes[[f]]
       planes[[f]] <- NULL
-      v[lin] <- as.numeric(rows[[f]][keep])
+      v[lin] <- rows[[f]][keep]
       planes[[f]] <- v
     }
     rm(v)
@@ -107,7 +111,7 @@ lean_hydrate <- function(snapshot, universe, start, end, instrument_ids, axis) {
 lean_prepare_bars <- function(snapshot, universe, start, end, clock_kind, declared_axis) {
   bar_axis <- lean_bar_axis(snapshot, universe, start, end, identical(clock_kind, "bar_native"))
   axis <- if (identical(clock_kind, "declared_sessions")) declared_axis() else bar_axis
-  list(axis = axis, bars = lean_hydrate(snapshot, universe, start, end, universe, axis))
+  list(axis = axis, bars = lean_hydrate(snapshot, universe, start, end, axis))
 }
 
 # The pinned ledgr_history_substrate_for_experiment (R/history-substrate.R:303)
@@ -145,7 +149,7 @@ lean_history_substrate_for_experiment <- function(exp, meta = NULL, end = NULL, 
 
 # Called by the pinned constructor; the pin's duplicate refusal, at its place.
 ledgr_history_substrate_bar_matrices <- function(bars, instrument_ids, axis) {
-  if (!inherits(bars, "lean_bars")) stop("lean preparation takes bars from lean_hydrate()", call. = FALSE)
+  if (.lean_debug && !inherits(bars, "lean_bars")) stop("lean preparation takes bars from lean_hydrate()", call. = FALSE)
   if (bars$duplicate) {
     rlang::abort("History preparation found duplicate instrument/session bars.",
                  class = c("ledgr_history_duplicate_bar", "ledgr_invalid_snapshot"))

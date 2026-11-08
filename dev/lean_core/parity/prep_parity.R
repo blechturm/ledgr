@@ -29,8 +29,8 @@ lean_core_source(lean, c(file.path(lean_core_home, "..", "bench", "v0_2_3_ws16_e
 # environment; each must fail.
 mutations <- list(
   chunk_edge_bar_dropped = c(
-    "    keep <- !is.na(r) & !is.na(c)",
-    "    keep <- !is.na(r) & !is.na(c) & !(c == 1L & c0 > 1L)"),
+    "    keep <- !is.na(c)",
+    "    keep <- !is.na(c) & !(c == 1L & c0 > 1L)"),
   chunk_edge_bar_fetched_twice = c(
     "    to <- if (c1 == t) end else axis[[c1 + 1L]] - 1",
     "    to <- if (c1 == t) end else axis[[c1 + 1L]]"),

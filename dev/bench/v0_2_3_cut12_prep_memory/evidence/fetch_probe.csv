@@ -1,0 +1,7 @@
+"shape","arm","fetch_calls","largest_fetch_rows","fetched_rows","snapshot_bars","largest_fetch_share"
+"ws16_mem_500x1260","pinned",1,630000,630000,630000,1
+"ws16_mem_500x5040","pinned",1,2520000,2520000,2520000,1
+"private_h1","pinned",1,5481906,5481906,5481906,1
+"ws16_mem_500x1260","lean",2,504000,630000,630000,0.8
+"ws16_mem_500x5040","lean",5,504000,2520000,2520000,0.2
+"private_h1","lean",8,852357,5481906,5481906,0.155

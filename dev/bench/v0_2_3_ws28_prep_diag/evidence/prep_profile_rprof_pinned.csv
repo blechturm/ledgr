@@ -1,0 +1,15 @@
+"fn","self.time","self.pct"
+"""rapi_bind""",0.245,34.75
+"""ledgr_history_substrate_bar_matrices""",0.115,16.31
+"""assign_numeric""",0.11,15.6
+"""format.POSIXlt""",0.06,8.51
+"""ledgr_cpp_history_gap_runs""",0.045,6.38
+"""rapi_prepare""",0.03,4.26
+"""anyDuplicated.default""",0.03,4.26
+"""matrix""",0.03,4.26
+"""normalizePath""",0.015,2.13
+"""@<-""",0.005,0.71
+"""as.POSIXlt.POSIXct""",0.005,0.71
+"""getOption""",0.005,0.71
+"""rapi_execute""",0.005,0.71
+"""rev""",0.005,0.71
