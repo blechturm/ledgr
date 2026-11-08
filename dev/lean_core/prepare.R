@@ -22,6 +22,7 @@ lean_prep$plain_source <- FALSE
 lean_prep$plain_features <- FALSE
 lean_prep$fast_gather <- FALSE      # diagnostic: direct slices of full tiles
 lean_prep$tiles_per_query <- 1L     # diagnostic: tiles hydrated per bar query
+lean_prep$whole <- FALSE            # diagnostic: whole planes filled in place, pinned masks and reads
 
 # Section 12.3: max(252, ceiling(126,000 / instruments)) sessions.
 lean_tile_width <- function(n_instruments) {
@@ -272,6 +273,7 @@ lean_bar_axis <- function(snapshot, universe, start, end, distinct = TRUE) {
 # times, the first tile from `start` and the last to `end`, so every row of
 # the pin's long query is fetched exactly once.
 lean_hydrate <- function(snapshot, universe, start, end, instrument_ids, axis) {
+  if (isTRUE(lean_prep$whole)) return(lean_hydrate_whole(snapshot, universe, start, end, instrument_ids, axis))
   instrument_ids <- as.character(instrument_ids)
   axis <- as.POSIXct(axis, tz = "UTC")
   n <- length(instrument_ids)
@@ -325,6 +327,51 @@ lean_hydrate <- function(snapshot, universe, start, end, instrument_ids, axis) {
     lean_plane_set(planes$observed, k, stored, v)
   }
   structure(list(planes = planes, duplicate = duplicate, fetched = fetched), class = "lean_bars")
+}
+
+# Whole-plane diagnostic (2026-11-08): the six bar planes allocated once at
+# full size and filled in place, one bar query per chunk of sessions, so no
+# long frame of the whole history is held; reads then index whole matrices.
+lean_hydrate_whole <- function(snapshot, universe, start, end, instrument_ids, axis) {
+  instrument_ids <- as.character(instrument_ids)
+  axis <- as.POSIXct(axis, tz = "UTC")
+  n <- length(instrument_ids)
+  t <- length(axis)
+  chunk <- (lean_prep$width %||% lean_tile_width(n)) * max(1L, as.integer(lean_prep$tiles_per_query %||% 1L))
+  fields <- c("open", "high", "low", "close", "volume")
+  planes <- new.env(parent = emptyenv())
+  for (f in fields) assign(f, matrix(NA_real_, n, t), envir = planes)
+  planes$observed <- matrix(FALSE, n, t)
+  duplicate <- FALSE
+  fetched <- 0L
+  axis_num <- as.numeric(axis)
+  for (c0 in seq.int(1L, t, by = chunk)) {
+    c1 <- min(t, c0 + chunk - 1L)
+    from <- if (c0 == 1L) start else axis[[c0]]
+    to <- if (c1 == t) end else axis[[c1 + 1L]] - 1
+    rows <- tryCatch(ledgr_precompute_fetch_bars_frame(snapshot, universe, from, to),
+                     ledgr_precomputed_coverage_error = function(e) NULL)
+    if (is.null(rows)) next
+    fetched <- fetched + nrow(rows)
+    r <- collapse::fmatch(rows$instrument_id, instrument_ids)
+    c <- collapse::fmatch(as.numeric(rows$ts_utc), axis_num[c0:c1])
+    keep <- !is.na(r) & !is.na(c)
+    if (!any(keep)) next
+    lin <- r[keep] + (c[keep] + c0 - 2L) * n
+    if (anyDuplicated(lin)) duplicate <- TRUE
+    for (f in fields) {
+      v <- planes[[f]]
+      planes[[f]] <- NULL
+      v[lin] <- as.numeric(rows[[f]][keep])
+      planes[[f]] <- v
+    }
+    v <- planes$observed
+    planes$observed <- NULL
+    v[lin] <- TRUE
+    planes$observed <- v
+  }
+  structure(list(planes = mget(c(fields, "observed"), envir = planes), duplicate = duplicate, fetched = fetched),
+            class = "lean_bars")
 }
 
 # ---------------------------------------------------------------------------
@@ -597,7 +644,7 @@ lean_projection_full <- function(projection) {
 ledgr_history_prepare_masks <- function(substrate, knowledge, instrument_idx, block = 64L) {
   n_axis <- length(substrate$axis)
   n <- length(instrument_idx)
-  if (n == 0L || n_axis == 0L || n != length(substrate$instrument_ids)) {
+  if (isTRUE(lean_prep$whole) || n == 0L || n_axis == 0L || n != length(substrate$instrument_ids)) {
     return(lean_pinned_ns("ledgr_history_prepare_masks")(substrate, knowledge, instrument_idx, block))
   }
   candidates <- function(family, test) {
@@ -739,6 +786,10 @@ lean_pinned_ns <- function(name) get(name, envir = asNamespace("ledgr"))
 ledgr_history_value_slice <- function(stored, rows, columns, masks, gaps, max_carry_sessions, carry_allowed,
                                       min_observations, axis_names, instrument_ids,
                                       manifestation = "matrix", trace_access = FALSE) {
+  if (!inherits(masks$expected, "lean_plane") && !inherits(stored, "lean_plane")) {
+    return(lean_pinned_ns("ledgr_history_value_slice")(stored, rows, columns, masks, gaps, max_carry_sessions,
+      carry_allowed, min_observations, axis_names, instrument_ids, manifestation, trace_access))
+  }
   rows <- as.integer(rows)
   columns <- as.integer(columns)
   dep <- as.integer(masks$dependency_first)

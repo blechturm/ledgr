@@ -1,0 +1,5 @@
+"capture","width","debug","mutation","exit","checks","calls","failing_checks","verdict"
+"prep_fixture.rds","8","0","none",1,14,1934,"recycling_exercised","FAIL"
+"prep_fixture.rds","8","1","none",1,14,1934,"recycling_exercised","FAIL"
+"prep_fixture.rds","12","0","none",1,14,1934,"recycling_exercised","FAIL"
+"prep_fixture.rds","12","1","none",1,14,1934,"recycling_exercised","FAIL"

@@ -11,7 +11,8 @@
 # instrument-major with the resident source bars as plain matrices
 # (plain_src), and with the feature series plain too (plain); plain with
 # direct slices of full working tiles (fast_g), and with four tiles hydrated
-# per bar query as well (fast).
+# per bar query as well (fast); whole planes filled in place by chunked
+# queries, with the pinned masks and reads (whole).
 #
 # clock   cut12-prep-1's clocks (prep, r1-r6) per slot, arms alternating;
 #         unwrapped. Writes clock.csv.
@@ -55,10 +56,11 @@ arm_setup <- function(arm) {
   if (arm == "pinned") return(function() NULL)
   lean$lean_prep$orient <- if (arm == "time") "time" else "inst"
   lean$lean_prep$width <- if (arm == "inst_one") 100000L else NULL
-  lean$lean_prep$plain_source <- arm %in% c("plain_src", "plain", "fast_g", "fast")
-  lean$lean_prep$plain_features <- arm %in% c("plain", "fast_g", "fast")
+  lean$lean_prep$plain_source <- arm %in% c("plain_src", "plain", "fast_g", "fast", "whole")
+  lean$lean_prep$plain_features <- arm %in% c("plain", "fast_g", "fast", "whole")
+  lean$lean_prep$whole <- arm == "whole"
   lean$lean_prep$fast_gather <- arm %in% c("fast_g", "fast")
-  lean$lean_prep$tiles_per_query <- if (arm == "fast") 4L else 1L
+  lean$lean_prep$tiles_per_query <- if (arm %in% c("fast", "whole")) 4L else 1L
   lean$lean_prep$build_seconds <- 0
   lean$lean_prepare_install()
 }
