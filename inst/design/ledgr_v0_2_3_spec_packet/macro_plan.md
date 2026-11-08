@@ -803,8 +803,14 @@ public behavior except the explicit pulse-plumbing ledger differences.
      stays one atomic cut. A lean stage reads and writes the pin's fold
      state and stage groups unchanged; a representation change to fold
      state waits until every stage that reads or writes it is lean. The
-     lean loop itself is the last family: it replaces the pinned run loop
-     once all five stages are lean. Supersedes "Stage parity before
+     lean loop swaps in the same way (`ledgr_fold_envelope`, which holds
+     the run loop). Its position is set by the per-stage profile (point 2),
+     which reports each stage's time and the loop's own time per pulse: if
+     the loop is a large share it comes early, keeping the pin's fold state
+     and stage interfaces; if small, it comes after the stages, when it can
+     also change the fold state. Either way A1 applies to it: the loop is
+     written by the maintainer or under a tight maintainer brief.
+     Supersedes "Stage parity before
      end-to-end" for these families; the stage recorder stays as a
      debugging tool.
   2. **Rough first, timed within hours.** A family starts with a rough lean
