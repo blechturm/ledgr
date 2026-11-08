@@ -1453,18 +1453,20 @@ cuts:
       dev/bench/timing/ through one Cut 12 protocol, reusing the entry
       workload methods. LDG-3215 freezes matched preparation and full
       public-request clock endpoints, pinned microsecond budgets and baseline
-      noise before LDG-3216 code; preparation includes tile hydration and
+      noise before LDG-3216 code; preparation includes chunked hydration and
       allocation. LDG-3214 and LDG-3217 compare alternating pinned and
       candidate arms through that protocol. The 123/134 us figures are
       rounded illustrations; FIFO gates use the caller/bucket ratios. Each
       family close reports
       per-function profile samples and line counts; a miss is fixed or
-      explicitly accepted by the maintainer. (6) The memory claim is that
-      prepared working tiles and buffers stay within a working-set budget
-      declared in LDG-3215 and approved before preparation code, unchanged
-      across history lengths at fixed tile width and worker count. Every
-      other resident component, hydration included, is reported separately.
-      Tiles are not claimed to lower the peak set by snapshot load or
+      explicitly accepted by the maintainer. (6) The memory claim (amended
+      2026-11-08 by the maintainer, whole-planes amendment W3,
+      rfc/rfc_lean_core_whole_planes_v0_2_3_seed.md) is that lean preparation
+      holds no whole-history long bar frame and its preparation peak is at
+      most the pinned arm's on 500 x 1,260, 2,520, 5,040 and private H1;
+      history-length growth is reported, not bounded. Every resident
+      component and peak, hydration included, is reported separately.
+      Preparation is not claimed to lower the peak set by snapshot load or
       store-wide validation; those keep their owners (snapshot services;
       LDG-3210 in WS9b). (7) The paired H1 history resource gate binds at the
       switch cut, where a full lean run and sweep exist; this checkpoint
@@ -4261,13 +4263,20 @@ tickets:
       - "R11 per-pulse budget (dev/bench/v0_2_3_cut12_floor_budget/prep_read_probe.R, evidence/prep_read_budget.csv, 5 rounds, High performance plan, P-core affinity): the pinned packet and view per pulse plus the six registered reads per decided pulse, in microseconds per run pulse, probe 228.4 on momentum 40 x 504 (budget 262.7) and 22,017.3 on fill-heavy 500 x 1,260 (budget 25,319.8); tile lookup and slice assembly must fit in the 15%."
       - "Design note: lean_core_interface.md Section 12.3 (tile width max(252, ceiling(126000 / n)), source tiles resident, three working tiles plus a transient buffer, no spill, budget 4 x w x N x 32 B), approved by the maintainer on 2026-11-07 with the cell-sized width."
   - id: "LDG-3216"
-    title: "Prepare tiles and prove exact reads across edges"
+    title: "Prepare whole planes and prove exact reads across chunk edges"
     workstream: 28
-    status: "complete"
+    status: "in_progress"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3215"]
     scope: >-
+      Reopened 2026-11-08 under the whole-planes amendment
+      (rfc/rfc_lean_core_whole_planes_v0_2_3_seed.md, W1-W2, accepted by
+      the maintainer): rewrite dev/lean_core/prepare.R to whole instruments x
+      sessions planes allocated once and filled in place by chunked bar
+      queries, with the pinned masks, carry planes, feature series and reads
+      over them; the tile text below is superseded where it conflicts, and
+      collapse::fmatch stays for the scatter. Original scope (tile design):
       Write dev/lean_core/prepare.R to the accepted design. Hydrate bars by
       tile from the sealed, verified snapshot through existing snapshot
       services; build tiles with one global instrument identity, explicit
@@ -4291,11 +4300,11 @@ tickets:
       shape in its own R process in parallel, as do the mutations, and never
       overlaps a timing window.
     acceptance:
-      - "fold-reader packets, feature series values and evidence, and every registered history read, including admission, metadata and classes, are identical to the pinned captures on the fixture at two tile widths, on the three portable shapes and on private H1 (digests only for private)"
-      - "a retained history result remains identical after tile recycling; re-reading the retained context's public columns and registered history requests after recycling reproduces the frozen values, names, types, classes and metadata from before recycling; private cache serialization is not compared"
-      - "each registered mutation fails parity: features restarted at an edge, admission from current membership, the cutoff overlay dropped, a retained view aliasing a recycled tile, and a finite request truncated at an edge"
+      - "fold-reader packets, feature series values and evidence, and every registered history read, including admission, metadata and classes, are identical to the pinned captures on the fixture at two hydration chunk widths, on the three portable shapes and on private H1 (digests only for private) (amended 2026-11-08, W5)"
+      - "each registered hydration mutation fails parity: a bar at a chunk edge dropped, a bar at a chunk edge fetched by both chunks, and duplicate bars within a chunk not refused (amended 2026-11-08, W5; the retained-after-recycling acceptance is withdrawn: there is no recycling)"
       - "lean preparation reads bars only through a verified snapshot handle, and nothing in R/ references dev/lean_core/"
     evidence:
+      - "Reopened 2026-11-08 under the whole-planes amendment. The entries below record the tile implementation (8a82831f), exact on every shape; the WS28 diagnostic (dev/bench/v0_2_3_ws28_prep_diag/, c1a6a9eb-e17559aa) measured it at up to 2x pinned on short reads for about 6% at the H1 run peak, and the maintainer replaced it."
       - "Read-path inventory first (5a7b76e9, parity/evidence/prep_read_inventory.md): every absolute session position on the pinned read path, before code."
       - "Implementation (0e4d3f1b, 0a586b4f, this commit): dev/lean_core/prepare.R, 656 code lines. Tiles are planes of width max(252, ceiling(126000 / n)) with one binding each in an environment, so a write modifies a tile in place; a tile held in a list was copied on every row write (preparation 1.85x -> 1.40x pinned on 500 x 5,040). Source planes stay resident; working planes (feature series, carry sources, last barrier) cache three tiles plus a transient buffer and rebuild from a recorded carried-in column. The orientation is time-major as approved; instrument-major passes the same parity and previews faster (maintainer decision, reported with LDG-3217)."
       - "Parity, fixture (parity/evidence/prep_check_fixture.csv): tile widths 8 and 12, debug off and on, all 14 checks, 1,934 calls each. Each of the five registered mutations fails at both widths; features restarted at an edge is caught by the pinned causality refusal (lookahead), the other four by differing checks."
@@ -4325,7 +4334,7 @@ tickets:
       affected-owner check. Write the checkpoint's progress re-estimate for
       the remaining families (macro WS16; a report, not a gate).
     acceptance:
-      - "resident working tiles and buffers stay within the declared budget and do not grow with history length at fixed width and worker count; every other component and every peak is reported against the pinned arm"
+      - "lean preparation holds no whole-history long bar frame and its preparation peak is at most the pinned arm's on 500 x 1,260, 2,520, 5,040 and private H1, with one and two workers; every resident component and every peak is reported against the pinned arm, and history-length growth is reported (amended 2026-11-08, whole-planes W3)"
       - "preparation and each registered request are at most 1.0x pinned on 500 x 5,040 and private H1, and preparation stays within 900 R lines; a miss is fixed or explicitly accepted by the maintainer"
       - "per-pulse reads stay within LDG-3215's floor-v1 budget on both workloads; a miss is fixed or explicitly accepted by the maintainer"
       - "the record names the process-peak steps tiles do not move (snapshot load, store-wide validation) and their owners"

@@ -247,7 +247,7 @@ values, admission and evidence of every read stay the same.
 | Piece | Today | Lean | Proven at |
 | --- | --- | --- | --- |
 | Lot kernel | `ledgr_lot_apply`, used by P4, replay, opening import and terminal dispositions | one R kernel with no call into the old arithmetic; compiled later only through WS14, with this R kernel as the reference (pulse plumbing R12) | the kernel boundary, on every captured call |
-| Preparation | full N x T planes, one long bars query, full feature matrices | tiles with a declared working-set budget | bar hydration, substrate, feature series, fold-reader packets and every registered history read |
+| Preparation | full N x T planes, one long bars query, full feature matrices | whole planes filled in place by chunked bar queries, no long frame (Section 12.3, amended 2026-11-08) | bar hydration, substrate, feature series, fold-reader packets and every registered history read |
 | Recorder | none | captures every boundary in Section 14 from the pin | its own replay check |
 
 The stages, E and every other existing function stay as they are.
@@ -420,7 +420,7 @@ index is a P4 output, not a kernel output. The compiled spot FIFO
 (`R/fold-engine.R:1411-1446`, `R/compiled-spot-fifo.R:109`) does not call the
 kernel and is outside this checkpoint.
 
-## 12. Prepared data and the tile adaptation
+## 12. Prepared data and the preparation adaptation
 
 ### 12.1 Today's prepared data
 
@@ -447,6 +447,11 @@ bar gap, price carry) and on the 40 x 504 momentum run
 (`tile_access_by_site.csv`). Tiles may change only how data is stored,
 fetched and allocated; the calculation, order, admission and evidence stay.
 LDG-3215 chooses widths, residency and eviction.
+
+> Whole-planes amendment (2026-11-08): the "Change for tiles" column below
+> records the superseded tile design. Under Section 12.3 only bar hydration
+> changes (chunked queries into preallocated whole planes); every other row
+> keeps the pin's storage and access.
 
 | Function (pinned) | Today | Change for tiles |
 | --- | --- | --- |
@@ -476,45 +481,29 @@ calculation (`R/history-features.R:19`, `:282-407`); treatment and carry
 (`src/`); projection lookups (`R/runtime-projection.R`); the strategy context
 (`R/pulse-context.R`).
 
-### 12.3 Tile design (LDG-3215; approved by the maintainer on 2026-11-07, with the cell-sized width)
+### 12.3 Whole planes and chunked hydration (whole-planes amendment, accepted by the maintainer on 2026-11-08)
 
-Measured in `dev/bench/v0_2_3_cut12_floor_budget/` (`tile_backing.R`,
-`evidence/tile_backing_*.csv`: pinned build, quiet host, High performance
-plan; tile times are medians over full tiles); the pinned clocks it must meet are frozen in
-`dev/bench/timing/protocols/cut12-prep-1/`.
-
-**Two kinds of tile.** A *source tile* holds what preparation computes once
-and never changes: for one session range, the bar planes (`open`, `high`,
-`low`, `close`, `volume` double; `observed` logical) and each feature's
-output plane, as sessions x stored instruments, with a global-ID-to-column
-map. An instrument is stored in a tile when it has a bar or a non-missing
-feature cell in that range; an unstored instrument is explicit absence. A
-*working tile* holds the planes reads derive from source tiles and facts:
-the expected mask, the last barrier and one carry-source plane per bar field
-read, today's `history_memo` planes cut to one session range (4 bytes per
-cell each).
+The tile design approved on 2026-11-07 (LDG-3215) was built and proved exact
+in LDG-3216 (8a82831f), then measured against the pin in
+`dev/bench/v0_2_3_ws28_prep_diag/`: up to 2x on short history reads, because
+every read sliced and copied tile pieces in R before the pinned C++ kernels
+ran, for about 6% at the private H1 run peak. The
+[whole-planes amendment](../rfc/rfc_lean_core_whole_planes_v0_2_3_seed.md)
+replaced it; its Sections 2-3 hold the measurements.
 
 | Choice | Value | Reason |
 | --- | --- | --- |
-| Tile width | max(252, ceiling(126,000 / instruments)) sessions, fixed per run from its instrument count: 252 at 500 instruments and on H1, 25,200 at 5 and 126,000 at 1; the fixture's parity runs also use 8 and 12 | A 252-session request, the largest registered daily lookback, touches at most two tiles. Each tile query has a fixed cost (8 ms at 5 instruments, 29 ms at 500 for 252 sessions, query and scatter), so a fixed session width fails long, thin data: 5 instruments x 100,620 five-minute bars at width 252 is 400 tiles and 3.2 s of queries against the pin's 3.6 s whole preparation (trial); at 25,200 it is 4 tiles and 0.10 s, and 20 x 50,310 at 6,300 is 8 tiles and 0.21 s. |
-| Hydration | one pinned bar query per tile session range through the verified handle (`ledgr_precompute_fetch_bars_frame` with the range), returning long rows that R scatters into the source tile by position (`collapse::fmatch`); duplicate bars refuse per range | Same rows and values as the long query, without the long frame (the entry record's +142-160 MiB at 500 x 5,040 and +1,009-1,081 MiB on H1). At the cell-sized width a full pass is the fastest measured or equal to it: 0.70 s at 500 x 5,040 and 1.88 s on H1, against 0.80 and 2.17 s for the pin's long query, holding 5% and 4% of its rows; 0.10 and 0.21 s on the intraday shapes, as the long query. Rejected: one streamed query fetched in chunks (wins only for narrow tiles: 0.33 against 3.2 s at width 252 on 5 x 100k; 1.41 s at 500 x 5,040, 3.5 s on H1 and 0.25 and 0.51 s on the intraday shapes at the cell-sized width); pivoting in DuckDB (trial host: 568 ms per 252 x 500 tile against 42 ms query plus 7 ms scatter, because moving a 3,001-column result into R costs 247 ms per tile even when pivoted once in advance, which also holds 265 MiB in DuckDB). Gap runs and carry sources carry their state across the edge. |
-| Source tiles | all resident in memory, never written after preparation | They are the source-history and feature-payload components, counted separately (skeleton 5.1). See the spilling row. |
-| Working tiles | at most 3 resident, least recently used evicted; rebuilt from source tiles on demand | The fold moves forward: the current, previous and next tiles serve a pulse's packets (`next_bar` crosses an edge) and every lookback up to 252. |
-| Older tiles | a read reaching past the resident working tiles (`lookback = Inf`, or more than 252 sessions) derives each older tile in one transient buffer, not cached | It does not evict the fold's working tiles. |
-| Spilling | none: no run-local file | Reading a tile back from a spill file costs what copying it from memory costs (1.59 against 1.43 ms per 6 MB tile at 500 x 5,040; 3.78 against 3.72 ms per 15 MB on H1) because the OS cache serves it, and it would move about 0.4 GB on H1 out of the process while the peak stays set by snapshot load and store-wide validation (Cut 12 decision 6). Re-querying the store instead is 15-20x slower per tile (29 against 1.4 ms at 500 x 5,040, 55 against 3.7 ms on H1; a full-history read 0.59 s against 0.03 s, and 1.6 s against 0.11 s). |
-| Feature input | per instrument, its prefix gathered across source tiles into one vector per field, then the existing calculation unchanged | Same sequence, knowledge ranges, restarts and arithmetic; no restart at an edge. The gathered row (sessions x 8 bytes per field) is a transient copy, reported. |
-| Feature output | each knowledge range written into that feature's source-tile planes | No sessions x instruments output matrix and no split-and-rebuild payload. |
-| Retained views | a view is the read service plus its cutoff; every returned value is a new R object gathered from tiles | Source tiles never change and working tiles are rebuilt, never edited in place, so a retained context re-reads the same values after recycling. |
+| Planes | the pin's representation: each bar field, `observed`, each feature series and each derived plane (expected mask, last barrier, carry sources) is one instruments x sessions matrix, allocated once at full size | Reads, packets and the C++ kernels take whole matrices and positions without a copy. Whole planes measured r1-r6 at 0.98-1.14x pinned against 1.07-2.09x for the best tiled variant (8 rounds, 500 x 5,040). |
+| Hydration | one pinned bar query (`ledgr_precompute_fetch_bars_frame` with the range) per chunk of 4 x max(252, ceiling(126,000 / instruments)) sessions through the verified handle, scattered into the preallocated planes by position (`collapse::fmatch`); duplicate bars refuse as the pin's do | No whole-history long bar frame (the entry record's +142-160 MiB at 500 x 5,040 and +1,009-1,081 MiB on H1). A chunk is 1,008 sessions at 500 instruments and on H1 and one query on the long intraday shapes. Peak during preparation, MiB: 903 against the pin's 979 at 500 x 5,040, 1,683 against 2,539 on H1. |
+| Derived planes, features, reads | the pinned code, unchanged, over the whole planes; masks built on first read as the pin builds them | One semantic path; nothing to recycle, so retained results are ordinary R values. |
+| Spilling | none: no run-local file | Unchanged from the tile measurement: a spill file costs what a memory copy costs because the OS cache serves it, and the peak is set elsewhere (Cut 12 decision 6). |
+| Feature input | the existing per-instrument input and calculation, unchanged | Same sequence, knowledge ranges, restarts and arithmetic. |
 
-**Working-set budget.** At most four working-tile equivalents (three resident
-plus the transient one): 4 x width x instruments x 32 bytes, which is 16 MiB
-at up to 500 instruments (any shape, since width x instruments is then about
-126,000 cells) and 38 MiB on H1's 1,166. It does not change with
-history length at fixed width and worker count. The pin's whole-axis memo
-planes are about 30 MiB at 500 x 5,040 and 100 MiB on H1, and grow with
-history. Source tiles, feature payload, the transient feature-input row,
-request outputs, retained views and lots are reported separately in
-LDG-3217.
+**Memory claim** (Cut 12 decision 6, amended): no whole-history long bar
+frame, and the lean preparation peak at most the pinned arm's on every
+registered shape. History-length growth is reported, not bounded. The run
+peak is set after preparation in every arm measured (H1: pinned 4,875 MiB,
+tiles 4,500, whole planes 4,767).
 
 ## 13. Validation placement
 
@@ -669,7 +658,7 @@ dev/lean_core/
   load.R          lean_core_load(lib): pinned build plus lean environment
   recorder/       LDG-3212: capture.R, compare.R, replay.R, run.R, check.R, omissions.R
   fifo.R          LDG-3213 lean kernel
-  prepare.R       LDG-3216 tile preparation
+  prepare.R       LDG-3216 preparation (whole planes, chunked hydration)
   parity/         family runners (FIFO, preparation)
 ```
 

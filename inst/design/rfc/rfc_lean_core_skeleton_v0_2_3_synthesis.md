@@ -19,6 +19,12 @@
   (PASS_AFTER_PATCHES, patches applied in 0f531a04), amends Sections 1, 2, 4,
   5.2, 5.3, 6 and 7 and qualifies the earlier amendments' preservation clauses
   for the pending WS16 lean core only.
+- Amended 2026-11-08: the [whole-planes
+  amendment](#amendment-maintainer-2026-11-08-whole-planes), accepted by the
+  maintainer on 2026-11-08 from the measured
+  [seed](rfc_lean_core_whole_planes_v0_2_3_seed.md) without a review cycle,
+  replaces the tile design of Sections 3 and 5.1 for the pending WS16 lean
+  core only.
 - Parent: the accepted [lean fold core synthesis](rfc_lean_fold_core_v0_2_3_synthesis.md),
   especially Sections 2-5 and amendment A1.
 - Inputs: [seed v2](rfc_lean_core_skeleton_v0_2_3_seed_v2.md),
@@ -243,6 +249,13 @@ prevails (C:550-563). Designing that extension procedure belongs to D2.
 
 ## 3. Prepared Data And Exact History
 
+> Whole-planes amendment (2026-11-08): For the pending WS16 lean core only,
+> W1 of the [whole-planes amendment](#amendment-maintainer-2026-11-08-whole-planes)
+> replaces the first paragraph below ("Choose compact time-major tiles"):
+> prepared planes are whole instruments x sessions matrices, as the pin's.
+> The inclusion paragraph is satisfied by the pin's whole-matrix semantics;
+> the rest of this section stands.
+
 **Choose compact time-major tiles.** Each session block stores numeric field
 and feature planes as sessions-by-stored-instruments double matrices, with a
 global-instrument-to-column map and explicit absence. Masks and segment fields
@@ -362,6 +375,14 @@ and 2.1 supply the interface and four-row check; Section 1's D2 gate applies
 before any of this checkpoint's code is written.
 
 ### 5.1 Memory Preparation
+
+> Whole-planes amendment (2026-11-08): For the pending WS16 lean core only,
+> W2-W3 of the [whole-planes amendment](#amendment-maintainer-2026-11-08-whole-planes)
+> withdraw tile width, residency, eviction, recycling and the bounded
+> working set in the first two paragraphs below. Chunked in-place hydration
+> replaces them, with chunk-boundary parity on the fixture at two chunk
+> widths. The component report, the paired resource gate and the spilling
+> measurement stand.
 
 Choose and measure tile width, resident-tile limit, backing/history access,
 eviction and retained-view ownership within a declared working-set budget.
@@ -858,3 +879,68 @@ isolation. Proposed lean behavior is unverified until those witnesses run.
 **Fold Evidence And Early Exit** (C:1524) requires normal INCOMPLETE completion
 to preserve the accepted prefix; treating it as a thrown-error rollback or
 flushing only full chunks would violate that contract.
+
+## Amendment (maintainer, 2026-11-08): whole planes
+
+The maintainer accepted the [whole-planes seed](rfc_lean_core_whole_planes_v0_2_3_seed.md)
+on 2026-11-08 as written, without a review cycle, from the WS28 diagnostic
+(`dev/bench/v0_2_3_ws28_prep_diag/`, commits `c1a6a9eb` through
+`e17559aa`): tiles cost up to 2x on short history reads and saved about 6%
+at the private H1 run peak. It amends Sections 3 and 5.1 of this record
+through their local notices, the [lean fold core synthesis](rfc_lean_fold_core_v0_2_3_synthesis.md#amendment-maintainer-2026-11-08-whole-planes)
+Section 4, Cut 12 decision (6), interface Section 12.3 and the acceptance
+of LDG-3216 and LDG-3217, for the pending WS16 lean core only. Shipped
+behavior is unchanged. The seed's Sections 2-3 hold the measurements and
+Section 5 the rejected alternatives. Below is its Section 4, verbatim;
+section references inside it are to the seed.
+
+**W1. Whole planes.** Lean preparation keeps the pin's representation: each
+bar field, `observed`, each feature series and each derived plane is one
+instruments x sessions matrix for the run, allocated once at full size. There
+are no tiles, no resident-tile limit, no eviction and no transient tile
+buffer. Reads, packets, masks, carry sources, barriers and feature series use
+the pinned code over these matrices.
+
+**W2. Chunked in-place hydration.** Bars are read through the verified
+snapshot handle with one bar query per chunk of sessions and written into the
+preallocated planes by position (`collapse::fmatch`). A chunk is 4 x
+max(252, ceiling(126,000 / instruments)) sessions: 1,008 at 500 instruments
+and on H1, one query for the long intraday shapes. No whole-history long bar
+frame exists. Duplicate bars refuse as the pin's do; a chunk edge never
+changes a value.
+
+**W3. Memory claim.** Replace the bounded working set with: lean preparation
+holds no whole-history long bar frame, and its preparation peak is at most
+the pinned arm's on 500 x 1,260, 2,520, 5,040 and private H1. Every resident
+component and every peak (parent, worker, process tree; one and two workers)
+is reported against the pinned arm, as before. History-length growth is
+reported, not bounded. The paired history resource gate at the switch
+(`contracts.md#contract-verification-release-gates`, its 1.10 limits and
+exception route) is unchanged.
+
+**W4. Text replaced.**
+
+- Lean fold core synthesis Section 4, paragraphs 2 and 4: "physical tiling"
+  and "tile" read as "chunked hydration"; "bound execution's prepared working
+  tiles and buffers" is withdrawn under W3; "fixed tile width" reads as
+  "fixed chunk width". The rest of Section 4 stands: no chunk resets state,
+  history begins at the data start, no feature restarts, no truncation.
+- Skeleton synthesis Section 3, first paragraph: "Choose compact time-major
+  tiles" is replaced by W1; the inclusion paragraph is satisfied by the pin's
+  whole-matrix semantics. Section 5.1, first two paragraphs: tile width,
+  residency, eviction and recycling are withdrawn; chunk-boundary parity on
+  the fixture at two chunk widths and the component report stand.
+- Cut 12 decision (6): its first sentence is replaced by W3; the rest stands.
+- Interface Section 12.3: rewritten to W1-W2. The spilling row (none) and the
+  feature-input row stand.
+
+**W5. Ticket acceptance.**
+
+- LDG-3216, acceptance 1: two fixture chunk widths instead of two tile
+  widths. Acceptance 2 (retained results after recycling) is withdrawn: there
+  is no recycling, and retained results are ordinary R values. Acceptance 3's
+  mutations are replaced by hydration mutations: a bar at a chunk edge
+  dropped, a bar at a chunk edge fetched by both chunks, and duplicate bars
+  within a chunk not refused. Acceptance 4 stands.
+- LDG-3217, acceptance 1: replaced by W3. Timing (decision 5), the 900-line
+  limit, the floor-v1 per-pulse budget and the remaining items stand.

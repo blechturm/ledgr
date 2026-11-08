@@ -113,7 +113,9 @@ reimplementation.
 Cut 12 is the accepted "Lean core first checkpoint" cut (workstreams 26-28,
 LDG-3211-LDG-3217) for macro WS16. It writes the interface table and a stage
 recorder against the `d5b3a151` pin, then the complete lean R FIFO kernel,
-then memory-bounded tile preparation, all under `dev/lean_core/` with no
+then lean preparation (whole planes with chunked hydration, under the
+[whole-planes amendment](../rfc/README.md#lean-core-whole-planes) of
+2026-11-08), all under `dev/lean_core/` with no
 change in `R/`. Its entry record is `dev/bench/v0_2_3_ws16_entry/`. The
 maintainer accepted it on 2026-11-06.
 

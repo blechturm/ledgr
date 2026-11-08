@@ -581,7 +581,7 @@ freezes behavior (synthesis Section 6).
   `dev/spikes/pulse-first-batch/` (batching helped; pulse-first did not).
 - **Lean core (2026-11-03).** WS9b measures parent and worker peak memory
   on the WS16 lean core before the switch, including whether sweep workers
-  share prepared tiles ([lean core skeleton RFC](../rfc/README.md#lean-core-skeleton),
+  share prepared planes ([lean core skeleton RFC](../rfc/README.md#lean-core-skeleton),
   memory checkpoint).
 - **LDG-3210, reserved for the later WS9b cut (maintainer, 2026-11-05).**
   Reduce cold full-trace diagnostic validation/decode memory and time without

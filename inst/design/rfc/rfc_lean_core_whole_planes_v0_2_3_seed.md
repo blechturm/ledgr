@@ -1,11 +1,13 @@
-# Proposed Amendment: Lean Core Whole Planes (v0.2.3), Seed v1
+# Amendment: Lean Core Whole Planes (v0.2.3), Seed v1
 
-- Status: **proposed amendment**, seed v1. Not binding. It proposes to amend
-  two accepted syntheses and the Cut 12 decisions that rest on them. The
-  maintainer names the review route (a Type 2 response, a synthesis and a
-  final review, as the pulse plumbing amendment had, or a shorter one). On
-  acceptance, Section 4 is appended as a dated amendment to each record it
-  amends, with a notice in each affected section.
+- Status: **accepted** by the maintainer on 2026-11-08 as written, without a
+  review cycle ("we measured and found the thing we designed lacking"); the
+  WS28 close review (Type 1) reads the installed text. Section 4 (W1-W5) is
+  appended as a dated amendment to the
+  [skeleton synthesis](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-08-whole-planes)
+  and the [lean fold core synthesis](rfc_lean_fold_core_v0_2_3_synthesis.md#amendment-maintainer-2026-11-08-whole-planes),
+  with a notice in each affected section. Before acceptance this was a
+  proposed amendment; the text below is unchanged.
 - Authors: maintainer with Claude, 2026-11-08.
 - Amends: the [lean fold core synthesis](rfc_lean_fold_core_v0_2_3_synthesis.md)
   Section 4 (Memory And Family Order); the

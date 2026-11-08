@@ -27,6 +27,10 @@
 - Amended 2026-11-06 by the maintainer: A1's line-by-line code review is
   replaced from LDG-3212 on; see the
   [A1 amendment](#amendment-maintainer-2026-11-06-a1-review-of-the-first-family).
+- Amended 2026-11-08 by the maintainer: Section 4's tiling and bounded
+  working set are replaced by whole planes and chunked hydration for the
+  pending WS16 lean core; see the
+  [whole-planes amendment](#amendment-maintainer-2026-11-08-whole-planes).
 
 > Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
 > the pulse-plumbing amendment supersedes the addressed clauses below. Shipped
@@ -187,6 +191,15 @@ reopened only after a measured residual bottleneck and its own design review;
 this synthesis creates no obligation to investigate it.
 
 ## 4. Memory And Family Order (D3; Q1)
+
+> Whole-planes amendment (2026-11-08): For the pending WS16 lean core only,
+> the [whole-planes amendment](#amendment-maintainer-2026-11-08-whole-planes)
+> amends the paragraphs below that begin "Windowed preparation", "Correct
+> v2's" and "The memory workstream": "physical tiling" and "tile" read as
+> chunked hydration, "fixed tile width" as fixed chunk width, and the bound on
+> "prepared working tiles and buffers" is withdrawn for the memory claim of
+> its W3. No chunk resets state, history begins at the data start, and no
+> feature restarts or request truncation is allowed, as before.
 
 **Amended 2026-11-03:** [A1 and Q5](#amendment-maintainer-2026-11-03-acceptance-conditions)
 add the maintainer-reviewed skeleton/first-family prerequisite and replace
@@ -569,3 +582,18 @@ replaced:
   disposition.
 - Each workstream close keeps its Type 1 close review. Later families return
   to the per-workstream code review alone.
+
+## Amendment (maintainer, 2026-11-08): whole planes
+
+The maintainer accepted the [whole-planes seed](rfc_lean_core_whole_planes_v0_2_3_seed.md)
+on 2026-11-08 as written, without a review cycle. Its W1-W5 are installed
+verbatim in the [skeleton synthesis
+amendment](rfc_lean_core_skeleton_v0_2_3_synthesis.md#amendment-maintainer-2026-11-08-whole-planes).
+For this record: Section 4's windowed preparation is chunked in-place
+hydration into whole instruments x sessions planes, not a tiling; the memory
+claim is W3 (no whole-history long bar frame; the lean preparation peak at
+most the pinned arm's on every registered shape; every component and peak
+reported against the pinned arm); chunk-boundary parity on the portable
+fixture and a registered Sharadar-scale shape, the paired history resource
+gate and its 1.10 limits, and the stop for maintainer disposition remain.
+Shipped behavior is unchanged.
