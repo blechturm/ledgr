@@ -19,7 +19,11 @@
 #
 # Usage (host set up per benchmark_methodology: High performance plan,
 # P-core affinity, no other R):
-#   Rscript dev/bench/v0_2_3_cut12_floor_budget/prep_read_probe.R <pinned lib> [rounds] [out csv]
+#   Rscript dev/bench/v0_2_3_cut12_floor_budget/prep_read_probe.R <pinned lib> [rounds] [out csv] [pinned|lean]
+#
+# LDG-3217 checks the budget with `lean`: lean preparation
+# (dev/lean_core/prepare.R, whole planes) is bound into the pinned namespace
+# before the rounds, so the same reads run on lean-prepared planes.
 
 args <- commandArgs(TRUE)
 lib <- args[[1L]]
@@ -27,6 +31,11 @@ rounds <- if (length(args) >= 2L) as.integer(args[[2L]]) else 5L
 here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/"))
 repo <- normalizePath(file.path(here, "..", "..", ".."), winslash = "/")
 out_csv <- if (length(args) >= 3L) args[[3L]] else file.path(here, "evidence", "prep_read_budget.csv")
+arm <- if (length(args) >= 4L) match.arg(args[[4L]], c("pinned", "lean")) else "pinned"
+if (identical(arm, "lean")) {
+  source(file.path(repo, "dev/lean_core/load.R"))
+  lean_core_load(lib)$lean_prepare_install()
+}
 library(ledgr, lib.loc = lib)
 source(file.path(repo, "dev/bench/v0_2_3_ws16_entry/workloads.R"))
 ns <- asNamespace("ledgr")
@@ -168,7 +177,7 @@ cols <- c("packet_us", paste0("r", 1:6, "_us"))
 raw$total_us <- rowSums(raw[cols])
 summ <- do.call(rbind, lapply(split(raw, raw$workload), function(k) {
   med <- vapply(c(cols, "total_us"), function(cl) stats::median(k[[cl]]), 0)
-  data.frame(workload = k$workload[[1L]], rounds = nrow(k), pulses = k$pulses[[1L]], decided = k$decided[[1L]],
+  data.frame(workload = k$workload[[1L]], arm = arm, rounds = nrow(k), pulses = k$pulses[[1L]], decided = k$decided[[1L]],
              t(round(med, 1)), budget_us = round(1.15 * med[["total_us"]], 1),
              total_range_pct = round(100 * diff(range(k$total_us)) / med[["total_us"]], 1))
 }))
