@@ -20,6 +20,8 @@ lean_prep$orient <- "time"  # tile storage: "time" (sessions x instruments) or "
 # resident source bars and feature series; working planes stay tiled.
 lean_prep$plain_source <- FALSE
 lean_prep$plain_features <- FALSE
+lean_prep$fast_gather <- FALSE      # diagnostic: direct slices of full tiles
+lean_prep$tiles_per_query <- 1L     # diagnostic: tiles hydrated per bar query
 
 # Section 12.3: max(252, ceiling(126,000 / instruments)) sessions.
 lean_tile_width <- function(n_instruments) {
@@ -80,7 +82,9 @@ lean_tile_get <- function(p, k) {
     return(list(v = lean_tile_v(p, k), rows = p$rows[[k]], stored = p$stored[[k]]))
   }
   if (is.null(p$build)) return(NULL)
+  b0 <- proc.time()[["elapsed"]]
   v <- p$build(k)
+  lean_prep$build_seconds <- (lean_prep$build_seconds %||% 0) + proc.time()[["elapsed"]] - b0
   p$builds <- p$builds + 1L
   all_rows <- seq_len(p$n)
   if (length(p$resident) >= 3L && k < min(p$resident)) {
@@ -109,6 +113,10 @@ lean_working_plane <- function(n, t, width, fill, build) {
 }
 
 lean_plane_gather <- function(p, i, j) {
+  if (isTRUE(lean_prep$fast_gather) && p$orient == "inst" && length(i) && length(j)) {
+    fast <- lean_plane_gather_run(p, i, j)
+    if (!is.null(fast)) return(fast)
+  }
   out <- matrix(p$fill, length(i), length(j))
   if (!length(i) || !length(j)) return(out)
   tile <- (j - 1L) %/% p$width + 1L
@@ -123,6 +131,31 @@ lean_plane_gather <- function(p, i, j) {
     out[ok, at] <- if (p$orient == "time") t(tl$v[lc, m[ok], drop = FALSE]) else tl$v[m[ok], lc, drop = FALSE]
   }
   out
+}
+
+# Fast path (WS28 diagnostic): an increasing run of sessions whose tiles each
+# hold every instrument is a direct slice of one tile, or the slices of
+# consecutive tiles bound side by side. NULL when the request is not such a run.
+lean_plane_gather_run <- function(p, i, j) {
+  n_j <- length(j)
+  if (j[[n_j]] - j[[1L]] != n_j - 1L) return(NULL)
+  k1 <- (j[[1L]] - 1L) %/% p$width + 1L
+  kn <- (j[[n_j]] - 1L) %/% p$width + 1L
+  if (k1 == kn) {
+    tl <- lean_tile_get(p, k1)
+    if (is.null(tl) || length(tl$stored) != p$n) return(NULL)
+    lc <- j - (k1 - 1L) * p$width
+    return(tl$v[i, lc, drop = FALSE])
+  }
+  parts <- vector("list", kn - k1 + 1L)
+  for (k in k1:kn) {
+    tl <- lean_tile_get(p, k)
+    if (is.null(tl) || length(tl$stored) != p$n) return(NULL)
+    cols <- lean_tile_cols(p, k)
+    lc <- cols[cols >= j[[1L]] & cols <= j[[n_j]]] - (k - 1L) * p$width
+    parts[[k - k1 + 1L]] <- tl$v[i, lc, drop = FALSE]
+  }
+  do.call(cbind, parts)
 }
 
 lean_plane_points <- function(p, r, c) {
@@ -251,13 +284,26 @@ lean_hydrate <- function(snapshot, universe, start, end, instrument_ids, axis) {
   fetched <- 0L
   k_all <- if (t > 0L) (t - 1L) %/% w + 1L else 0L
   first <- (seq_len(k_all) - 1L) * w + 1L
+  per_query <- max(1L, as.integer(lean_prep$tiles_per_query %||% 1L))
+  group_rows <- NULL
   for (k in seq_len(k_all)) {
-    from <- if (k == 1L) start else axis[[first[[k]]]]
-    to <- if (k == k_all) end else axis[[first[[k + 1L]]]] - 1
-    rows <- tryCatch(ledgr_precompute_fetch_bars_frame(snapshot, universe, from, to),
-                     ledgr_precomputed_coverage_error = function(e) NULL)
+    # One query per group of `per_query` tiles (diagnostic; 1 is Section 12.3).
+    if ((k - 1L) %% per_query == 0L) {
+      k_last <- min(k_all, k + per_query - 1L)
+      from <- if (k == 1L) start else axis[[first[[k]]]]
+      to <- if (k_last == k_all) end else axis[[first[[k_last + 1L]]]] - 1
+      group_rows <- tryCatch(ledgr_precompute_fetch_bars_frame(snapshot, universe, from, to),
+                             ledgr_precomputed_coverage_error = function(e) NULL)
+      if (!is.null(group_rows)) fetched <- fetched + nrow(group_rows)
+    }
+    rows <- group_rows
     if (is.null(rows)) next
-    fetched <- fetched + nrow(rows)
+    if (per_query > 1L) {
+      lo <- if (k == 1L) -Inf else as.numeric(axis[[first[[k]]]])
+      hi <- if (k == k_all) Inf else as.numeric(axis[[first[[k + 1L]]]])
+      ts <- as.numeric(rows$ts_utc)
+      rows <- rows[ts >= lo & ts < hi, , drop = FALSE]
+    }
     cols <- lean_tile_cols(planes$close, k)
     r <- collapse::fmatch(rows$instrument_id, instrument_ids)
     c <- collapse::fmatch(as.numeric(rows$ts_utc), as.numeric(axis[cols]))

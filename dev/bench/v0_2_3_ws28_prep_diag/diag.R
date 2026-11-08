@@ -9,7 +9,9 @@
 # instrument-major with one tile spanning the whole history (no tile edges,
 # same lean_plane access path); lean time-major at the run width; lean
 # instrument-major with the resident source bars as plain matrices
-# (plain_src), and with the feature series plain too (plain).
+# (plain_src), and with the feature series plain too (plain); plain with
+# direct slices of full working tiles (fast_g), and with four tiles hydrated
+# per bar query as well (fast).
 #
 # clock   cut12-prep-1's clocks (prep, r1-r6) per slot, arms alternating;
 #         unwrapped. Writes clock.csv.
@@ -53,8 +55,11 @@ arm_setup <- function(arm) {
   if (arm == "pinned") return(function() NULL)
   lean$lean_prep$orient <- if (arm == "time") "time" else "inst"
   lean$lean_prep$width <- if (arm == "inst_one") 100000L else NULL
-  lean$lean_prep$plain_source <- arm %in% c("plain_src", "plain")
-  lean$lean_prep$plain_features <- arm == "plain"
+  lean$lean_prep$plain_source <- arm %in% c("plain_src", "plain", "fast_g", "fast")
+  lean$lean_prep$plain_features <- arm %in% c("plain", "fast_g", "fast")
+  lean$lean_prep$fast_gather <- arm %in% c("fast_g", "fast")
+  lean$lean_prep$tiles_per_query <- if (arm == "fast") 4L else 1L
+  lean$lean_prep$build_seconds <- 0
   lean$lean_prepare_install()
 }
 
@@ -134,9 +139,10 @@ for (r in seq_len(rounds)) for (arm in arms) {
   t0 <- proc.time()[["elapsed"]]
   res <- tryCatch(cut12_prep(list(shape = "500x5040"), wd), finally = { unwrap(); restore() })
   wall <- proc.time()[["elapsed"]] - t0
-  clock[[length(clock) + 1L]] <- data.frame(round = r, arm = arm, wall = round(wall, 2),
+  builds <- if (arm == "pinned") 0 else lean$lean_prep$build_seconds %||% 0
+  clock[[length(clock) + 1L]] <- data.frame(round = r, arm = arm, wall = round(wall, 2), builds = round(builds, 4),
                                             t(round(res$seconds, 4)), work = res$work)
-  print(clock[[length(clock)]][, 1:10], row.names = FALSE)
+  print(clock[[length(clock)]][, 1:11], row.names = FALSE)
   if (mode == "stages") {
     keys <- names(ST$incl)
     parts <- do.call(rbind, strsplit(keys, "\t", fixed = TRUE))
@@ -151,7 +157,7 @@ same <- length(unique(clock$work)) == 1L
 cat("\nwork strings identical across arms and rounds:", same, "\n")
 utils::write.csv(clock, file.path(out, paste0(mode, "_clock.csv")), row.names = FALSE)
 if (mode == "clock") {
-  med <- aggregate(. ~ arm, data = clock[, c("arm", "prep", paste0("r", 1:6))], FUN = stats::median)
+  med <- aggregate(. ~ arm, data = clock[, c("arm", "builds", "prep", paste0("r", 1:6))], FUN = stats::median)
   base <- med[med$arm == "pinned", -1L]
   if (nrow(base)) {
     ratio <- cbind(arm = med$arm, round(sweep(as.matrix(med[, -1L]), 2L, unlist(base), "/"), 3))

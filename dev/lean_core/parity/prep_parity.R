@@ -56,6 +56,8 @@ lean$lean_prep$orient <- arg("orient", "time")
 plain <- strsplit(arg("plain", ""), ",")[[1L]]
 lean$lean_prep$plain_source <- "source" %in% plain
 lean$lean_prep$plain_features <- "features" %in% plain
+lean$lean_prep$fast_gather <- "fast" %in% plain
+lean$lean_prep$tiles_per_query <- if (any(grepl("^q[0-9]+$", plain))) as.integer(sub("^q", "", grep("^q[0-9]+$", plain, value = TRUE)[[1L]])) else 1L
 private <- "--private" %in% commandArgs(TRUE)
 # Lean copies first, then the pinned namespace (the lean environment's parent).
 fn <- function(name) get(name, envir = lean, mode = "function")
