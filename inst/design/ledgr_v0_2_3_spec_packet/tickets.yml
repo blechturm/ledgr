@@ -1495,7 +1495,7 @@ cuts:
       families); sweeps, worker sharing and transport (WS9b and the sweep
       family); LDG-3210's cold validation cost; snapshot load and
       verification; compiled kernels, quickr or any new dependency; lazy lots;
-      an incremental feature API; restarting features or history at tile
+      an incremental feature API; restarting features or history at chunk
       edges; truncating or refusing a previously valid history request to fit
       a memory budget; OMS, order-type, shorting, asset-class or
       observable-data fields (the table carries notes, not fields);
@@ -1784,7 +1784,7 @@ workstreams:
     close_review: null
     depends_on_workstream: 27
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 28, after LDG-3217", reason: "One claim joins LDG-3215 through LDG-3217: tile preparation reproduces the pinned fold-reader packets, feature series and evidence, and every registered public history read exactly, across tile edges placed at column-order change, entry, exit, re-entry, carry expiry and late knowledge, on the portable fixture, the three portable shapes and private H1; retained views are unchanged after tile recycling; the prepared working set stays inside the declared budget at every history length while every other resident component is reported; every registered mutation fails; and after the subtraction review it meets its budgets or has an explicit maintainer acceptance."}
+    review: {mode: "Type 1", point: "close of workstream 28, after LDG-3217", reason: "One claim joins LDG-3215 through LDG-3217 (as amended by the whole-planes amendment, 2026-11-08): whole-plane preparation with chunked hydration reproduces the pinned fold-reader packets, feature series and evidence, and every registered public history read exactly, on the portable fixture at two chunk widths with chunk edges placed at column-order change, entry, exit, re-entry, carry expiry and late knowledge, on the three portable shapes and on private H1; it holds no whole-history long bar frame and its preparation peak is at most the pinned arm's, with every other resident component and every peak reported; every registered mutation fails; and after the subtraction review it meets its budgets or has an explicit maintainer acceptance."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -4270,32 +4270,21 @@ tickets:
     effort: "L"
     dependencies: ["LDG-3215"]
     scope: >-
-      Reopened 2026-11-08 under the whole-planes amendment
+      Rewritten 2026-11-08 under the whole-planes amendment
       (rfc/rfc_lean_core_whole_planes_v0_2_3_seed.md, W1-W2, accepted by
-      the maintainer): rewrite dev/lean_core/prepare.R to whole instruments x
-      sessions planes allocated once and filled in place by chunked bar
-      queries, with the pinned masks, carry planes, feature series and reads
-      over them; the tile text below is superseded where it conflicts, and
-      collapse::fmatch stays for the scatter. Original scope (tile design):
-      Write dev/lean_core/prepare.R to the accepted design. Hydrate bars by
-      tile from the sealed, verified snapshot through existing snapshot
-      services; build tiles with one global instrument identity, explicit
-      absence, base masks, knowledge-epoch overlays and flat segment and
-      change-point columns; run the existing feature calculation with
-      adapted input access and output allocation, never restarting at an
-      edge; serve the fold-reader packets and the registered history reads
-      from tiles through the existing semantic services with the accepted
-      tile-access adaptations. Retained views are copies that tiles never write. Prove every
-      output through the recorder. Use collapse (already a dependency) for
-      the indexed and grouped work this adds: the hydration scatter
-      (collapse::fmatch, measured about 1 ms per 252 x 500 tile below base
-      match(), maintainer 2026-11-07), and, measured against base R in this
-      ticket, working-tile derivation per instrument, each instrument's
-      gathered feature input and multi-tile read assembly. Working order
-      (maintainer 2026-11-07): before writing code, list every place the
-      pinned read path uses an absolute session column (cutoff_col,
-      pulse_columns, carry-source positions, dependency_first, C++ row and
-      column indices); iterate on the fixture captures at both widths, then
+      the maintainer); the tile design this ticket first built is recorded
+      in the evidence below. Rewrite dev/lean_core/prepare.R so that each bar
+      field, observed, each feature series and each derived plane is one
+      instruments x sessions matrix allocated once at full size, filled in
+      place from the sealed, verified snapshot by one bar query per chunk of
+      sessions (chunk 4 x max(252, ceiling(126000 / n)) sessions, scatter by
+      collapse::fmatch), with no whole-history long bar frame. Masks, carry
+      planes, barriers, feature series, fold-reader packets and the
+      registered history reads use the pinned code over these matrices.
+      Duplicate bars refuse as the pin's do. Remove tiles, gather, working
+      planes, value-slice shifting and the WS28 diagnostic switches. Prove
+      every output through the recorder. Working order: iterate on the
+      fixture captures at two chunk widths and the hydration mutations, then
       500 x 1,260, before the large shapes; the parity runner compares each
       shape in its own R process in parallel, as do the mutations, and never
       overlaps a timing window.
@@ -4321,15 +4310,25 @@ tickets:
     effort: "M"
     dependencies: ["LDG-3216"]
     scope: >-
-      Run the subtraction review first and fix its findings here. On 500 x
-      1,260, 2,520 and 5,040 and private H1 at fixed tile width, with one and
-      two harness-launched worker processes (no product transport), measure
-      source and history, feature payload, resident tiles, summaries,
-      transient copies, lots, retained views and output separately, with
-      parent, worker and process-tree peaks, using the memory_probe.R method
-      of dev/bench/v0_2_3_ws16_entry/ and its pinned arm. Time preparation and
-      the request set using the timing protocol in Cut 12 decision (5), and
-      report per-function profile samples and line counts. Add surfaced
+      Order (maintainer 2026-11-08); each step states its expected runtime
+      before it starts. (1) Run the subtraction review and fix its findings
+      here. (2) Profile the preparation gap the amendment left open (its
+      Section 6); if preparation stays above 1.0x pinned without a found
+      cause, stop and report to the maintainer before any long run. (3)
+      Preview with the WS28 diagnostic clock (dev/bench/v0_2_3_ws28_prep_diag/
+      diag.R, 8 alternating rounds on 500 x 5,040); the timing record runs
+      only if every cell's median is at most 1.05x pinned, otherwise stop and
+      report. (4) Memory and the floor-v1 per-pulse probe are untimed and may
+      run while LDG-3216's H1 parity runs, never beside a timing window. (5)
+      Run the timing record once, on 500 x 5,040 and private H1, by the
+      protocol in Cut 12 decision (5). Memory: on 500 x 1,260, 2,520 and
+      5,040 and private H1, with one and two harness-launched worker
+      processes (no product transport), measure source and history, feature
+      payload, bar and derived planes, summaries, transient copies, lots,
+      retained views and output separately, with parent, worker and
+      process-tree peaks, using the memory_probe.R method of
+      dev/bench/v0_2_3_ws16_entry/ and its pinned arm. Report per-function
+      profile samples and line counts. Add surfaced
       rules to the ledger as pending and record the five-scenario
       affected-owner check. Write the checkpoint's progress re-estimate for
       the remaining families (macro WS16; a report, not a gate).
@@ -4337,6 +4336,6 @@ tickets:
       - "lean preparation holds no whole-history long bar frame and its preparation peak is at most the pinned arm's on 500 x 1,260, 2,520, 5,040 and private H1, with one and two workers; every resident component and every peak is reported against the pinned arm, and history-length growth is reported (amended 2026-11-08, whole-planes W3)"
       - "preparation and each registered request are at most 1.0x pinned on 500 x 5,040 and private H1, and preparation stays within 900 R lines; a miss is fixed or explicitly accepted by the maintainer"
       - "per-pulse reads stay within LDG-3215's floor-v1 budget on both workloads; a miss is fixed or explicitly accepted by the maintainer"
-      - "the record names the process-peak steps tiles do not move (snapshot load, store-wide validation) and their owners"
+      - "the record names the process-peak steps preparation does not move (snapshot load, store-wide validation) and their owners"
       - "subtraction findings, ledger entries, the affected-owner check and the re-estimate are recorded, and the maintainer disposes the checkpoint before the P1 family is cut"
     evidence: []
