@@ -4263,7 +4263,7 @@ tickets:
   - id: "LDG-3216"
     title: "Prepare tiles and prove exact reads across edges"
     workstream: 28
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3215"]
@@ -4295,7 +4295,15 @@ tickets:
       - "a retained history result remains identical after tile recycling; re-reading the retained context's public columns and registered history requests after recycling reproduces the frozen values, names, types, classes and metadata from before recycling; private cache serialization is not compared"
       - "each registered mutation fails parity: features restarted at an edge, admission from current membership, the cutoff overlay dropped, a retained view aliasing a recycled tile, and a finite request truncated at an edge"
       - "lean preparation reads bars only through a verified snapshot handle, and nothing in R/ references dev/lean_core/"
-    evidence: []
+    evidence:
+      - "Read-path inventory first (5a7b76e9, parity/evidence/prep_read_inventory.md): every absolute session position on the pinned read path, before code."
+      - "Implementation (0e4d3f1b, 0a586b4f, this commit): dev/lean_core/prepare.R, 656 code lines. Tiles are planes of width max(252, ceiling(126000 / n)) with one binding each in an environment, so a write modifies a tile in place; a tile held in a list was copied on every row write (preparation 1.85x -> 1.40x pinned on 500 x 5,040). Source planes stay resident; working planes (feature series, carry sources, last barrier) cache three tiles plus a transient buffer and rebuild from a recorded carried-in column. The orientation is time-major as approved; instrument-major passes the same parity and previews faster (maintainer decision, reported with LDG-3217)."
+      - "Parity, fixture (parity/evidence/prep_check_fixture.csv): tile widths 8 and 12, debug off and on, all 14 checks, 1,934 calls each. Each of the five registered mutations fails at both widths; features restarted at an edge is caught by the pinned causality refusal (lookahead), the other four by differing checks."
+      - "Parity, portable (parity/evidence/prep_check_portable.csv): 500 x 1,260, 2,520 and 5,040 at the run width, time-major, debug off and on, all 13 checks, 5,737, 11,473 and 22,945 calls; instrument-major passes the same six runs. 500 x 1,260 was rerun with the retained-packet check (14 checks, 5,738 calls, pass). A full ledgr_run() on 500 x 5,040 gives the same work string lean and pinned."
+      - "Parity, private H1 (parity/evidence/prep_check_h1.csv, counts and pass flags only): run width, debug off and on, all 13 checks, 32,993 calls each. The long intraday shapes (1 x 100k, 5 x 100k, 20 x 50k) on lean preparation reproduce every digest of the pinned history-read stream; the lean manifest is byte-identical to parity/evidence/prep_digests.csv. 1 x 100k fits one tile; the other two cross 3 and 7 edges."
+      - "Retained results: the runner keeps the first pulse's history reads (up to eight) and, from this commit, its fold-reader packet, and checks after all later reads have recycled the working tiles that each is byte-identical to its frozen value and that re-reading reproduces it (recycling_exercised confirms tiles were rebuilt). The packet check ran on the fixture and 500 x 1,260; the 2,520, 5,040 and H1 runs carry the history-read retention only."
+      - "Boundary: hydration reads through ledgr_precompute_fetch_bars_frame() per tile and the bar axis through the held handle (the query of R/run-snapshot.R:65), after ledgr_snapshot_ensure_handle() on a store opened with verification; grep finds no reference to dev/lean_core, lean_prep or lean_hydrate in R/."
+      - "collapse against base R (parity/prep_collapse_probe.R, evidence/prep_collapse_probe.csv, 500 instruments, width 252, identical outputs): the per-instrument carry fill of a working tile takes 0.74 ms with collapse::na_locf against 1.18 ms for a base column sweep, so it stays; for one instrument's feature input (12 against 14 us) and a 500 x 63 read across two tiles (112 against 108 us), collapse::gsplit does not beat base split because the matrix copy dominates, so base stays. Hydration uses collapse::fmatch as measured by the maintainer."
   - id: "LDG-3217"
     title: "Record lean preparation memory and close the first checkpoint"
     workstream: 28

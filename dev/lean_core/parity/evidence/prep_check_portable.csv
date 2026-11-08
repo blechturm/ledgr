@@ -1,4 +1,6 @@
 "capture","width","debug","mutation","exit","checks","calls","failing_checks","verdict"
+"prep_500x1260.rds","run","0","none",0,13,5737,"","pass"
+"prep_500x1260.rds","run","1","none",0,13,5737,"","pass"
 "prep_500x2520.rds","run","0","none",0,13,11473,"","pass"
 "prep_500x2520.rds","run","1","none",0,13,11473,"","pass"
 "prep_500x5040.rds","run","0","none",0,13,22945,"","pass"

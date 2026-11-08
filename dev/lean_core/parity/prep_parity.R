@@ -108,12 +108,19 @@ for (i in recs$reader) {
 
 # Fold reader: pulse columns, then each pulse's packets and view cutoff
 # against the pinned reader rebuilt from the same captured input.
+retained_packet <- NULL
 for (i in recs$reader) {
   a <- input(i)
   bound <- fn("ledgr_history_substrate_bind_features")(sub, projection)
   lean_reader <- fn("ledgr_history_substrate_fold_reader")(bound, a$pulses_posix, a$feature_defs, a$active_alias_map)
   pin_reader <- output(i)
   pulses <- seq_along(pin_reader$pulse_columns)
+  # The first pulse's public columns are kept and re-checked after every
+  # later packet and history read has recycled the working tiles.
+  if (length(pulses) && is.null(retained_packet)) {
+    first <- lean_reader$bars(1L)
+    retained_packet <- list(reader = lean_reader, pin = pin_reader$bars(1L), value = first, bytes = serialize(first, NULL))
+  }
   note("reader_columns", 1L, list(cmp(lean_reader$pulse_columns, pin_reader$pulse_columns)))
   note("reader_packets", length(pulses), lapply(pulses, function(p) cmp(lean_reader$bars(p), pin_reader$bars(p))))
   note("reader_views", length(pulses), lapply(pulses, function(p) {
@@ -184,6 +191,14 @@ if (length(recs$history_read)) {
   note("recycling_exercised", 1L, list(if (builds <= tiles) {
     sprintf("%d working planes built %d tiles for %d slots: no tile was rebuilt", length(working), builds, tiles)
   }))
+}
+if (!is.null(retained_packet)) {
+  note("retained_packet", 1L, list(
+    if (!identical(serialize(retained_packet$value, NULL), retained_packet$bytes)) {
+      "retained packet changed after recycling"
+    } else {
+      cmp(retained_packet$reader$bars(1L), retained_packet$pin)
+    }))
 }
 
 res <- do.call(rbind, rows)

@@ -1,0 +1,9 @@
+"op","impl","us","identical"
+"carry_fill_tile","base column sweep",1178,TRUE
+"carry_fill_tile","collapse::na_locf",738,TRUE
+"feature_input_one_instrument","base split + [",14,TRUE
+"feature_input_one_instrument","collapse::gsplit + [",12,TRUE
+"feature_input_one_instrument","base runs + [",12,TRUE
+"read_window_500x63","base split + [",108,TRUE
+"read_window_500x63","collapse::gsplit + [",112,TRUE
+"read_window_500x63","base runs + [",122,TRUE
