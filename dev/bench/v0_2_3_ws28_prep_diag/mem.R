@@ -7,7 +7,8 @@
 #     --shape=500x5040|h1 [--state=<private build-state.json>] --prebuilt=<store>
 #     --out=<csv, appended>
 #
-# Arms as diag.R. Private H1 rows carry megabytes only.
+# Arms as diag.R (pinned, lean); the tile arms are recorded at e17559aa.
+# Private H1 rows carry megabytes only.
 
 repo <- normalizePath(file.path(dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE),
   value = TRUE)[[1L]]), winslash = "/")), "..", "..", ".."), winslash = "/")
@@ -41,12 +42,7 @@ mark("loaded")
 
 restore <- function() NULL
 if (arm != "pinned") {
-  lean$lean_prep$orient <- if (arm == "time") "time" else "inst"
-  lean$lean_prep$plain_source <- arm %in% c("fast", "whole")
-  lean$lean_prep$plain_features <- arm %in% c("fast", "whole")
-  lean$lean_prep$whole <- arm == "whole"
-  lean$lean_prep$fast_gather <- arm == "fast"
-  lean$lean_prep$tiles_per_query <- if (arm %in% c("fast", "whole")) 4L else 1L
+  stopifnot(arm == "lean")
   restore <- lean$lean_prepare_install()
 }
 ns <- asNamespace("ledgr")

@@ -183,8 +183,9 @@ history-read request set (`lc_prep_strategy`, R1-R8). The fixture has six
 instruments on 96 declared sessions; its exit while held (changed column
 order), entry, re-entry, listing, relisting, carry expiry, late-known fact,
 off-axis request and `min_observations` window with carried and missing
-values all sit within one session of an edge shared by tile widths 8 and 12
-(after sessions 24, 48 and 72). `parity/prep_edges.R` derives each event
+values all sit within one session of an edge shared by hydration chunk
+widths 8 and 12 (after sessions 24, 48 and 72; the fixture was built for tile
+widths 8 and 12, which the whole-planes amendment replaced with chunks). `parity/prep_edges.R` derives each event
 from the fixture's input frames and checks it
 (`parity/evidence/prep_edges.csv`).
 
@@ -218,4 +219,24 @@ one SHA-256 per workload and function).
 
 ```sh
 Rscript dev/lean_core/parity/prep_digests.R --lib=<pinned library> --out=<dir> [--against=<reference dir>]
+```
+
+## Lean preparation (LDG-3216)
+
+`prepare.R` replaces only the pinned bar hydration (whole-planes amendment,
+`inst/design/rfc/rfc_lean_core_whole_planes_v0_2_3_seed.md`): it fills the
+pin's full instruments x sessions bar planes in place from one bar query per
+chunk of sessions (`lean_hydrate()`, chunk `lean_chunk_width()`), so no long
+frame of the whole history is held. Everything after hydration is the pinned
+code. `lean_prepare_install()` (harnesses only) binds it into the namespace
+and returns the restore function.
+
+`parity/prep_check.R` runs `parity/prep_parity.R` per capture, chunk width
+and debug setting in parallel child processes, and with `--mutations` the
+three registered hydration mutations, each of which must fail. Evidence:
+`parity/evidence/prep_check_*.csv`; the intraday shapes rerun
+`prep_digests.R --lean --against=<pinned streams>`.
+
+```sh
+Rscript dev/lean_core/parity/prep_check.R --lib=<pinned library> --captures=<prep_fixture.rds> --chunks=8,12 --scratch=<dir> --mutations
 ```

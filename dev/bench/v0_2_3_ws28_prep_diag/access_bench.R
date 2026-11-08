@@ -1,5 +1,7 @@
 # Unwrapped per-call cost of reading a working plane through `[` against a
 # plain matrix, 500 instruments x 5,040 sessions, width 252, inst-major.
+# Evidence for the whole-planes amendment: it needs the tile prepare.R, so
+# run it from a checkout of e17559aa; the current prepare.R has no tiles.
 S <- commandArgs(TRUE)[[1L]]  # scratch dir holding ws16/lib-d5b3a151
 repo <- normalizePath(".")
 source(file.path(repo, "dev/lean_core/load.R"))

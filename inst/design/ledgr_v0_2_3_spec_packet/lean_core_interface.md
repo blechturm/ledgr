@@ -236,11 +236,12 @@ service plus the pulse's cutoff column, so a strategy can read only the past.
 In the lean core, stages pass positions into these planes rather than copying
 columns out of them (pulse plumbing R6).
 
-**Tiles** (lean core, LDG-3215). Instead of full N x T planes, the lean core
-keeps blocks of a fixed number of sessions (time-major), with only some
-blocks in memory, and gathers across blocks when a read spans them. Each
-block holds only the instruments with stored data in it. The
-values, admission and evidence of every read stay the same.
+**Chunked hydration** (lean core, whole-planes amendment 2026-11-08,
+Section 12.3). The lean core keeps the pin's full N x T planes, but fills
+them in place from one bar query per chunk of sessions, so it never holds a
+long frame of the whole history. The values, admission and evidence of every
+read stay the same. (The tiles approved with LDG-3215 were replaced; the
+amendment records why.)
 
 ## 6. What the first checkpoint changes
 
