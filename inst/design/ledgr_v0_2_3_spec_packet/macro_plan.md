@@ -731,7 +731,8 @@ public behavior except the explicit pulse-plumbing ledger differences.
   state, sizing and risk; P3 restrictions, costs and affordability with
   P4/P5 publication; schedules and RNG; carry windows; sweep, workers and
   promotion.
-- **Stage parity before end-to-end (maintainer, 2026-11-04).** The lean
+- **Stage parity before end-to-end (maintainer, 2026-11-04; superseded for
+  families after the first checkpoint by the family method below).** The lean
   core cannot run a strategy end to end until P1 to P3 exist, so earlier
   families are proven at their stage boundaries: each stage's inputs and
   outputs are recorded once from the pinned build and the lean stage must
@@ -785,7 +786,75 @@ public behavior except the explicit pulse-plumbing ledger differences.
   full measurement plan. Before the P1 family is cut, the maintainer
   revisits how each family close measures (A2/A4: per-family timing records,
   probes and repeats) to move faster through the remaining families.
-- **Every family close (A2, A4).** WS16 uses frozen floor v1 and stage
+  **Resolved** by the family method below.
+- **Family method (accepted by the maintainer on 2026-11-08).** The first checkpoint (preparation and FIFO) took five days
+  and produced no whole-run measurement; under stage parity before
+  end-to-end the first one would come only after P1 to P3, weeks away. The
+  tile design passed its RFC and was overturned only by a late measurement.
+  Every family after the first checkpoint therefore works as follows, and
+  this supersedes the clauses named in each point:
+  1. **Swap into the pinned run.** The pinned loop calls each stage through
+     a namespace binding (`ledgr_fold_stage_observe_settle`, `_decide`,
+     `_plan`, `_apply`, `_commit` at `R/fold-engine.R`, pin d5b3a151). A
+     lean family replaces its stage binding inside an otherwise pinned run,
+     from `dev/lean_core/` only, as lean preparation does
+     (`lean_prepare_install()`). Nothing in `R/` changes; this is a
+     development harness, not a hybrid or fallback path, and the switch
+     stays one atomic cut. A lean stage reads and writes the pin's fold
+     state and stage groups unchanged; a representation change to fold
+     state waits until every stage that reads or writes it is lean. The
+     lean loop itself is the last family: it replaces the pinned run loop
+     once all five stages are lean. Supersedes "Stage parity before
+     end-to-end" for these families; the stage recorder stays as a
+     debugging tool.
+  2. **Rough first, timed within hours.** A family starts with a rough lean
+     stage, swapped in and timed on the reference workloads before it is
+     hardened. If it does not pay, the maintainer hears before the
+     hardening, not after. A per-stage profile of the pin on the reference
+     workloads comes before the first family; the maintainer may order the
+     P1-P3 families by measured stage cost instead of the fixed order above
+     (the macro plan owns within-release order).
+  3. **Gate: whole-run parity and a quick timing run.** A family closes
+     when the pinned run with the lean stage is bit-identical to the pin
+     (results, events, diagnostics) on the fixture, the portable shapes and
+     the published workloads, with debug on and off, and a quick
+     alternating timing run (about five pairs on the shared harness)
+     reports the whole-run ratio and the stage's own microseconds per
+     pulse. The line budget and the subtraction review stay. Private H1
+     parity, memory runs and full timing records run only at milestones:
+     the P3 family close and the switch cut. Supersedes A2/A4's per-family
+     floor-v1 cost-above-floor budgets and probes ("Every family close"
+     below) for these families; floor v1 stays as the reference figure.
+  4. **RFC only on a trigger.** A family needs an RFC only if it (a) changes
+     behavior relative to the pin or `contracts.md`, including a deliberate
+     rules-ledger change; (b) changes a public API or a stored format;
+     (c) adds compiled code, which also needs the maintainer's named
+     decision; or (d) changes an accepted architecture boundary (the core
+     extension architecture's fixed boundaries or owner map). Otherwise its
+     design is a cut note.
+  5. **Where design lives.** A family's cut note is its section of
+     [`lean_core_interface.md`](lean_core_interface.md), committed with the
+     code. It binds once its status line names the maintainer's acceptance
+     and date, as Section 12.3 does for preparation. It may not contradict
+     `contracts.md`, the pin or an accepted synthesis; a family that needs
+     to goes to an RFC under point 4. The family's Codex review checks the
+     code against its section. A section changes only by a newly accepted
+     version of that section. Authority order: `contracts.md` and the pin
+     for behavior; accepted syntheses for architecture; the interface
+     document for each family's internals; `tickets.yml` for order, status
+     and evidence. When the P1 family starts, the interface document's
+     title and header drop "First Checkpoint".
+  6. **Review and parallel work.** One Codex review per family at close, no
+     per-ticket rounds; the third correction round still goes to the
+     maintainer. Families that swap into different stages may be built at
+     the same time in separate worktrees, each closing as its own cut. Only
+     timing runs need the machine to themselves; long parity and memory
+     runs overlap with other work.
+  Unchanged: bit-identical parity against the pin, no second execution path
+  in `R/`, the contracts, pulse plumbing's debug-on/off requirement, the
+  rules ledger, escalation and the history-read kernels spike before P2.
+- **Every family close (A2, A4).** For the first checkpoint; families after
+  it use the family method above. WS16 uses frozen floor v1 and stage
   isolation under R11: each cut sets cost-above-floor budgets on both
   reference workloads, a pinned matched no-regression bar and a line budget;
   close reports all three, profile samples and subtraction; any miss is fixed
