@@ -781,6 +781,10 @@ public behavior except the explicit pulse-plumbing ledger differences.
   kernels at 500 x 252 and on the registered workloads. The maintainer then
   decides: plain R replaces the kernels and the C++ file is deleted, or the
   kernels stay as a recorded decision.
+- **Family measurement approach (maintainer, 2026-11-08).** Cut 12 keeps its
+  full measurement plan. Before the P1 family is cut, the maintainer
+  revisits how each family close measures (A2/A4: per-family timing records,
+  probes and repeats) to move faster through the remaining families.
 - **Every family close (A2, A4).** WS16 uses frozen floor v1 and stage
   isolation under R11: each cut sets cost-above-floor budgets on both
   reference workloads, a pinned matched no-regression bar and a line budget;
