@@ -4265,7 +4265,7 @@ tickets:
   - id: "LDG-3216"
     title: "Prepare whole planes and prove exact reads across chunk edges"
     workstream: 28
-    status: "in_progress"
+    status: "complete"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3215"]
@@ -4299,13 +4299,13 @@ tickets:
       - "Parity, fixture (parity/evidence/prep_check_fixture.csv): chunk widths 8 and 12, debug off and on, all 13 checks, 1,926 calls each. The three hydration mutations fail at both widths: a chunk-edge bar dropped (substrate and every downstream check), a chunk-edge bar fetched by both chunks (hydrate_rows) and duplicates within a chunk not refused (duplicate_refused, which compares lean's refusal with the pin's on every row fetched twice)."
       - "Parity, portable (parity/evidence/prep_check_portable.csv): 500 x 1,260, 2,520 and 5,040 at the run chunk (1,008 sessions: 2, 3 and 5 chunks), debug off and on, all 13 checks, 5,730, 11,466 and 22,938 calls; the 5,040 run takes 18 minutes."
       - "Parity, bar-native intraday captures (parity/evidence/prep_check_intraday.csv): 1 x 100k and 5 x 100k (one chunk each) and 20 x 50k (two chunks) at the run chunk, debug off and on, all 10 checks (no packet or history-read boundaries are captured for these shapes), 201,247, 201,247 and 100,627 calls. A fourth mutation, the last bar-native session dropped from lean's axis, fails the axis check on all three; duplicates are caught on all three, and both edge mutations on 20 x 50k. The history-read digest streams (prep_digests.R --lean) are identical to the pin's on the fixture and the three intraday shapes; the lean manifest is byte-identical to parity/evidence/prep_digests.csv."
-      - "Parity, private H1 (parity/evidence/prep_check_h1.csv, counts and pass flags only): running, debug off then on, at the run chunk."
+      - "Parity, private H1 (parity/evidence/prep_check_h1.csv, counts and pass flags only): on the final code (LDG-3217's subtractions applied, 8f056d8d; prepare.R 122 code lines), debug off and on at the run chunk, all 13 checks pass with 32,986 calls each; 11,656 s for both. The tile run's 32,993 differs only by its check set: axis and duplicate_refused added (+2), retained (8) and recycling_exercised (1) removed."
       - "Code review (per-ticket, Codex CLI gpt-6.1-sol/high, clean context): round 1 CHANGES_REQUIRED (parity/evidence/ldg3216_codex_review_round1.md): the runner handed hydration the pin's captured axis, so an injected lean axis defect passed every check. Fixed by lean_prepare_bars(), called by the entry point and the runner alike, an axis check that ends the run on a difference, and the axis mutation. Round 2 PASS (ldg3216_codex_review_round2.md): the round-1 witness now fails on axis; 276 refusal-order comparisons at chunk widths 1-1000, sparse declared snapshots with empty chunks and off-axis bars, duplicate injection and install/restore all match the pin. Ratio: one correction round."
       - "Boundary: hydration reads through ledgr_precompute_fetch_bars_frame() per chunk and the bar-native axis through the held handle (the query of R/run-snapshot.R:65), after ledgr_snapshot_ensure_handle() on a store opened with verification; grep finds no reference to dev/lean_core, lean_prep or lean_hydrate in R/."
   - id: "LDG-3217"
     title: "Record lean preparation memory and close the first checkpoint"
     workstream: 28
-    status: "pending"
+    status: "in_progress"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3216"]
