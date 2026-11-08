@@ -33,7 +33,7 @@ done <- function(j) file.exists(paste0(csv(j), ".exit"))
 launch <- function(j) {
   args <- c(file.path(here, "prep_parity.R"), paste0("--lib=", arg("lib")), paste0("--capture=", j$cap),
             paste0("--width=", j$width), paste0("--orient=", orient), paste0("--debug=", j$debug),
-            paste0("--mutation=", j$mutation), paste0("--out=", csv(j)), if ("--private" %in% commandArgs(TRUE)) "--private")
+            paste0("--mutation=", j$mutation), paste0("--plain=", arg("plain", "")), paste0("--out=", csv(j)), if ("--private" %in% commandArgs(TRUE)) "--private")
   # The child's exit status lands in a marker file; output goes to a log.
   f <- csv(j)
   cmd <- sprintf("\"%s\" %s > \"%s.log\" 2>&1 && echo 0 > \"%s.exit\" || echo 1 > \"%s.exit\"", rscript,

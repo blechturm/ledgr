@@ -53,6 +53,9 @@ if (!identical(mutation, "none")) {
 width <- arg("width", "run")
 lean$lean_prep$width <- if (identical(width, "run")) NULL else as.integer(width)
 lean$lean_prep$orient <- arg("orient", "time")
+plain <- strsplit(arg("plain", ""), ",")[[1L]]
+lean$lean_prep$plain_source <- "source" %in% plain
+lean$lean_prep$plain_features <- "features" %in% plain
 private <- "--private" %in% commandArgs(TRUE)
 # Lean copies first, then the pinned namespace (the lean environment's parent).
 fn <- function(name) get(name, envir = lean, mode = "function")

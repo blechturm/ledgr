@@ -16,6 +16,10 @@
 lean_prep <- new.env(parent = emptyenv())
 lean_prep$width <- NULL     # NULL: the run's width from its instrument count
 lean_prep$orient <- "time"  # tile storage: "time" (sessions x instruments) or "inst"
+# WS28 diagnostic (2026-11-08): hand the pinned code plain matrices for the
+# resident source bars and feature series; working planes stay tiled.
+lean_prep$plain_source <- FALSE
+lean_prep$plain_features <- FALSE
 
 # Section 12.3: max(252, ceiling(126,000 / instruments)) sessions.
 lean_tile_width <- function(n_instruments) {
@@ -201,6 +205,7 @@ rm(lean_m)
 
 # The whole plane as a matrix (parity and debug only).
 lean_plane_full <- function(p) {
+  if (!inherits(p, "lean_plane")) return(p)
   out <- lean_plane_gather(p, seq_len(p$n), seq_len(p$t))
   if (!is.null(p$dimnames)) dimnames(out) <- p$dimnames
   out
@@ -324,6 +329,7 @@ ledgr_history_substrate_bar_matrices <- function(bars, instrument_ids, axis) {
     rlang::abort("History preparation found duplicate instrument/session bars.",
                  class = c("ledgr_history_duplicate_bar", "ledgr_invalid_snapshot"))
   }
+  if (isTRUE(lean_prep$plain_source)) return(lapply(bars$planes, lean_plane_full))
   bars$planes
 }
 
@@ -357,7 +363,12 @@ lean_merge_runs <- function(row, start, end, n) {
 }
 
 # The pin checks bar-native coverage over the whole observed plane; per tile.
+lean_pin_orig <- mget(c("ledgr_history_substrate_require_rectangular", "ledgr_history_substrate_bar_packet"),
+                      envir = asNamespace("ledgr"))
 ledgr_history_substrate_require_rectangular <- function(substrate, coverage_start = NULL) {
+  if (!inherits(substrate$bars$observed, "lean_plane")) {
+    return(lean_pin_orig$ledgr_history_substrate_require_rectangular(substrate, coverage_start))
+  }
   ledgr_history_substrate_require(substrate)
   if (!identical(substrate$clock_kind, "bar_native")) return(invisible(substrate))
   keep <- rep(TRUE, length(substrate$axis))
@@ -384,6 +395,9 @@ ledgr_history_substrate_require_rectangular <- function(substrate, coverage_star
 # Packets: one tile column per plane
 
 ledgr_history_substrate_bar_packet <- function(substrate, pulse_idx) {
+  if (!inherits(substrate$bars$close, "lean_plane")) {
+    return(lean_pin_orig$ledgr_history_substrate_bar_packet(substrate, pulse_idx))
+  }
   ledgr_history_substrate_require(substrate)
   pulse_idx <- as.integer(pulse_idx)
   if (length(pulse_idx) != 1L || is.na(pulse_idx) || pulse_idx < 1L || pulse_idx > length(substrate$axis)) {
@@ -420,8 +434,10 @@ ledgr_history_compute_feature_series <- function(substrate, definitions, calcula
   certified <- lapply(definitions, ledgr_feature_certify)
   n_inst <- length(substrate$instrument_ids)
   n_axis <- length(substrate$axis)
-  w <- substrate$bars$close$width
-  out <- lapply(certified, function(cert) lean_plane_new(n_inst, n_axis, w, NA_real_))
+  w <- lean_prep$width %||% lean_tile_width(length(substrate$instrument_ids))
+  out <- lapply(certified, function(cert) {
+    if (isTRUE(lean_prep$plain_features)) matrix(NA_real_, n_inst, n_axis) else lean_plane_new(n_inst, n_axis, w, NA_real_)
+  })
   names(out) <- names(definitions)
   bounds <- ledgr_history_feature_bounds(substrate, calculation_start, calculation_end)
   planes <- lapply(certified, function(cert) ledgr_feature_plane_chunks(n_inst))
@@ -452,7 +468,7 @@ ledgr_history_compute_feature_series <- function(substrate, definitions, calcula
     }
   }
   ledgr_history_feature_causality(substrate, certified, bounds, calculated_count, out)
-  for (p in out) lean_plane_compact(p)
+  for (p in out) if (inherits(p, "lean_plane")) lean_plane_compact(p)
   attr(out, "ledgr_feature_planes") <- ledgr_feature_plane_records(planes, substrate$instrument_ids, bounds)
   out
 }
@@ -475,6 +491,10 @@ lean_plane_compact <- function(p) {
 ledgr_runtime_projection <- function(feature_values, universe, pulses_posix,
                                      feature_engine_version = ledgr_feature_engine_version(),
                                      alias_index = NULL, feature_planes = NULL) {
+  if (isTRUE(lean_prep$plain_features)) {
+    return(lean_pinned_ns("ledgr_runtime_projection")(feature_values, universe, pulses_posix, feature_engine_version,
+                                                      alias_index, feature_planes))
+  }
   universe <- as.character(universe)
   pulses_posix <- as.POSIXct(pulses_posix, tz = "UTC")
   feature_values <- feature_values %||% list()
@@ -543,7 +563,7 @@ ledgr_history_prepare_masks <- function(substrate, knowledge, instrument_idx, bl
   blocks <- function(rows) split(rows, ceiling(seq_along(rows) / block))
   inactive <- blocks(candidates("lifetime", function(x) x == "known_inactive"))
   ends <- blocks(candidates("lifetime_terminal", nzchar))
-  w <- substrate$bars$close$width
+  w <- lean_prep$width %||% lean_tile_width(length(substrate$instrument_ids))
   expected <- lean_working_plane(n, n_axis, w, TRUE, function(k) {
     cols <- lean_tile_cols(expected, k)
     e <- matrix(TRUE, nrow = n, ncol = length(cols))
