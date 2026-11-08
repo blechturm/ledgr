@@ -768,6 +768,19 @@ public behavior except the explicit pulse-plumbing ledger differences.
   first checkpoint is its own cut (measure, cut, Codex cut review,
   implement), so each closes with its own budgets and review before the
   next starts.
+- **History-read kernels spike (maintainer, 2026-11-08).**
+  `src/history_compact.cpp` (`ledgr_cpp_history_bar_compact`,
+  `ledgr_cpp_history_gap_runs`, `ledgr_cpp_history_false_runs`) entered in
+  v0.2.2 with LDG-3105 (`a22381d5`) to meet a 0.75 ms read gate; no
+  maintainer decision chose compiled code for it. The maintainer prefers as
+  little compiled code as possible. Before the P2 family is cut (P2 owns the
+  strategy's history reads), a spike under the spike protocol writes the
+  three in plain R (collapse allowed), proves them exact against the kernels
+  on the registered history reads (the preparation fixture, the portable
+  shapes and the H1 digest stream) and measures the per-read cost against the
+  kernels at 500 x 252 and on the registered workloads. The maintainer then
+  decides: plain R replaces the kernels and the C++ file is deleted, or the
+  kernels stay as a recorded decision.
 - **Every family close (A2, A4).** WS16 uses frozen floor v1 and stage
   isolation under R11: each cut sets cost-above-floor budgets on both
   reference workloads, a pinned matched no-regression bar and a line budget;
