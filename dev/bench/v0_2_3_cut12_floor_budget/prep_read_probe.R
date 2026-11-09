@@ -175,10 +175,15 @@ for (r in seq_len(rounds)) for (w in names(stores)) {
 raw <- do.call(rbind, rows)
 cols <- c("packet_us", paste0("r", 1:6, "_us"))
 raw$total_us <- rowSums(raw[cols])
+# The budget is frozen from the pinned arm (LDG-3215); the lean arm reports
+# against it and never derives a budget from itself.
+frozen <- if (identical(arm, "lean")) utils::read.csv(file.path(here, "evidence", "prep_read_budget.csv")) else NULL
 summ <- do.call(rbind, lapply(split(raw, raw$workload), function(k) {
   med <- vapply(c(cols, "total_us"), function(cl) stats::median(k[[cl]]), 0)
-  data.frame(workload = k$workload[[1L]], arm = arm, rounds = nrow(k), pulses = k$pulses[[1L]], decided = k$decided[[1L]],
-             t(round(med, 1)), budget_us = round(1.15 * med[["total_us"]], 1),
+  w <- k$workload[[1L]]
+  budget <- if (is.null(frozen)) round(1.15 * med[["total_us"]], 1) else frozen$budget_us[frozen$workload == w]
+  data.frame(workload = w, arm = arm, rounds = nrow(k), pulses = k$pulses[[1L]], decided = k$decided[[1L]],
+             t(round(med, 1)), budget_us = budget, within_budget = med[["total_us"]] <= budget,
              total_range_pct = round(100 * diff(range(k$total_us)) / med[["total_us"]], 1))
 }))
 print(summ, row.names = FALSE)
