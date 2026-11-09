@@ -96,3 +96,25 @@ here because quantities are whole; the fold sets positions from the lot
 book's net, so fractional quantities need that rule or the stored position.
 The full-trace rebuild is plain R (6.4 s for 562k holds); a filtered explain
 read touches one instrument.
+
+## 6. Stage 2a result (sweep path builds only kept rows): green
+
+`fork.R`, evidence `fork_sweeps.csv`, `fork_a0.csv`, `fork_sweeps_gut.csv`.
+One rule in the staging functions: before rows are built, the sink's keep
+rule picks them; the others only reserve their logical positions. A durable
+store keeps every row, so committed runs are unchanged. One-candidate sweep,
+three alternating rounds, median wall (not a timing record):
+
+| workload | pin | lean P3 | lean P3 + keep rule | vs pin |
+| --- | --- | --- | --- | --- |
+| crossover 10 x 7,200 | 28.5 s | 25.1 s | 21.3 s | -25% |
+| crossover 500 x 1,260 | 9.0 s | 8.8 s | 8.1 s | -10% |
+| momentum 500 x 1,260 | 3.0 s | 2.9 s | 2.3 s | -24% |
+| momentum 40 x 504 | 0.97 s | 0.97 s | 0.72 s | -26% |
+
+Sweep tables and kept memory diagnostics are identical to the pin on all six
+workloads; the eight A0 workloads are identical on every path (run, one-worker
+sweep, compiled FIFO, restart, abort, walk-forward). With the keep rule gutted
+(keep nothing), parity fails on all three workloads that keep rows. P2 still
+builds its full decision segment; the rule skips staging, validation, the
+pulse block and the filter.
