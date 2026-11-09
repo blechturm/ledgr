@@ -1,0 +1,38 @@
+"workload","pulses","decided_pulses","logical_total","kind","logical_rows","share_pct","implicit_physical_rows","explicit_physical_rows","implicit_mb","explicit_mb","decoded_trace_mb"
+"crossover_10x7200",7200,7200,87173,"clean_hold (implicit)",64028,73.45,71999,7203,7.69,3.34,15.85
+"crossover_10x7200",7200,7200,87173,"clean_fill (implicit, decision + execution)",15942,18.29,71999,7203,7.69,3.34,15.85
+"crossover_10x7200",7200,7200,87173,"explicit decision/recorded",1,0,71999,7203,7.69,3.34,15.85
+"crossover_10x7200",7200,7200,87173,"explicit execution/no_fill",1,0,71999,7203,7.69,3.34,15.85
+"crossover_10x7200",7200,7200,87173,"explicit reconciliation/reconciled",7200,8.26,71999,7203,7.69,3.34,15.85
+"crossover_10x7200",7200,7200,87173,"explicit sizing/unavailable",1,0,71999,7203,7.69,3.34,15.85
+"crossover_500x1260",1260,1260,699040,"clean_hold (implicit)",562221,80.43,629946,1369,67.32,0.61,109.76
+"crossover_500x1260",1260,1260,699040,"clean_fill (implicit, decision + execution)",135450,19.38,629946,1369,67.32,0.61,109.76
+"crossover_500x1260",1260,1260,699040,"explicit decision/recorded",54,0.01,629946,1369,67.32,0.61,109.76
+"crossover_500x1260",1260,1260,699040,"explicit execution/no_fill",54,0.01,629946,1369,67.32,0.61,109.76
+"crossover_500x1260",1260,1260,699040,"explicit reconciliation/reconciled",1260,0.18,629946,1369,67.32,0.61,109.76
+"crossover_500x1260",1260,1260,699040,"explicit sizing/unavailable",1,0,629946,1369,67.32,0.61,109.76
+"momentum_40x504",504,504,2500,"clean_hold (implicit)",624,24.96,920,1284,0.1,0.35,0.54
+"momentum_40x504",504,504,2500,"clean_fill (implicit, decision + execution)",592,23.68,920,1284,0.1,0.35,0.54
+"momentum_40x504",504,504,2500,"explicit sizing/recorded",299,11.96,920,1284,0.1,0.35,0.54
+"momentum_40x504",504,504,2500,"explicit reconciliation/reconciled",504,20.16,920,1284,0.1,0.35,0.54
+"momentum_40x504",504,504,2500,"explicit decision/skipped",481,19.24,920,1284,0.1,0.35,0.54
+"momentum_500x1260",1260,1260,32759,"clean_hold (implicit)",27618,84.31,28500,3377,3.07,0.92,5.54
+"momentum_500x1260",1260,1260,32759,"clean_fill (implicit, decision + execution)",1764,5.38,28500,3377,3.07,0.92,5.54
+"momentum_500x1260",1260,1260,32759,"explicit sizing/recorded",914,2.79,28500,3377,3.07,0.92,5.54
+"momentum_500x1260",1260,1260,32759,"explicit reconciliation/reconciled",1260,3.85,28500,3377,3.07,0.92,5.54
+"momentum_500x1260",1260,1260,32759,"explicit decision/skipped",1203,3.67,28500,3377,3.07,0.92,5.54
+"prep_fixture",47,47,507,"clean_hold (implicit)",166,32.74,237,199,0.03,0.05,0.1
+"prep_fixture",47,47,507,"clean_fill (implicit, decision + execution)",142,28.01,237,199,0.03,0.05,0.1
+"prep_fixture",47,47,507,"explicit valuation/stopped",1,0.2,237,199,0.03,0.05,0.1
+"prep_fixture",47,47,507,"explicit decision/recorded",21,4.14,237,199,0.03,0.05,0.1
+"prep_fixture",47,47,507,"explicit execution/no_fill",9,1.78,237,199,0.03,0.05,0.1
+"prep_fixture",47,47,507,"explicit risk/passed",4,0.79,237,199,0.03,0.05,0.1
+"prep_fixture",47,47,507,"explicit sizing/recorded",117,23.08,237,199,0.03,0.05,0.1
+"prep_fixture",47,47,507,"explicit reconciliation/reconciled",47,9.27,237,199,0.03,0.05,0.1
+"dense_risk_features",8,8,33,"clean_hold (implicit)",8,24.24,14,13,0.01,0.01,0.01
+"dense_risk_features",8,8,33,"clean_fill (implicit, decision + execution)",12,36.36,14,13,0.01,0.01,0.01
+"dense_risk_features",8,8,33,"explicit decision/recorded",2,6.06,14,13,0.01,0.01,0.01
+"dense_risk_features",8,8,33,"explicit execution/no_fill",1,3.03,14,13,0.01,0.01,0.01
+"dense_risk_features",8,8,33,"explicit reconciliation/reconciled",8,24.24,14,13,0.01,0.01,0.01
+"dense_risk_features",8,8,33,"explicit execution/filled",1,3.03,14,13,0.01,0.01,0.01
+"dense_risk_features",8,8,33,"explicit sizing/unavailable",1,3.03,14,13,0.01,0.01,0.01
