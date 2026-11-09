@@ -1,7 +1,10 @@
-# Lean Core Interface Table: First Checkpoint
+# Lean Core Interface Table
 
-- Status: accepted by the maintainer on 2026-11-06 after a section-by-section
-  review (LDG-3211, Cut 12, workstream 26).
+- Status: Parts A-C accepted by the maintainer on 2026-11-06 after a
+  section-by-section review (LDG-3211, Cut 12, workstream 26), as the first
+  checkpoint's table. Part D holds one section per family; each binds by its
+  own status line (macro WS16 family method, point 5). The title dropped
+  "First Checkpoint" when the first family (P3) started.
 - Pin: `d5b3a151`, the Cut 11 close. Every `file:line` refers to that commit;
   `R/` is unchanged since. `C:` means a line of `inst/design/contracts.md`.
 - Authority: the [skeleton synthesis](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md)
@@ -660,7 +663,8 @@ dev/lean_core/
   recorder/       LDG-3212: capture.R, compare.R, replay.R, run.R, check.R, omissions.R
   fifo.R          LDG-3213 lean kernel
   prepare.R       LDG-3216 preparation (whole planes, chunked hydration)
-  parity/         family runners (FIFO, preparation)
+  plan.R          P3 family (Section 18)
+  parity/         family runners (FIFO, preparation, whole-run stage parity)
 ```
 
 `lean_core_load(lib)`:
@@ -678,3 +682,83 @@ The test-suite capture loads the pinned source archive with `pkgload`
 instead (`LEDGR_SOURCE_COMMIT`). Captures go to a directory the caller names;
 private captures stay on E:, and only manifests of counts and digests are
 committed. `dev/` is excluded from the package (`.Rbuildignore` `^dev(/|$)`).
+
+# Part D. Families
+
+Each family after the first checkpoint follows the macro WS16 family method
+(accepted 2026-11-08): its lean stage replaces the stage's binding inside an
+otherwise pinned run and reads and writes the pin's fold state and groups
+unchanged. Its section here is its cut note; it binds once its status line
+names the maintainer's acceptance.
+
+## 18. P3 plan
+
+- Status: draft, rough version (family method point 2), not accepted.
+- Order: first family, chosen by the maintainer on 2026-11-09 from the
+  per-stage profile (`dev/bench/v0_2_3_ws16_stage_profile/`, `eade94f4`):
+  P3 is the largest stage on both daily workloads (21.7% of the run on
+  crossover 10 x 7,200, 683 us per pulse; 18.5% on 500 x 1,260, 1,261 us).
+- Code: `dev/lean_core/plan.R`, `lean_stage_plan()` over
+  `ledgr_fold_stage_plan` (`R/fold-engine.R:1086`) through
+  `lean_plan_install()`.
+
+**Where P3's time went** (Rprof of the pinned 10 x 7,200 run, 315 samples
+in P3; inclusive shares overlap): carrier validation of its own groups 22%
+(`ledgr_carrier_new`, `ledgr_carrier_problem`: the execution view, the plan
+and its fill and rejection groups); the planner 36%, of which its plan
+validation 17%; fill and rejection diagnostic segments 13%; the
+execution-view adapter 12% (the provider call 2%); reason segments 9%
+(planner and view); the diagnostic codec's clean-pair checks 6%.
+
+**Interface.** The same arguments and value as the pin. The plan (`batch`)
+is the pin's, field for field (Section 10); the stop result is the pin's.
+Writes: `fold_state$current_stage`; the staging rows and `logical_n`
+through `ledgr_fold_staging_write` (decision residuals, risk rows,
+rejections, fill residuals, in that order); the implicit fill and hold
+blocks through `services$diagnostic_writer$append_implicit`. P4 and P5 stay
+pinned.
+
+**What changes.**
+
+| Pin | Lean P3 |
+| --- | --- |
+| execution view, plan, fill and rejection groups validated at construction every pulse (`R/fold-carrier.R:501`, `:644`) | validated only in debug (pulse plumbing R1-R3); the view's key check against the candidate IDs is debug-only |
+| P3's event-kind gates (`R/fold-engine.R:140-146`) on every pulse | debug-only: the kinds are this stage's own output, `{}` or FILL |
+| empty reason segments built by ordering and tabulating nothing | built directly as zero offsets and counts |
+| fill and rejection diagnostic segments built every pulse with fills or rejections | built only when one of their rows is staged; logical positions advance as before |
+| staged residual rows validated as a staging group (`R/fold-carrier.R:871`) | validated only in debug; the staging capacity refusal stays (`ledgr_fold_staging_write`) |
+| reconciliation `all.equal()` every pulse | exact comparison first; `all.equal()` only when the sums differ (same result: `all.equal` returns TRUE for equal values) |
+| first-failing-row refusal scan every pulse | run only when a row fails a check; the refusal, class and order are the pin's |
+
+**Kept in production** (R3), with the pin's classes and order: the cost
+resolver's shape refusal; the target-delta, execution-epoch and
+short-exposure refusals of the first failing row in decision order; the
+execution-view dictionary refusal; the affordability scan
+(`ledgr_plan_affordability`, a justified sequential loop); the
+affordability-reconciliation stop (INCOMPLETE).
+
+**Validation placement** (Section 13 rows for P3):
+
+| Guarantee | Checked at | Trusted after |
+| --- | --- | --- |
+| Execution view | provider output; key and group checks debug-only; dictionary refusal kept | P3 planner |
+| Plan, fill and rejection groups | debug-only (R1-R3); P4's lot input keeps its economic rules (Section 11) | P4, P5 |
+| Event kinds | debug-only | P4 |
+| Staged diagnostic rows | debug-only group check; capacity refusal kept | P5 drain |
+
+**Parity** (family method point 3): `dev/lean_core/parity/plan_parity.R`
+runs each workload twice in one process, pinned and with lean P3, and
+compares every run-store table (diagnostics decoded), the fill, trade and
+metric readers and the run conditions in A0 canonical form (doubles at
+`%.17g`). Workloads: the eight A0 workloads (run, one-worker sweep, compiled
+FIFO, restart, abort and walk-forward paths), momentum 40 x 504,
+fill-heavy 500 x 1,260, the cross-edge fixture with trading on, crossover
+10 x 7,200 and 500 x 1,260, and the portable shapes 500 x 1,260, 2,520 and
+5,040. A0's two-worker sweep runs in worker processes that load the plain
+pin; it is compared but does not exercise lean P3. Three mutations must
+fail: a fill price one ulp high, an implicit hold block's target changed,
+two rejection reason codes swapped.
+
+**Timing**: protocol `dev/bench/timing/protocols/ws16-p3-1/`, five
+alternating pairs per cell, whole-run and P3 clocks on the profile's three
+workloads.

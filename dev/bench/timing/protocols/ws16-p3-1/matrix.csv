@@ -1,0 +1,7 @@
+cell,workload,clock,args,pairs
+run_10x7200,ws16_p3,run,shape=crossover_10x7200,5
+p3_10x7200,ws16_p3,p3,shape=crossover_10x7200,5
+run_500x1260,ws16_p3,run,shape=crossover_500x1260,5
+p3_500x1260,ws16_p3,p3,shape=crossover_500x1260,5
+run_momentum,ws16_p3,run,shape=momentum_40x504,5
+p3_momentum,ws16_p3,p3,shape=momentum_40x504,5

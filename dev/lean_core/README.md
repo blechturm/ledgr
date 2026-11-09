@@ -240,3 +240,21 @@ three registered hydration mutations, each of which must fail. Evidence:
 ```sh
 Rscript dev/lean_core/parity/prep_check.R --lib=<pinned library> --captures=<prep_fixture.rds> --chunks=8,12 --scratch=<dir> --mutations
 ```
+
+## Lean P3 (family method, first family)
+
+`plan.R` replaces the pinned P3 stage `ledgr_fold_stage_plan` inside an
+otherwise pinned run (interface table Section 18). It reads and writes the
+pin's fold state and groups unchanged; its own groups are checked only in
+debug. `lean_plan_install()` (harnesses only) binds it and returns the
+restore function.
+
+`parity/plan_parity.R` runs each workload pinned and then with lean P3 in one
+process and compares every run-store table, the public readers and the run
+conditions in A0 canonical form; `--mutation=` injects one of three defects
+into the lean environment, each of which must fail. It exits non-zero on any
+difference or when lean P3 was never called.
+
+```sh
+Rscript dev/lean_core/parity/plan_parity.R --lib=<pinned library> --debug=0 --out=<csv> [--workloads=<id,...>] [--mutation=<name>]
+```
