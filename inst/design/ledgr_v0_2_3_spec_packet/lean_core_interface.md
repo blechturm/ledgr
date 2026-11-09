@@ -857,13 +857,18 @@ epochs, the pulse seeds, ISO timestamps.
 
 - **P1** values holdings at the close plane column and writes the equity
   row. No settlement work exists in slice 1 (refused upstream).
-- **P2** fills the reused context environment from the planes by column
+- **P2** builds a fresh context for the pulse from the planes by column
   (`ctx$close`, features, `ctx$state`, `hold()`, positions, cash, equity,
-  seed), calls the strategy and checks its return once (`identical(names,
+  seed); it is not reused, because a strategy may keep a pulse's `ctx` and
+  read it later (contracts, "retained context views ... are copied or never
+  written again"; `test-flat-lazy-context.R:96`). It calls the strategy and checks its return once (`identical(names,
   axis)` fast path, then the pin's validation on mismatch; R-floor stage 3
   rules). Targets stay on the decision axis.
 - **P3** compares targets with holdings by the canonical threshold; with
-  nothing actionable it returns at once. Otherwise lean P3's planner logic
+  nothing actionable it plans nothing. A clean hold needs the target to equal
+  the position exactly (lean P3's `lean_plan_clean`); a target that differs
+  by less than the threshold trades nothing but stays an explicit decision
+  row, so the hold count is the exact-equality count, not N. Otherwise lean P3's planner logic
   over vectors: next-open prices, the cost resolver, the refusal order, the
   affordability scan; on the final pulse, final-pulse rejections.
 - **P4** applies the fills through the lean FIFO kernel, sets positions
