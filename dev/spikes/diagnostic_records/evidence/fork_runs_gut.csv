@@ -1,0 +1,4 @@
+"workload","path","arm","gut","refused"
+"momentum_40x504","run","records",TRUE,"ledgr_diagnostic_corrupt"
+"dense_risk_features","run","records",TRUE,"ledgr_diagnostic_corrupt"
+"momentum_500x1260","run","records",TRUE,"ledgr_diagnostic_corrupt"

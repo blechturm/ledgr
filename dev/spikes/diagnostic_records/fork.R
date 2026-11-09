@@ -37,7 +37,7 @@ dr_state <- new.env()
 dr_state$keep <- NULL
 keep_rule <- function(output_handler) {
   k <- output_handler$diagnostic_keep
-  if (gut) return(function(diagnostics, n = NULL) logical(n %||% length(diagnostics$stage)))
+  if (gut && identical(mode, "sweeps")) return(function(diagnostics, n = NULL) logical(n %||% length(diagnostics$stage)))
   if (identical(k, ns$ledgr_memory_diagnostic_keep)) k else NULL
 }
 strict_bindings <- list(
@@ -77,15 +77,76 @@ lean_strict_stage <- function(fold_state, n, segment, index) {
   }
   lean_stage_inner(fold_state, n, segment, index)
 }
+# Stage 2b (arm "records"): a durable run stores no clean-hold rows, only one
+# count per decided pulse, and writes its diagnostics once, after the last
+# pulse. The writer is handed a proxy of the output handler that buffers
+# every diagnostic frame in memory, counts and drops the hold rows, and at
+# the drain (write_diagnostic_coverage) makes one append per table, then the
+# coverage row. The reader (reader.R) rebuilds the holds into ledgr's
+# logical-trace view.
+source(file.path(here, "reader.R"))
+dr_proxy <- function(h, run_id) {
+  buf <- new.env()
+  buf$explicit <- list(); buf$fills <- list(); buf$holds <- list()
+  p <- h
+  p$write_run_diagnostics <- function(diagnostics) {
+    if (!is.null(diagnostics) && nrow(diagnostics) > 0L) buf$explicit[[length(buf$explicit) + 1L]] <- diagnostics
+    invisible(TRUE)
+  }
+  p$write_run_diagnostic_implicit <- function(rows) {
+    if (is.null(rows) || nrow(rows) == 0L) return(invisible(TRUE))
+    hold <- is.na(rows$execution_seq)
+    if (any(hold)) buf$holds[[length(buf$holds) + 1L]] <- as.numeric(rows$ts_utc[hold])
+    if (any(!hold)) buf$fills[[length(buf$fills) + 1L]] <- rows[!hold, , drop = FALSE]
+    invisible(TRUE)
+  }
+  p$write_diagnostic_coverage <- function(logical_count) {
+    if (length(buf$explicit)) h$write_run_diagnostics(do.call(rbind, buf$explicit))
+    if (length(buf$fills)) h$write_run_diagnostic_implicit(do.call(rbind, buf$fills))
+    con <- dr_state$con
+    DBI::dbExecute(con, "CREATE TABLE IF NOT EXISTS spike_hold_counts(run VARCHAR, ts_utc TIMESTAMP, n INTEGER)")
+    DBI::dbExecute(con, "DELETE FROM spike_hold_counts WHERE run = ?", params = list(run_id))
+    ts <- unlist(buf$holds, use.names = FALSE)
+    if (length(ts)) {
+      tab <- table(ts)
+      if (gut) tab[[1L]] <- tab[[1L]] - 1L
+      DBI::dbAppendTable(con, "spike_hold_counts", data.frame(run = run_id,
+        ts_utc = .POSIXct(as.numeric(names(tab)), tz = "UTC"), n = as.integer(tab)))
+    }
+    buf$explicit <- list(); buf$fills <- list(); buf$holds <- list()
+    h$write_diagnostic_coverage(logical_count)
+  }
+  p
+}
+records_bindings <- list(
+  ledgr_output_sink_duckdb = function(orig) { force(orig); function(con, run_id, ...) {
+    dr_state$con <- con
+    orig(con, run_id, ...)
+  }},
+  ledgr_fold_diagnostic_writer = function(orig) { force(orig); function(run_id, output_handler, ...) {
+    dr_state$keep <- keep_rule(output_handler)
+    if (is.function(output_handler$write_run_diagnostic_implicit)) output_handler <- dr_proxy(output_handler, run_id)
+    orig(run_id, output_handler, ...)
+  }},
+  ledgr_diagnostic_logical_sql = function(orig) { force(orig); function() {
+    paste(orig(), "UNION ALL SELECT * FROM spike_holds")
+  }},
+  ledgr_diagnostic_db_get_query = function(orig) { force(orig); function(con, statement, ...) {
+    if (grepl("spike_holds", statement, fixed = TRUE)) dr_ensure_holds(con)
+    orig(con, statement, ...)
+  }}
+)
 install_arm <- function(arm) {
   if (identical(arm, "pin")) return(function() NULL)
-  lean$lean_plan_stage <- if (identical(arm, "strict")) lean_strict_stage else lean_stage_inner
+  lean$lean_plan_stage <- if (arm %in% c("strict", "records")) lean_strict_stage else lean_stage_inner
   restore_plan <- lean$lean_plan_install()
-  if (!identical(arm, "strict")) return(restore_plan)
-  originals <- lapply(stats::setNames(names(strict_bindings), names(strict_bindings)), get, envir = ns)
-  for (name in names(strict_bindings)) {
+  if (identical(arm, "lean")) return(restore_plan)
+  bindings <- strict_bindings
+  if (identical(arm, "records")) bindings[names(records_bindings)] <- records_bindings
+  originals <- lapply(stats::setNames(names(bindings), names(bindings)), get, envir = ns)
+  for (name in names(bindings)) {
     unlockBinding(name, ns)
-    assign(name, strict_bindings[[name]](originals[[name]]), envir = ns)
+    assign(name, bindings[[name]](originals[[name]]), envir = ns)
     lockBinding(name, ns)
   }
   function() {
@@ -108,7 +169,108 @@ compare <- function(a, b) {
 }
 
 rows <- list()
-if (identical(mode, "a0")) {
+if (identical(mode, "runs")) {
+  # Committed runs, fixed universes: pin, lean P3, records; three alternating
+  # rounds. Round one's store tables (diagnostics decoded through the view),
+  # readers and explain rows must equal the pin's; the physical implicit
+  # table must equal the pin's fill rows. With --gut the records arm stores
+  # one hold count one short, and the run must be refused.
+  ids <- if (length(args) >= 4L) strsplit(args[[4L]], ",")[[1L]] else
+    c("crossover_10x7200", "crossover_500x1260", "momentum_40x504", "momentum_500x1260", "dense_risk_features")
+  run_arm <- function(id, round) {
+    w <- dr_workloads[[id]]()
+    on.exit(ledgr::ledgr_snapshot_close(w$snapshot))
+    # The end-of-run summary reads the logical view, so the spike reader
+    # rebuilds the holds inside the run; reported separately.
+    dr_holds_cache$rebuild_s <- 0
+    # The pulse loop's span: first P1 entry to last P5 exit, in every arm.
+    span <- new.env(); span$first <- NA_real_; span$last <- NA_real_
+    loop_names <- c("ledgr_fold_stage_observe_settle", "ledgr_fold_stage_commit")
+    loop_orig <- lapply(stats::setNames(loop_names, loop_names), get, envir = ns)
+    for (nm in loop_names) local({
+      name <- nm; f <- loop_orig[[name]]
+      unlockBinding(name, ns)
+      assign(name, function(...) {
+        if (is.na(span$first)) span$first <- proc.time()[["elapsed"]]
+        on.exit(span$last <- proc.time()[["elapsed"]])
+        f(...)
+      }, envir = ns)
+      lockBinding(name, ns)
+    })
+    on.exit(for (nm in loop_names) { unlockBinding(nm, ns); assign(nm, loop_orig[[nm]], envir = ns); lockBinding(nm, ns) },
+            add = TRUE, after = FALSE)
+    t0 <- proc.time()[["elapsed"]]
+    bt <- tryCatch(suppressWarnings(ledgr::ledgr_run(w$exp, params = w$params, run_id = "fork", seed = w$seed)),
+                   ledgr_diagnostic_corrupt = function(e) e)
+    wall <- proc.time()[["elapsed"]] - t0
+    out <- list(wall = wall - dr_holds_cache$rebuild_s, run_rebuild_s = dr_holds_cache$rebuild_s,
+                loop_s = span$last - span$first)
+    if (inherits(bt, "error")) return(c(out, list(refused = class(bt)[[1L]])))
+    if (round == 1L) {
+      dr_holds_cache$rebuild_s <- 0
+      t0 <- proc.time()[["elapsed"]]
+      trace <- ledgr::ledgr_results(bt, "diagnostics")
+      out$read_s <- proc.time()[["elapsed"]] - t0
+      out$rebuild_s <- dr_holds_cache$rebuild_s
+      explain <- lapply(utils::head(sort(unique(trace$instrument_id[nzchar(trace$instrument_id)])), 2L),
+                        function(i) as.data.frame(ledgr::ledgr_run_explain(bt, i)))
+      close(bt)
+      out$tables <- c(a0_store_tables(w$db, "fork"), a0_reader_tables(w$snapshot, "fork"), list(explain = explain))
+    } else {
+      close(bt)
+    }
+    out
+  }
+  if (gut) {
+    for (id in ids) {
+      r <- with_arm("records", run_arm(id, 2L))
+      rows[[length(rows) + 1L]] <- data.frame(workload = id, path = "run", arm = "records", gut = TRUE,
+                                              refused = r$refused %||% "not refused")
+      cat(sprintf("%-20s %s\n", id, r$refused %||% "NOT REFUSED"))
+    }
+  } else {
+    arms <- c("pin", "lean", "records")
+    for (id in ids) {
+      walls <- loops <- stats::setNames(vector("list", 3L), arms)
+      tables <- list(); reads <- list()
+      for (round in 1:3) for (arm in arms[(seq_along(arms) + round - 2L) %% 3L + 1L]) {
+        r <- with_arm(arm, run_arm(id, round))
+        walls[[arm]] <- c(walls[[arm]], r$wall)
+        loops[[arm]] <- c(loops[[arm]], r$loop_s)
+        if (round == 1L) {
+          tables[[arm]] <- r$tables
+          reads[[arm]] <- c(read_s = r$read_s, rebuild_s = r$rebuild_s, run_rebuild_s = r$run_rebuild_s)
+        }
+      }
+      pin_implicit <- tables$pin$run_diagnostic_implicit
+      fills_only <- pin_implicit[!is.na(pin_implicit$execution_seq), , drop = FALSE]
+      rownames(fills_only) <- NULL
+      med <- function(x) stats::median(x)
+      for (arm in arms) {
+        a <- tables$pin; b <- tables[[arm]]
+        physical <- "run_diagnostic_implicit"
+        implicit_ok <- NA
+        if (identical(arm, "records")) {
+          rec <- b[[physical]]; rownames(rec) <- NULL
+          implicit_ok <- identical(rec, fills_only)
+          a[[physical]] <- NULL; b[[physical]] <- NULL
+        }
+        cmp <- compare(a, b)
+        rows[[length(rows) + 1L]] <- data.frame(workload = id, path = "run", arm = arm, gut = FALSE,
+          tables = cmp[["tables"]], different = cmp[["different"]], first_difference = cmp[["first"]],
+          implicit_is_pin_fills = implicit_ok, pin_implicit_rows = nrow(pin_implicit),
+          stored_implicit_rows = nrow(tables[[arm]][[physical]]),
+          median_wall_s = round(med(walls[[arm]]), 3), wall_ratio = round(med(walls[[arm]]) / med(walls$pin), 3),
+          median_loop_s = round(med(loops[[arm]]), 3), loop_ratio = round(med(loops[[arm]]) / med(loops$pin), 3),
+          diagnostics_read_s = round(reads[[arm]][["read_s"]], 3),
+          in_run_rebuild_s = round(reads[[arm]][["run_rebuild_s"]], 3))
+      }
+      cat(sprintf("%-20s loop pin %.2f lean %.2f records %.2f s | identical %s, implicit = pin fills %s\n",
+                  id, med(loops$pin), med(loops$lean), med(loops$records),
+                  rows[[length(rows)]]$different == "0", rows[[length(rows)]]$implicit_is_pin_fills))
+    }
+  }
+} else if (identical(mode, "a0")) {
   ids <- if (length(args) >= 4L) strsplit(args[[4L]], ",")[[1L]] else names(a0_workloads)
   for (id in ids) {
     base <- a0_run_workload(id, work)$tables

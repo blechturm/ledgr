@@ -118,3 +118,10 @@ sweep, compiled FIFO, restart, abort, walk-forward). With the keep rule gutted
 (keep nothing), parity fails on all three workloads that keep rows. P2 still
 builds its full decision segment; the rule skips staging, validation, the
 pulse block and the filter.
+
+## 7. Stage 2b result (durable runs store hold counts, write once): see closeout
+
+`fork.R runs`, `reader.R`, evidence `fork_runs.csv`, `fork_runs_gut.csv`.
+Identical on five fixed-universe workloads; stored implicit rows down 89%;
+loop 1-6% faster than lean P3; whole run slower through the spike reader.
+Details and the reading of the kill clause: `closeout.md`.
