@@ -859,6 +859,49 @@ public behavior except the explicit pulse-plumbing ledger differences.
   Unchanged: bit-identical parity against the pin, no second execution path
   in `R/`, the contracts, pulse plumbing's debug-on/off requirement, the
   rules ledger, escalation and the history-read kernels spike before P2.
+- **Compact-state loop (accepted by the maintainer on 2026-11-09).** The
+  first family showed the limit of point 1: lean P3 swapped into the pinned
+  run cut P3 from 639 to 213 us per pulse on crossover 10 x 7,200
+  (`dev/bench/timing/records/ws16-p3-1/p3-rough/`), yet that one stage
+  alone is above the stretch objective for the whole pulse (WS14: 100-200 us
+  per no-fill pulse; about 3x PMwR, PMwR 19 us there). The cost left is the
+  pin's interfaces each swapped stage must speak: carriers, diagnostic
+  segments, staging and per-pulse writer blocks. The R-floor spike
+  (`dev/spikes/r_floor/`) reproduced the published runs bit for bit, full
+  trace included, at 26 and 103 us per pulse (10 x 7,200; 500 x 1,260) in a
+  compact-state shape. This supersedes point 1 and the loop clause of point
+  2:
+  1. The lean core is one loop with its own compact state: E and P1-P5 stay
+     named functions with explicit inputs and outputs (skeleton synthesis
+     Section 2), but pass integer positions and typed vectors and write by
+     index into preallocated run-long state (positions, cash, the lot book,
+     fills, equity, exception rows and per-pulse hold counts). The loop is
+     written under A1: its design is an interface-document section the
+     maintainer reviews before code.
+  2. Coverage grows by feature, in slices, not by stage. A workload runs on
+     the lean loop only if every feature it uses is covered; the lean core
+     refuses an uncovered feature explicitly (inside `dev/lean_core/` only)
+     and the harness runs that workload on the pin. Slices: (1) fixed basket,
+     daily bars, no costs or risk, every pulse decided (the published
+     crossover workloads); (2) costs, risk chain, sizing helpers; (3)
+     schedules, declared sessions, stale and frozen marks, valuation
+     policies; (4) membership universes, restrictions, terminal
+     dispositions, corporate actions, opening imports; (5) sweeps and
+     workers, compiled FIFO, restart and abort, walk-forward; then the
+     switch cut.
+  3. Each slice closes on point 3's gate over the workloads it covers
+     (whole-run parity, debug on and off, registered mutations, a quick
+     timing run) with one Codex review (point 6); the PMwR comparison starts
+     with slice 1.
+  4. Diagnostics: per pulse the loop records exception rows and one
+     certified hold count; after the last pulse it rebuilds the hold rows in
+     one pass (exact on six workloads, `dev/spikes/diagnostic_records/`) and
+     writes the current store format once. No DuckDB write inside the loop.
+     Whether the store keeps hold rows at all is the diagnostic-records
+     amendment RFC's decision.
+  5. Lean preparation (LDG-3216), the FIFO kernel (LDG-3213), lean P3's
+     planner logic, the parity and timing harnesses and the recorder carry
+     over. Points 3-6 and the "Unchanged" list above stay in force.
 - **Every family close (A2, A4).** For the first checkpoint; families after
   it use the family method above. WS16 uses frozen floor v1 and stage
   isolation under R11: each cut sets cost-above-floor budgets on both

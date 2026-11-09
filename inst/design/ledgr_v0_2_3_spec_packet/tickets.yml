@@ -1524,65 +1524,70 @@ cuts:
       one workstream stops for maintainer disposition.
     cut_review: "CHANGES_REQUIRED in cut_review_12.md (independent clean-context Codex CLI, gpt-6.1-sol/high): R1-R5 required; all five exact patches applied. R1 exempts the recorder's pinned reference calls from the old-arithmetic ban, R2 permits copy-on-modify sharing, R3 compares retained public values instead of whole-context serialization, R4 keeps the existing history-read and feature-input services with tile-access adaptations only, R5 puts every timing gate on one Cut 12 protocol in dev/bench/timing/. Focused re-review cut_review_12_rereview_1.md (same reviewer setup, clean context) returned PASS: all five applied, no new findings."
   - id: 13
-    name: "Lean P3 family and sweep keep rule (macro WS16 family method)"
+    name: "Compact-state lean loop, slice 1 (macro WS16)"
     cut: "2026-11-09"
     status: "proposed"
     accepted: null
     opening: >-
-      The first family after the first checkpoint, under the maintainer's
-      family method (macro WS16, accepted 2026-11-08): a lean stage swapped
-      into the pinned run, rough first and timed within hours. The maintainer
-      chose P3 from the per-stage profile on 2026-11-09. The rough lean P3 is
-      written, whole-run identical and timed (LDG-3218 evidence). The
-      diagnostic-records spike (dev/spikes/diagnostic_records/, closeout.md)
-      showed that sweep candidates build every diagnostic row and keep 0-108
-      of up to 699,040; the maintainer asked on 2026-11-09 to ticket the rule
-      that builds only the rows the sink keeps (LDG-3219). Nothing in R/
-      changes; both ship with the switch cut.
+      The first family after the first checkpoint (lean P3 swapped into the
+      pinned run, LDG-3218) cut P3 threefold but showed that one swapped
+      stage alone is above the stretch objective for a whole pulse. The
+      maintainer therefore replaced family-method point 1 with the
+      compact-state loop on 2026-11-09 (macro WS16, "Compact-state loop"):
+      one lean loop with its own preallocated state, E and P1-P5 kept as named
+      functions, coverage growing by feature in slices. This cut closes the
+      P3 family at its measured state and builds slice 1: the fixed basket on
+      daily bars without costs or risk, every pulse decided, which is the
+      published crossover workloads and the first PMwR comparison. Nothing in
+      R/ changes.
     authority: >-
-      macro_plan.md WS16 family method points 1-6; lean_core_interface.md
-      Part D Section 18 (draft until the maintainer accepts it);
-      rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md R1-R3 (own groups
-      checked in debug only); rfc_per_pulse_durable_records_v0_2_3_synthesis.md
-      Sections 2-3 (the logical trace and sequence positions are unchanged);
-      contracts.md typed fold carrier and fold core; spike_protocol.md for the
-      spike evidence LDG-3219 consumes.
+      macro_plan.md WS16 "Compact-state loop" points 1-5 and family method
+      points 3-6; rfc_lean_core_skeleton_v0_2_3_synthesis.md Section 2 with
+      its pulse-plumbing, observable-data and whole-planes amendments;
+      rfc_per_pulse_durable_records_v0_2_3_synthesis.md Sections 2-3 (the
+      logical trace and sequence positions are unchanged);
+      lean_core_interface.md Part D Section 19 (slice 1 design, binding once
+      the maintainer accepts it, A1); contracts.md typed fold carrier, fold
+      core and accounting events.
     measured_input: >-
-      Per-stage profile of the pin (dev/bench/v0_2_3_ws16_stage_profile/,
-      eade94f4): P3 21.7% of crossover 10 x 7,200 (683 us per pulse) and 18.5%
-      of 500 x 1,260 (1,261 us). Diagnostic-records probe (2026-11-09):
-      building diagnostics is 16-29% of a one-candidate sweep on the four
-      larger workloads.
+      Lean P3 timing (dev/bench/timing/records/ws16-p3-1/p3-rough/): P3 639 to
+      213 us per pulse on crossover 10 x 7,200 and 1,219 to 639 on 500 x 1,260;
+      whole run 0.86 and 0.92 of the pin. R-floor spike stage 2
+      (dev/spikes/r_floor/): the published runs bit for bit, full trace
+      included, at 26 and 103 us per pulse in a compact-state shape.
+      Diagnostic-records spike (dev/spikes/diagnostic_records/): clean holds
+      rebuild exactly from exceptions, sequence gaps and one count per pulse.
     decisions: >-
-      (1) The pin stays d5b3a151; lean code lives in dev/lean_core/ and swaps
-      bindings only through harness install functions. (2) Gate per family
-      method point 3: whole-run parity on the A0 workloads, the fixture, the
-      portable shapes and the published workloads, debug on and off, with
-      registered mutations failing; a quick alternating timing run on the
-      shared harness (eight pairs, its floor). (3) LDG-3219 changes which
-      rows are built, never which rows a sink keeps or their sequence
-      positions; a durable store keeps every row, so committed runs are
-      unchanged by it. (4) The durable-run part of the spike (hold counts, one
-      write after the last pulse, a rebuilding reader) is not in this cut; it
-      goes to the diagnostic-records amendment RFC.
+      (1) The pin stays d5b3a151; lean code lives in dev/lean_core/ and is
+      bound into a pinned run only by harness install functions. (2) LDG-3218
+      closes at its measured state as reference code; it is not hardened and
+      gets no family review, because slice 1 replaces it. (3) Slice 1 runs a
+      workload end to end on its own state or refuses it as not covered; it
+      never mixes with pinned stages. (4) Its diagnostics are exception rows
+      and one hold count per pulse during the loop, the hold rows rebuilt in
+      one pass after the last pulse, and the current store format written
+      once; a sink that keeps fewer rows (a sweep candidate) gets only what it
+      keeps. (5) Gate: whole-run parity against the pin on every covered
+      workload with debug on and off, the coverage refusal on every other
+      gate workload, registered mutations failing, and a quick timing run on
+      the shared harness with the PMwR comparison reported.
     identity_and_release_impact: >-
       None. No file in R/, tests/, DESCRIPTION, NAMESPACE, vignettes or the
-      store format changes. Design impact: lean_core_interface.md Section 18
-      and a Section 19 for the keep rule.
+      store format changes. Design impact: lean_core_interface.md Section 19.
     sequencing: >-
-      Two serial workstreams: 29 (LDG-3218, lean P3) then 30 (LDG-3219, the
-      keep rule, which extends lean P3's staging). LDG-3217's checkpoint
-      disposition by the maintainer precedes acceptance of this cut.
+      Workstream 29 (LDG-3218) closes first; workstream 30 (LDG-3219) builds
+      slice 1 after the maintainer accepts interface Section 19.
     out_of_scope: >-
-      Any change in R/ or tests/; P1, P2, P4, P5 and the loop as lean stages;
-      the durable-run diagnostic redesign (amendment RFC); the provider's
-      execution view (P1 family); the diagnostic writer and DuckDB writes
-      (loop family and the amendment RFC); compiled code.
+      Any change in R/ or tests/; slices 2-5 (costs, risk, sizing helpers,
+      schedules, declared sessions, stale and frozen marks, membership,
+      restrictions, terminals, corporate actions, imports, sweeps with
+      workers, compiled FIFO, restart, walk-forward); the store-format
+      decision of the diagnostic-records amendment RFC; compiled code.
     workstreams: [29, 30]
     review_lifecycle: >-
-      Family method point 6: one independent clean-context Codex CLI review
-      per workstream at close, wrong answers only, against the workstream's
-      interface section and evidence; no per-ticket rounds. A third
+      A1: the maintainer reviews Section 19 before slice-1 code. One
+      independent clean-context Codex CLI review of workstream 30 at close,
+      wrong answers only, against Section 19 and the evidence. A third
       correction round goes to the maintainer.
 review_gate:
   status: "retired"
@@ -1849,21 +1854,21 @@ workstreams:
   - id: 29
     name: "Lean P3 (macro WS16 family method)"
     cut: 13
-    status: "proposed"
-    accepted: null
+    status: "complete"
+    accepted: "2026-11-09 by the maintainer with the compact-state loop amendment (macro WS16): closed at its measured state as reference code for slice 1; not hardened, no family review."
     close_review: null
     depends_on_workstream: 28
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 29, after LDG-3218", reason: "Lean P3 swapped into the pinned run returns the pin's plan and stages the pin's diagnostic rows and implicit blocks, so every run-store table, reader and condition is identical to the pin on the gate workloads with debug on and off; its own groups are checked only in debug and every contracted refusal keeps its class and order; the registered mutations fail; and the timing record is within bound or its misses are accepted by the maintainer."}
   - id: 30
-    name: "Sweep keep rule: build only the diagnostic rows the sink keeps (macro WS16)"
+    name: "Compact-state lean loop, slice 1 (macro WS16)"
     cut: 13
     status: "proposed"
     accepted: null
     close_review: null
     depends_on_workstream: 29
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 30, after LDG-3219", reason: "Staging asks the sink's keep rule before building rows and reserves every logical position, so sweep results, kept memory diagnostics and every A0 path are identical to the pin with debug on and off; a durable store is unchanged; the gutted rule fails; and the sweep timing is within bound."}
+    review: {mode: "Type 1", point: "close of workstream 30, after LDG-3219", reason: "The compact-state loop runs every slice-1 workload end to end with every run-store table, reader, condition and sweep result identical to the pin, debug on and off; it refuses every gate workload that uses an uncovered feature; its diagnostics are built only as exceptions and hold counts in the loop and rebuilt exactly after it; the registered mutations fail; and the timing run reports the whole-run ratio and the PMwR comparison."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -4384,7 +4389,7 @@ tickets:
   - id: "LDG-3217"
     title: "Record lean preparation memory and close the first checkpoint"
     workstream: 28
-    status: "in_progress"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3216"]
@@ -4429,53 +4434,53 @@ tickets:
       - "Code review (Codex CLI gpt-6.1-sol/high, clean context, range b665b405..879e8236): round 1 CHANGES_REQUIRED (parity/evidence/ldg3217_codex_review_round1.md), one finding: the per-pulse probe evidence cited budgets the lean arm derived from itself, not the frozen pinned budgets; fixed in the probe and the evidence (Step 4); round 2 PASS on 97b1b3ac (ldg3217_codex_review_round2.md: lean reads the frozen budgets, pinned still derives its own, every Step 4 number recomputes; ratio: one correction round). Round 1's other checks found no wrong answer: the timing candidate arm runs lean preparation only in candidate slots and restores the pin, the probe and memory arms use the preparation they name, the subtracted preparation matched the pin on constructed rectangular, sparse and off-session snapshots at several chunk widths, and the record's cells recompute."
       - "Rules ledger: no entry. No parity failure in LDG-3216 or LDG-3217 surfaced an unwritten ledgr rule (Codex round 1 found a harness defect; the refusal order, duplicate class and off-session handling are the pin's and contracts.md's). Affected-owner check (core extension Section 4 and the observable-data fifth scenario) for whole-plane preparation: OMS, no order or lifecycle state in preparation; other order types, every OHLCV plane and the next-bar packet stay; short selling and leverage, preparation carries no position or sign; other asset classes, no per-instrument term or constant added to the substrate; new observable data kinds, the planes stay today's numeric bar fields, and a new kind adds a plane through the same chunked fill. No owner changes; no store, config or identity change."
       - "Re-estimate (a report, not a gate): the first checkpoint (recorder, FIFO kernel, preparation, two preparation designs) took 2026-11-04 to 2026-11-09. The maintainer's family method (macro WS16, ab625aad, abf95413) replaces stage-parity-first with one lean stage swapped into the pinned run, a rough timed version within hours, and a quick timing gate. Estimate: a per-stage profile of the pin first (under an hour); then two to four working days per family for P1, P2 and P3 (with P4/P5), schedules and RNG, carry windows, sweep, workers and promotion, and the loop, with the history-read kernels spike before P2: about four to six weeks to the switch cut, with a first whole-run measurement of a lean stage within the first family's first day."
+      - "Checkpoint disposition (maintainer, 2026-11-09): the timing misses of preparation and the registered requests were accepted on the fixed-heap cause (Step 5); the 500 x 1,260 one-worker memory cell (456 vs 455 MiB, set by pinned steps after hydration; lean's substrate step peaks lower, 378 vs 392 MiB) is accepted as recorded. The checkpoint is disposed; the WS28 Type 1 close review remains."
   - id: "LDG-3218"
-    title: "Lean P3: close the first family"
+    title: "Lean P3: the first family, closed as reference"
     workstream: 29
-    status: "in_progress"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3217"]
     scope: >-
       Lean P3 (dev/lean_core/plan.R) replaces ledgr_fold_stage_plan in the
-      pinned run through lean_plan_install(). The rough version is written,
-      parity-checked and timed (evidence below). To close: find the cause of
-      the momentum whole-run miss and fix it or bring it to the maintainer;
-      run the subtraction review and report line counts; the maintainer
-      accepts interface Section 18; one Codex family review.
+      pinned run through lean_plan_install(): the family method's first swap,
+      built rough, parity-checked and timed. Closed at that state by the
+      maintainer's compact-state loop amendment (2026-11-09); its planner
+      logic is reference code for slice 1 (LDG-3219).
     acceptance:
       - "every run-store table (diagnostics decoded), reader and condition is identical to the pin on the eight A0 workloads, momentum 40 x 504, fill-heavy 500 x 1,260, the cross-edge fixture with trading, crossover 10 x 7,200 and 500 x 1,260 and the portable 500 x 1,260/2,520/5,040, with debug on and off; the three registered mutations fail"
-      - "ws16-p3-1 timing: each whole-run cell at most 1.0x pinned, or a miss is explained and accepted by the maintainer"
-      - "lean P3's own groups are checked only in debug; the cost resolver, target-delta, epoch, short-exposure, execution-view dictionary and reconciliation refusals keep their classes and order"
-      - "interface Section 18 carries the maintainer's acceptance; the Codex family review passes"
+      - "a quick timing record reports the whole-run ratio and P3's microseconds per pulse"
     evidence:
       - "Rough lean P3 (round 1 0e1928f5, rounds 2-3 724d522c): carrier checks of its own groups debug-only; empty reason segments built directly; fill and rejection segments built only when staged; one implicit block per pulse; one pass for the clean-pair checks; affordability priority from ranked IDs. Profile of P3 under the pin (Rprof, 10 x 7,200): carrier validation 22% of P3, planner 36% (plan validation 17%), diagnostic segments 13%, execution view 12%."
       - "Parity (dev/lean_core/parity/plan_parity.R; evidence plan_parity_debug0.csv, plan_parity_debug1.csv, plan_parity_mutations.csv, 44844461): 16 workloads, 427 tables identical with debug off and on at round 3; fill price one ulp high, implicit hold target changed and swapped reason codes each make the cross-edge fixture differ. A0's two-worker sweep runs in worker processes that load the plain pin and does not exercise lean P3."
       - "Timing (dev/bench/timing/records/ws16-p3-1/p3-rough/attempt-1, 8 pairs, High performance plan, affinity 0xFFFF, results identical in every slot): whole run 0.86 (crossover 10 x 7,200, 20.90 to 17.97 s), 0.92 (500 x 1,260), 1.018 momentum 40 x 504 (miss, slower in all 8 pairs, unexplained); P3 0.33 (639 to 213 us per pulse), 0.52 (1,219 to 639 us), 0.38."
+      - "Disposition (maintainer, 2026-11-09): closed at its measured state as reference code with the compact-state loop amendment (macro WS16); the momentum whole-run miss (1.018), the subtraction review, interface Section 18's acceptance and a family review are not pursued, because slice 1 replaces the swapped stage."
   - id: "LDG-3219"
-    title: "Build only the diagnostic rows the sink keeps"
+    title: "Compact-state lean loop, slice 1: fixed basket, daily bars"
     workstream: 30
     status: "pending"
-    priority: "P1"
-    effort: "S"
+    priority: "P0"
+    effort: "L"
     dependencies: ["LDG-3218"]
     scope: >-
-      In the lean core: at fold entry the diagnostic writer's sink states its
-      keep rule (ledgr_memory_diagnostic_keep for a sweep candidate; every
-      row for a durable store). Every staging call (lean P3's staging and a
-      lean binding over ledgr_fold_staging_add and
-      ledgr_fold_staging_add_residual for the still-pinned P1, P2, P5 and E)
-      evaluates the rule on the segment before building rows, builds only the
-      kept rows and reserves every logical position, so diagnostic_seq is
-      unchanged. Port the spike's rule (dev/spikes/diagnostic_records/fork.R,
-      stage 2a) into dev/lean_core/ with an install function, extend the
-      parity runner to sweep results and kept memory diagnostics, register
-      the gutted-rule mutation, and add a sweep timing protocol on the shared
-      harness. Interface Section 19 records the rule.
+      Build the compact-state lean loop of macro WS16 ("Compact-state loop")
+      for slice 1 as interface Section 19 specifies once the maintainer
+      accepts it (A1): E and P1-P5 as named functions over preallocated,
+      position-indexed run-long state; lean preparation (LDG-3216) and the
+      lean FIFO kernel (LDG-3213); the unchanged strategy surface through a
+      reused context; exception rows and one hold count per pulse, the hold
+      rows rebuilt after the last pulse and the current store format written
+      once, or only the kept rows for a sweep candidate; an explicit
+      coverage refusal for every feature outside slice 1. A harness install
+      function binds the loop for a run; nothing in R/ calls it. Extend the
+      whole-run parity runner to run each gate workload on the lean loop or
+      record its refusal, register mutations, and add a timing protocol with
+      the published crossover workloads.
     acceptance:
-      - "sweep tables and kept memory diagnostics identical to the pin on the six spike workloads, and every A0 path identical, with debug on and off; durable runs unchanged"
-      - "the gutted rule (keep nothing) fails parity on every workload that keeps rows"
-      - "sweep timing at most 1.0x the lean-P3 arm on every cell"
-      - "interface Section 19 accepted by the maintainer; the Codex review passes"
-    evidence:
-      - "Spike stage 2a (dev/spikes/diagnostic_records/, closeout.md, fork_sweeps.csv, fork_a0.csv): one-candidate sweeps 10-26% faster than the pin (crossover 10 x 7,200 28.5 to 21.3 s, 500 x 1,260 9.0 to 8.1, momentum 500 x 1,260 3.0 to 2.3, momentum 40 x 504 0.97 to 0.72; three alternating rounds, not a timing record); identical sweep tables and kept diagnostics on six workloads; the eight A0 workloads identical on every path; gutted rule fails on all three keeping workloads."
+      - "every run-store table (diagnostics decoded), reader, condition and one-worker sweep result is identical to the pin on every slice-1 workload (at least crossover 10 x 7,200, 20 x 23,400 and 500 x 1,260 and fill-heavy 500 x 1,260), with debug on and off"
+      - "every other gate workload is refused as not covered, naming the first uncovered feature; none runs partly"
+      - "no DuckDB write and no hold-row construction inside the pulse loop; the registered mutations (a fill price one ulp high, a dropped hold count, a hold rebuilt with the wrong position) fail"
+      - "a timing record on the shared harness reports the whole-run ratio to the pin, microseconds per pulse and the published PMwR figures for the same shapes"
+      - "interface Section 19 accepted by the maintainer before code; the Codex close review passes"
+    evidence: []

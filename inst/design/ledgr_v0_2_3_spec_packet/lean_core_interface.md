@@ -689,11 +689,13 @@ Each family after the first checkpoint follows the macro WS16 family method
 (accepted 2026-11-08): its lean stage replaces the stage's binding inside an
 otherwise pinned run and reads and writes the pin's fold state and groups
 unchanged. Its section here is its cut note; it binds once its status line
-names the maintainer's acceptance.
+names the maintainer's acceptance. From Section 19 on, the compact-state
+loop amendment (macro WS16, 2026-11-09) applies instead: the lean loop
+replaces the envelope, owns its state and grows by coverage slices.
 
 ## 18. P3 plan
 
-- Status: draft, rough version (family method point 2), not accepted.
+- Status: closed at its measured state as reference code (maintainer, 2026-11-09, compact-state loop amendment); not accepted as a design for the switch.
 - Order: first family, chosen by the maintainer on 2026-11-09 from the
   per-stage profile (`dev/bench/v0_2_3_ws16_stage_profile/`, `eade94f4`):
   P3 is the largest stage on both daily workloads (21.7% of the run on
@@ -762,6 +764,122 @@ pin; it is compared but does not exercise lean P3. Three mutations must
 fail: a fill price one ulp high, an implicit hold block's target changed,
 two rejection reason codes swapped.
 
-**Timing**: protocol `dev/bench/timing/protocols/ws16-p3-1/`, five
+**Timing**: protocol `dev/bench/timing/protocols/ws16-p3-1/`, eight
 alternating pairs per cell, whole-run and P3 clocks on the profile's three
 workloads.
+
+## 19. Compact-state loop, slice 1
+
+- Status: draft for the maintainer's review before code (A1; macro WS16
+  "Compact-state loop", accepted 2026-11-09). Binds once this line names the
+  maintainer's acceptance.
+- Ticket: LDG-3219 (Cut 13, workstream 30).
+- Starting points: the R-floor spike stages 2-3 (`dev/spikes/r_floor/`,
+  bit-identical at 26 and 103 us per pulse on crossover 10 x 7,200 and
+  500 x 1,260), lean P3's planner (Section 18), lean preparation
+  (Section 12.3) and the lean FIFO kernel (Section 11).
+
+### 19.1 Entry and exit
+
+The lean loop replaces `ledgr_fold_envelope(execution, output_handler)`
+(`R/fold-engine.R:1670`) through a harness install function, as lean
+preparation replaces its binding. Everything before it (registration,
+preflight, preparation, features, provider, output handler) and after it
+(finalisation, run evidence, telemetry, result readers) stays the pin's.
+Same inputs; the same return list (status, processed, full_run, telemetry,
+state, strategy_state, next_event_seq, equity_facts, `:2087-2097`); the same
+handler effects inside `output_handler$run_transaction()`, but in one
+publication after the last pulse instead of per pulse.
+
+### 19.2 Coverage (slice 1)
+
+The loop runs a fold only when all of these hold, and otherwise refuses with
+one classed condition naming the first uncovered feature, before the first
+pulse; the harness then runs the workload on the pin:
+
+| Covered | Refused (slice) |
+| --- | --- |
+| fixed universe, no status or lifetime facts | membership universes, restrictions, terminals (4) |
+| bar-native pulses, every pulse decided, complete bars in the window | declared sessions, schedules, missing bars and stale or frozen marks (3) |
+| zero cost, no risk steps, raw full targets or `ledgr_strategy_result()` with declared state | costs, risk chain, sizing helpers (2) |
+| cash opening, no corporate actions | opening positions and imports, corporate actions (4) |
+| strategy reading `ctx` fields, `hold()`, state and the pulse seed | history reads (`ledgr_history_*`), detected statically by preflight (3) |
+| committed run and a one-worker sweep candidate | workers, compiled FIFO, restart, walk-forward (5) |
+
+### 19.3 State (allocated once in E)
+
+All on the run axis by integer position, or one entry per pulse:
+
+- `pos` double N; `cash` double; the lean lot book (Section 11);
+- strategy state: one typed vector per declared field;
+- fills: preallocated typed columns (pulse, pos, side, qty, price, fee,
+  cash delta, position before and after, event seq) and a used count;
+  capacity grows by doubling;
+- equity: one row per pulse (ts, cash, positions value, realized P&L,
+  cost basis), the pin's equity record;
+- position facts, as the pin keeps them (`fold_state$position_facts`);
+- diagnostics: exception rows in typed columns with their logical offsets;
+  per pulse the hold count, the reconciliation tuple (typed, formatted
+  after the loop) and the pulse's first logical sequence number.
+
+Prepared once: the open and close planes and feature planes by position
+(lean preparation), the decision axis (fixed: `seq_len(N)`), the execution
+epochs, the pulse seeds, ISO timestamps.
+
+### 19.4 One pulse
+
+- **P1** values holdings at the close plane column and writes the equity
+  row. No settlement work exists in slice 1 (refused upstream).
+- **P2** fills the reused context environment from the planes by column
+  (`ctx$close`, features, `ctx$state`, `hold()`, positions, cash, equity,
+  seed), calls the strategy and checks its return once (`identical(names,
+  axis)` fast path, then the pin's validation on mismatch; R-floor stage 3
+  rules). Targets stay on the decision axis.
+- **P3** compares targets with holdings by the canonical threshold; with
+  nothing actionable it returns at once. Otherwise lean P3's planner logic
+  over vectors: next-open prices, the cost resolver, the refusal order, the
+  affordability scan; on the final pulse, final-pulse rejections.
+- **P4** applies the fills through the lean FIFO kernel, sets positions
+  from the book's net, books cash fill by fill in event order (the pin's
+  scan), appends to the fill columns and updates position facts.
+- **P5** records the reconciliation tuple and the strategy state update,
+  counts the pulse and stops at `max_pulses`.
+
+Diagnostics per pulse: the hold count is the number of decision-axis
+instruments whose decision is clean (the pin's clean-hold conditions,
+Section 18's fused pass); the pulse records rows only for non-clean
+decisions, rejections, non-clean fills and the run's single sizing notice.
+Clean fills are recorded as fill indices.
+
+### 19.5 After the last pulse
+
+1. Rebuild the diagnostic trace in typed columns: clean holds from the hold
+   counts, the decision axis, positions and closes; clean fills from the
+   fill columns; reconciliation rows from their tuples (JSON formatted once,
+   vectorized); exception rows as recorded; logical sequence numbers from
+   the per-pulse first numbers.
+2. Publish through the pin's handler and writer: the fill events as one
+   block (one publication check), the accounting legs, the diagnostics
+   through one writer sized to the run (one append per table, today's store
+   format and implicit codec), coverage and the summary.
+3. For a sweep candidate the sink's keep rule selects the kept rows; no
+   other row is built in step 1.
+
+### 19.6 Gate and evidence
+
+As LDG-3219's acceptance: whole-run parity on every covered workload, debug
+on and off (the parity runner gains a lean-loop mode and records refusals
+for uncovered workloads); mutations (a fill price one ulp high, a dropped
+hold count, a hold rebuilt with the wrong position); no DuckDB write and no
+hold row inside the loop (asserted by the harness wrapping the handler and
+writer during the loop); a timing record with the PMwR comparison.
+
+### 19.7 To verify in code before relying on it
+
+- that the handler accepts one fill block for the whole run with the same
+  rows, sequence numbers, legs and checks as per-pulse blocks;
+- that the writer, built with one chunk for the whole run, writes the same
+  rows and the same coverage and summary;
+- that position facts and telemetry samples need nothing beyond the fill
+  columns and pulse counts;
+- the strategy-state carrier's update rules for `ledgr_strategy_result()`.
