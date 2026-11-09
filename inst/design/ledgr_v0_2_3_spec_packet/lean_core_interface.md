@@ -791,6 +791,16 @@ state, strategy_state, next_event_seq, equity_facts, `:2087-2097`); the same
 handler effects inside `output_handler$run_transaction()`, but in one
 publication after the last pulse instead of per pulse.
 
+Telemetry (maintainer, 2026-11-09): the loop keeps the stored run row
+(status, mode, elapsed seconds, pulse, decided and skipped counts) and the
+whole-run times (`t_pre`, `t_loop`, `t_post`), and drops per-stage
+sampling. The samples are never stored, so parity is unaffected; on this
+host `proc.time()` ticks in about 10-16 ms against a 3 ms pulse, so the
+pin's stage samples are mostly zero (every stage median 0 in
+`ledgr_backtest_bench()` on crossover 10 x 7,200). What
+`ledgr_backtest_bench()` reports after the switch is a decision of the
+diagnostic-records amendment (seed D7).
+
 ### 19.2 Coverage (slice 1)
 
 The loop runs a fold only when all of these hold, and otherwise refuses with

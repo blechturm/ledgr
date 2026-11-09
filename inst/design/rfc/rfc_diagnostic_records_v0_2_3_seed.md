@@ -101,6 +101,16 @@ implicit only if its exact floating-point tuple rebuilds; this seed proposes
 storing it only when reconciliation is not exact, and asks the response to
 test whether the tuple is exactly derivable from stored cash and events.
 
+**D7. Per-stage telemetry.** `contracts.md` (Telemetry And Recovery) keeps
+detailed per-component telemetry session-scoped through
+`ledgr_backtest_bench()`. The pin samples each stage every 100th pulse with
+`proc.time()`, which ticks in about 10-16 ms on Windows against a 3 ms
+pulse: every stage median is 0 on crossover 10 x 7,200. The samples are
+never stored. The lean loop drops per-stage sampling (interface Section
+19.1, maintainer 2026-11-09); this decides what `ledgr_backtest_bench()`
+reports after the switch: whole-run times only, or stage times from a
+fine-grained clock.
+
 ## 4. Open question for the maintainer: opt-in diagnostics
 
 The maintainer asked whether the full trace should be opt-in. The accepted
