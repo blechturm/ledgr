@@ -4478,7 +4478,8 @@ tickets:
       record its refusal, register mutations, and add a timing protocol with
       the published crossover workloads.
     acceptance:
-      - "every run-store table (diagnostics decoded), reader, condition and one-worker sweep result is identical to the pin on every slice-1 workload (at least crossover 10 x 7,200, 20 x 23,400 and 500 x 1,260 and fill-heavy 500 x 1,260), with debug on and off"
+      - "every run-store table (diagnostics decoded), reader, condition and one-worker sweep result is identical to the pin on every slice-1 workload (at least crossover 10 x 7,200, 20 x 23,400 and 500 x 1,260, fill-heavy 500 x 1,260, and three constructed workloads: tight cash, a sell and a buy on one pulse, trades requested on the final pulse), with debug on and off"
+      - "a sizing-helper or history call missed by the static scan stops the lean run, rolls back its transaction and reruns the workload on the pin"
       - "every other gate workload is refused as not covered, naming the first uncovered feature; none runs partly"
       - "no DuckDB write and no hold-row construction inside the pulse loop; the registered mutations (a fill price one ulp high, a dropped hold count, a hold rebuilt with the wrong position) fail"
       - "a timing record on the shared harness reports the whole-run ratio to the pin, microseconds per pulse and the published PMwR figures for the same shapes"

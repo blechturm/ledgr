@@ -816,6 +816,23 @@ pulse; the harness then runs the workload on the pin:
 | strategy reading `ctx` fields, `hold()`, state and the pulse seed | history reads (`ledgr_history_*`), detected statically by preflight (3) |
 | committed run and a one-worker sweep candidate | workers, compiled FIFO, restart, walk-forward (5) |
 
+Decided by the maintainer (2026-11-09):
+
+1. **Detection.** Sizing helpers and history reads are found by scanning the
+   strategy's code before the first pulse. A call the scan missed (for
+   example inside a user helper) reaches a lean stub that signals the
+   coverage condition; the run's transaction rolls back and the harness
+   reruns the workload on the pin. A run is never part lean, part pin; a
+   miss costs one rerun.
+2. **Constructed workloads.** The crossover runs never run short of cash, so
+   three small workloads are added inside slice 1, built with public
+   constructors and the pin as oracle, as A0 is: tight cash (insufficient
+   cash rejections and the affordability order), a sell and a buy on the
+   same pulse, and trades requested on the final pulse.
+3. **Sweeps.** One-worker sweep candidates are in slice 1, so the first
+   measurement includes the keep rule. Sweeps on workers stay on the pin
+   until slice 5, because worker processes load the installed package.
+
 ### 19.3 State (allocated once in E)
 
 All on the run axis by integer position, or one entry per pulse:
@@ -859,12 +876,18 @@ Diagnostics per pulse: the hold count is the number of decision-axis
 instruments whose decision is clean (the pin's clean-hold conditions,
 Section 18's fused pass); the pulse records rows only for non-clean
 decisions, rejections, non-clean fills and the run's single sizing notice.
-Clean fills are recorded as fill indices.
+Clean fills are recorded as fill indices. Holds are counted only on a pulse
+that completes P3 normally (the diagnostic-records response found hold
+omission is specific to that path); in slice 1 the only other exit is an
+error, which discards the run (19.5).
 
 ### 19.5 After the last pulse
 
 1. Rebuild the diagnostic trace in typed columns: clean holds from the hold
-   counts, the decision axis, positions and closes; clean fills from the
+   counts, the decision axis, closes and positions, each position being the
+   book net recorded as the latest fill's position after, never a sum of
+   fill quantities (the response found a book net of 0.20000000000000004
+   that summed deltas miss); clean fills from the
    fill columns; reconciliation rows from their tuples (JSON formatted once,
    vectorized); exception rows as recorded; logical sequence numbers from
    the per-pulse first numbers.
@@ -874,11 +897,16 @@ Clean fills are recorded as fill indices.
    format and implicit codec), coverage and the summary.
 3. For a sweep candidate the sink's keep rule selects the kept rows; no
    other row is built in step 1.
+4. On an error the loop discards its memory and writes only the pin's single
+   exception row (pulse time, stage, condition class and message), as the
+   pin does after rolling the transaction back (`R/fold-engine.R:2057-2081`).
+   A `max_pulses` stop publishes without the completion row, as the pin does
+   (`:2037-2050`).
 
 ### 19.6 Gate and evidence
 
-As LDG-3219's acceptance: whole-run parity on every covered workload, debug
-on and off (the parity runner gains a lean-loop mode and records refusals
+As LDG-3219's acceptance: whole-run parity on every covered workload and the
+three constructed workloads (19.2), debug on and off (the parity runner gains a lean-loop mode and records refusals
 for uncovered workloads); mutations (a fill price one ulp high, a dropped
 hold count, a hold rebuilt with the wrong position); no DuckDB write and no
 hold row inside the loop (asserted by the harness wrapping the handler and
@@ -890,6 +918,5 @@ writer during the loop); a timing record with the PMwR comparison.
   rows, sequence numbers, legs and checks as per-pulse blocks;
 - that the writer, built with one chunk for the whole run, writes the same
   rows and the same coverage and summary;
-- that position facts and telemetry samples need nothing beyond the fill
-  columns and pulse counts;
+- that position facts need nothing beyond the fill columns and pulse counts;
 - the strategy-state carrier's update rules for `ledgr_strategy_result()`.
