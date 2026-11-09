@@ -1,0 +1,16 @@
+"record","identical"
+"sql_metrics",TRUE
+"sql_differences",TRUE
+"fractional_sequential",TRUE
+"edge_counts",TRUE
+"edge_segments",TRUE
+"edge_tuples",TRUE
+"recon_economics",TRUE
+"comparison",TRUE
+"reductions",TRUE
+"numbering",TRUE
+"edge_risk_stop",TRUE
+"edge_sizing",TRUE
+"edge_risk",TRUE
+"edge_tiny",TRUE
+"edge_p3",TRUE

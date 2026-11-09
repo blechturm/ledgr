@@ -1,0 +1,5 @@
+"run_id","diagnostic_seq","ts_utc","instrument_id","stage","outcome","reason_code","reasons","target","quantity","price","mark_source","mark_age","decision_ts_utc","execution_ts_utc","event_seq","target_before_risk","target_after_risk","position_before","position_after","feature_identity_json","detail_json"
+"p3",1,2020-01-01 16:00:00,"","sizing","unavailable","sizing_intent_unavailable","raw_quantity_targets",NA,NA,NA,"",NA,2020-01-01 16:00:00,NA,NA,NA,NA,NA,NA,NA,"{}"
+"p3",2,2020-01-01 16:00:00,"AAA","decision","recorded","decision_recorded","decision_recorded",0,0,NA,"missing",NA,2020-01-01 16:00:00,NA,NA,0,0,0,0,NA,"{}"
+"p3",3,2020-01-01 16:00:00,"CLOCK","decision","recorded","decision_recorded","decision_recorded",0,0,100,"current_close",0,2020-01-01 16:00:00,NA,NA,0,0,0,0,NA,"{}"
+"p3",4,2020-01-01 16:00:00,"","affordability","stopped","affordability_reconciliation_failed","affordability_reconciliation_failed",NA,NA,NA,"",NA,2020-01-01 16:00:00,NA,NA,NA,NA,NA,NA,NA,"{""cash_before"":1000.0,""recorded_final_cash"":1000.0,""virtual_final_cash"":1001.0}"

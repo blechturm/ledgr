@@ -1,0 +1,10 @@
+"workload","path","arm","gut","tables","different","first_difference","kept_rows","median_wall_s","ratio_to_pin"
+"momentum_40x504","sweep_w1","pin",FALSE,"10","0","",0,0.89,1
+"momentum_40x504","sweep_w1","lean",FALSE,"10","0","",0,0.92,1.034
+"momentum_40x504","sweep_w1","strict",FALSE,"10","0","",0,0.71,0.798
+"dense_risk_features","sweep_w1","pin",FALSE,"10","0","",1,0.17,1
+"dense_risk_features","sweep_w1","lean",FALSE,"10","0","",1,0.2,1.176
+"dense_risk_features","sweep_w1","strict",FALSE,"10","0","",1,0.2,1.176
+"prep_fixture","sweep_w1","pin",FALSE,"10","0","",5,0.55,1
+"prep_fixture","sweep_w1","lean",FALSE,"10","0","",5,0.5,0.909
+"prep_fixture","sweep_w1","strict",FALSE,"10","0","",5,0.5,0.909

@@ -1,0 +1,5 @@
+"workload","summary_decisions","explicit_decisions","certified_holds","clean_fill_decisions","seed_d4","complete"
+"crossover_500x1260",630000,54,562221,67725,562275,630000
+"momentum_500x1260",29703,1203,27618,882,28821,29703
+"dense_risk_features",16,2,8,6,10,16
+"fractional",48,1,32,15,33,48
