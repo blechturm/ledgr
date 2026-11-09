@@ -52,11 +52,12 @@ switch(mutation,
   }),
   # an implicit hold row's target changed: stored diagnostics only
   hold_target_changed = local({
-    pinned <- get("ledgr_diagnostic_implicit_hold_block", envir = asNamespace("ledgr"))
-    lean$ledgr_diagnostic_implicit_hold_block <- function(...) {
-      b <- pinned(...)
-      b$target[[1L]] <- b$target[[1L]] + 1
-      b
+    inner <- lean$lean_plan_clean
+    lean$lean_plan_clean <- function(...) {
+      r <- inner(...)
+      h <- which(r$clean_hold)
+      if (length(h)) r$target[[h[[1L]]]] <- r$target[[h[[1L]]]] + 1
+      r
     }
   }),
   # two rejection reason codes swapped: rejection diagnostics

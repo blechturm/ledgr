@@ -88,6 +88,55 @@ lean_plan_groups <- function(k, pos, side, qty, price, fee, exec_ts, before, seg
   )
 }
 
+# The affordability scan (pinned: ledgr_plan_affordability,
+# R/availability-economics.R:332), a justified sequential loop. The pin
+# orders generators first, then stable ID; candidates are distinct
+# instruments, so the stable IDs have no ties and one radix order over
+# (!generator, ID) is the pin's permutation. Zero or one candidate needs no
+# sort. A missing generator flag (an undefined cash effect) keeps the pin's
+# formula, which leaves that row out of the scan.
+lean_plan_affordability <- function(cash_delta, blocked, generator, stable_id, cash, id_rank,
+                                    tolerance = ledgr_availability_cash_tolerance) {
+  n <- length(cash_delta)
+  priority <- if (anyNA(generator)) {
+    p <- c(which(generator), which(!generator))
+    p[order(!generator[p], enc2utf8(stable_id[p]), method = "radix")]
+  } else if (n <= 1L) {
+    seq_len(n)
+  } else {
+    # id_rank: each candidate's rank in the radix order of the run's IDs,
+    # which preserves the order of any subset of distinct IDs.
+    order(!generator, id_rank, method = "radix")
+  }
+  accepted <- logical(n)
+  insufficient <- logical(n)
+  virtual_cash <- as.numeric(cash)
+  for (idx in priority) {
+    next_cash <- virtual_cash + cash_delta[[idx]]
+    affordable <- cash_delta[[idx]] >= 0 || next_cash >= -tolerance
+    if (!blocked[[idx]] && affordable) {
+      accepted[[idx]] <- TRUE
+      virtual_cash <- next_cash
+    } else if (!affordable) {
+      insufficient[[idx]] <- TRUE
+    }
+  }
+  list(accepted = accepted, insufficient = insufficient, final_cash = virtual_cash)
+}
+
+# Rank of each run-axis instrument in the radix order of the stable IDs
+# (UTF-8 bytes), computed once per instrument axis.
+lean_plan_rank_cache <- new.env(parent = emptyenv())
+lean_plan_id_rank <- function(ids) {
+  if (!identical(lean_plan_rank_cache$ids, ids)) {
+    rank <- integer(length(ids))
+    rank[order(enc2utf8(ids), method = "radix")] <- seq_along(ids)
+    lean_plan_rank_cache$ids <- ids
+    lean_plan_rank_cache$rank <- rank
+  }
+  lean_plan_rank_cache$rank
+}
+
 # The availability planner (pinned: ledgr_fold_build_availability_pulse_plan,
 # R/availability-economics.R:365), same order of checks and rows.
 lean_plan_pulse <- function(context_pos, target_qty, position, actionable_k, member, execution,
@@ -131,7 +180,9 @@ lean_plan_pulse <- function(context_pos, target_qty, position, actionable_k, mem
   resulting <- rep(NA_real_, n)
   resulting[candidates] <- before[candidates] + effects$position_delta
   short <- logical(n)
-  short[candidates] <- resulting[candidates] < pmin(before[candidates], 0)
+  floor_qty <- before[candidates]
+  floor_qty[floor_qty > 0] <- 0
+  short[candidates] <- resulting[candidates] < floor_qty
   if (any(bad_delta) || (!epoch_valid && n > 0L) || any(short)) {
     ledgr_plan_refuse_first(
       list(!bad_open & bad_delta, !bad_open & !epoch_valid, short),
@@ -151,8 +202,12 @@ lean_plan_pulse <- function(context_pos, target_qty, position, actionable_k, mem
   blocked <- view_count[candidates] > 0L
   generator <- side[candidates] == -1L & before[candidates] > 0 & delta[candidates] < 0 &
     effects$cash_delta >= 0 & !blocked
-  scan <- ledgr_plan_affordability(effects$cash_delta, blocked, generator,
-    instrument_ids[pos[candidates]], cash)
+  scan <- lean_plan_affordability(effects$cash_delta, blocked, generator,
+    instrument_ids[pos[candidates]], cash, lean_plan_id_rank(instrument_ids)[pos[candidates]])
+  if (.lean_debug && !identical(scan, ledgr_plan_affordability(effects$cash_delta, blocked, generator,
+                                                               instrument_ids[pos[candidates]], cash))) {
+    rlang::abort("Lean P3 affordability scan differs from the pin's.", class = "ledgr_internal_error")
+  }
   fills <- candidates[scan$accepted]
   late <- candidates[!scan$accepted]
 
@@ -166,6 +221,53 @@ lean_plan_pulse <- function(context_pos, target_qty, position, actionable_k, mem
     c(early, late), rep(c(1L, 2L), c(length(early), length(late))),
     c(rep(NA_real_, length(early)), price[late]))
   plan(groups, if (length(fills) > 0L) 1L else none, scan$final_cash)
+}
+
+# The diagnostic codec's clean-pair certification in one pass (pinned:
+# ledgr_diagnostic_clean_fill and ledgr_diagnostic_clean_hold,
+# R/diagnostic-codec.R:33-82), which gather the same decision fields twice.
+# Both are conjunctions whose missing values become FALSE, so each is the
+# conjunction of its terms with NA as FALSE; the terms they share form
+# `shared`. Returns both flags and the decision columns the implicit block
+# reads.
+lean_plan_clean <- function(decision, risk, fill, fill_reason, excluded_k) {
+  n <- decision$n
+  n_fill <- length(fill$k)
+  if (n == 0L) return(list(clean_fill = logical(), clean_hold = logical()))
+  at <- function(name) {
+    v <- decision[[name]]
+    if (length(v) == 1L) rep_len(v, n) else v
+  }
+  instrument <- as.character(at("instrument_id"))
+  target <- as.numeric(at("target"))
+  target_after <- as.numeric(at("target_after_risk"))
+  before <- as.numeric(at("position_before"))
+  after <- as.numeric(at("position_after"))
+  price <- as.numeric(at("price"))
+  mark_source <- as.character(at("mark_source"))
+  mark_age <- as.integer(at("mark_age"))
+  shared <- is.finite(target) & is.finite(target_after) & target == target_after &
+    is.finite(before) & is.finite(after) & before == after & is.finite(price) &
+    as.character(at("reason_code")) == "decision_recorded" & as.character(at("reasons")) == "decision_recorded" &
+    mark_source == "current_close" & mark_age == 0L
+  if (!is.null(risk) && risk$n > 0L) {
+    shared <- shared & !(instrument %in% as.character(ledgr_diagnostic_segment_at(risk, "instrument_id", seq_len(risk$n))))
+  }
+  shared[is.na(shared)] <- FALSE
+  hold <- shared & target == before
+  excluded_k <- excluded_k[excluded_k <= n]
+  hold[excluded_k] <- FALSE
+  hold[is.na(hold)] <- FALSE
+  clean_fill <- logical()
+  if (n_fill > 0L) {
+    k <- fill$k
+    clean_fill <- shared[k] & is.finite(fill$position_before) & before[k] == fill$position_before &
+      is.finite(fill$planned_position_after) & target[k] == fill$planned_position_after &
+      !nzchar(fill_reason$reason) & !nzchar(fill_reason$reasons)
+    clean_fill[is.na(clean_fill)] <- FALSE
+  }
+  list(clean_fill = clean_fill, clean_hold = hold, instrument_id = instrument, target = target,
+       position_before = before, price = price, mark_source = mark_source, mark_age = mark_age)
 }
 
 # Stages rows `index` of a segment of `n` logical rows and reserves all n
@@ -291,19 +393,16 @@ lean_stage_plan <- function(
     ledgr_carrier_segment_text(fill$info_offset, fill$info_count, fill$info_code, .ledgr_plan_reason_levels)
   }
   encode <- isTRUE(services$diagnostic_writer$can_encode)
-  clean <- if (encode && n_fill > 0L) {
-    ledgr_diagnostic_clean_fill(decision_diagnostic, risk_diagnostic, fill, fill_reasons)
-  } else {
-    rep(FALSE, n_fill)
+  clean <- rep(FALSE, n_fill)
+  clean_hold <- rep(FALSE, n_decision)
+  d <- NULL
+  if (encode) {
+    d <- lean_plan_clean(decision_diagnostic, risk_diagnostic, fill, fill_reasons, c(fill$k, rejection$k))
+    clean <- d$clean_fill
+    clean_hold <- d$clean_hold
   }
-  clean[is.na(clean)] <- FALSE
   clean_rows <- which(clean)
   clean_k <- if (length(clean_rows) > 0L) fill$k[clean_rows] else integer()
-  clean_hold <- if (encode) {
-    ledgr_diagnostic_clean_hold(decision_diagnostic, risk_diagnostic, excluded_k = c(fill$k, rejection$k))
-  } else {
-    rep(FALSE, n_decision)
-  }
   clean_hold_k <- which(clean_hold)
   implicit <- logical(n_decision)
   implicit[clean_k] <- TRUE
@@ -354,35 +453,56 @@ lean_stage_plan <- function(
       ), ts)
     }, which(!clean))
   }
-  if (length(clean_rows) > 0L) {
+  # The implicit fill rows, then the implicit hold rows: the pin appends them
+  # as two blocks in this order; one block holds the same rows in the same
+  # order, and the writer splits chunks by row, so the same chunks flush.
+  nf <- length(clean_rows)
+  nh <- length(clean_hold_k)
+  if (nf + nh > 0L) {
     base <- fold_state$diagnostic_seq
-    services$diagnostic_writer$append_implicit(
-      ledgr_diagnostic_implicit_block(
-        run_id = services$run_id,
-        decision = decision_diagnostic,
-        fill = fill,
-        fill_rows = clean_rows,
-        decision_seq = base + decision_offsets[clean_k],
-        execution_seq = base + execution_offsets[clean_rows],
-        event_seq = fold_state$event_seq + clean_rows - 1L,
-        axis_size = length(instrument_ids)
-      )
+    dk <- c(clean_k, clean_hold_k)
+    n_inst <- length(instrument_ids)
+    block <- list(
+      n = nf + nh,
+      run_id = rep_len(as.character(services$run_id), nf + nh),
+      decision_seq = as.integer(base + decision_offsets[dk]),
+      execution_seq = c(as.integer(base + execution_offsets[clean_rows]), rep(NA_integer_, nh)),
+      decision_order = c(as.numeric((fill$k[clean_rows] - 1) * n_inst + fill$pos[clean_rows]),
+                         as.numeric((clean_hold_k - 1) * n_inst + context_pos[clean_hold_k])),
+      # epoch seconds; the writer's buffer column carries the POSIXct class
+      ts_utc = rep_len(as.numeric(decision_diagnostic$ts), nf + nh),
+      instrument_id = d$instrument_id[dk],
+      target = d$target[dk],
+      position_before = d$position_before[dk],
+      decision_price = d$price[dk],
+      decision_mark_source = d$mark_source[dk],
+      decision_mark_age = d$mark_age[dk],
+      fill_quantity = c(as.numeric(fill$qty[clean_rows]), rep(NA_real_, nh)),
+      fill_price = c(as.numeric(fill$price[clean_rows]), rep(NA_real_, nh)),
+      execution_ts_utc = c(as.numeric(fill$exec_ts[clean_rows]), rep(NA_real_, nh)),
+      event_seq = c(as.integer(fold_state$event_seq + clean_rows - 1L), rep(NA_integer_, nh)),
+      position_after = c(as.numeric(fill$planned_position_after[clean_rows]), d$position_before[clean_hold_k])
     )
-  }
-  if (length(clean_hold_k) > 0L) {
-    base <- fold_state$diagnostic_seq
-    services$diagnostic_writer$append_implicit(
-      ledgr_diagnostic_implicit_hold_block(
-        run_id = services$run_id,
-        decision = decision_diagnostic,
-        rows = clean_hold_k,
+    if (.lean_debug) {
+      pinned <- list()
+      if (nf > 0L) pinned[[1L]] <- ledgr_diagnostic_implicit_block(
+        run_id = services$run_id, decision = decision_diagnostic, fill = fill, fill_rows = clean_rows,
+        decision_seq = base + decision_offsets[clean_k], execution_seq = base + execution_offsets[clean_rows],
+        event_seq = fold_state$event_seq + clean_rows - 1L, axis_size = n_inst)
+      if (nh > 0L) pinned[[length(pinned) + 1L]] <- ledgr_diagnostic_implicit_hold_block(
+        run_id = services$run_id, decision = decision_diagnostic, rows = clean_hold_k,
         decision_seq = base + decision_offsets[clean_hold_k],
-        decision_order = as.numeric(
-          (clean_hold_k - 1) * length(instrument_ids) +
-            context_pos[clean_hold_k]
-        )
-      )
-    )
+        decision_order = as.numeric((clean_hold_k - 1) * n_inst + context_pos[clean_hold_k]))
+      joined <- lapply(stats::setNames(names(block), names(block)), function(nm) {
+        if (identical(nm, "n")) return(sum(vapply(pinned, `[[`, 0, "n")))
+        unclass(do.call(c, lapply(pinned, function(p) unclass(p[[nm]]))))
+      })
+      joined$n <- as.integer(joined$n)
+      if (!identical(lapply(joined, unname), lapply(block, unname))) {
+        rlang::abort("Lean P3 implicit block differs from the pinned blocks.", class = "ledgr_internal_error")
+      }
+    }
+    services$diagnostic_writer$append_implicit(block)
   }
   list(
     batch = batch,

@@ -729,12 +729,15 @@ pinned.
 | staged residual rows validated as a staging group (`R/fold-carrier.R:871`) | validated only in debug; the staging capacity refusal stays (`ledgr_fold_staging_write`) |
 | reconciliation `all.equal()` every pulse | exact comparison first; `all.equal()` only when the sums differ (same result: `all.equal` returns TRUE for equal values) |
 | first-failing-row refusal scan every pulse | run only when a row fails a check; the refusal, class and order are the pin's |
+| clean fill and clean hold certified separately, each gathering the same ten decision fields (`R/diagnostic-codec.R:33-82`) | one pass over the fields (`lean_plan_clean`); each flag is the same conjunction with NA as FALSE; debug-only identity check of the resulting block |
+| implicit fill rows and implicit hold rows appended as two blocks, timestamps built as POSIXct (`R/diagnostic-codec.R:84-148`) | one block with the same rows in the same order (the writer splits chunks by row, so the same chunks flush); timestamps as epoch seconds into the writer's POSIXct columns; in debug the block is compared with the two pinned blocks every pulse |
+| affordability priority: generators first, then a radix order of the candidates' ID strings, every pulse (`R/availability-economics.R:338-339`) | the same permutation from integer ranks of the run's IDs computed once (IDs are distinct, so ranks preserve their order); no sort for zero or one candidate; a missing generator flag keeps the pin's formula; in debug the scan is compared with the pin's every pulse |
 
 **Kept in production** (R3), with the pin's classes and order: the cost
 resolver's shape refusal; the target-delta, execution-epoch and
 short-exposure refusals of the first failing row in decision order; the
-execution-view dictionary refusal; the affordability scan
-(`ledgr_plan_affordability`, a justified sequential loop); the
+execution-view dictionary refusal; the affordability scan (a justified
+sequential loop, `lean_plan_affordability`, the pin's loop); the
 affordability-reconciliation stop (INCOMPLETE).
 
 **Validation placement** (Section 13 rows for P3):
