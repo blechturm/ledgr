@@ -23,59 +23,11 @@ here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(F
 repo <- normalizePath(file.path(here, "..", "..", ".."), winslash = "/")
 source(file.path(repo, "dev/bench/v0_2_3_ws16_entry/common.R"))
 pin <- ws16_load_installed(lib)
-source(file.path(repo, "dev/bench/v0_2_3_ws16_entry/workloads.R"))
-source(file.path(repo, "dev/bench/v0_2_3_output_freeze/lib.R"))
-source(file.path(repo, "dev/spikes/r_floor/fixture.R"))
-source(file.path(repo, "dev/lean_core/parity/prep_fixture.R"))
 ns <- asNamespace("ledgr")
 work <- file.path(tempdir(), "diag_probe")
 dir.create(work, showWarnings = FALSE)
-
-fresh <- function(name) {
-  db <- file.path(work, paste0(name, ".duckdb"))
-  if (file.exists(db)) unlink(db)
-  db
-}
-crossover <- function(n_inst, n_days) function() {
-  db <- fresh(sprintf("crossover_%dx%d", n_inst, n_days))
-  snapshot <- ledgr::ledgr_snapshot_from_df(r_floor_fixture(n_inst, n_days)$bars, db_path = db,
-                                            snapshot_id = "probe", price_basis = "split_adjusted")
-  strategy <- r_floor_transition
-  environment(strategy) <- ns
-  exp <- ledgr::ledgr_experiment(snapshot, strategy,
-    features = ledgr::ledgr_feature_map(
-      fast = ledgr::ledgr_ind_ttr("SMA", input = "close", id = "fast", n = 5L),
-      slow = ledgr::ledgr_ind_ttr("SMA", input = "close", id = "slow", n = 10L)),
-    opening = ledgr::ledgr_opening(cash = 1e7), cost_model = ledgr::ledgr_cost_zero(),
-    risk_chain = ledgr::ledgr_risk_none(), asset_state = list(above = FALSE, usable = FALSE))
-  list(db = db, snapshot = snapshot, exp = exp, params = list(), seed = 20260530L)
-}
-momentum <- function(n_inst, n_days) function() {
-  db <- fresh(sprintf("momentum_%dx%d", n_inst, n_days))
-  snapshot <- ws16_momentum_snapshot(n_inst, n_days, db, "probe")
-  list(db = db, snapshot = snapshot, exp = ws16_momentum_experiment(snapshot, 63L),
-       params = list(lookback = 63L, n = 10L), seed = 1L)
-}
-workloads <- list(
-  crossover_10x7200 = crossover(10L, 7200L),
-  crossover_500x1260 = crossover(500L, 1260L),
-  momentum_40x504 = momentum(40L, 504L),
-  momentum_500x1260 = momentum(500L, 1260L),
-  # membership exits, relisting, late-known inactivity, missing bars
-  prep_fixture = function() {
-    db <- fresh("prep_fixture")
-    fx <- lc_prep_fixture(db)
-    list(db = db, snapshot = fx$snapshot, exp = fx$exp, seed = 1L,
-         params = utils::modifyList(lc_prep_fixture_params, list(trade = TRUE, lookback = 10L, n = 3L)))
-  },
-  # risk cuts, spread costs, an opening position
-  dense_risk_features = function() {
-    db <- fresh("dense_risk_features")
-    fx <- a0_fx_dense_risk_features(db)
-    list(db = db, snapshot = fx$snapshot, exp = fx$exp, seed = fx$seed,
-         params = list(qty = 30, qty_b = 40, cap = 0.3))
-  }
-)
+source(file.path(here, "workloads.R"))
+workloads <- dr_workloads
 ids <- if (length(args) >= 3L) strsplit(args[[3L]], ",")[[1L]] else names(workloads)
 
 now <- function() as.numeric(Sys.time())

@@ -62,5 +62,37 @@ lower bound.
   the in-loop flushes.
 - A fold that builds only rows some reader needs removes most of both, and
   leaves nothing large enough to need an in-loop flush.
-- Not probed yet: private H1 (counts only), and whether every clean-hold
-  field and sequence position rebuilds from ledger, bars and facts.
+- Not probed yet: private H1 (counts only).
+
+## 5. Prerequisite result (charter stage 1): green
+
+`rebuild.R`, evidence `rebuild.csv` and `rebuild_gut.csv`. On all six
+workloads, with the clean-hold rows treated as not stored, the rebuild from
+the explicit rows, the implicit fill rows, the coverage count, the ledger,
+the bar closes, the run config and the `availability` view gives a decoded
+trace `identical()` to the pin's: 64,028 holds on crossover 10 x 7,200,
+562,221 on 500 x 1,260, and the cross-edge fixture's membership exits,
+relisting and missing bars. The only new stored value is one certified hold
+count per decided pulse, used as a check.
+
+How each hold is placed:
+
+- Pulse: each pulse ends with a stored row (its reconciliation row), so a
+  missing sequence number belongs to the pulse of the next stored row; no
+  position was unplaced.
+- Context ordinal: the decision block is contiguous in context order, so
+  `base = seq - k` from any stored decision row of the pulse; a pulse whose
+  decisions are all holds starts its block at the first gap (2,289 of 7,200
+  pulses on crossover 10 x 7,200). No pulse gave two bases.
+- Fields: position from the ledger's position deltas up to the decision time
+  (sequential sums); price from the bar close; the rest are the clean-hold
+  constants.
+
+With one stored decision row deleted (`--gut`), all six stores are refused
+before decoding: the gaps no longer match the certified counts.
+
+Open for stage 2: positions are summed from ledger deltas, which is exact
+here because quantities are whole; the fold sets positions from the lot
+book's net, so fractional quantities need that rule or the stored position.
+The full-trace rebuild is plain R (6.4 s for 562k holds); a filtered explain
+read touches one instrument.

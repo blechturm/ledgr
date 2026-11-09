@@ -1,0 +1,7 @@
+"workload","gut","logical_rows","rebuilt_holds","unplaced","base_from_stored","base_all_holds","base_conflict","hold_count_check","trace_identical","first_difference","read_s","availability_s","rebuild_s"
+"crossover_10x7200",TRUE,87173,0,0,NA,NA,NA,FALSE,NA,"refused: gaps differ from the certified hold counts",0.017,0.881,NA
+"crossover_500x1260",TRUE,699040,0,0,NA,NA,NA,FALSE,NA,"refused: gaps differ from the certified hold counts",0.048,0.697,NA
+"momentum_40x504",TRUE,2500,0,0,NA,NA,NA,FALSE,NA,"refused: gaps differ from the certified hold counts",0.009,0.257,NA
+"momentum_500x1260",TRUE,32759,0,0,NA,NA,NA,FALSE,NA,"refused: gaps differ from the certified hold counts",0.041,0.781,NA
+"prep_fixture",TRUE,507,0,0,NA,NA,NA,FALSE,NA,"refused: gaps differ from the certified hold counts",0.009,0.115,NA
+"dense_risk_features",TRUE,33,0,0,NA,NA,NA,FALSE,NA,"refused: gaps differ from the certified hold counts",0.01,0.047,NA
