@@ -3,7 +3,7 @@
 The quick timing run of the P3 family (macro WS16 family method, point 3):
 lean P3 (`dev/lean_core/plan.R`) swapped into the pinned run. Both arms
 install the pin `d5b3a151`; the candidate arm also binds lean P3 from
-`--candidate-overlay=dev/lean_core`. Five alternating pairs per cell. The
+`--candidate-overlay=dev/lean_core`. Eight alternating pairs per cell (the harness floor; the family method asks for about five). The
 family method asks for the whole-run ratio and the stage's own microseconds
 per pulse; each cell's bound is 1.0 (lean P3 no slower than the pin).
 
