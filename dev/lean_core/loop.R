@@ -35,7 +35,7 @@ lean_loop_scan_names <- c(
   "ledgr_target_rebalance", "ledgr_target_adjust"
 )
 
-lean_loop_coverage <- function(execution, output_handler) {
+lean_loop_coverage <- function(execution) {
   provider <- execution$availability_provider
   substrate <- execution$history_substrate
   n <- length(execution$instrument_ids)
@@ -108,7 +108,6 @@ lean_loop_debug_packet <- function(packet, provider, ts, pos, ids, i, substrate,
 lean_pin_ctx_dollar <- get("$.ledgr_pulse_context", envir = asNamespace("ledgr"))
 lean_pin_state_dollar <- get("$.ledgr_strategy_state_view", envir = asNamespace("ledgr"))
 lean_pin_envelope <- get("ledgr_fold_envelope", envir = asNamespace("ledgr"))
-lean_pin_run_fold <- get("ledgr_run_fold", envir = asNamespace("ledgr"))
 lean_name_set <- function(x) list2env(stats::setNames(as.list(rep(TRUE, length(x))), x), parent = emptyenv())
 lean_ctx_retired <- lean_name_set(setdiff(ledgr_pulse_context_retired_fields(), "position"))
 lean_ctx_asset <- lean_name_set(ledgr_pulse_context_asset_fields())
@@ -153,7 +152,7 @@ lean_ctx_helpers <- function(lookup) {
 lean_fold_envelope <- function(execution, output_handler) {
   execution <- ledgr_validate_execution_spec(execution)
   # A refusal before the first pulse runs the fold on the pin (19.2).
-  pulse_cols <- tryCatch(lean_loop_coverage(execution, output_handler), ledgr_lean_not_covered = function(c) c)
+  pulse_cols <- tryCatch(lean_loop_coverage(execution), ledgr_lean_not_covered = function(c) c)
   if (inherits(pulse_cols, "condition")) {
     lean_entry$refused <- c(lean_entry$refused, pulse_cols$feature)
     return(lean_pin_envelope(execution, output_handler))
@@ -237,7 +236,6 @@ lean_fold_envelope <- function(execution, output_handler) {
     strategy_state <- ledgr_strategy_state_align(execution$strategy_state$values,
       execution$strategy_state_declaration, state_axis %||% character(), ids,
       default_scalars = execution$strategy_state_default_scalars)
-    state_axis <- ids
   }
   status <- "DONE"
   stop_reason <- NA_character_
@@ -433,7 +431,6 @@ lean_fold_envelope <- function(execution, output_handler) {
   run_loop <- function() {
     live$t_start <- ledgr_time_now()
     live$in_pulses <- TRUE
-    stop_now <- FALSE
     for (i in seq_len(n_pulse)) {
       ts <- ts_num[[i]]
       live$cur_ts <- ts
@@ -560,7 +557,6 @@ lean_fold_envelope <- function(execution, output_handler) {
           status <<- "INCOMPLETE"
           stop_reason <<- "affordability_reconciliation_failed"
           processed <<- processed + 1L
-          stop_now <- TRUE
           break
         }
       }
@@ -622,7 +618,6 @@ lean_fold_envelope <- function(execution, output_handler) {
         event_seq <<- event_seq + n_fill
         pos[fill$pos] <<- book$net_by_inst[fill$pos]
         fl$net_after[rows] <<- book$net_by_inst[fill$pos]
-        cash_before <- cash
         cash <<- ledgr_cash_scan(cash, fill$cash_delta)[[n_fill]]
         last_executed <<- max(last_executed, fill$exec_ts, na.rm = TRUE)
         if (identical(lean_entry$mutation, "write_in_loop") && nf == n_fill) {
@@ -630,8 +625,6 @@ lean_fold_envelope <- function(execution, output_handler) {
           output_handler$write_fill_events(fill = fill, i = seq_len(n_fill), instrument_id = ids[fill$pos],
             event_seq = event_seq - n_fill, use_transaction = FALSE)
         }
-      } else {
-        cash_before <- cash
       }
       if (n_rej > 0L) {
         rejection <- batch$rejection
@@ -692,7 +685,6 @@ lean_fold_envelope <- function(execution, output_handler) {
         strategy_state <<- ledgr_strategy_state_apply_values(strategy_state, state_update,
           state_declaration, ids, patch = FALSE, default_scalars = state_defaults)
       }
-      state_axis <<- ids
       if (identical(lean_entry$mutation, "hold_in_loop") && i == 2L) lean_loop_expand()  # witness only
       processed <<- processed + 1L
       if (processed >= max_pulses) {
@@ -786,7 +778,6 @@ lean_fold_envelope <- function(execution, output_handler) {
     rej0 <- dec0 + n
     fill0 <- rej0 + hd_nrej[p]
     recon_seq <- fill0 + hd_nfill[p] + 1L
-    ts_p <- ts_num[p]
     keep_all <- is.null(keep_fn)
     parts <- list()
     add <- function(seq, pulse, fields) parts[[length(parts) + 1L]] <<- c(list(seq = seq, pulse = pulse), fields)
@@ -865,12 +856,10 @@ lean_fold_envelope <- function(execution, output_handler) {
       # clean fills first, then holds, per pulse: order by (pulse, kind, row)
       fk <- fl$k[cf]; fpl <- fl$pulse[cf]
       ord <- order(c(fpl, hp), c(rep(0L, length(cf)), rep(1L, length(hc))), method = "radix")
-      kind_fill <- c(rep(TRUE, length(cf)), rep(FALSE, length(hc)))[ord]
       kk <- c(fk, hk)[ord]
       pp <- c(fpl, hp)[ord]
       within_fill <- cf - hd_fill_start[fpl]
       m <- length(ord)
-      fsel <- c(cf, rep(NA_integer_, length(hc)))[ord]
       exec_seq <- c(fill0[fpl] + within_fill, rep(NA_integer_, length(hc)))[ord]
       implicit <- list(
         n = m,
@@ -917,7 +906,7 @@ lean_fold_envelope <- function(execution, output_handler) {
     key_fill <- (fl$pos[r] - 1L) * stride + fl$pulse[r] + 1L
     val <- numeric(n * stride)
     has <- logical(n * stride)
-    val[key_fill] <- book_net_after(r)
+    val[key_fill] <- fl$net_after[r]
     has[key_fill] <- TRUE
     idx <- seq_len(n * stride)
     last <- cummax(ifelse(has, idx, (idx - 1L) %/% stride * stride))
@@ -927,7 +916,6 @@ lean_fold_envelope <- function(execution, output_handler) {
     out[found] <- val[src[found]]
     out
   }
-  book_net_after <- function(r) fl$net_after[r]
 
   lean_loop_explicit_block <- function(parts) {
     names_out <- names(ledgr_availability_diagnostic_columns(0L))
@@ -1008,127 +996,4 @@ lean_fold_envelope <- function(execution, output_handler) {
     next_event_seq = event_seq,
     equity_facts = equity
   )
-}
-
-# The last fold's pulse-loop and publication seconds, for harness timing.
-lean_loop_last_times <- new.env(parent = emptyenv())
-
-# Entry records: folds run lean, features refused before the first pulse,
-# coverage conditions raised mid-run, and whether the run carried a
-# control$checkpoint_every key (D3 Section 2; set by lean_run_fold).
-lean_entry <- new.env(parent = emptyenv())
-lean_entry_reset <- function() {
-  lean_entry$lean_folds <- 0L
-  lean_entry$refused <- character()
-  lean_entry$backstop <- character()
-  lean_entry$control_checkpoint <- FALSE
-  lean_entry$store_writes <- character()   # handler calls while pulses run
-  lean_entry$hold_calls <- 0L              # hold-expansion calls and rows while pulses run
-  lean_entry$hold_rows <- 0L
-  lean_entry$batch_rows <- 65536L          # terminal batch bound (rows)
-  lean_entry$mutation <- NULL              # a registered mutation or witness fault
-  lean_entry$measure <- FALSE              # record the terminal-materialization peak
-}
-lean_entry_reset()
-
-# The store-write detector (19.6): every handler method but the transaction
-# itself records its name when called while pulses run.
-lean_watch_handler <- function(h, live) {
-  for (name in setdiff(names(h)[vapply(h, is.function, logical(1L))], "run_transaction")) {
-    h[[name]] <- local({
-      f <- h[[name]]
-      nm <- name
-      function(...) {
-        if (isTRUE(live$in_pulses)) lean_entry$store_writes <- c(lean_entry$store_writes, nm)
-        f(...)
-      }
-    })
-  }
-  h
-}
-
-lean_run_fold <- function(config, run_id = NULL, control = list(), metric_context = NULL, history_substrate = NULL) {
-  lean_entry$control_checkpoint <- !is.null(control$checkpoint_every)
-  on.exit(lean_entry$control_checkpoint <- FALSE)
-  lean_pin_run_fold(config, run_id, control, metric_context, history_substrate)
-}
-
-# Backstop stubs (19.2 point 1): while a lean fold runs, a sizing helper or
-# history read the static scan missed signals the coverage condition.
-lean_stubs <- lapply(stats::setNames(lean_loop_scan_names, lean_loop_scan_names), function(name) {
-  force(name)
-  function(...) lean_not_covered(sprintf("`%s()` in the strategy", name))
-})
-lean_stub_homes <- function() {
-  homes <- list(asNamespace("ledgr"))
-  if ("package:ledgr" %in% search()) homes <- c(homes, list(as.environment("package:ledgr")))
-  homes
-}
-lean_stub_saved <- new.env(parent = emptyenv())
-# Binds `values` (a named list) in the namespace and the attached package,
-# saving the originals; with no argument, restores them.
-lean_stubs_bind <- function(values = NULL) {
-  for (home in lean_stub_homes()) {
-    key <- environmentName(home)
-    if (is.null(values)) {
-      if (is.null(lean_stub_saved[[key]])) next
-      values_here <- lean_stub_saved[[key]]
-      lean_stub_saved[[key]] <- NULL
-    } else {
-      names_here <- intersect(names(values), ls(home, all.names = TRUE))
-      lean_stub_saved[[key]] <- mget(names_here, envir = home)
-      values_here <- values[names_here]
-    }
-    for (name in names(values_here)) {
-      unlockBinding(name, home)
-      assign(name, values_here[[name]], envir = home)
-      lockBinding(name, home)
-    }
-  }
-}
-
-# The harness entry (19.2 point 1): runs `fn` (a complete public workload)
-# with the lean loop installed. If any lean fold raised a coverage
-# condition mid-run, the attempt is discarded: the RNG state at entry is
-# restored and the complete workload reruns on the pin. Returns fn()'s value
-# with the entry record as attribute "lean".
-lean_loop_run <- function(fn) {
-  had_seed <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
-  seed <- if (had_seed) get(".Random.seed", envir = globalenv())
-  lean_entry_reset()
-  restore <- lean_loop_install()
-  out <- tryCatch(fn(), ledgr_lean_coverage = function(c) c, finally = restore())
-  record <- as.list(lean_entry)
-  if (length(lean_entry$backstop) > 0L) {
-    if (had_seed) assign(".Random.seed", seed, envir = globalenv())
-    else if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) rm(".Random.seed", envir = globalenv())
-    out <- fn()
-  } else if (inherits(out, "condition")) {
-    rlang::cnd_signal(out)
-  }
-  structure(list(value = out), lean = record)
-}
-
-# Binds the lean envelope, the two context read methods and the run-fold
-# entry recorder over the pin; returns the function that restores the pin.
-lean_loop_install <- function() {
-  ns <- asNamespace("ledgr")
-  lean <- list(ledgr_fold_envelope = lean_fold_envelope,
-               "$.ledgr_pulse_context" = lean_ctx_dollar, "$.ledgr_strategy_state_view" = lean_state_dollar,
-               ledgr_run_fold = lean_run_fold)
-  pinned <- lapply(stats::setNames(names(lean), names(lean)), get, envir = ns)
-  if (!identical(pinned[[2L]], lean_pin_ctx_dollar) || !identical(pinned[[3L]], lean_pin_state_dollar)) {
-    stop("lean_loop_install: the pinned read methods are not bound (already installed?)", call. = FALSE)
-  }
-  bind <- function(values) {
-    for (name in names(values)) {
-      unlockBinding(name, ns)
-      assign(name, values[[name]], envir = ns)
-      lockBinding(name, ns)
-    }
-    registerS3method("$", "ledgr_pulse_context", values[[2L]], envir = ns)
-    registerS3method("$", "ledgr_strategy_state_view", values[[3L]], envir = ns)
-  }
-  bind(lean)
-  function() bind(pinned)
 }
