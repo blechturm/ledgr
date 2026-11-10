@@ -812,6 +812,17 @@ stop/error prefixes and the `checkpoint_every` entry restriction (only the
 pin's default `10000L` and no `control$checkpoint_every` key; otherwise the
 coverage refusal).
 
+Context reads (maintainer, 2026-11-10): the same install also rebinds the
+`$` methods of the pulse context and the strategy-state view
+(`R/pulse-context.R:166`, `R/strategy-state.R:206`) to lean methods for as
+long as the lean loop is installed. A stored field, a cached lazy field or
+a feature column is read directly; every other name (retired, unknown,
+NULL-valued, dot and asset fields) goes to the pin's method, so values,
+caching, build counts and refusals stay the pin's. `hold()` returns the
+aligned finite positions directly and otherwise calls the pin's helper. In
+debug each pulse compares every public read, twice, and the retired and
+unknown refusals with the pin's methods.
+
 Telemetry (maintainer, 2026-11-09): the loop keeps the stored run row
 (status, mode, elapsed seconds, pulse, decided and skipped counts) and the
 whole-run times (`t_pre`, `t_loop`, `t_post`), and drops per-stage

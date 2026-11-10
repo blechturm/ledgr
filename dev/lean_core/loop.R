@@ -91,6 +91,54 @@ lean_loop_debug_packet <- function(packet, provider, ts, pos, ids, i, substrate,
   invisible(TRUE)
 }
 
+# --- context reads (maintainer, 2026-11-10) ---------------------------------
+# While the lean loop is installed, `$` on the pulse context and on the
+# strategy-state view take these methods: a stored field, a cached lazy
+# field or a feature column is read directly; everything else (retired and
+# unknown names, NULL fields, dot fields, asset fields) goes to the pin's
+# method, so its values, caching, counts and refusals are the pin's.
+
+lean_pin_ctx_dollar <- get("$.ledgr_pulse_context", envir = asNamespace("ledgr"))
+lean_pin_state_dollar <- get("$.ledgr_strategy_state_view", envir = asNamespace("ledgr"))
+lean_name_set <- function(x) list2env(stats::setNames(as.list(rep(TRUE, length(x))), x), parent = emptyenv())
+lean_ctx_retired <- lean_name_set(setdiff(ledgr_pulse_context_retired_fields(), "position"))
+lean_ctx_asset <- lean_name_set(ledgr_pulse_context_asset_fields())
+
+lean_ctx_dollar <- function(x, name) {
+  if (!is.null(lean_ctx_retired[[name]])) return(lean_pin_ctx_dollar(x, name))
+  v <- .subset2(x, name)
+  if (!is.null(v) && !startsWith(name, ".")) return(v)
+  lookup <- .subset2(x, ".pulse_lookup")
+  if (is.environment(lookup) && is.environment(cache <- lookup$cache)) {
+    hit <- get0(name, envir = cache, inherits = FALSE)
+    if (!is.null(hit)) return(hit)
+    prepared <- lookup$feature_lookup
+    if (is.null(lean_ctx_asset[[name]]) && is.list(prepared) && is.environment(prepared$readable_env) &&
+        exists(name, envir = prepared$readable_env, inherits = FALSE)) {
+      value <- stats::setNames(as.numeric(lookup$feature_vector(name)), as.character(lookup$universe %||% character()))
+      return(ledgr_pulse_context_cache_set(lookup, name, value))
+    }
+  }
+  lean_pin_ctx_dollar(x, name)
+}
+
+lean_state_dollar <- function(x, name) {
+  v <- .subset2(x, name)
+  if (is.null(v)) lean_pin_state_dollar(x, name) else v
+}
+
+# flat() is the pin's; hold() returns the aligned finite positions directly.
+lean_ctx_helpers <- function(lookup) {
+  force(lookup)
+  list(
+    flat = function(default = 0) ledgr_pulse_context_targets(lookup, default = default),
+    hold = function() {
+      p <- lookup$positions
+      if (is.double(p) && identical(attributes(p), list(names = lookup$universe)) && all(is.finite(p))) p
+      else ledgr_pulse_context_current_targets(lookup)
+    })
+}
+
 # --- the loop ---------------------------------------------------------------
 
 lean_fold_envelope <- function(execution, output_handler) {
@@ -264,7 +312,7 @@ lean_fold_envelope <- function(execution, output_handler) {
       cache = new.env(parent = emptyenv())), parent = emptyenv())
     lookup$build_counts <- counts$build
     lookup$preparation_counts <- counts$prep
-    helpers <- ledgr_pulse_context_helper_bundle(lookup)
+    helpers <- lean_ctx_helpers(lookup)
     structure(list(
       run_id = run_id, ts_utc = pulses_iso[[i]], universe = ids, .positions = positions_snapshot,
       cash = cash, equity = cash + pv, seed = seed,
@@ -317,10 +365,23 @@ lean_fold_envelope <- function(execution, output_handler) {
     for (nm in setdiff(ls(la, all.names = TRUE), c("cache", "feature_vector", "build_counts", "preparation_counts"))) {
       if (!identical(la[[nm]], lb[[nm]])) fail(paste0("lookup `", nm, "`"))
     }
-    for (nm in setdiff(c(names(a), feature_lookup_state$readable_names), c("flat", "hold"))) {
-      if (!identical(a[[nm]], b[[nm]])) fail(paste0("field `", nm, "`"))
+    # every public read, twice (the second is the cache path), and two refusals
+    caught <- function(expr) tryCatch(expr, error = function(e) list(class(e), conditionMessage(e)))
+    for (nm in c(setdiff(c(names(a), feature_lookup_state$readable_names), c("flat", "hold")),
+                 "bars", "lean_no_such_field", ".notes")) {
+      for (rep in 1:2) {
+        if (!identical(caught(lean_ctx_dollar(a, nm)), caught(lean_pin_ctx_dollar(b, nm)))) {
+          fail(paste0("field `", nm, "`"))
+        }
+      }
     }
-    if (!identical(a$flat(), b$flat()) || !identical(a$hold(), b$hold())) fail("flat()/hold()")
+    sa <- lean_pin_ctx_dollar(a, "state"); sb <- lean_pin_ctx_dollar(b, "state")
+    for (nm in c(names(unclass(sa)), "lean_no_such_state")) {
+      if (!identical(caught(lean_state_dollar(sa, nm)), caught(lean_pin_state_dollar(sb, nm)))) {
+        fail(paste0("state `", nm, "`"))
+      }
+    }
+    if (!identical(ra$flat(), rb$flat()) || !identical(ra$hold(), rb$hold())) fail("flat()/hold()")
     for (nm in feature_lookup_state$readable_names) {
       if (!identical(ra$.feature_vector(nm), rb$.feature_vector(nm))) fail(paste0(".feature_vector(", nm, ")"))
     }
@@ -902,13 +963,21 @@ lean_loop_last_times <- new.env(parent = emptyenv())
 # session; returns the function that restores the pin.
 lean_loop_install <- function() {
   ns <- asNamespace("ledgr")
-  name <- "ledgr_fold_envelope"
-  pinned <- get(name, envir = ns)
-  bind <- function(value) {
-    unlockBinding(name, ns)
-    assign(name, value, envir = ns)
-    lockBinding(name, ns)
+  lean <- list(ledgr_fold_envelope = lean_fold_envelope,
+               "$.ledgr_pulse_context" = lean_ctx_dollar, "$.ledgr_strategy_state_view" = lean_state_dollar)
+  pinned <- lapply(stats::setNames(names(lean), names(lean)), get, envir = ns)
+  if (!identical(pinned[[2L]], lean_pin_ctx_dollar) || !identical(pinned[[3L]], lean_pin_state_dollar)) {
+    stop("lean_loop_install: the pinned read methods are not bound (already installed?)", call. = FALSE)
   }
-  bind(lean_fold_envelope)
+  bind <- function(values) {
+    for (name in names(values)) {
+      unlockBinding(name, ns)
+      assign(name, values[[name]], envir = ns)
+      lockBinding(name, ns)
+    }
+    registerS3method("$", "ledgr_pulse_context", values[[2L]], envir = ns)
+    registerS3method("$", "ledgr_strategy_state_view", values[[3L]], envir = ns)
+  }
+  bind(lean)
   function() bind(pinned)
 }
