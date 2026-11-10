@@ -770,9 +770,9 @@ workloads.
 
 ## 19. Compact-state loop, slice 1
 
-- Status: draft for the maintainer's review before code (A1; macro WS16
-  "Compact-state loop", accepted 2026-11-09). Binds once this line names the
-  maintainer's acceptance.
+- Status: accepted by the maintainer on 2026-11-10 after a section-by-section
+  walkthrough (A1; macro WS16 "Compact-state loop", accepted 2026-11-09),
+  including the three 19.2 decisions. Binding for slice 1.
 - Ticket: LDG-3219 (Cut 13, workstream 30).
 - Starting points: the R-floor spike stages 2-3 (`dev/spikes/r_floor/`,
   bit-identical at 26 and 103 us per pulse on crossover 10 x 7,200 and

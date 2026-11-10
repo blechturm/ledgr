@@ -1526,8 +1526,8 @@ cuts:
   - id: 13
     name: "Compact-state lean loop, slice 1 (macro WS16)"
     cut: "2026-11-09"
-    status: "proposed"
-    accepted: null
+    status: "accepted"
+    accepted: "2026-11-10 by the maintainer, with interface Section 19; implementation waits for the Codex cut review (macro WS16, one family per cut)."
     opening: >-
       The first family after the first checkpoint (lean P3 swapped into the
       pinned run, LDG-3218) cut P3 threefold but showed that one swapped
@@ -1863,8 +1863,8 @@ workstreams:
   - id: 30
     name: "Compact-state lean loop, slice 1 (macro WS16)"
     cut: 13
-    status: "proposed"
-    accepted: null
+    status: "accepted"
+    accepted: "2026-11-10 by the maintainer with Cut 13 and interface Section 19."
     close_review: null
     depends_on_workstream: 29
     requires_review_acceptance: true
