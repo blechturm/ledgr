@@ -685,7 +685,7 @@ lean_fold_envelope <- function(execution, output_handler) {
         strategy_state <<- ledgr_strategy_state_apply_values(strategy_state, state_update,
           state_declaration, ids, patch = FALSE, default_scalars = state_defaults)
       }
-      if (identical(lean_entry$mutation, "hold_in_loop") && i == 2L) lean_loop_expand()  # witness only
+      if (identical(lean_entry$mutation, "hold_in_loop") && i == 1L) lean_loop_expand()  # witness only
       processed <<- processed + 1L
       if (processed >= max_pulses) {
         full_run <<- FALSE

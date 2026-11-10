@@ -780,7 +780,11 @@ workloads.
   materialization. Acceptance provenance is recorded in that synthesis.
 - Ticket: LDG-3219 (Cut 13, workstream 30). Code-line budget: 900 code lines
   for the slice-1 loop, excluding the existing `fifo.R` and `prepare.R`
-  (maintainer, 2026-11-10).
+  (maintainer, 2026-11-10). Budget by role (maintainer, 2026-11-10, at
+  close): the budget binds production code; debug-only checks, witness and
+  mutation hooks and the harness file are reported beside it, uncapped.
+  Later cuts state an estimated size per file in their cut text; an overrun
+  is recorded with its reason at close and the maintainer decides it.
 - Starting points: the R-floor spike stages 2-3 (`dev/spikes/r_floor/`).
   Stage 2 matched its `0d6c0b11` reference fills, equity, cash and
   reconstructed trace at 26 and 103 us per pulse loop-only on crossover
