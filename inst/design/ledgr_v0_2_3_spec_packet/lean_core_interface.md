@@ -814,7 +814,7 @@ coverage refusal).
 
 Context reads (maintainer, 2026-11-10): the same install also rebinds the
 `$` methods of the pulse context and the strategy-state view
-(`R/pulse-context.R:166`, `R/strategy-state.R:206`) to lean methods for as
+(`R/pulse-context.R:166`, `R/strategy-state.R:207`) to lean methods for as
 long as the lean loop is installed. A stored field, a cached lazy field or
 a feature column is read directly; every other name (retired, unknown,
 NULL-valued, dot and asset fields) goes to the pin's method, so values,
