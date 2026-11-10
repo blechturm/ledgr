@@ -15,6 +15,14 @@
 # Coverage (Section 19.2): anything outside slice 1 is refused before the
 # first pulse with `ledgr_lean_not_covered`; the harness then runs the pin.
 
+# The pin's marked gross exposure (ledgr_availability_marked_gross) without
+# ifelse(): a zero quantity contributes exactly 0.
+lean_gross <- function(q, m) {
+  v <- abs(q * m)
+  v[which(q == 0)] <- 0
+  if (anyNA(v) || !all(is.finite(v))) NA_real_ else sum(v)
+}
+
 lean_not_covered <- function(feature) {
   rlang::abort(sprintf("The lean loop does not cover %s (slice 1).", feature),
                class = c("ledgr_lean_not_covered", "ledgr_lean_coverage"), feature = feature)
@@ -48,6 +56,11 @@ lean_loop_coverage <- function(execution, output_handler) {
   }
   opp <- execution$execution_opportunities_posix
   if (length(pulses) > 0L && !identical(as.numeric(opp), as.numeric(pulses[-1L]))) lean_not_covered("declared execution opportunities")
+  if (length(opp) > 0L && n > 0L) {
+    # The loop's constant execution view (checked per pulse in debug).
+    view <- lean_plan_execution_view(provider, as.numeric(opp[[1L]]), execution$instrument_ids)
+    if (!isTRUE(all(view$member)) || !isTRUE(!any(view$restricted))) lean_not_covered("execution restrictions")
+  }
   cols <- unname(substrate$pulse_index[ledgr_projection_pulse_names(as.POSIXct(pulses, tz = "UTC"))])
   if (anyNA(cols)) lean_not_covered("pulses outside the prepared axis")
   used <- unique(c(cols, cols[length(cols)] + 1L))
@@ -143,7 +156,7 @@ lean_fold_envelope <- function(execution, output_handler) {
 
   # Run-long state (Section 19.3).
   live <- new.env(parent = emptyenv())
-  live$cur_ts <- as.POSIXct(NA, tz = "UTC")
+  live$cur_ts <- NA_real_                 # epoch seconds
   live$cur_stage <- "fold"
   pos <- state0$positions
   cash <- state0$cash
@@ -163,8 +176,8 @@ lean_fold_envelope <- function(execution, output_handler) {
   processed <- 0L
   full_run <- TRUE
   event_seq <- as.integer(execution$event_seq_start)
-  last_fully_valued <- as.POSIXct(NA, tz = "UTC")
-  last_executed <- as.POSIXct(NA, tz = "UTC")
+  last_fully_valued <- NA_real_          # epoch seconds
+  last_executed <- NA_real_             # epoch seconds
   eq <- list(ts = numeric(n_pulse), cash = numeric(n_pulse), positions_value = numeric(n_pulse),
              realized_pnl = numeric(n_pulse), cost_basis = numeric(n_pulse))
   n_eq <- 0L
@@ -202,11 +215,145 @@ lean_fold_envelope <- function(execution, output_handler) {
 
   grow <- function(x, cap) lapply(x, function(v) { length(v) <- cap; v })
 
+  # P2 constants of a fixed basket: the availability view is built once;
+  # each pulse copies it and sets `held` and `risk_mark`.
+  ctx_pos <- seq_len(n)
+  ids_attr <- list(names = ids)
+  act_tol <- sqrt(.Machine$double.eps)
+  lean_exec_view <- function(m) list(member = rep(TRUE, m), restricted = rep(FALSE, m),
+    reason_offset = integer(m), reason_count = integer(m), reason_code = integer())
+  p2_0 <- ledgr_carrier_p2_input(list(member = rep(TRUE, n), held = rep(FALSE, n),
+    target_restricted = rep(FALSE, n), restriction_offset = integer(n), restriction_count = integer(n),
+    restriction_code = integer(), priced = rep(TRUE, n), mark_age = integer(n), mark = rep(NA_real_, n),
+    mark_source = rep(3L, n)), ids)
+  view0 <- p2_0$view
+  members0 <- p2_0$members
+  id_to_idx <- ledgr_pulse_context_id_to_idx(ids)
+  feature_values <- projection$feature_values
+  name_lookup <- feature_lookup_state$name_lookup
+  n_proj <- length(projection$instrument_index)
+  no_basis <- rep(FALSE, n)
+  counts <- list(build = context_build_counts, prep = context_preparation_counts)
+  schedule_fn <- function(i) { force(i); function(schedule) schedule_query(schedule, i) }
+  # The pin's projection accessor composed with its context filter.
+  feature_fn <- function(pidx) {
+    force(pidx)
+    function(feature_name, default = NA_real_) {
+      feature_name <- ledgr_resolve_feature_name(feature_name, name_lookup)
+      mat <- feature_values[[feature_name]]
+      if (is.null(mat)) return(rep(as.numeric(default), n_proj)[ctx_pos])
+      as.numeric(mat[, pidx])[ctx_pos]
+    }
+  }
+
+  # The pulse context: the pin's class, raw-field order and lookup service,
+  # filled directly from the prepared planes.
+  lean_context <- function(i, col, close, pv, positions_snapshot, view, counts) {
+    fv <- feature_fn(projection_idx[[i]])
+    lookup <- list2env(list(
+      feature_lookup = feature_lookup_state, feature_vector = fv, projection_idx = projection_idx[[i]],
+      cutoff_num = ts_num[[i]], readable_feature_names = feature_lookup_state$readable_names,
+      bars = list(open = as.numeric(bars$open[, col]), high = as.numeric(bars$high[, col]),
+                  low = as.numeric(bars$low[, col]), close = as.numeric(close),
+                  volume = as.numeric(bars$volume[, col])),
+      positions = positions_snapshot, universe = ids, id_to_idx = id_to_idx, bar_index = integer(),
+      availability = view, bars_aligned = TRUE, positions_aligned = TRUE, availability_aligned = TRUE,
+      position_facts = list(entry_bar = position_facts$entry_bar, exit_bar = position_facts$exit_bar,
+        cost_basis = book$cost_basis_by_inst, position = pos, current_bar = projection_idx[[i]],
+        bar_axis = bar_axis, context_pos = ctx_pos, unknown_basis = no_basis),
+      cache = new.env(parent = emptyenv())), parent = emptyenv())
+    lookup$build_counts <- counts$build
+    lookup$preparation_counts <- counts$prep
+    helpers <- ledgr_pulse_context_helper_bundle(lookup)
+    structure(list(
+      run_id = run_id, ts_utc = pulses_iso[[i]], universe = ids, .positions = positions_snapshot,
+      cash = cash, equity = cash + pv, seed = seed,
+      pulse_seed = if (is.null(pulse_seeds)) NULL else pulse_seeds[[i]],
+      state = ledgr_strategy_state_view(strategy_state), .safety_state = "GREEN",
+      .schedule_query = schedule_fn(i), members = members0, .history = history_reader$view(i),
+      .pulse_lookup = lookup, flat = helpers$flat, hold = helpers$hold, .feature_vector = fv,
+      .notes = pulse_notes), class = "ledgr_pulse_context")
+  }
+
+  # Debug only: the pin's context builder for the same pulse.
+  lean_loop_pin_ctx <- function(i, col, close, pv, positions_snapshot, p2) {
+    pf_source <- ledgr_position_fact_source(position_facts, book, pos, current_bar = projection_idx[[i]],
+      bar_axis = bar_axis, context_pos = ctx_pos, unknown_basis = no_basis)
+    ctx <- list(
+      run_id = run_id, ts_utc = pulses_iso[[i]], universe = ids, .positions = positions_snapshot,
+      cash = cash, equity = cash + pv, seed = seed,
+      pulse_seed = if (is.null(pulse_seeds)) NULL else pulse_seeds[[i]],
+      state = ledgr_strategy_state_view(strategy_state), .safety_state = "GREEN",
+      .schedule_query = schedule_fn(i))
+    ctx$members <- p2$members
+    ctx$.history <- history_reader$view(i)
+    class(ctx) <- "ledgr_pulse_context"
+    ctx <- ledgr_update_pulse_context_helpers(ctx,
+      bars = list(open = bars$open[, col], high = bars$high[, col], low = bars$low[, col],
+                  close = close, volume = bars$volume[, col]),
+      features = data.frame(), positions = positions_snapshot, universe = ids, projection = projection,
+      pulse_idx = projection_idx[[i]], cutoff_num = ts_num[[i]], feature_ids = def_ids,
+      active_alias_map = active_alias_map, feature_name_state = feature_name_state,
+      feature_lookup_state = feature_lookup_state, id_to_idx = NULL, availability = p2$view,
+      position_facts = pf_source, build_counts = NULL, preparation_counts = NULL,
+      bars_aligned = TRUE, positions_aligned = TRUE, availability_aligned = TRUE)
+    ctx <- ledgr_filter_pulse_context_features(ctx, ids, ids, context_pos = ctx_pos)
+    ctx$.notes <- pulse_notes
+    ctx
+  }
+
+  # Debug only: the two contexts agree on raw fields, lookup entries and
+  # every public read (asset fields, feature columns, flat(), hold()).
+  lean_loop_debug_ctx <- function(a, b, i) {
+    fail <- function(what) rlang::abort(sprintf("Lean context %s differs from the pin's at pulse %d.", what, i),
+                                        class = "ledgr_internal_error")
+    ra <- unclass(a); rb <- unclass(b)
+    if (!identical(names(ra), names(rb))) fail("raw field order")
+    for (nm in names(ra)) {
+      if (!is.function(ra[[nm]]) && !is.environment(ra[[nm]]) && !identical(ra[[nm]], rb[[nm]])) fail(nm)
+    }
+    la <- ra$.pulse_lookup; lb <- rb$.pulse_lookup
+    if (!identical(sort(ls(la, all.names = TRUE)), sort(ls(lb, all.names = TRUE)))) fail("lookup names")
+    for (nm in setdiff(ls(la, all.names = TRUE), c("cache", "feature_vector", "build_counts", "preparation_counts"))) {
+      if (!identical(la[[nm]], lb[[nm]])) fail(paste0("lookup `", nm, "`"))
+    }
+    for (nm in setdiff(c(names(a), feature_lookup_state$readable_names), c("flat", "hold"))) {
+      if (!identical(a[[nm]], b[[nm]])) fail(paste0("field `", nm, "`"))
+    }
+    if (!identical(a$flat(), b$flat()) || !identical(a$hold(), b$hold())) fail("flat()/hold()")
+    for (nm in feature_lookup_state$readable_names) {
+      if (!identical(ra$.feature_vector(nm), rb$.feature_vector(nm))) fail(paste0(".feature_vector(", nm, ")"))
+    }
+    invisible(TRUE)
+  }
+
+  # Declared-state patch: the pin's apply_values with the field records
+  # looked up once; anything unusual goes to the pin.
+  if (is.null(state_defaults)) state_defaults <- ledgr_strategy_state_default_scalars(state_declaration)
+  state_fields <- state_declaration$fields %||% list()
+  names(state_fields) <- vapply(state_fields, function(f) f$name, character(1L))
+  lean_state_patch <- function(update) {
+    nm <- names(update)
+    if (length(update) == 0L || is.null(nm) || anyNA(nm) || !all(nzchar(nm)) || anyDuplicated(nm) ||
+        !all(nm %in% names(strategy_state)) || !all(nm %in% names(state_fields))) {
+      return(ledgr_strategy_state_apply_values(strategy_state, update, state_declaration, ids,
+        patch = TRUE, default_scalars = state_defaults))
+    }
+    out <- strategy_state
+    for (name in nm) {
+      value <- ledgr_strategy_state_validate_value(update[[name]], state_fields[[name]], ids)
+      reset <- is.na(value)
+      if (any(reset)) value[reset] <- state_defaults[[name]]
+      out[[name]] <- value
+    }
+    out
+  }
+
   run_loop <- function() {
     live$t_start <- ledgr_time_now()
     stop_now <- FALSE
     for (i in seq_len(n_pulse)) {
-      ts <- pulses_posix[[i]]
+      ts <- ts_num[[i]]
       live$cur_ts <- ts
       live$cur_stage <- "valuation"
       col <- pulse_cols[[i]]
@@ -223,45 +370,31 @@ lean_fold_envelope <- function(execution, output_handler) {
       eq$cost_basis[[n_eq]] <<- book$total_cost_basis
       n_done <<- i
 
-      # P2 context and strategy
-      packet <- list(
-        pulse_idx = i, ts = ts_num[[i]], context_pos = seq_len(n), cash = cash, positions_value = pv,
-        position = pos, member = rep(TRUE, n), held = pos != 0, buyable = rep(TRUE, n),
-        target_restricted = rep(FALSE, n), restriction_offset = integer(n), restriction_count = integer(n),
-        restriction_code = integer(), status = rep(3L, n), lifetime = rep(1L, n),
-        terminal_event = rep("", n), lifetime_fact_id = rep("", n), mark = close, reference = close,
-        source_ts = rep(ts_num[[i]], n), mark_age = integer(n), mark_source = rep(3L, n),
-        priced = rep(TRUE, n), permissible = rep(TRUE, n), frozen = rep(FALSE, n))
-      if (.lean_debug) lean_loop_debug_packet(packet, provider, ts, pos, ids, i, substrate, history_reader)
-      p2 <- ledgr_carrier_p2_input(packet, ids)
+      # P2 context and strategy: a fresh context per pulse (Section 19.4)
+      pos_start <- pos
       positions_snapshot <- stats::setNames(pos, ids)
-      pf_source <- ledgr_position_fact_source(position_facts, book, pos, current_bar = projection_idx[[i]],
-        bar_axis = bar_axis, context_pos = seq_len(n), unknown_basis = rep(FALSE, n))
-      ctx <- list(
-        run_id = run_id, ts_utc = pulses_iso[[i]], universe = ids, .positions = positions_snapshot,
-        cash = cash, equity = cash + pv, seed = seed,
-        pulse_seed = if (is.null(pulse_seeds)) NULL else pulse_seeds[[i]],
-        state = ledgr_strategy_state_view(strategy_state), .safety_state = "GREEN",
-        .schedule_query = local({ ii <- i; function(schedule) schedule_query(schedule, ii) })
-      )
-      ctx$members <- p2$members
-      ctx$.history <- history_reader$view(i)
-      class(ctx) <- "ledgr_pulse_context"
-      cur <- bars
-      ctx <- ledgr_update_pulse_context_helpers(
-        ctx,
-        bars = list(open = cur$open[, col], high = cur$high[, col], low = cur$low[, col],
-                    close = close, volume = cur$volume[, col]),
-        features = data.frame(), positions = positions_snapshot, universe = ids, projection = projection,
-        pulse_idx = projection_idx[[i]], cutoff_num = ts_num[[i]], feature_ids = def_ids,
-        active_alias_map = active_alias_map, feature_name_state = feature_name_state,
-        feature_lookup_state = feature_lookup_state, id_to_idx = NULL, availability = p2$view,
-        position_facts = pf_source, build_counts = context_build_counts,
-        preparation_counts = context_preparation_counts, bars_aligned = TRUE, positions_aligned = TRUE,
-        availability_aligned = TRUE)
-      ctx <- ledgr_filter_pulse_context_features(ctx, ids, ids, context_pos = seq_len(n))
+      view <- view0
+      view$held[] <- pos != 0
+      view$risk_mark[] <- close
+      if (.lean_debug) {
+        packet <- list(
+          pulse_idx = i, ts = ts_num[[i]], context_pos = ctx_pos, cash = cash, positions_value = pv,
+          position = pos, member = rep(TRUE, n), held = pos != 0, buyable = rep(TRUE, n),
+          target_restricted = rep(FALSE, n), restriction_offset = integer(n), restriction_count = integer(n),
+          restriction_code = integer(), status = rep(3L, n), lifetime = rep(1L, n),
+          terminal_event = rep("", n), lifetime_fact_id = rep("", n), mark = close, reference = close,
+          source_ts = rep(ts_num[[i]], n), mark_age = integer(n), mark_source = rep(3L, n),
+          priced = rep(TRUE, n), permissible = rep(TRUE, n), frozen = rep(FALSE, n))
+        lean_loop_debug_packet(packet, provider, pulses_posix[[i]], pos, ids, i, substrate, history_reader)
+        p2 <- ledgr_carrier_p2_input(packet, ids)
+        if (!identical(p2$view, view) || !identical(p2$members, members0)) {
+          rlang::abort(sprintf("Lean availability view differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
+        }
+        lean_loop_debug_ctx(lean_context(i, col, close, pv, positions_snapshot, view, NULL),
+          lean_loop_pin_ctx(i, col, close, pv, positions_snapshot, p2), i)
+      }
+      ctx <- lean_context(i, col, close, pv, positions_snapshot, view, counts)
       pulse_notes$sizing_skipped <- character()
-      ctx$.notes <- pulse_notes
       result <- tryCatch({
         live$cur_stage <- "strategy"
         if (strategy_functional) {
@@ -270,7 +403,7 @@ lean_fold_envelope <- function(execution, output_handler) {
           strategy_fn(ctx)
         }
       }, error = function(e) ledgr_abort_strategy_error(e, ctx))
-      if (ledgr_is_strategy_intermediate(result)) ledgr_abort_intermediate_strategy_result(result)
+      if (is.object(result) && ledgr_is_strategy_intermediate(result)) ledgr_abort_intermediate_strategy_result(result)
       if (is.numeric(result)) result <- list(targets = result, state_update = NULL)
       if (!is.list(result) || is.null(result$targets)) {
         rlang::abort(sprintf("Strategy must return %s or a list with `targets`.", ledgr_strategy_targets_contract()),
@@ -279,7 +412,18 @@ lean_fold_envelope <- function(execution, output_handler) {
       intent_reason <- ledgr_validate_strategy_intent_reason(result$intent_reason)
       sizing_evidence <- attr(result$targets, "sizing_evidence", exact = TRUE)
       if (!is.null(sizing_evidence)) lean_not_covered("sizing helpers")
-      targets <- ledgr_validate_strategy_targets(result$targets, ids, allow_empty = TRUE)
+      raw_targets <- result$targets
+      # Fast path: a full, finite, named numeric vector in context order is
+      # returned by the pin's validator unchanged.
+      targets <- if (is.numeric(raw_targets) && identical(attributes(raw_targets), ids_attr) &&
+                     all(is.finite(raw_targets))) {
+        raw_targets
+      } else {
+        ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE)
+      }
+      if (.lean_debug && !identical(targets, ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE))) {
+        rlang::abort(sprintf("Lean target validation differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
+      }
       sq <- as.numeric(targets)
       pre <- 0L
       if (!is.null(intent_reason)) { hd_intent[[i]] <<- intent_reason; pre <- pre + 1L }
@@ -291,17 +435,17 @@ lean_fold_envelope <- function(execution, output_handler) {
       hd_pre[[i]] <<- pre
       tq <- sq
       if (n > 0L) {
-        ledgr_availability_validate_strategy_targets(targets, positions_snapshot, p2$view)
+        # A fixed basket has no restricted or nonmember instrument, and slice 1
+        # has no risk step: the post-risk targets are the strategy targets.
+        # Only the short-exposure refusal can fire.
+        if (.lean_debug) ledgr_availability_validate_strategy_targets(targets, positions_snapshot, view)
         live$cur_stage <- "risk"
-        risked <- ledgr_apply_risk_plan(targets, execution$risk_plan, ctx)
-        tq <- ledgr_validate_post_risk_quantities(risked, n)
-        ledgr_availability_validate_post_risk(risked, targets)
-        ledgr_availability_validate_short_exposure(risked, positions_snapshot)
+        if (any(sq < pmin(pos, 0))) ledgr_availability_validate_short_exposure(targets, positions_snapshot)
       }
 
       # P3 plan
       live$cur_stage <- "execution"
-      actionable <- which(abs(tq - pos) > sqrt(.Machine$double.eps))
+      actionable <- which(abs(tq - pos) > act_tol)
       exec_ts <- if (i <= length(epochs)) epochs[[i]] else NA_real_
       batch <- NULL
       if (length(actionable) > 0L) {
@@ -309,7 +453,13 @@ lean_fold_envelope <- function(execution, output_handler) {
         has_next <- next_col <= length(bar_axis)
         execution_packet <- list(exec_ts = exec_ts, has_next = has_next,
           open = if (has_next) bars$open[, next_col] else rep(NA_real_, n))
-        view <- if (!is.na(exec_ts)) lean_plan_execution_view(provider, exec_ts, ids[actionable])
+        view <- if (!is.na(exec_ts)) lean_exec_view(length(actionable))
+        if (.lean_debug && !is.na(exec_ts)) {
+          pv_view <- lean_plan_execution_view(provider, exec_ts, ids[actionable])
+          if (!identical(lapply(unclass(pv_view)[names(view)], unname), view)) {
+            rlang::abort(sprintf("Lean execution view differs from the provider's at pulse %d.", i), class = "ledgr_internal_error")
+          }
+        }
         batch <- lean_plan_pulse(context_pos = seq_len(n), target_qty = tq, position = pos,
           actionable_k = actionable, member = rep(TRUE, n), execution = execution_packet,
           execution_view = view, epoch_valid = i > length(epochs) || epoch_valid[[i]],
@@ -353,7 +503,9 @@ lean_fold_envelope <- function(execution, output_handler) {
         live$cur_stage <- "accounting"
         applied <- lean_lot_fill(book, fill$pos, fill$side, fill$qty, fill$price, fill$fee)
         book <<- applied$book
-        fill_bar <- ledgr_position_fact_fill_bar(fill_axis, i, fill$exec_ts)
+        fill_bar <- if (i <= length(fill_axis$bar) && !anyNA(fill$exec_ts) &&
+                        all(fill$exec_ts == fill_axis$opportunity[[i]])) fill_axis$bar[[i]] else
+          ledgr_position_fact_fill_bar(fill_axis, i, fill$exec_ts)
         position_facts <<- ledgr_position_facts_apply(position_facts, fill$pos, fill$position_before,
           fill$planned_position_after, fill_bar, TRUE)
         rows <- nf + seq_len(n_fill)
@@ -390,7 +542,7 @@ lean_fold_envelope <- function(execution, output_handler) {
         fl$net_after[rows] <<- book$net_by_inst[fill$pos]
         cash_before <- cash
         cash <<- ledgr_cash_scan(cash, fill$cash_delta)[[n_fill]]
-        last_executed <<- max(c(last_executed, .POSIXct(fill$exec_ts, tz = "UTC")), na.rm = TRUE)
+        last_executed <<- max(last_executed, fill$exec_ts, na.rm = TRUE)
       } else {
         cash_before <- cash
       }
@@ -410,36 +562,45 @@ lean_fold_envelope <- function(execution, output_handler) {
         rj$exec_ts <<- c(rj$exec_ts, rejection$exec_ts)
         hd_nrej[[i]] <<- n_rej
       }
-      explicit_k <- setdiff(differs, clean_k)
+      explicit_k <- if (length(clean_k)) differs[match(differs, clean_k, 0L) == 0L] else differs
       if (length(explicit_k) > 0L) {
-        lean_loop_add_decisions(explicit_k, i, sq, tq, packet$position)
+        lean_loop_add_decisions(explicit_k, i, sq, tq, pos_start)
       }
 
       # P5 reconciliation record and state
       live$cur_stage <- "accounting"
-      if (!is.null(batch) && !isTRUE(all.equal(as.numeric(cash), as.numeric(batch$expected_final_cash),
+      if (!is.null(batch) && !isTRUE(cash == batch$expected_final_cash) && !isTRUE(all.equal(as.numeric(cash), as.numeric(batch$expected_final_cash),
                                                tolerance = ledgr_availability_cash_tolerance))) {
         rlang::abort("Recorded cash does not reconcile with the availability affordability ledger.",
           class = c("ledgr_affordability_reconciliation_failed", "ledgr_invalid_fold_execution"))
       }
       expected <- if (is.null(batch)) cash else batch$expected_final_cash
       fill_cash <- if (n_fill > 0L) batch$fill$cash_delta else numeric()
+      intended <- lean_gross(sq, close)
       recon <- c(
-        ledgr_availability_marked_gross(pos, close),
+        lean_gross(pos, close),
         cash - sum(fill_cash),
-        ledgr_availability_marked_gross(sq, close),
-        ledgr_availability_marked_gross(tq, close),
+        intended,
+        intended,                       # no risk step: post-risk == strategy targets
         cash,
         expected)
       ledgr_fold_reconciliation_check(recon[[2L]], recon[[6L]], recon[[5L]], recon[[3L]], recon[[4L]], recon[[1L]])
+      if (.lean_debug && !identical(recon[c(1L, 3L, 4L)], c(ledgr_availability_marked_gross(pos, close),
+          ledgr_availability_marked_gross(sq, close), ledgr_availability_marked_gross(tq, close)))) {
+        rlang::abort(sprintf("Lean gross exposure differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
+      }
       hd_recon[i, ] <<- recon
       hd_has_recon[[i]] <<- TRUE
       state_update <- result$state_update
       if (inherits(state_update, "ledgr_strategy_state_reset")) {
         strategy_state <<- ledgr_strategy_state_defaults(state_declaration, ids, default_scalars = state_defaults)
       } else if (inherits(state_update, "ledgr_strategy_state_patch")) {
-        strategy_state <<- ledgr_strategy_state_apply_values(strategy_state, unclass(state_update),
-          state_declaration, ids, patch = TRUE, default_scalars = state_defaults)
+        patched <- lean_state_patch(unclass(state_update))
+        if (.lean_debug && !identical(patched, ledgr_strategy_state_apply_values(strategy_state,
+            unclass(state_update), state_declaration, ids, patch = TRUE, default_scalars = state_defaults))) {
+          rlang::abort(sprintf("Lean state patch differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
+        }
+        strategy_state <<- patched
       } else if (!is.null(state_update)) {
         strategy_state <<- ledgr_strategy_state_apply_values(strategy_state, state_update,
           state_declaration, ids, patch = FALSE, default_scalars = state_defaults)
@@ -497,7 +658,7 @@ lean_fold_envelope <- function(execution, output_handler) {
       completion <- ledgr_availability_completion_row(run_id = run_id, pulses_posix = pulses_posix,
         status = status, stop_reason = stop_reason,
         affected = list(value = NA_real_, details = list(), ts_utc = as.POSIXct(NA, tz = "UTC"), specified = FALSE),
-        last_fully_valued_ts_utc = last_fully_valued, last_executed_ts_utc = last_executed)
+        last_fully_valued_ts_utc = .POSIXct(last_fully_valued, tz = "UTC"), last_executed_ts_utc = .POSIXct(last_executed, tz = "UTC"))
       output_handler$write_run_evidence(completion, diagnostics)
     } else {
       output_handler$write_run_diagnostics(diagnostics)
@@ -708,7 +869,7 @@ lean_fold_envelope <- function(execution, output_handler) {
     if (is.function(output_handler$write_exception_diagnostic)) {
       reason <- as.character(fold_error$reason %||% "")
       if (!nzchar(reason)) reason <- "fold_exception"
-      diagnostic <- ledgr_availability_diagnostic_row(run_id = run_id, diagnostic_seq = 1L, ts_utc = live$cur_ts,
+      diagnostic <- ledgr_availability_diagnostic_row(run_id = run_id, diagnostic_seq = 1L, ts_utc = .POSIXct(live$cur_ts, tz = "UTC"),
         stage = live$cur_stage, outcome = "error", reason_code = reason,
         detail_json = canonical_json(list(condition_class = class(fold_error), message = conditionMessage(fold_error))))
       try(output_handler$write_exception_diagnostic(diagnostic), silent = TRUE)
