@@ -1,0 +1,5 @@
+"workload","fills_used","fills_allocated","decisions_used","decisions_allocated","rejections","pulse_headers","batches","batch_rows","publish_peak_mb"
+"crossover_10x7200",7971,8192,1,1024,1,7200,4,65536,206.5
+"crossover_500x1260",67725,131072,54,1024,54,1260,13,65536,459
+"fill_heavy_500x1260",67725,131072,54,1024,54,1260,13,65536,445.9
+"exception_heavy_200x500",0,1024,100000,131072,0,500,2,65536,323.6
