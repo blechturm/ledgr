@@ -772,11 +772,20 @@ workloads.
 
 - Status: accepted by the maintainer on 2026-11-10 after a section-by-section
   walkthrough (A1; macro WS16 "Compact-state loop", accepted 2026-11-09),
-  including the three 19.2 decisions. Binding for slice 1.
-- Ticket: LDG-3219 (Cut 13, workstream 30).
-- Starting points: the R-floor spike stages 2-3 (`dev/spikes/r_floor/`,
-  bit-identical at 26 and 103 us per pulse on crossover 10 x 7,200 and
-  500 x 1,260), lean P3's planner (Section 18), lean preparation
+  including the three 19.2 decisions. Binding for slice 1. Patched on
+  2026-11-10 with the Codex cut review's R1, R2 and R4-R9
+  (`cut_review_13.md`); R3 (publication after the loop) waits for the
+  diagnostic-records D3 synthesis and binds only once it is accepted.
+- Ticket: LDG-3219 (Cut 13, workstream 30). Code-line budget: 900 code lines
+  for the slice-1 loop, excluding the existing `fifo.R` and `prepare.R`
+  (maintainer, 2026-11-10).
+- Starting points: the R-floor spike stages 2-3 (`dev/spikes/r_floor/`).
+  Stage 2 matched its `0d6c0b11` reference fills, equity, cash and
+  reconstructed trace at 26 and 103 us per pulse loop-only on crossover
+  10 x 7,200 and 500 x 1,260, plus 0.18 and 0.28 s of trace reconstruction
+  and separately reported durable writes; stage 3 separately supports fresh
+  retained contexts. These are neither whole-run costs nor current-pin
+  full-surface parity. Also lean P3's planner (Section 18), lean preparation
   (Section 12.3) and the lean FIFO kernel (Section 11).
 
 ### 19.1 Entry and exit
@@ -788,8 +797,12 @@ preflight, preparation, features, provider, output handler) and after it
 (finalisation, run evidence, telemetry, result readers) stays the pin's.
 Same inputs; the same return list (status, processed, full_run, telemetry,
 state, strategy_state, next_event_seq, equity_facts, `:2087-2097`); the same
-handler effects inside `output_handler$run_transaction()`, but in one
-publication after the last pulse instead of per pulse.
+handler effects inside `output_handler$run_transaction()`. Physical store
+writes occur after the loop. Whether slice 1 also defers the logical P4/P5
+publication of the pulse-plumbing synthesis (R7, R9 and its Section 5
+prefix protocol) to one publication after the last pulse is decided by the
+diagnostic-records D3 synthesis (cut review R3); no slice-1 code relies on
+it before that synthesis is accepted.
 
 Telemetry (maintainer, 2026-11-09): the loop keeps the stored run row
 (status, mode, elapsed seconds, pulse, decided and skipped counts) and the
@@ -815,15 +828,35 @@ pulse; the harness then runs the workload on the pin:
 | cash opening, no corporate actions | opening positions and imports, corporate actions (4) |
 | strategy reading `ctx` fields, `hold()`, state and the pulse seed | history reads (`ledgr_history_*`), detected statically by preflight (3) |
 | committed run and a one-worker sweep candidate | workers, compiled FIFO, restart, walk-forward (5) |
+| the in-memory event path | `db_live`, refused before the first pulse (retired by the pulse-plumbing synthesis R8) |
+
+Also covered, each with a small parity or refusal witness (cut review R4):
+strategy returns in the pin's numeric and `ledgr_target` forms, the
+ordinary `list(targets, state_update, intent_reason)` form and
+`intent_reason`; declared-state keep, patch, replacement, reset and default
+rules; seeded and unseeded sequential RNG with the pin's kind, stream and
+restoration rules; every current public `ctx` field, `flat()`, `hold()`,
+inspection and alias or concrete-feature resolution over the pin's prepared
+features (registration, `feature_params` and precomputed-feature
+preparation stay upstream); non-finite but correctly named targets;
+retained, not yet forced context fields; `max_pulses`.
 
 Decided by the maintainer (2026-11-09):
 
 1. **Detection.** Sizing helpers and history reads are found by scanning the
    strategy's code before the first pulse. A call the scan missed (for
    example inside a user helper) reaches a lean stub that signals the
-   coverage condition; the run's transaction rolls back and the harness
-   reruns the workload on the pin. A run is never part lean, part pin; a
-   miss costs one rerun.
+   coverage condition and aborts the whole lean attempt. Durable
+   transactional writes roll back; a memory candidate's handler and all its
+   retained state are discarded (the memory handler keeps writes on error,
+   `R/output-handler.R:96-104`). The harness reruns the complete public
+   workload on the pin with fresh candidate state, or the same durable
+   `run_id` through the pin's fresh-attempt cleanup, and restores the
+   attempt-entry RNG state before retrying (unseeded folds have no envelope
+   restore, `R/fold-engine.R:1705-1712`). A run is never part lean, part
+   pin; a miss costs one rerun. Witness: a late backstop after earlier
+   fills, including an unseeded RNG draw, against a pin-only invocation
+   (cut review R2).
 2. **Constructed workloads.** The crossover runs never run short of cash, so
    three small workloads are added inside slice 1, built with public
    constructors and the pin as oracle, as A0 is: tight cash (insufficient
@@ -840,8 +873,10 @@ All on the run axis by integer position, or one entry per pulse:
 - `pos` double N; `cash` double; the lean lot book (Section 11);
 - strategy state: one typed vector per declared field;
 - fills: preallocated typed columns (pulse, pos, side, qty, price, fee,
-  cash delta, position before and after, event seq) and a used count;
-  capacity grows by doubling;
+  cash delta, position before and after, event seq, and the FIFO applied
+  result's `close_qty`, `open_qty` and `realized_close`, which the memory
+  sink's accounting facts consume, `R/output-handler.R:44-69,764-770`; never
+  recomputed at publication) and a used count; capacity grows by doubling;
 - equity: one row per pulse (ts, cash, positions value, realized P&L,
   cost basis), the pin's equity record;
 - position facts, as the pin keeps them (`fold_state$position_facts`);
@@ -870,7 +905,11 @@ epochs, the pulse seeds, ISO timestamps.
   by less than the threshold trades nothing but stays an explicit decision
   row, so the hold count is the exact-equality count, not N. Otherwise lean P3's planner logic
   over vectors: next-open prices, the cost resolver, the refusal order, the
-  affordability scan; on the final pulse, final-pulse rejections.
+  affordability scan; on the final pulse, final-pulse rejections. P3 hands
+  P4 an explicit typed order-shaped record (skeleton synthesis Section 2):
+  instrument position, side, quantity, market order type, next-open timing,
+  the resolved fills and rejections and their carried economic effects;
+  fixed order-type and timing values may be shared constants.
 - **P4** applies the fills through the lean FIFO kernel, sets positions
   from the book's net, books cash fill by fill in event order (the pin's
   scan), appends to the fill columns and updates position facts.
@@ -883,7 +922,13 @@ Section 18's fused pass); the pulse records rows only for non-clean
 decisions, rejections, non-clean fills and the run's single sizing notice.
 Clean fills are recorded as fill indices. Holds are counted only on a pulse
 that completes P3 normally (the diagnostic-records response found hold
-omission is specific to that path); in slice 1 the only other exit is an
+omission is specific to that path). P3 can also return the pin's
+affordability reconciliation stop (`R/fold-engine.R:1178-1204,2003-2006`;
+cut review R1 reaches it on a cash-only fixed basket with prices near
+1e16). E installs that stop with the same processed count, keeps the valued
+equity and the accepted event prefix, records the deferred explicit
+decisions and the stop row without certifying holds on that pulse, skips P4
+and P5, and publishes INCOMPLETE completion evidence. The other exit is an
 error, which discards the run (19.5).
 
 ### 19.5 After the last pulse
@@ -896,7 +941,8 @@ error, which discards the run (19.5).
    fill columns; reconciliation rows from their tuples (JSON formatted once,
    vectorized); exception rows as recorded; logical sequence numbers from
    the per-pulse first numbers.
-2. Publish through the pin's handler and writer: the fill events as one
+2. Publish through the pin's handler and writer (the logical-publication
+   form waits for the D3 synthesis, 19.1): the fill events as one
    block (one publication check), the accounting legs, the diagnostics
    through one writer sized to the run (one append per table, today's store
    format and implicit codec), coverage and the summary.
@@ -910,12 +956,20 @@ error, which discards the run (19.5).
 
 ### 19.6 Gate and evidence
 
-As LDG-3219's acceptance: whole-run parity on every covered workload and the
-three constructed workloads (19.2), debug on and off (the parity runner gains a lean-loop mode and records refusals
-for uncovered workloads); mutations (a fill price one ulp high, a dropped
-hold count, a hold rebuilt with the wrong position); no DuckDB write and no
-hold row inside the loop (asserted by the harness wrapping the handler and
-writer during the loop); a timing record with the PMwR comparison.
+As LDG-3219's acceptance: whole-run parity on every covered workload, the
+three constructed workloads (19.2), the reconciliation-stop workload (19.4)
+and the 19.2 witnesses, debug on and off (the parity runner gains a
+lean-loop mode and records refusals for uncovered workloads); mutations (a
+fill price one ulp high, a dropped hold count, a hold rebuilt with the wrong
+position); no store write inside the loop (the harness wraps the store-write
+boundaries during the loop) and zero calls and rows at the actual
+hold-expansion constructor during the loop, the detector demonstrated by
+moving one real hold expansion inside the loop (cut review R6); a timing
+record with the PMwR comparison, the rough end-to-end loop timed before
+hardening. Close also records actual code lines against the 900-line
+budget, the subtraction review, the five-scenario affected-owner check and
+focused module-property checks for newly changed guarantees, run debug-on
+(cut review R7).
 
 ### 19.7 To verify in code before relying on it
 

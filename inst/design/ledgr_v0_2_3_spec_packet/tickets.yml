@@ -1553,8 +1553,11 @@ cuts:
       Lean P3 timing (dev/bench/timing/records/ws16-p3-1/p3-rough/): P3 639 to
       213 us per pulse on crossover 10 x 7,200 and 1,219 to 639 on 500 x 1,260;
       whole run 0.86 and 0.92 of the pin. R-floor spike stage 2
-      (dev/spikes/r_floor/): the published runs bit for bit, full trace
-      included, at 26 and 103 us per pulse in a compact-state shape.
+      (dev/spikes/r_floor/) matched its 0d6c0b11 reference fills, equity,
+      cash and reconstructed trace: loop-only 26 and 103 us per pulse, plus
+      0.18 and 0.28 s trace reconstruction and separately reported durable
+      writes; stage 3 separately supports fresh retained contexts. These are
+      neither whole-run costs nor current-pin full-surface parity.
       Diagnostic-records spike (dev/spikes/diagnostic_records/): clean holds
       rebuild exactly from exceptions, sequence gaps and one count per pulse.
     decisions: >-
@@ -1576,7 +1579,9 @@ cuts:
       store format changes. Design impact: lean_core_interface.md Section 19.
     sequencing: >-
       Workstream 29 (LDG-3218) closes first; workstream 30 (LDG-3219) builds
-      slice 1 after the maintainer accepts interface Section 19.
+      slice 1 after the maintainer accepts interface Section 19 (done
+      2026-11-10) and the diagnostic-records D3 synthesis is accepted (cut
+      review R3).
     out_of_scope: >-
       Any change in R/ or tests/; slices 2-5 (costs, risk, sizing helpers,
       schedules, declared sessions, stale and frozen marks, membership,
@@ -1589,6 +1594,7 @@ cuts:
       independent clean-context Codex CLI review of workstream 30 at close,
       wrong answers only, against Section 19 and the evidence. A third
       correction round goes to the maintainer.
+    cut_review: "NEEDS_TYPE_2 in cut_review_13.md (independent clean-context Codex CLI, gpt-6.1-sol/high, at 73e64d3a). R1, R2 and R4-R9 applied to interface Section 19 and LDG-3219 (reconciliation stop, whole-attempt abort with RNG restore, db_live refusal and return-shape/RNG/context witnesses, retained FIFO leg columns and an order-shaped P3 handoff, a constructor-level hold detector, the surviving close obligations with a 900-line budget, fresh context wording, R-floor figures as loop-only). R3 (one logical publication after the loop conflicts with pulse-plumbing R7/R9 and Section 5) routed by the maintainer on 2026-11-10 to a narrow synthesis of the diagnostic-records amendment's D3; slice-1 code waits for its acceptance."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -4465,23 +4471,29 @@ tickets:
     dependencies: ["LDG-3218"]
     scope: >-
       Build the compact-state lean loop of macro WS16 ("Compact-state loop")
-      for slice 1 as interface Section 19 specifies once the maintainer
-      accepts it (A1): E and P1-P5 as named functions over preallocated,
+      for slice 1 as interface Section 19 specifies (accepted by the
+      maintainer on 2026-11-10, A1, patched with the cut review's R1, R2 and
+      R4-R9): E and P1-P5 as named functions over preallocated,
       position-indexed run-long state; lean preparation (LDG-3216) and the
       lean FIFO kernel (LDG-3213); the unchanged strategy surface through a
-      reused context; exception rows and one hold count per pulse, the hold
-      rows rebuilt after the last pulse and the current store format written
-      once, or only the kept rows for a sweep candidate; an explicit
-      coverage refusal for every feature outside slice 1. A harness install
-      function binds the loop for a run; nothing in R/ calls it. Extend the
-      whole-run parity runner to run each gate workload on the lean loop or
-      record its refusal, register mutations, and add a timing protocol with
-      the published crossover workloads.
+      fresh pulse-frozen context per pulse; exception rows and one hold count
+      per pulse, the hold rows rebuilt after the last pulse and the current
+      store format written after the loop, or only the kept rows for a sweep
+      candidate; an explicit coverage refusal for every feature outside
+      slice 1. A harness install function binds the loop for a run; nothing
+      in R/ calls it. Extend the whole-run parity runner to run each gate
+      workload on the lean loop or record its refusal, register mutations,
+      and add a timing protocol with the published crossover workloads.
+      Code waits for the diagnostic-records D3 synthesis (cut review R3):
+      whether logical P4/P5 publication may also move after the loop. The
+      code-line budget is 900 code lines for the slice-1 loop, excluding
+      fifo.R and prepare.R (maintainer, 2026-11-10); the rough end-to-end
+      loop is timed before hardening.
     acceptance:
-      - "every run-store table (diagnostics decoded), reader, condition and one-worker sweep result is identical to the pin on every slice-1 workload (at least crossover 10 x 7,200, 20 x 23,400 and 500 x 1,260, fill-heavy 500 x 1,260, and three constructed workloads: tight cash, a sell and a buy on one pulse, trades requested on the final pulse), with debug on and off"
-      - "a sizing-helper or history call missed by the static scan stops the lean run, rolls back its transaction and reruns the workload on the pin"
-      - "every other gate workload is refused as not covered, naming the first uncovered feature; none runs partly"
-      - "no DuckDB write and no hold-row construction inside the pulse loop; the registered mutations (a fill price one ulp high, a dropped hold count, a hold rebuilt with the wrong position) fail"
+      - "every run-store table (diagnostics decoded), reader, condition and one-worker sweep result is identical to the pin on every slice-1 workload (at least crossover 10 x 7,200, 20 x 23,400 and 500 x 1,260, fill-heavy 500 x 1,260, three constructed workloads: tight cash, a sell and a buy on one pulse, trades requested on the final pulse; the affordability reconciliation stop, INCOMPLETE; and the Section 19.2 witnesses), with debug on and off"
+      - "a sizing-helper or history call missed by the static scan aborts the whole lean attempt: durable writes roll back, a memory candidate's handler and state are discarded, the RNG state at attempt entry is restored and the complete workload reruns on the pin; a late backstop after earlier fills, with an unseeded RNG draw, matches a pin-only invocation"
+      - "every other gate workload, and db_live, is refused as not covered, naming the first uncovered feature; none runs partly"
+      - "no store write inside the pulse loop (store-write boundaries wrapped during the loop) and zero calls and rows at the hold-expansion constructor during the loop, the detector shown to fire when one real hold expansion is moved inside the loop; the registered mutations (a fill price one ulp high, a dropped hold count, a hold rebuilt with the wrong position) fail"
       - "a timing record on the shared harness reports the whole-run ratio to the pin, microseconds per pulse and the published PMwR figures for the same shapes"
-      - "interface Section 19 accepted by the maintainer before code; the Codex close review passes"
+      - "close records actual code lines against the 900-line budget, the subtraction review, the five-scenario affected-owner check and focused module-property checks for newly changed guarantees run debug-on; the Codex close review passes"
     evidence: []
