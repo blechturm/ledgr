@@ -1,6 +1,7 @@
 # Lean Core Pulse Plumbing: Decision Synthesis
 
 - Status: **accepted** by the maintainer on 2026-11-06 after the Type 1 final review (PASS_AFTER_PATCHES, patches applied in 0f531a04). Its Section 6 installation is applied in the acceptance commit; no implementation is claimed.
+- Amended 2026-11-10: [terminal physical writes (D3)](#amendment-terminal-physical-writes-d3-2026-11-10), from the [diagnostic-records D3 synthesis](rfc_diagnostic_records_v0_2_3_synthesis_d3.md), accepted by the maintainer on 2026-11-10 after the Type 1 final review (PASS). Amends R7-R10, Sections 5-7 and the Section 8 open questions in pending lean-core scope.
 - Mode: Decision synthesis, RFC cycle stage 7. Codex, 2026-11-06; author of neither seed v2 nor its co-written brief. The maintainer approved the Claude-drafted brief.
 - Reviewed tree: `ef8be540ec2860434fb1453a83e7faf1256e44ba`. Git confirms no `R/`, `src/` or `tests/` difference from `d5b3a151`; that old fold remains the frozen oracle and is not edited.
 - Inputs: [seed v2](rfc_lean_core_pulse_plumbing_v0_2_3_seed_v2.md), [Type 2 response](rfc_lean_core_pulse_plumbing_v0_2_3_response.md), [maintainer response review](rfc_lean_core_pulse_plumbing_v0_2_3_response_review.md), especially D1-D8. The review decisions govern over the seed.
@@ -143,6 +144,8 @@ positions and newly computed values without N-wide packet copies. Computed
 stage outputs remain fresh, not reused overwrite buffers. Mutable output
 buffers have one owner; public retained values are copied or never mutated.
 
+> Amended in pending lean-core scope by [Amendment: terminal physical writes (D3, 2026-11-10)](#amendment-terminal-physical-writes-d3-2026-11-10). Per-pulse logical commitment remains; persistent writes and bounded expansion occur after the loop. Run-long record storage replaces the chunk-sized working-storage bound; checkpoint_every follows LR-20 and the D3 adapter/switch disposition.
+
 **R7. Compact owned records, bounded expansion.** Each fill retains sequence,
 instrument position, side, quantity, price, fee, execution epoch **and P3's
 already computed cash_delta and position_delta**. The latter may be immutable
@@ -157,12 +160,16 @@ do not accumulate a run-long list of pulse blocks. Retained memory results,
 equity, source/history, lots and public views are accounted separately.
 Section 5's prefix protocol is part of this rule.
 
+> Amended in pending lean-core scope by [Amendment: terminal physical writes (D3, 2026-11-10)](#amendment-terminal-physical-writes-d3-2026-11-10). Per-pulse logical commitment remains; persistent writes and bounded expansion occur after the loop. Run-long record storage replaces the chunk-sized working-storage bound; checkpoint_every follows LR-20 and the D3 adapter/switch disposition.
+
 **R8. One write path.** Retire db_live, the execution_mode argument, its control
 override, config field, stored columns and reader/printing fields. Durable
 writes use the in-memory chunk path within the invocation's one transaction;
 chunks are not transaction commits. There is no legacy mode selector, ignored
 compatibility argument or old-format reader. Change store version/fingerprint
 and configuration identity as Section 5 requires.
+
+> Amended in pending lean-core scope by [Amendment: terminal physical writes (D3, 2026-11-10)](#amendment-terminal-physical-writes-d3-2026-11-10). Per-pulse logical commitment remains; persistent writes and bounded expansion occur after the loop. Run-long record storage replaces the chunk-sized working-storage bound; checkpoint_every follows LR-20 and the D3 adapter/switch disposition.
 
 **R9. Reserve, then commit.** Failed candidate calculation changes no handler
 state. P4 installs the successful book, reserves/writes compact rows, advances
@@ -177,6 +184,8 @@ failure advances no accepted boundary or committed count. Workers are
 candidate-local. Handler failure aborts; no private-state rollback is promised.
 The existing compiled arm keeps its state/sequence-before-append order until
 its separately authorized WS14 replacement; R9 does not reorder that arm.
+
+> Amended in pending lean-core scope by [Amendment: terminal physical writes (D3, 2026-11-10)](#amendment-terminal-physical-writes-d3-2026-11-10). Per-pulse logical commitment remains; persistent writes and bounded expansion occur after the loop. Run-long record storage replaces the chunk-sized working-storage bound; checkpoint_every follows LR-20 and the D3 adapter/switch disposition.
 
 **R10. Write only diagnostic residuals.** P2's decision/risk segments stay
 unexpanded until P3 certifies clean forms. Reserve logical positions for all
@@ -253,6 +262,8 @@ alone does not authorize a changed semantic assertion (AGENTS.md:28).
 
 ## 5. Failure Prefixes And Answers To Questions 2-4
 
+> Amended in pending lean-core scope by [Amendment: terminal physical writes (D3, 2026-11-10)](#amendment-terminal-physical-writes-d3-2026-11-10). Per-pulse logical commitment remains; persistent writes and bounded expansion occur after the loop. Run-long record storage replaces the chunk-sized working-storage bound; checkpoint_every follows LR-20 and the D3 adapter/switch disposition.
+
 **Question 2: no, R7 as written does not establish every prefix.** Adopt this
 protocol with R7-R10. It preserves contracted accepted economics and evidence;
 it does not promise retired live-mode transaction-local visibility or identical
@@ -307,6 +318,8 @@ store-version integer are settled against the switch baseline, not invented
 from today's schema number.
 
 ## 6. Exact Installation At Acceptance
+
+> Amended in pending lean-core scope by [Amendment: terminal physical writes (D3, 2026-11-10)](#amendment-terminal-physical-writes-d3-2026-11-10). Per-pulse logical commitment remains; persistent writes and bounded expansion occur after the loop. Run-long record storage replaces the chunk-sized working-storage bound; checkpoint_every follows LR-20 and the D3 adapter/switch disposition.
 
 **Seed Section 5 is not complete.** Its named passages leave contradictory
 scope/identity promises, repeated validation requirements, macro test freezing,
@@ -364,6 +377,8 @@ unverified. The switch's live-source census must find no remaining operative
 contradiction, rather than relying on the seed's table as a complete census.
 
 ## 7. Switch-Cut Obligations
+
+> Amended in pending lean-core scope by [Amendment: terminal physical writes (D3, 2026-11-10)](#amendment-terminal-physical-writes-d3-2026-11-10). Per-pulse logical commitment remains; persistent writes and bounded expansion occur after the loop. Run-long record storage replaces the chunk-sized working-storage bound; checkpoint_every follows LR-20 and the D3 adapter/switch disposition.
 
 The atomic switch promotes these semantic replacements into shipped contracts/code.
 Record each ledger difference against `d5b3a151`; unlisted output/economic differences fail closed under L A3.
@@ -429,6 +444,8 @@ retain the external oracle/tag and rewrite living references as M:805 requires.
 | Ablation savings as budgets, the compact spike as production implementation, or 300/185 as measured totals | Boundaries overlap and missing work is material. D7's frozen floor and two independent comparisons bind; numerical family budgets belong to cut evidence. |
 | Acceptance installs shipped behavior, generic test remaps authorize semantic weakening, or a schema bump alone covers identity | Conflicts with the governance process, AGENTS and actual hash payload. Acceptance installs only the explicit pending amendments; switch has separate evidence and versions. |
 
+> Amended in pending lean-core scope by [Amendment: terminal physical writes (D3, 2026-11-10)](#amendment-terminal-physical-writes-d3-2026-11-10). Per-pulse logical commitment remains; persistent writes and bounded expansion occur after the loop. Run-long record storage replaces the chunk-sized working-storage bound; checkpoint_every follows LR-20 and the D3 adapter/switch disposition.
+
 **Open Questions Promoted To Spec-Cut:** choose the concrete chunk row bound and its relation to `engine.checkpoint_every` (a hashed pulse-count flush control, `R/backtest-config.R:93,192`): keep its meaning, or record its change as an explicit identity change with its own ledger row;
 maximum pulse reservation, the event-capacity counted population (Section 5) and range/token API within Section 5; name the
 internal debug mechanism and worker propagation without a public knob; complete
@@ -448,3 +465,213 @@ decisions bridge until tickets own them (`inst/design/rfc_cycle.md:163,187`).
 
 Independent Type 1 final review remains next; these stage-7 checks do not substitute for it.
 Only this proposed synthesis is written in the repository.
+
+## Amendment: terminal physical writes (D3, 2026-11-10)
+
+Authority: diagnostic-records D3 synthesis Sections 1-3 and 5-7, accepted by the maintainer on 2026-11-10; pending lean core and atomic switch only. No shipped implementation is claimed. Source: [D3 synthesis](rfc_diagnostic_records_v0_2_3_synthesis_d3.md) Section 3, verbatim.
+
+### D3-A. R7, R8, R9 and R10
+
+**R7, P:149:** replace "The latter may be immutable indexed columns, but must
+outlive their pending chunk." with:
+
+> The latter may be immutable indexed columns, but must outlive every
+> accepted record that refers to them, through terminal materialization.
+
+**R7, P:152-157:** replace:
+
+> Working output expands and drains by a fixed row bound and at normal or
+> INCOMPLETE end, including an under-full final chunk. A pulse larger than the
+> chunk is split without publishing an incomplete logical fill batch. Working
+> storage is bounded by the chunk plus the prepared maximum pulse reservation;
+> do not accumulate a run-long list of pulse blocks. Retained memory results,
+> equity, source/history, lots and public views are accounted separately.
+
+with:
+
+> During pulse processing retain output in run-long owned typed records;
+> perform no persistent store write or spill. Commit accepted ranges at their
+> existing semantic boundaries. After normal loop exit, including INCOMPLETE
+> and max_pulses, expand only committed records in batches with a fixed row
+> limit, and write them once within the fold's one transaction. The last
+> under-full batch is included. A committed pulse may span physical batches;
+> no logical fill batch is partially published. Total working storage grows
+> with retained records; only terminal expansion has a batch row limit. Do not
+> accumulate per-pulse frames or lists. Measure used and allocated capacity
+> and terminal peak under this D3 synthesis Section 2; it sets no new total
+> memory limit or refusal. Account equity, source/history, lots, captures and
+> requested public results as well. Equity's later finalization transaction
+> remains unchanged.
+
+R7's fill fields, P3-computed effects, exact residual evidence and prohibition
+on recomputing effects remain (P:146-151). A terminal batch is a transfer unit,
+not a replacement evidence codec.
+
+**R8, P:162-163:** replace "Durable writes use the in-memory chunk path within
+the invocation's one transaction; chunks are not transaction commits." with:
+
+> Durable fold writes consume the committed in-memory records only after
+> pulse processing ends, in bounded terminal batches within the invocation's
+> one fold transaction. Batches are neither pulse publication nor transaction
+> commits. Candidates retain their existing output capabilities in memory;
+> they and workers perform no persistent writes. Pre-loop setup and existing
+> post-fold finalization, exception and telemetry writes retain their own
+> boundaries.
+
+R8's mode retirement and no-compatibility clauses remain. Add:
+
+> checkpoint_every retires under LR-20 and D3 Section 2; it is not repurposed
+> as a logical commit control. The dev adapter refuses non-default use before
+> the switch; the switch removes the field and records the identity change.
+
+**R9, P:167-179:** replace the full rule:
+
+> **R9. Reserve, then commit.** Failed candidate calculation changes no handler
+> state. P4 installs the successful book, reserves/writes compact rows, advances
+> accepted sequence/time metadata and event sequence, records legs, then installs
+> lot-derived positions and ordered cash, preserving the contracted order.
+> P5 checks logical fill-event capacity before exposing the complete fill batch and
+> legs. Reserved, accepted and publicly committed extents are distinct; no
+> reader/flush/recorder sees an uncommitted suffix except the handler-local leg
+> projection for its own accepted range. Growth preserves outstanding ranges;
+> every reused row initializes every represented column/default. Debug append
+> failure advances no accepted boundary or committed count. Workers are
+> candidate-local. Handler failure aborts; no private-state rollback is promised.
+> The existing compiled arm keeps its state/sequence-before-append order until
+> its separately authorized WS14 replacement; R9 does not reorder that arm.
+
+with:
+
+> **R9. Reserve, then commit in memory.** Failed candidate calculation changes
+> no handler state. P4 installs the successful book, reserves/writes compact
+> owned rows, advances accepted sequence/time metadata and event sequence,
+> records legs, then installs lot-derived positions and ordered cash, in the
+> contracted order. P5 checks logical fill-event capacity on that pulse before
+> exposing the complete fill batch and legs as committed in memory. Reserved,
+> accepted and publicly committed extents stay distinct. A handler read or
+> recorder sees only the then-committed prefix; only the handler-local leg
+> projection may inspect its own accepted range before P5. No store write is
+> involved. P1 and non-fill effects commit at their own semantic boundaries.
+> Sequence/time boundaries, fill counts, committed extents and leg visibility
+> advance during execution, independently of terminal batches. Terminal
+> expansion consumes only committed records and performs no new logical
+> publication or economic calculation. Growth preserves outstanding ranges;
+> initialize every reused represented column/default. Debug append failure
+> advances no accepted boundary or committed count. Workers are candidate-local.
+> Handler failure aborts; private-state rollback is not promised. The existing
+> compiled arm's state/sequence-before-append order stays until its separately
+> authorized WS14 replacement; its terminal-write adapter must preserve that
+> order and the separately accepted LR-19 capacity disposition. Slice 1 still
+> refuses compiled FIFO.
+
+**R10, P:185:** replace "P5 or E-stop drains and resets staging; handed-out
+chunks are frozen." with:
+
+> P5 or E-stop drains pulse staging into its owned in-memory committed
+> records and resets staging; no drain writes a persistent store. Handed-out
+> captures are frozen. Expansion and store transfer occur after the loop.
+
+This clarifies the destination of drainage only. It neither authorizes a new
+hold codec nor changes R10's logical positions, exact evidence, capacity or
+stop placement. D Sections 2-4 and the current codec stay in force.
+
+### D3-B. Section 5 prefix protocol
+
+The opening distinction between logical publication and physical insert timing
+(P:256-259) remains. These are exact replacements for the affected table
+clauses; the rest of each row remains unless explicitly replaced below.
+
+| Existing boundary and quoted old clause | Replacement |
+| --- | --- |
+| Successful candidate, P4 publication or leg failure: "A failed range is not committed or flushed; discard a failed memory candidate, rollback the entire durable invocation." | A failed range is not committed or terminally materialized. Discard the failed memory candidate and its handler; roll back the durable fold invocation. A handler error after private book/state installation still promises no private-state restoration. No accepted earlier pulse becomes a successful partial candidate. |
+| P5 event capacity: replace its entire row, quoted below. | Check cumulative accepted fill events plus this pulse's complete fill batch against the prepared run limit, max(1, pulses x instruments), under LR-19. Refuse at P5, after P4's sequence/leg/state work and before committing the batch or releasing its legs, with ledgr_event_buffer_capacity_exceeded, the original message, current stage accounting and that pulse's timestamp. Physical reservations must not enforce this logical limit early; terminal transfer must not enforce it late or reset the count. Non-fill events do not count. LR-19's removal of the old memory non-fill/compiled append refusals is already an explicit oracle difference, not new D3 parity. |
+| P1/opening/non-fill publication: "A materializing handler read expands only committed compact ranges." | Commit accepted effects in memory at their existing boundary, preserving append-before-state-install and terminal/corporate-action order; do not wait for the next P5. A handler read may expand only committed ranges in memory, without a store write. Opening/pre-loop boundaries and their sequence seed remain; mixed producers and compiled ranges cannot overlap outstanding fill reservations. Transfer their accepted rows after the loop with no duplication. |
+| Normal P5, skip and multiple fill batches: "Flush full committed chunks once; never insert them again at final drain." | Commit complete pulse ranges and release legs in event order during P5, including skips and multiple batches. Retain those ranges through loop exit; do not flush them to a store during execution. After normal end, materialize every committed range exactly once in bounded batches, including the tail, then completion evidence before fold transaction success. Preserve logical diagnostics and the valued equity prefix handed to finalization. |
+| INCOMPLETE mid-chunk: replace its entire row, quoted below; rename boundary "INCOMPLETE stop". | E installs the stop exactly once with the original processed-count meaning and commits its diagnostic staging in memory, including deferred decisions, the stop row and logical/codec coverage. Preserve prior committed events and any already accepted P1 non-fill effects on the stop pulse. Never create P4/P5 effects for a P1/P2/P3 stop. After loop exit, materialize that prefix and its under-full terminal batch before completion evidence and fold transaction success. Preserve the exact valued equity prefix, including zero valued rows, and distinct last-valued/last-executed clocks. The P3 affordability_reconciliation_failed stop reached by Cut 13 R1 follows this rule: counts_processed = TRUE, deferred explicit decisions and stop, no stopped-pulse fills, reconciliation success row, state acceptance or hold certification. It returns INCOMPLETE, not an error rollback. |
+| Error/interrupt during any chunk/stop/final drain: replace its entire row, quoted below; rename boundary "Error/interrupt during processing or terminal materialization". | Stop processing and discard unmaterialized records. Roll back all fold-transaction writes, including any already transferred terminal batches. Preserve the original condition and its pulse/stage for processing failures. Keep the existing post-rollback exception/FAILED handling and refreshed diagnostic sequence; do not replace a transfer error with an economic refusal. Real interrupts re-raise after rollback. Discard failed candidate handlers and retained state; no successful partial memory candidate, worker durable write or partially promotable interrupted sweep is allowed. |
+| Growth, reuse, recorder and requested outputs: "Output retention is separate from bounded working storage (R/output-handler.R:415,761,774)." | Run-long owned record capacity and bounded terminal expansion are measured separately from requested outputs, and all contribute to peak memory. Existing reserved/accepted range preservation, dirty-row initialization, committed-prefix exposure, handler-local leg exception, frozen captures and failed-handler discard requirements remain. |
+
+Old **P5 event capacity** row (P:265):
+
+> Keep ledgr_event_buffer_capacity_exceeded at P5, after P4's sequence/leg/state
+> work and before fill visibility (R/output-handler.R:571). Reserving physical
+> scratch space at P4 must not enforce that logical limit early. Chunk recycling
+> must not change which rows count toward the limit. Today durable counts
+> buffered fills since its last flush (`R/output-handler.R:673-686`) and memory
+> counts every row, refusing P1 and compiled appends before P5 (`:699-705`,
+> `:734-737`); the one-path counted population is a spec-cut choice, and any
+> refusal difference is a ledger row.
+
+Old **INCOMPLETE mid-chunk** row (P:268):
+
+> E installs the stop once, with its original processed-count meaning; drain
+> prior pulse staging plus that stop's physical rows, logical coverage/implicit
+> codec and every already accepted P1 non-fill row. Do not create P4/P5 effects
+> for a pulse stopped in P1/P2/P3. Drain all earlier committed compact events
+> and the under-full tail before completion evidence and transaction success;
+> use the exact valued equity prefix and distinct last-valued/last-executed
+> clocks. This follows R/fold-engine.R:1947,1980,2003,2033 and
+> R/fold-phase-contract.R:197.
+
+Old **Error/interrupt during any chunk/stop/final drain** row (P:269):
+
+> Roll back all invocation writes, including earlier full chunks; preserve
+> original condition and existing post-rollback exception/FAILED handling and
+> refreshed diagnostic sequence (R/output-handler.R:93,118,643;
+> R/fold-engine.R:2057-2083). No successful partial memory candidate; no worker
+> durable writes or partially promotable interrupted sweep.
+
+Add this table row (there is no existing max_pulses row):
+
+| Boundary | Required behavior |
+| --- | --- |
+| max_pulses | P5 completes and commits the final permitted pulse in memory, increments processed and sets full_run = FALSE at the pin's point. Materialize only that accepted prefix after loop exit; omit completion evidence and preserve the pin's nonterminal return/equity-prefix behavior. A later invocation follows fresh-attempt replacement/restart, not pulse resume. Do not reinterpret this as an INCOMPLETE stop or fabricate unprocessed diagnostics. |
+
+The candidate-calculation-failure row (P:263) stays verbatim. All economic and
+debug refusal ordering there survives. For capacity, the original detector
+is `R/fold-event-buffer.R:15-19`; P5 calls it at
+`R/output-handler.R:577`, with stage set at `R/fold-engine.R:1389` and pulse
+time at `:1931`. Preserve those observables even if terminal materialization
+could otherwise fit the rows. Logical-limit exhaustion and allocation failure
+are distinct. LR-19's population/limit is not a total memory bound.
+
+Normal-stop support is not inferred from a successful-run diff: P3's
+`counts_processed = TRUE` stop is `R/fold-engine.R:1178-1204`, E's three stop
+arms are `:1947-1951,1980-1983,2003-2006`, and max_pulses/completion handling
+is `:1658-1662,2037-2050` and `R/backtest-runner.R:861-897`.
+The [fold evidence](../contracts.md#contract-persistence-fold-evidence) and
+[completion evidence](../contracts.md#contract-persistence-completion-evidence)
+groups continue to govern recovery. The memory transaction is just `fn()`
+(`R/output-handler.R:690`); discard its handler on failure rather than claim
+SQL rollback cleans it. I:846-859's fresh-attempt/RNG fallback rule remains.
+
+### D3-C. Related operative clauses
+
+- P:272-275: replace "Chunk size is a spec-cut choice." with "The terminal
+  batch row limit is a spec-cut choice; it is unrelated to logical commitment
+  cadence." Replace "append/leg/flush faults" with "append/leg faults,
+  faults during terminal expansion and first/middle/final store batches".
+  The listed small-batch, oversized-pulse, multiple-batch, P1-stop, growth,
+  dirty-reuse, skip, interrupt and isolation witnesses remain.
+- P:305: replace "R8 does not authorize any change to `checkpoint_every`."
+  with "LR-20 and this D3 amendment authorize retirement of checkpoint_every
+  with explicit configuration and dependent-identity changes at the switch;
+  before the switch its non-default use is refused by the lean adapter."
+- P's **Open Questions Promoted To Spec-Cut**, P:432-433: replace "choose the
+  concrete chunk row bound and its relation to `engine.checkpoint_every`
+  (a hashed pulse-count flush control, `R/backtest-config.R:93,192`): keep
+  its meaning, or record its change as an explicit identity change with its
+  own ledger row; maximum pulse reservation, the event-capacity counted
+  population (Section 5)" with "choose the terminal batch row limit and
+  maximum pulse reservation; implement LR-19's cumulative fill-only capacity
+  rule at P5 and LR-20's retirement of checkpoint_every, including the D3
+  dev-adapter restriction and switch identity evidence". Remaining open
+  questions and future obligations stay.
+- P Sections 6-7's installation/switch instructions that require bounded
+  expansion or a chunk path now mean **bounded terminal expansion of
+  per-pulse committed in-memory records**, not in-loop transfer or bounded
+  total storage. Keep their current-store, no-compatibility, test-census,
+  debug-on/off, worker, recovery and identity duties. LR-12's "one chunked
+  write path" receives the same terminal meaning. In LR-20 replace "the
+  bounded output chunk replaces it" with "bounded terminal output batches
+  replace physical flush scheduling; logical commitment remains per pulse".

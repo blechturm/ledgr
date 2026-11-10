@@ -11,6 +11,7 @@
   [amendment](#amendment-maintainer-2026-11-04-core-extension-architecture) from the accepted
   [core extension architecture synthesis](rfc_core_extension_architecture_v0_2_3_synthesis.md) Section 6. The D2
   coding gate is satisfied by that acceptance.
+- Amended 2026-11-10: R7-R10 of the pulse plumbing amendment below are amended in pending lean-core scope by the [terminal physical writes (D3) amendment](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md#amendment-terminal-physical-writes-d3-2026-11-10), accepted by the maintainer on 2026-11-10.
 - Amended 2026-11-06: the [pulse plumbing
   amendment](#amendment-maintainer-2026-11-06-pulse-plumbing) from the
   accepted [pulse plumbing
@@ -785,6 +786,8 @@ positions and newly computed values without N-wide packet copies. Computed
 stage outputs remain fresh, not reused overwrite buffers. Mutable output
 buffers have one owner; public retained values are copied or never mutated.
 
+> Amended in pending lean-core scope by [Amendment: terminal physical writes (D3, 2026-11-10)](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md#amendment-terminal-physical-writes-d3-2026-11-10). Per-pulse logical commitment remains; persistent writes and bounded expansion occur after the loop. Run-long record storage replaces the chunk-sized working-storage bound; checkpoint_every follows LR-20 and the D3 adapter/switch disposition.
+
 **R7. Compact owned records, bounded expansion.** Each fill retains sequence,
 instrument position, side, quantity, price, fee, execution epoch **and P3's
 already computed cash_delta and position_delta**. The latter may be immutable
@@ -799,12 +802,16 @@ do not accumulate a run-long list of pulse blocks. Retained memory results,
 equity, source/history, lots and public views are accounted separately.
 Section 5's prefix protocol is part of this rule.
 
+> Amended in pending lean-core scope by [Amendment: terminal physical writes (D3, 2026-11-10)](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md#amendment-terminal-physical-writes-d3-2026-11-10). Per-pulse logical commitment remains; persistent writes and bounded expansion occur after the loop. Run-long record storage replaces the chunk-sized working-storage bound; checkpoint_every follows LR-20 and the D3 adapter/switch disposition.
+
 **R8. One write path.** Retire db_live, the execution_mode argument, its control
 override, config field, stored columns and reader/printing fields. Durable
 writes use the in-memory chunk path within the invocation's one transaction;
 chunks are not transaction commits. There is no legacy mode selector, ignored
 compatibility argument or old-format reader. Change store version/fingerprint
 and configuration identity as Section 5 requires.
+
+> Amended in pending lean-core scope by [Amendment: terminal physical writes (D3, 2026-11-10)](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md#amendment-terminal-physical-writes-d3-2026-11-10). Per-pulse logical commitment remains; persistent writes and bounded expansion occur after the loop. Run-long record storage replaces the chunk-sized working-storage bound; checkpoint_every follows LR-20 and the D3 adapter/switch disposition.
 
 **R9. Reserve, then commit.** Failed candidate calculation changes no handler
 state. P4 installs the successful book, reserves/writes compact rows, advances
@@ -819,6 +826,8 @@ failure advances no accepted boundary or committed count. Workers are
 candidate-local. Handler failure aborts; no private-state rollback is promised.
 The existing compiled arm keeps its state/sequence-before-append order until
 its separately authorized WS14 replacement; R9 does not reorder that arm.
+
+> Amended in pending lean-core scope by [Amendment: terminal physical writes (D3, 2026-11-10)](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md#amendment-terminal-physical-writes-d3-2026-11-10). Per-pulse logical commitment remains; persistent writes and bounded expansion occur after the loop. Run-long record storage replaces the chunk-sized working-storage bound; checkpoint_every follows LR-20 and the D3 adapter/switch disposition.
 
 **R10. Write only diagnostic residuals.** P2's decision/risk segments stay
 unexpanded until P3 certifies clean forms. Reserve logical positions for all

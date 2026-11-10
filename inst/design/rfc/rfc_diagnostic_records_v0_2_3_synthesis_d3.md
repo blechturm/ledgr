@@ -2,7 +2,7 @@
 
 - Mode: Decision synthesis, RFC cycle stage 7.
 - Author: Codex; date: 2026-11-10.
-- Status: **narrow synthesis of D3; awaiting maintainer acceptance**.
+- Status: **accepted** by the maintainer on 2026-11-10 after the [Type 1 final review](rfc_diagnostic_records_v0_2_3_synthesis_d3_final_review.md) (PASS, one note for the implementing cut). Narrow synthesis of D3; Section 7 installation applied in the acceptance commit; no implementation is claimed.
 - Reviewed tree: `87bbf15402938ec6bf517cd57bb83e89e040ae53`, detached.
   Its `R/` has no difference from `d5b3a151`. Code citations below resolve
   at that pin; design and evidence citations resolve at the reviewed tree.

@@ -773,9 +773,11 @@ workloads.
 - Status: accepted by the maintainer on 2026-11-10 after a section-by-section
   walkthrough (A1; macro WS16 "Compact-state loop", accepted 2026-11-09),
   including the three 19.2 decisions. Binding for slice 1. Patched on
-  2026-11-10 with the Codex cut review's R1, R2 and R4-R9
-  (`cut_review_13.md`); R3 (publication after the loop) waits for the
-  diagnostic-records D3 synthesis and binds only once it is accepted.
+  2026-11-10 with cut review R1, R2 and R4-R9 (`cut_review_13.md`); R3 is
+  resolved by the accepted diagnostic-records D3 synthesis
+  (`rfc_diagnostic_records_v0_2_3_synthesis_d3.md`, accepted 2026-11-10):
+  per-pulse logical commitment in memory, followed by bounded terminal
+  materialization. Acceptance provenance is recorded in that synthesis.
 - Ticket: LDG-3219 (Cut 13, workstream 30). Code-line budget: 900 code lines
   for the slice-1 loop, excluding the existing `fifo.R` and `prepare.R`
   (maintainer, 2026-11-10).
@@ -797,12 +799,18 @@ preflight, preparation, features, provider, output handler) and after it
 (finalisation, run evidence, telemetry, result readers) stays the pin's.
 Same inputs; the same return list (status, processed, full_run, telemetry,
 state, strategy_state, next_event_seq, equity_facts, `:2087-2097`); the same
-handler effects inside `output_handler$run_transaction()`. Physical store
-writes occur after the loop. Whether slice 1 also defers the logical P4/P5
-publication of the pulse-plumbing synthesis (R7, R9 and its Section 5
-prefix protocol) to one publication after the last pulse is decided by the
-diagnostic-records D3 synthesis (cut review R3); no slice-1 code relies on
-it before that synthesis is accepted.
+handler effects inside `output_handler$run_transaction()`. P4/P5 retain
+per-pulse logical acceptance, sequence/time boundaries, committed extents
+and leg visibility against the lean loop's owned in-memory records,
+including P5's capacity refusal on its original pulse. P1/non-fill
+publication keeps its own boundary. No persistent store write occurs
+while pulses are processed. After loop exit, bounded terminal batches
+consume only committed records inside that fold transaction; they do
+not publish the run anew. Equity finalization and recovery remain the
+pin's. The accepted diagnostic-records D3 synthesis governs memory,
+stop/error prefixes and the `checkpoint_every` entry restriction (only the
+pin's default `10000L` and no `control$checkpoint_every` key; otherwise the
+coverage refusal).
 
 Telemetry (maintainer, 2026-11-09): the loop keeps the stored run row
 (status, mode, elapsed seconds, pulse, decided and skipped counts) and the
@@ -928,31 +936,44 @@ cut review R1 reaches it on a cash-only fixed basket with prices near
 1e16). E installs that stop with the same processed count, keeps the valued
 equity and the accepted event prefix, records the deferred explicit
 decisions and the stop row without certifying holds on that pulse, skips P4
-and P5, and publishes INCOMPLETE completion evidence. The other exit is an
-error, which discards the run (19.5).
+and P5, and publishes INCOMPLETE completion evidence. Errors and interrupts
+discard the attempt under 19.5; `max_pulses` preserves its nonterminal
+prefix without completion evidence.
 
 ### 19.5 After the last pulse
 
-1. Rebuild the diagnostic trace in typed columns: clean holds from the hold
-   counts, the decision axis, closes and positions, each position being the
-   book net recorded as the latest fill's position after, never a sum of
-   fill quantities (the response found a book net of 0.20000000000000004
-   that summed deltas miss); clean fills from the
-   fill columns; reconciliation rows from their tuples (JSON formatted once,
-   vectorized); exception rows as recorded; logical sequence numbers from
-   the per-pulse first numbers.
-2. Publish through the pin's handler and writer (the logical-publication
-   form waits for the D3 synthesis, 19.1): the fill events as one
-   block (one publication check), the accounting legs, the diagnostics
-   through one writer sized to the run (one append per table, today's store
-   format and implicit codec), coverage and the summary.
-3. For a sweep candidate the sink's keep rule selects the kept rows; no
-   other row is built in step 1.
-4. On an error the loop discards its memory and writes only the pin's single
-   exception row (pulse time, stage, condition class and message), as the
-   pin does after rolling the transaction back (`R/fold-engine.R:2057-2081`).
-   A `max_pulses` stop publishes without the completion row, as the pin does
-   (`:2037-2050`).
+1. Use the committed prefix selected during processing: every completed
+   P5, any independently accepted P1/non-fill records, and E's installed
+   INCOMPLETE stop evidence. No failed reservation or unprocessed pulse
+   enters it. Keep the valued equity prefix and the distinct last-valued
+   and last-executed clocks.
+2. For the current-format slice-1 experiment, expand diagnostics after
+   the loop from Section 19's recorded exceptions, clean-fill indices,
+   hold counts, pulse sequence offsets and reconciliation tuples, in
+   bounded batches. Rebuild positions from the exact recorded book nets,
+   never sums of fill deltas; preserve all fields, logical sequences,
+   canonical JSON and the current implicit codec. This does not decide
+   whether a future store omits hold rows or reconciliation evidence.
+   A sweep candidate applies its existing keep rule before expansion;
+   it builds only retained output and reserves the other logical positions.
+3. Materialize committed events, legs and diagnostics through terminal
+   adapters to the pin's handler/writer. Each bounded batch transfers
+   already committed records; no whole-run handler call replaces P4/P5
+   acceptance or repeats their guards. Store rows are written exactly
+   once, followed by current codec coverage/summary and, for a full_run
+   exit, completion evidence, all within the existing fold transaction.
+   No pulse-loop store write or persistent spill is allowed. The memory
+   sink and workers perform no store write. Equity is returned to the
+   pin's existing finalization; its transaction/recovery boundary stays.
+4. On an error discard the attempt's memory; durable fold writes,
+   including any terminal batches, roll back. Retain the pin's original
+   condition and post-rollback exception/FAILED handling (pulse time,
+   stage, condition class/message and refreshed diagnostic sequence).
+   Interrupts re-raise after rollback. Failed memory handlers are
+   discarded, not reused. A normal INCOMPLETE stop instead materializes
+   its accepted prefix and completion evidence. A max_pulses exit
+   materializes its accepted prefix without completion evidence and
+   follows the pin's nonterminal equity-prefix/return behavior.
 
 ### 19.6 Gate and evidence
 
@@ -969,13 +990,22 @@ record with the PMwR comparison, the rough end-to-end loop timed before
 hardening. Close also records actual code lines against the 900-line
 budget, the subtraction review, the five-scenario affected-owner check and
 focused module-property checks for newly changed guarantees, run debug-on
-(cut review R7).
+(cut review R7). Per the D3 synthesis Sections 2 and 5: record used and
+allocated capacity and the terminal-materialization peak on the covered
+workloads, including an exception-heavy case; the slice-1-covered prefix,
+capacity and transfer witnesses (batch size one, a pulse spanning batches,
+the R1 stop, `max_pulses`, a middle-batch fault rolling back earlier
+batches, the `checkpoint_every` entry restriction, the store-write detector
+shown on one real misplaced write). If a memory-sink run reaches the pin's
+pre-LR-19 event count, record it as the LR-19 difference; do not change the
+oracle (D3 final review note).
 
 ### 19.7 To verify in code before relying on it
 
-- that the handler accepts one fill block for the whole run with the same
-  rows, sequence numbers, legs and checks as per-pulse blocks;
-- that the writer, built with one chunk for the whole run, writes the same
-  rows and the same coverage and summary;
+- that the in-memory owner enforces the per-pulse P4/P5 range, boundary,
+  leg and capacity protocol, including refused pulses;
+- that bounded terminal adapters transfer that prefix exactly once with
+  identical current-format events, legs, diagnostics, coverage and summary,
+  and that a batch fault rolls back every prior transfer in the fold;
 - that position facts need nothing beyond the fill columns and pulse counts;
 - the strategy-state carrier's update rules for `ledgr_strategy_result()`.
