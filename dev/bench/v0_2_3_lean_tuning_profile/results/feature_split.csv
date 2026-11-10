@@ -1,0 +1,4 @@
+"shape","instruments","sessions","ledgr_s","ttr_only_s","machinery_s","ledgr_us_per_instrument","ttr_us_per_instrument","values_identical"
+"crossover_10x7200",10,7200,0.08,0,0.08,8000,0,TRUE
+"crossover_500x1260",500,1260,0.83,0.08,0.75,1660,160,TRUE
+"crossover_1166x252",1166,252,1.1,0.17,0.93,943,146,TRUE
