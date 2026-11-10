@@ -1,0 +1,20 @@
+"shape","phase","samples","share","seconds_per_run","us_per_pulse"
+"crossover_1166x252","pre: features",203,0.356,1.089,4321
+"crossover_1166x252","fold: terminal write",146,0.256,0.783,3107
+"crossover_1166x252","fold: setup and commit",90,0.158,0.483,1917
+"crossover_1166x252","pre: store and registration",31,0.054,0.165,655
+"crossover_1166x252","pre: bars substrate",29,0.051,0.156,619
+"crossover_1166x252","loop: P4 FIFO",17,0.03,0.092,365
+"crossover_1166x252","loop: other",13,0.023,0.07,278
+"crossover_1166x252","pre: snapshot guard",9,0.016,0.049,194
+"crossover_1166x252","fold: expand records",6,0.011,0.034,135
+"crossover_1166x252","loop: strategy call",6,0.011,0.034,135
+"crossover_1166x252","loop: P2 context",4,0.007,0.021,83
+"crossover_1166x252","loop: P3 planner",3,0.005,0.015,60
+"crossover_1166x252","loop: P5 reconciliation",3,0.005,0.015,60
+"crossover_1166x252","post: finalise",3,0.005,0.015,60
+"crossover_1166x252","loop: P5 state",2,0.004,0.012,48
+"crossover_1166x252","post: telemetry",2,0.004,0.012,48
+"crossover_1166x252","pre: feature projection",2,0.004,0.012,48
+"crossover_1166x252","loop: P4 position facts",1,0.002,0.006,24
+"crossover_1166x252","pre: strategy preflight",1,0.002,0.006,24
