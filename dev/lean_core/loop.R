@@ -108,11 +108,15 @@ lean_loop_debug_packet <- function(packet, provider, ts, pos, ids, i, substrate,
 lean_pin_ctx_dollar <- get("$.ledgr_pulse_context", envir = asNamespace("ledgr"))
 lean_pin_state_dollar <- get("$.ledgr_strategy_state_view", envir = asNamespace("ledgr"))
 lean_pin_envelope <- get("ledgr_fold_envelope", envir = asNamespace("ledgr"))
+# Committed-prefix reads build their scratch handler from the pin's constructor
+# as loaded, so a harness that wraps the constructor never sees it.
+lean_pin_output_handler <- get("ledgr_output_handler", envir = asNamespace("ledgr"))
 lean_name_set <- function(x) list2env(stats::setNames(as.list(rep(TRUE, length(x))), x), parent = emptyenv())
 lean_ctx_retired <- lean_name_set(setdiff(ledgr_pulse_context_retired_fields(), "position"))
 lean_ctx_asset <- lean_name_set(ledgr_pulse_context_asset_fields())
 
 lean_ctx_dollar <- function(x, name) {
+  if (!nzchar(name)) return(lean_pin_ctx_dollar(x, name))
   if (!is.null(lean_ctx_retired[[name]])) return(lean_pin_ctx_dollar(x, name))
   v <- .subset2(x, name)
   if (!is.null(v) && !startsWith(name, ".")) return(v)
@@ -160,6 +164,7 @@ lean_fold_envelope <- function(execution, output_handler) {
   lean_entry$lean_folds <- lean_entry$lean_folds + 1L
   on.exit(lean_stubs_bind(), add = TRUE)
   lean_stubs_bind(lean_stubs)
+  lean_entry$uncovered <- character()
   run_id <- execution$run_id
   ids <- execution$instrument_ids
   n <- length(ids)
@@ -225,6 +230,8 @@ lean_fold_envelope <- function(execution, output_handler) {
   live$in_pulses <- FALSE
   live$batches <- 0L
   output_handler <- lean_watch_handler(output_handler, live)
+  restore_store <- lean_watch_store(live)
+  on.exit(restore_store(), add = TRUE)
   pos <- state0$positions
   cash <- state0$cash
   book <- state0$lot_state
@@ -278,6 +285,29 @@ lean_fold_envelope <- function(execution, output_handler) {
   hd_has_recon <- logical(n_pulse)
   hd_stop_detail <- rep(NA_character_, n_pulse)
   n_done <- 0L                        # pulses with a header
+  n_committed <- 0L                   # fill events of completed P5s
+  # The run's fill-event limit, as the pin hands it to init_buffers()
+  # (D3-B; lean_entry$capacity is the witness seam that forces it).
+  capacity <- as.integer(lean_entry$capacity %||% max_events)
+  # Reads during the run see the committed prefix (D3 Section 1;
+  # maintainer 2026-11-10: the lean records answer them, the pin's
+  # handler stays the terminal sink).
+  lean_entry$committed <- list(
+    count = function() n_committed,
+    events = function() {
+      h <- lean_pin_output_handler(ledgr_output_sink_memory(run_id))
+      h$init_buffers(max(1L, n_committed))
+      if (n_committed > 0L) {
+        r <- seq_len(n_committed)
+        block <- h$write_fill_events(fill = fl, i = r, instrument_id = ids[fl$pos[r]],
+          event_seq = as.integer(execution$event_seq_start), use_transaction = FALSE)
+        h$record_accounting_fact(block = block, applied = list(close_qty = fl$close_qty[r],
+          open_qty = fl$open_qty[r], realized_close = fl$realized_close[r]))
+        h$flush_pulse_events()
+      }
+      h$events()
+    })
+  on.exit(lean_entry$committed <- NULL, add = TRUE)
 
   grow <- function(x, cap) lapply(x, function(v) { length(v) <- cap; v })
 
@@ -386,7 +416,7 @@ lean_fold_envelope <- function(execution, output_handler) {
     # every public read, twice (the second is the cache path), and two refusals
     caught <- function(expr) tryCatch(expr, error = function(e) list(class(e), conditionMessage(e)))
     for (nm in c(setdiff(c(names(a), feature_lookup_state$readable_names), c("flat", "hold")),
-                 "bars", "lean_no_such_field", ".notes")) {
+                 "bars", "lean_no_such_field", ".notes", "")) {
       for (rep in 1:2) {
         if (!identical(caught(lean_ctx_dollar(a, nm)), caught(lean_pin_ctx_dollar(b, nm)))) {
           fail(paste0("field `", nm, "`"))
@@ -431,6 +461,7 @@ lean_fold_envelope <- function(execution, output_handler) {
   run_loop <- function() {
     live$t_start <- ledgr_time_now()
     live$in_pulses <- TRUE
+    on.exit(live$in_pulses <- FALSE)   # also when an error unwinds the loop, before rollback
     for (i in seq_len(n_pulse)) {
       ts <- ts_num[[i]]
       live$cur_ts <- ts
@@ -482,6 +513,7 @@ lean_fold_envelope <- function(execution, output_handler) {
           strategy_fn(ctx)
         }
       }, error = function(e) if (inherits(e, "ledgr_lean_coverage")) rlang::cnd_signal(e) else ledgr_abort_strategy_error(e, ctx))
+      if (length(lean_entry$uncovered)) lean_not_covered(lean_entry$uncovered[[1L]])
       if (is.object(result) && ledgr_is_strategy_intermediate(result)) ledgr_abort_intermediate_strategy_result(result)
       if (is.numeric(result)) result <- list(targets = result, state_update = NULL)
       if (!is.list(result) || is.null(result$targets)) {
@@ -620,6 +652,14 @@ lean_fold_envelope <- function(execution, output_handler) {
         fl$net_after[rows] <<- book$net_by_inst[fill$pos]
         cash <<- ledgr_cash_scan(cash, fill$cash_delta)[[n_fill]]
         last_executed <<- max(last_executed, fill$exec_ts, na.rm = TRUE)
+        if (identical(lean_entry$mutation, "store_in_loop") && nf == n_fill) {
+          # Witness only: real misplaced writes through DBI and ledgr_store_append(),
+          # into a scratch in-memory store.
+          scratch <- DBI::dbConnect(duckdb::duckdb())
+          DBI::dbExecute(scratch, "CREATE TABLE probe (value INTEGER)")
+          ledgr_store_append(scratch, "probe", data.frame(value = 1L))
+          DBI::dbDisconnect(scratch, shutdown = TRUE)
+        }
         if (identical(lean_entry$mutation, "write_in_loop") && nf == n_fill) {
           # Witness only: one real misplaced store write inside the loop.
           output_handler$write_fill_events(fill = fill, i = seq_len(n_fill), instrument_id = ids[fill$pos],
@@ -647,8 +687,12 @@ lean_fold_envelope <- function(execution, output_handler) {
         lean_loop_add_decisions(explicit_k, i, sq, tq, pos_start)
       }
 
-      # P5 reconciliation record and state
+      # P5 capacity, commitment, reconciliation record and state
       live$cur_stage <- "accounting"
+      if (nf > capacity) {
+        rlang::abort("Ledger event buffer exceeded the run's maximum event capacity.",
+                     class = "ledgr_event_buffer_capacity_exceeded")
+      }
       if (!is.null(batch) && !isTRUE(cash == batch$expected_final_cash) && !isTRUE(all.equal(as.numeric(cash), as.numeric(batch$expected_final_cash),
                                                tolerance = ledgr_availability_cash_tolerance))) {
         rlang::abort("Recorded cash does not reconcile with the availability affordability ledger.",
@@ -685,7 +729,8 @@ lean_fold_envelope <- function(execution, output_handler) {
         strategy_state <<- ledgr_strategy_state_apply_values(strategy_state, state_update,
           state_declaration, ids, patch = FALSE, default_scalars = state_defaults)
       }
-      if (identical(lean_entry$mutation, "hold_in_loop") && i == 1L) lean_loop_expand()  # witness only
+      if (identical(lean_entry$mutation, "hold_in_loop") && i == 1L) lean_loop_expand(1L, 1L, lean_loop_layout(), state0$positions)  # witness only
+      n_committed <<- nf
       processed <<- processed + 1L
       if (processed >= max_pulses) {
         full_run <<- FALSE
@@ -717,38 +762,60 @@ lean_fold_envelope <- function(execution, output_handler) {
     nd <<- nd + m
   }
 
-  # --- after the loop (Section 19.5) --------------------------------------
+  # --- after the loop (Section 19.5; D3 Sections 1-3) ---------------------
+  # The committed records go to the pin's handler and writer in bounded
+  # terminal batches: pulse ranges whose rows fit lean_entry$batch_rows are
+  # expanded one range at a time, and each range's writes are split into
+  # batches of at most that many rows (a single pulse wider than the bound
+  # is expanded alone and written in several batches). Durable events drain
+  # after every batch, so each batch is one real store append.
   lean_loop_publish <- function() {
-    ex <- lean_loop_expand()
-    writer <- ledgr_fold_diagnostic_writer(run_id, output_handler)
-    batches <- function(m) if (m > 0L) split(seq_len(m), ceiling(seq_len(m) / lean_entry$batch_rows)) else list()
+    lay <- lean_loop_layout()
+    bound <- as.integer(lean_entry$batch_rows)
+    writer <- ledgr_fold_diagnostic_writer(run_id, output_handler, chunk_rows = bound)
+    pieces <- function(m) if (m > 0L) lapply(seq.int(1L, m, by = bound), function(s) seq.int(s, min(m, s + bound - 1L))) else list()
     tick <- function() {
       live$batches <- live$batches + 1L
-      if (identical(lean_entry$mutation, "batch_fault") && live$batches == 2L) stop("lean witness: batch fault")
-    }
-    fill <- lapply(fl, function(v) v[seq_len(nf)])
-    if (identical(lean_entry$mutation, "fill_price_ulp") && nf > 0L) fill$price[[1L]] <- fill$price[[1L]] * (1 + .Machine$double.eps)
-    for (r in batches(nf)) {
-      tick()
-      block <- output_handler$write_fill_events(fill = fill, i = r, instrument_id = ids[fill$pos[r]],
-        event_seq = as.integer(execution$event_seq_start) + r[[1L]] - 1L, use_transaction = FALSE)
-      if (is.function(output_handler$record_accounting_fact)) {
-        output_handler$record_accounting_fact(block = block, applied = list(close_qty = fill$close_qty[r],
-          open_qty = fill$open_qty[r], realized_close = fill$realized_close[r]))
+      # Witness only: a fault in the first batch after a real store append.
+      if (identical(lean_entry$mutation, "batch_fault") && lean_entry$terminal_writes > 0L) {
+        lean_entry$writes_before_fault <- lean_entry$terminal_writes
+        stop("lean witness: batch fault")
       }
-      output_handler$flush_pulse_events()
+    }
+    src <- fl
+    if (identical(lean_entry$mutation, "fill_price_ulp") && nf > 0L) src$price[[1L]] <- src$price[[1L]] * (1 + .Machine$double.eps)
+    carry <- state0$positions
+    cs <- cumsum(lay$rows)
+    a <- 1L
+    while (a <= lay$np) {
+      b <- max(a, findInterval(cs[[a]] - lay$rows[[a]] + bound, cs))
+      ex <- lean_loop_expand(a, b, lay, carry)
+      carry <- ex$carry
+      for (r in pieces(length(ex$fill_rows))) {
+        tick()
+        rows <- ex$fill_rows[r]
+        block <- output_handler$write_fill_events(fill = src, i = rows, instrument_id = ids[src$pos[rows]],
+          event_seq = as.integer(execution$event_seq_start) + rows[[1L]] - 1L, use_transaction = FALSE)
+        if (is.function(output_handler$record_accounting_fact)) {
+          output_handler$record_accounting_fact(block = block, applied = list(close_qty = src$close_qty[rows],
+            open_qty = src$open_qty[rows], realized_close = src$realized_close[rows]))
+        }
+        output_handler$flush_pulse_events()
+        if (output_handler$pending_event_count() > 0L) output_handler$flush_pending()
+      }
+      for (r in pieces(length(ex$explicit$diagnostic_seq))) {
+        tick()
+        writer$append_block(lapply(ex$explicit, `[`, r))
+      }
+      imp <- ex$implicit
+      for (r in pieces(if (is.null(imp)) 0L else imp$n)) {
+        tick()
+        writer$append_implicit(c(list(n = length(r)), lapply(imp[names(imp) != "n"], `[`, r)))
+      }
+      a <- b + 1L
     }
     if (nf == 0L) output_handler$flush_pulse_events()
-    for (r in batches(length(ex$explicit$diagnostic_seq))) {
-      tick()
-      writer$append_block(lapply(ex$explicit, `[`, r))
-    }
-    imp <- ex$implicit
-    for (r in batches(if (is.null(imp)) 0L else imp$n)) {
-      tick()
-      writer$append_implicit(c(list(n = length(r)), lapply(imp[names(imp) != "n"], `[`, r)))
-    }
-    writer$record_coverage(ex$logical_n)
+    writer$record_coverage(as.integer(sum(lay$logical_per)))
     if (output_handler$pending_event_count() > 0L) output_handler$flush_pending()
     diagnostics <- writer$drain()
     if (full_run) {
@@ -761,13 +828,11 @@ lean_fold_envelope <- function(execution, output_handler) {
       output_handler$write_run_diagnostics(diagnostics)
     }
     writer$release()
-    live$diagnostic_seq <- ex$logical_n
   }
 
-  # Expands the committed records into the writer's explicit block (in
-  # diagnostic sequence order) and implicit block (pulse-major, fills then
-  # holds), vectorized over rows.
-  lean_loop_expand <- function() {
+  # Per pulse: logical rows and sequence offsets, and the rows a pulse can
+  # expand to (an upper bound: every decision cell may be a hold).
+  lean_loop_layout <- function() {
     np <- n_done
     p <- seq_len(np)
     nrec <- as.integer(hd_has_recon[p])
@@ -775,97 +840,111 @@ lean_fold_envelope <- function(execution, output_handler) {
     logical_per <- hd_pre[p] + n + hd_nrej[p] + hd_nfill[p] + nrec + nstop
     base <- c(0L, cumsum(logical_per))[p]
     dec0 <- base + hd_pre[p]                       # seq of decision k is dec0 + k
-    rej0 <- dec0 + n
-    fill0 <- rej0 + hd_nrej[p]
-    recon_seq <- fill0 + hd_nfill[p] + 1L
-    keep_all <- is.null(keep_fn)
+    nd_p <- tabulate(dr$pulse[seq_len(nd)], np)
+    xf_p <- tabulate(fl$pulse[seq_len(nf)][!fl$clean[seq_len(nf)]], np)
+    rows <- hd_pre[p] + nd_p + hd_nrej[p] + xf_p + nrec + nstop + hd_nfill[p] +
+      if (can_encode) n * !hd_all_explicit[p] else 0L
+    list(np = np, logical_per = logical_per, base = base, dec0 = dec0, rej0 = dec0 + n,
+         fill0 = dec0 + n + hd_nrej[p], rows = rows)
+  }
+
+  # Rows of a pulse-ordered record whose pulse lies in [a, b].
+  lean_rows_in <- function(pulse, a, b) {
+    lo <- findInterval(a - 1L, pulse) + 1L
+    hi <- findInterval(b, pulse)
+    if (hi >= lo) seq.int(lo, hi) else integer()
+  }
+
+  # Expands pulses a..b of the committed records into the writer's explicit
+  # block (diagnostic sequence order) and implicit block (pulse-major, fills
+  # then holds). `carry` holds each instrument's position entering pulse a;
+  # the returned carry enters pulse b + 1.
+  lean_loop_expand <- function(a, b, lay, carry) {
+    p <- seq.int(a, b)
     parts <- list()
     add <- function(seq, pulse, fields) parts[[length(parts) + 1L]] <<- c(list(seq = seq, pulse = pulse), fields)
-    # intent and sizing rows
-    it <- which(!is.na(hd_intent[p]))
-    if (length(it)) add(base[it] + 1L, it, list(stage = "decision", outcome = "recorded", reason_code = "strategy_intent",
-      reasons = hd_intent[it]))
-    sz <- which(hd_sizing[p])
-    if (length(sz)) add(base[sz] + as.integer(!is.na(hd_intent[sz])) + 1L, sz, list(stage = "sizing",
+    it <- p[!is.na(hd_intent[p])]
+    if (length(it)) add(lay$base[it] + 1L, it, list(stage = "decision", outcome = "recorded",
+      reason_code = "strategy_intent", reasons = hd_intent[it]))
+    sz <- p[hd_sizing[p]]
+    if (length(sz)) add(lay$base[sz] + as.integer(!is.na(hd_intent[sz])) + 1L, sz, list(stage = "sizing",
       outcome = "unavailable", reason_code = "sizing_intent_unavailable", reasons = "raw_quantity_targets"))
-    # explicit decision rows
-    if (nd > 0L) {
-      r <- seq_len(nd)
+    r <- lean_rows_in(dr$pulse[seq_len(nd)], a, b)
+    if (length(r)) {
       dp <- dr$pulse[r]; dk <- dr$k[r]
-      add(dec0[dp] + dk, dp, list(instrument_id = ids[dk], stage = "decision", outcome = "recorded",
+      add(lay$dec0[dp] + dk, dp, list(instrument_id = ids[dk], stage = "decision", outcome = "recorded",
         reason_code = "decision_recorded", reasons = "decision_recorded", target = dr$target[r],
         quantity = dr$position[r], price = bars$close[cbind(dk, pulse_cols[dp])], mark_source = "current_close",
         mark_age = 0L, target_before_risk = dr$target[r], target_after_risk = dr$target_after[r],
         position_before = dr$position[r], position_after = dr$position[r]))
     }
-    # rejections
-    if (length(rj$k) > 0L) {
-      rp <- rj$pulse
-      within <- ave(rp, rp, FUN = seq_along)
-      add(rej0[rp] + within, rp, list(instrument_id = ids[rj$pos], stage = "execution", outcome = "no_fill",
-        reason_code = rj$primary, reasons = rj$reasons, target = rj$target, quantity = rj$position,
-        price = rj$resolved_price, execution_ts_utc = rj$exec_ts, target_before_risk = rj$strategy_target,
-        target_after_risk = rj$target, position_before = rj$position, position_after = rj$position))
+    rr <- lean_rows_in(rj$pulse, a, b)
+    if (length(rr)) {
+      rp <- rj$pulse[rr]
+      within <- stats::ave(rp, rp, FUN = seq_along)
+      add(lay$rej0[rp] + within, rp, list(instrument_id = ids[rj$pos[rr]], stage = "execution", outcome = "no_fill",
+        reason_code = rj$primary[rr], reasons = rj$reasons[rr], target = rj$target[rr], quantity = rj$position[rr],
+        price = rj$resolved_price[rr], execution_ts_utc = rj$exec_ts[rr], target_before_risk = rj$strategy_target[rr],
+        target_after_risk = rj$target[rr], position_before = rj$position[rr], position_after = rj$position[rr]))
     }
-    # non-clean fills
-    if (nf > 0L) {
-      r <- seq_len(nf)
-      fp <- fl$pulse[r]
-      within <- r - hd_fill_start[fp]
-      xf <- which(!fl$clean[r])
-      if (length(xf)) add(fill0[fp[xf]] + within[xf], fp[xf], list(instrument_id = ids[fl$pos[xf]],
+    fr <- lean_rows_in(fl$pulse[seq_len(nf)], a, b)
+    xf <- fr[!fl$clean[fr]]
+    if (length(xf)) {
+      fp <- fl$pulse[xf]
+      add(lay$fill0[fp] + xf - hd_fill_start[fp], fp, list(instrument_id = ids[fl$pos[xf]],
         stage = "execution", outcome = "filled", reason_code = fl$info[xf], reasons = fl$infos[xf],
         target = fl$target[xf], quantity = fl$qty[xf], price = fl$price[xf], execution_ts_utc = fl$exec_ts[xf],
         event_seq = as.integer(execution$event_seq_start) + xf - 1L, target_before_risk = fl$strategy_target[xf],
         target_after_risk = fl$target[xf], position_before = fl$position_before[xf],
         position_after = fl$planned_position_after[xf]))
     }
-    # reconciliation rows
-    rc <- which(hd_has_recon[p])
+    rc <- p[hd_has_recon[p]]
     if (length(rc)) {
       detail <- vapply(rc, function(j) ledgr_fold_reconciliation_detail(
         cash_before = hd_recon[j, 2L], virtual_final_cash = hd_recon[j, 6L], recorded_final_cash = hd_recon[j, 5L],
         intended_gross_exposure = hd_recon[j, 3L], post_risk_gross_exposure = hd_recon[j, 4L],
         actual_gross_exposure = hd_recon[j, 1L]), character(1L))
-      add(recon_seq[rc], rc, list(stage = "reconciliation", outcome = "reconciled",
+      add(lay$fill0[rc] + hd_nfill[rc] + 1L, rc, list(stage = "reconciliation", outcome = "reconciled",
         reason_code = "affordability_reconciled", reasons = "affordability_reconciled", detail_json = detail))
     }
-    st <- which(!is.na(hd_stop_detail[p]))
-    if (length(st)) add(fill0[st] + hd_nfill[st] + 1L, st, list(stage = "affordability", outcome = "stopped",
+    st <- p[!is.na(hd_stop_detail[p])]
+    if (length(st)) add(lay$fill0[st] + hd_nfill[st] + 1L, st, list(stage = "affordability", outcome = "stopped",
       reason_code = "affordability_reconciliation_failed", reasons = "affordability_reconciliation_failed",
       detail_json = hd_stop_detail[st]))
     explicit <- lean_loop_explicit_block(parts)
+    # The sink's keep rule, as the pin applies it at every pulse flush. A
+    # memory sink (no codec) never keeps a current-close decision row or a
+    # fill row in slice 1, so holds and clean fills are not built for it.
+    if (!is.null(keep_fn)) explicit <- lean_loop_keep(explicit)
 
-    # holds: every decision cell that is neither explicit nor a clean fill
+    # holds: every decision cell of a..b that is neither explicit nor a clean fill
     implicit <- NULL
-    if (can_encode && np > 0L) {
-      hold <- matrix(TRUE, n, np)
+    if (can_encode) {
+      w <- b - a + 1L
+      hold <- matrix(TRUE, n, w)
       hold[, hd_all_explicit[p]] <- FALSE
-      if (nd > 0L) hold[cbind(dr$k[seq_len(nd)], dr$pulse[seq_len(nd)])] <- FALSE
-      cf <- if (nf > 0L) which(fl$clean[seq_len(nf)]) else integer()
-      if (length(cf)) hold[cbind(fl$k[cf], fl$pulse[cf])] <- FALSE
-      if (length(rj$k)) hold[cbind(rj$k, rj$pulse)] <- FALSE
-      if (identical(lean_entry$mutation, "drop_hold")) hold[which(hold)[[1L]]] <- FALSE
+      if (length(r)) hold[cbind(dr$k[r], dr$pulse[r] - a + 1L)] <- FALSE
+      cf <- fr[fl$clean[fr]]
+      if (length(cf)) hold[cbind(fl$k[cf], fl$pulse[cf] - a + 1L)] <- FALSE
+      if (length(rr)) hold[cbind(rj$k[rr], rj$pulse[rr] - a + 1L)] <- FALSE
+      if (identical(lean_entry$mutation, "drop_hold") && a == 1L && any(hold)) hold[which(hold)[[1L]]] <- FALSE
       hc <- which(hold)
       lean_entry$hold_calls <- lean_entry$hold_calls + live$in_pulses
       lean_entry$hold_rows <- lean_entry$hold_rows + live$in_pulses * length(hc)
       hk <- (hc - 1L) %% n + 1L
-      hp <- (hc - 1L) %/% n + 1L
-      hpos <- lean_loop_positions_at(hk, hp)
-      if (identical(lean_entry$mutation, "hold_position")) hpos[[1L]] <- hpos[[1L]] + 1
-      # clean fills first, then holds, per pulse: order by (pulse, kind, row)
+      hp <- (hc - 1L) %/% n + a
+      hpos <- lean_loop_positions_at(hk, hp, a, b, fr, carry)
+      if (identical(lean_entry$mutation, "hold_position") && a == 1L && length(hpos)) hpos[[1L]] <- hpos[[1L]] + 1
       fk <- fl$k[cf]; fpl <- fl$pulse[cf]
       ord <- order(c(fpl, hp), c(rep(0L, length(cf)), rep(1L, length(hc))), method = "radix")
       kk <- c(fk, hk)[ord]
       pp <- c(fpl, hp)[ord]
-      within_fill <- cf - hd_fill_start[fpl]
       m <- length(ord)
-      exec_seq <- c(fill0[fpl] + within_fill, rep(NA_integer_, length(hc)))[ord]
       implicit <- list(
         n = m,
         run_id = rep_len(as.character(run_id), m),
-        decision_seq = as.integer(dec0[pp] + kk),
-        execution_seq = as.integer(exec_seq),
+        decision_seq = as.integer(lay$dec0[pp] + kk),
+        execution_seq = as.integer(c(lay$fill0[fpl] + cf - hd_fill_start[fpl], rep(NA_integer_, length(hc)))[ord]),
         decision_order = as.numeric((kk - 1) * n + kk),
         ts_utc = ts_num[pp],
         instrument_id = ids[kk],
@@ -881,11 +960,9 @@ lean_fold_envelope <- function(execution, output_handler) {
         position_after = c(fl$planned_position_after[cf], hpos)[ord]
       )
     }
-    # The sink's keep rule, as the pin applies it at every pulse flush. A
-    # memory sink (no codec) never keeps a current-close decision row or a
-    # fill row in slice 1, so holds and clean fills are not built for it.
-    if (!keep_all) explicit <- lean_loop_keep(explicit)
-    list(explicit = explicit, implicit = implicit, logical_n = as.integer(sum(logical_per)))
+    # Positions entering b + 1: the book net after each instrument's last fill in a..b.
+    if (length(fr)) carry[fl$pos[fr]] <- fl$net_after[fr]
+    list(explicit = explicit, implicit = implicit, fill_rows = fr, carry = carry)
   }
 
   lean_loop_keep <- function(block) {
@@ -894,23 +971,23 @@ lean_fold_envelope <- function(execution, output_handler) {
     lapply(block, function(v) v[k])
   }
 
-  # Position of instrument hk entering pulse hp: the book net after the
-  # instrument's latest fill on an earlier pulse (the fill's recorded
-  # position after), else the opening position; never a sum of deltas.
-  lean_loop_positions_at <- function(hk, hp) {
-    out <- state0$positions[hk]
-    if (nf == 0L || length(hk) == 0L) return(out)
-    r <- seq_len(nf)
-    stride <- n_done + 1L
-    # P[pulse + 1, k] = position after the fill on `pulse`
-    key_fill <- (fl$pos[r] - 1L) * stride + fl$pulse[r] + 1L
+  # Position of instrument hk entering pulse hp (a <= hp <= b): the book net
+  # after the instrument's latest fill on an earlier pulse of a..b (the
+  # fill's recorded position after), else its position entering a (carry);
+  # never a sum of deltas.
+  lean_loop_positions_at <- function(hk, hp, a, b, fr, carry) {
+    out <- carry[hk]
+    if (length(fr) == 0L || length(hk) == 0L) return(out)
+    stride <- b - a + 2L
+    # P[pulse - a + 2, k] = position after the fill on `pulse`
+    key_fill <- (fl$pos[fr] - 1L) * stride + fl$pulse[fr] - a + 2L
     val <- numeric(n * stride)
     has <- logical(n * stride)
-    val[key_fill] <- fl$net_after[r]
+    val[key_fill] <- fl$net_after[fr]
     has[key_fill] <- TRUE
     idx <- seq_len(n * stride)
     last <- cummax(ifelse(has, idx, (idx - 1L) %/% stride * stride))
-    at <- (hk - 1L) * stride + hp
+    at <- (hk - 1L) * stride + hp - a + 1L
     src <- last[at]
     found <- src %% stride != 0L
     out[found] <- val[src[found]]

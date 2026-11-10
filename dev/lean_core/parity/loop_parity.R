@@ -15,7 +15,7 @@
 # --mutation runs a registered mutation or witness fault and inverts the
 # verdict: fill_price_ulp, drop_hold and hold_position must make some table
 # differ; write_in_loop must fire the store-write detector, hold_in_loop the
-# hold detector; batch_fault must fail the run with every batch rolled back.
+# hold detector, store_in_loop (DBI and ledgr_store_append on a scratch store) the store-boundary detector; batch_fault must fail the run after a real terminal store write and roll it back.
 # PASS* marks a workload whose public call stopped before any fold ran.
 
 here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/"))
@@ -30,7 +30,7 @@ debug <- identical(arg("debug", "0"), "1")
 out <- arg("out")
 batch_rows <- as.integer(arg("batch-rows", "65536"))
 mutation <- arg("mutation", "")
-mutations <- c("fill_price_ulp", "drop_hold", "hold_position", "write_in_loop", "hold_in_loop", "batch_fault")
+mutations <- c("fill_price_ulp", "drop_hold", "hold_position", "write_in_loop", "store_in_loop", "hold_in_loop", "batch_fault")
 if (nzchar(mutation) && !mutation %in% mutations) stop("unknown --mutation: ", mutation, call. = FALSE)
 source(file.path(here, "..", "load.R"))
 lean <- lean_core_load(lib, debug = debug)
@@ -163,8 +163,12 @@ for (id in ids) {
       if (rec$lean_folds == 0L && !nzchar(refused)) "PASS*" else "PASS",
     fill_price_ulp = , drop_hold = , hold_position = if (rec$lean_folds == 0L) "NOT RUN" else if (!same_all) "CAUGHT" else "MISSED",
     write_in_loop = if (rec$lean_folds == 0L) "NOT RUN" else if (nzchar(writes)) "CAUGHT" else "MISSED",
+    store_in_loop = if (rec$lean_folds == 0L) "NOT RUN" else
+      if (all(c("DBI::dbExecute", "ledgr::ledgr_store_append") %in% rec$store_writes)) "CAUGHT" else "MISSED",
     hold_in_loop = if (rec$lean_folds == 0L) "NOT RUN" else if (rec$hold_calls > 0L) "CAUGHT" else "MISSED",
-    batch_fault = if (rec$lean_folds == 0L) "NOT RUN" else if (!same_all && events_left == 0L) "ROLLED BACK" else "MISSED")
+    # the fault fires only after a real terminal store write, which must be rolled back
+    batch_fault = if (rec$lean_folds == 0L) "NOT RUN" else
+      if (!same_all && events_left == 0L && isTRUE(rec$writes_before_fault > 0L)) "ROLLED BACK" else "MISSED")
   verdicts[[id]] <- verdict
   cat(sprintf("%-26s %-11s %s  lean folds %d  refused [%s]  backstop [%s]  writes [%s]  holds %d  pinned %.1f s  lean %.1f s\n",
               id, verdict, if (same_all) "identical" else "DIFFERENT", rec$lean_folds, refused, backstop, writes,

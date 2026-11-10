@@ -816,6 +816,16 @@ stop/error prefixes and the `checkpoint_every` entry restriction (only the
 pin's default `10000L` and no `control$checkpoint_every` key; otherwise the
 coverage refusal).
 
+Committed-prefix reads (maintainer, 2026-11-10, close review round 1): the
+lean loop's own records answer reads during the run. A read expands only
+the fill events of completed P5s, in memory, through a scratch handler built
+by the pin's constructor; the pin's handler passed to the envelope is the
+terminal sink and holds nothing until the terminal transfer. P5 refuses with
+`ledgr_event_buffer_capacity_exceeded` when the committed fill events would
+exceed the run's limit, `max(1, pulses x instruments)` as handed to
+`init_buffers()`, on that pulse; harnesses force a smaller limit through
+`lean_entry$capacity` (the pin's seam is its handler's `init_buffers()`).
+
 Context reads (maintainer, 2026-11-10): the same install also rebinds the
 `$` methods of the pulse context and the strategy-state view
 (`R/pulse-context.R:166`, `R/strategy-state.R:207`) to lean methods for as

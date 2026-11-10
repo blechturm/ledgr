@@ -142,22 +142,67 @@ lw_surface_exp <- function(snapshot) ledgr::ledgr_experiment(snapshot, lw_surfac
   portfolio_state = list(n = 0L, tag = "start"))
 
 # Trades every pulse with unseeded draws; from pulse 6 it reads history
-# through a name the static scan does not see.
-lw_backstop_exp <- function(snapshot) {
+# through a name the static scan does not see. With `caught`, the strategy
+# wraps that read in its own error handler.
+lw_backstop_exp <- function(snapshot, caught = FALSE) {
   strategy <- function(ctx, params) {
     i <- as.integer(as.Date(substr(ctx$ts_utc, 1L, 10L)) - as.Date("2021-01-04")) + 1L
     targets <- ctx$hold()
     targets[["A"]] <- floor(5 * stats::runif(1L)) + (params$k %||% 0)
     if (i >= 6L) {
       read <- getExportedValue("ledgr", paste0("ledgr_history", "_matrix"))
-      m <- read(ctx, bar = "close", lookback = 2L)
+      m <- if (CAUGHT) tryCatch(read(ctx, bar = "close", lookback = 2L), error = function(e) NA_real_)
+           else read(ctx, bar = "close", lookback = 2L)
       targets[["B"]] <- if (is.finite(sum(m))) 1 else 0
     }
     targets
   }
+  body(strategy) <- do.call(substitute, list(body(strategy), list(CAUGHT = isTRUE(caught))))
   environment(strategy) <- ns
   ledgr::ledgr_experiment(snapshot, strategy, opening = ledgr::ledgr_opening(cash = 5000),
     cost_model = ledgr::ledgr_cost_zero())
+}
+
+# Whether the lean loop is installed (the lean arm of a parity run).
+lw_lean_installed <- function() identical(get("ledgr_fold_envelope", envir = ns), lean$lean_fold_envelope)
+
+# Rebinds a ledgr namespace function; returns the restore.
+lw_rebind <- function(name, value) {
+  old <- get(name, envir = ns)
+  unlockBinding(name, ns); assign(name, value, envir = ns); lockBinding(name, ns)
+  function() { unlockBinding(name, ns); assign(name, old, envir = ns); lockBinding(name, ns) }
+}
+
+# Reads before each strategy call: the committed fill-event count and, for
+# a memory sink, a digest of the committed event table. The pin is read
+# through its handler (captured from the envelope), the lean loop through
+# its committed-prefix reads.
+lw_prefix_reads <- function(memory) {
+  seen <- new.env(parent = emptyenv())
+  seen$rows <- list()
+  installed <- lw_lean_installed()
+  restore_env <- function() NULL
+  if (!installed) {
+    restore_env <- lw_rebind("ledgr_fold_envelope", local({
+      inner <- get("ledgr_fold_envelope", envir = ns)
+      function(execution, output_handler) { seen$h <- output_handler; inner(execution, output_handler) }
+    }))
+  }
+  restore_call <- lw_rebind("ledgr_call_strategy_fn", local({
+    inner <- get("ledgr_call_strategy_fn", envir = ns)
+    function(fn, ctx, params, signature) {
+      events <- if (!memory) NULL else if (installed) lean$lean_entry$committed$events() else seen$h$events()
+      count <- if (memory) nrow(events) else if (installed) lean$lean_entry$committed$count() else seen$h$pending_event_count()
+      seen$rows[[length(seen$rows) + 1L]] <- data.frame(ts_utc = unclass(ctx)$ts_utc, events = count,
+        digest = if (memory) digest::digest(as.data.frame(events)) else "", stringsAsFactors = FALSE)
+      inner(fn, ctx, params, signature)
+    }
+  }))
+  on.exit({ restore_call(); restore_env() })
+  tables <- if (memory) loop_witnesses$witness_sweep() else loop_constructed$sell_buy_same_pulse()
+  path <- if (memory) "sweep" else "run"
+  tables[[path]]$prefix_reads <- do.call(rbind, seen$rows)
+  tables
 }
 
 # The caller's RNG stream after the run, as a table (restoration rules).
@@ -231,6 +276,57 @@ loop_witnesses <- list(
     }
     collect(db, "lw_witness", "lw-checkpoint", exp, seed = 6L)
   },
+  # Close review round 1, finding 1: the strategy catches the stub's
+  # condition with its own handler; the attempt must still rerun on the pin.
+  witness_caught_backstop = function() {
+    db <- lw_witness_db()
+    set.seed(4244L)
+    lw_rng_table(collect(db, "lw_witness", "lw-caught-backstop", function(s) lw_backstop_exp(s, caught = TRUE)))
+  },
+  witness_caught_backstop_sweep = function() {
+    db <- lw_witness_db()
+    snapshot <- ledgr::ledgr_snapshot_open(db, "lw_witness", verify = TRUE)
+    on.exit(ledgr::ledgr_snapshot_close(snapshot))
+    grid <- ledgr::ledgr_grid_named(a = list(strategy = list(k = 1)), b = list(strategy = list(k = 2)))
+    set.seed(4245L)
+    obs <- a0_observe_memory(ledgr::ledgr_sweep(lw_backstop_exp(snapshot, caught = TRUE), grid, retain = a0_retain()))
+    lw_rng_table(list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value))), "sweep")
+  },
+  # Finding 5: a control$checkpoint_every key is refused even when NULL.
+  witness_checkpoint_null = function() {
+    db <- lw_witness_db()
+    exp <- function(snapshot) {
+      e <- lw_surface_exp(snapshot)
+      e$control <- list(checkpoint_every = NULL)
+      e
+    }
+    collect(db, "lw_witness", "lw-checkpoint-null", exp, seed = 6L)
+  },
+  # Finding 2, D3-B: the P5 capacity refusal on its original pulse, forced to
+  # two fill events: the pin through its handler's init_buffers() seam, the
+  # lean loop through lean_entry$capacity. Run at several --batch-rows to
+  # show the terminal bound cannot move it.
+  witness_capacity = function() {
+    k <- 2L
+    if (lw_lean_installed()) {
+      lean$lean_entry$capacity <- k
+    } else {
+      restore <- lw_rebind("ledgr_fold_envelope", local({
+        inner <- get("ledgr_fold_envelope", envir = ns)
+        function(execution, output_handler) {
+          init <- output_handler$init_buffers
+          output_handler$init_buffers <- function(max_events) init(k)
+          inner(execution, output_handler)
+        }
+      }))
+      on.exit(restore())
+    }
+    loop_constructed$sell_buy_same_pulse()
+  },
+  # Finding 2, D3 Section 1: before each strategy call a read sees the
+  # committed prefix of fill events (the pin's handler; the lean records).
+  witness_prefix_reads = function() lw_prefix_reads(memory = FALSE),
+  witness_prefix_reads_sweep = function() lw_prefix_reads(memory = TRUE),
   # A one-worker sweep over a covered experiment: the keep rule.
   witness_sweep = function() {
     db <- lw_witness_db()
