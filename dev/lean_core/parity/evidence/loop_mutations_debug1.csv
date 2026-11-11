@@ -1,266 +1,266 @@
 "workload","path","table","debug","batch_rows","mutation","lean_folds","refused","backstop","store_writes","hold_calls","rows","identical","first_difference","pinned_s","lean_s"
-"crossover_3x40","run","equity_curve",1,8,"fill_price_ulp",1,NA,NA,NA,0,40,FALSE,"<rows 40 vs 0>",1.87,2.56
-"crossover_3x40","run","ledger_events",1,8,"fill_price_ulp",1,NA,NA,NA,0,7,FALSE,"<rows 7 vs 0>",1.87,2.56
-"crossover_3x40","run","run_completion",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.87,2.56
-"crossover_3x40","run","run_diagnostic_coverage",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 168 vs 1",1.87,2.56
-"crossover_3x40","run","run_diagnostic_implicit",1,8,"fill_price_ulp",1,NA,NA,NA,0,120,FALSE,"<rows 120 vs 0>",1.87,2.56
-"crossover_3x40","run","run_diagnostic_summary",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 120 vs 0",1.87,2.56
-"crossover_3x40","run","run_diagnostics",1,8,"fill_price_ulp",1,NA,NA,NA,0,168,FALSE,"<rows 168 vs 1>",1.87,2.56
-"crossover_3x40","run","run_promotion_context",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,TRUE,"",1.87,2.56
-"crossover_3x40","run","run_provenance",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,TRUE,"",1.87,2.56
-"crossover_3x40","run","run_tags",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,TRUE,"",1.87,2.56
-"crossover_3x40","run","run_telemetry",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.87,2.56
-"crossover_3x40","run","runs",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.87,2.56
-"crossover_3x40","run","fills",1,8,"fill_price_ulp",1,NA,NA,NA,0,7,FALSE,"<missing>",1.87,2.56
-"crossover_3x40","run","trades",1,8,"fill_price_ulp",1,NA,NA,NA,0,3,FALSE,"<missing>",1.87,2.56
-"crossover_3x40","run","metrics",1,8,"fill_price_ulp",1,NA,NA,NA,0,9,FALSE,"<missing>",1.87,2.56
-"crossover_3x40","run","run_conditions",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.87,2.56
-"tight_cash","run","equity_curve",1,8,"fill_price_ulp",1,NA,NA,NA,0,10,FALSE,"<rows 10 vs 0>",1.86,1.64
-"tight_cash","run","ledger_events",1,8,"fill_price_ulp",1,NA,NA,NA,0,5,FALSE,"<rows 5 vs 0>",1.86,1.64
-"tight_cash","run","run_completion",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.86,1.64
-"tight_cash","run","run_diagnostic_coverage",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 50 vs 1",1.86,1.64
-"tight_cash","run","run_diagnostic_implicit",1,8,"fill_price_ulp",1,NA,NA,NA,0,26,FALSE,"<rows 26 vs 0>",1.86,1.64
-"tight_cash","run","run_diagnostic_summary",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 30 vs 0",1.86,1.64
-"tight_cash","run","run_diagnostics",1,8,"fill_price_ulp",1,NA,NA,NA,0,50,FALSE,"<rows 50 vs 1>",1.86,1.64
-"tight_cash","run","run_promotion_context",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,TRUE,"",1.86,1.64
-"tight_cash","run","run_provenance",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,TRUE,"",1.86,1.64
-"tight_cash","run","run_tags",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,TRUE,"",1.86,1.64
-"tight_cash","run","run_telemetry",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.86,1.64
-"tight_cash","run","runs",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.86,1.64
-"tight_cash","run","fills",1,8,"fill_price_ulp",1,NA,NA,NA,0,5,FALSE,"<missing>",1.86,1.64
-"tight_cash","run","trades",1,8,"fill_price_ulp",1,NA,NA,NA,0,2,FALSE,"<missing>",1.86,1.64
-"tight_cash","run","metrics",1,8,"fill_price_ulp",1,NA,NA,NA,0,9,FALSE,"<missing>",1.86,1.64
-"tight_cash","run","run_conditions",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.86,1.64
-"reconciliation_stop","run","equity_curve",1,8,"fill_price_ulp",1,NA,NA,NA,0,2,FALSE,"<rows 2 vs 0>",1.06,0.89
-"reconciliation_stop","run","ledger_events",1,8,"fill_price_ulp",1,NA,NA,NA,0,2,FALSE,"<rows 2 vs 0>",1.06,0.89
-"reconciliation_stop","run","run_completion",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.06,0.89
-"reconciliation_stop","run","run_diagnostic_coverage",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 11 vs 1",1.06,0.89
-"reconciliation_stop","run","run_diagnostic_implicit",1,8,"fill_price_ulp",1,NA,NA,NA,0,3,FALSE,"<rows 3 vs 0>",1.06,0.89
-"reconciliation_stop","run","run_diagnostic_summary",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 6 vs 0",1.06,0.89
-"reconciliation_stop","run","run_diagnostics",1,8,"fill_price_ulp",1,NA,NA,NA,0,11,FALSE,"<rows 11 vs 1>",1.06,0.89
-"reconciliation_stop","run","run_promotion_context",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,TRUE,"",1.06,0.89
-"reconciliation_stop","run","run_provenance",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,TRUE,"",1.06,0.89
-"reconciliation_stop","run","run_tags",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,TRUE,"",1.06,0.89
-"reconciliation_stop","run","run_telemetry",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",1.06,0.89
-"reconciliation_stop","run","runs",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",1.06,0.89
-"reconciliation_stop","run","reader_refusal",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"<missing>",1.06,0.89
-"reconciliation_stop","run","run_conditions",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.06,0.89
-"crossover_3x40","run","equity_curve",1,8,"drop_hold",1,NA,NA,NA,0,40,FALSE,"<rows 40 vs 0>",1.89,2.89
-"crossover_3x40","run","ledger_events",1,8,"drop_hold",1,NA,NA,NA,0,7,FALSE,"<rows 7 vs 0>",1.89,2.89
-"crossover_3x40","run","run_completion",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.89,2.89
-"crossover_3x40","run","run_diagnostic_coverage",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 168 vs 1",1.89,2.89
-"crossover_3x40","run","run_diagnostic_implicit",1,8,"drop_hold",1,NA,NA,NA,0,120,FALSE,"<rows 120 vs 0>",1.89,2.89
-"crossover_3x40","run","run_diagnostic_summary",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 120 vs 0",1.89,2.89
-"crossover_3x40","run","run_diagnostics",1,8,"drop_hold",1,NA,NA,NA,0,168,FALSE,"<rows 168 vs 1>",1.89,2.89
-"crossover_3x40","run","run_promotion_context",1,8,"drop_hold",1,NA,NA,NA,0,0,TRUE,"",1.89,2.89
-"crossover_3x40","run","run_provenance",1,8,"drop_hold",1,NA,NA,NA,0,1,TRUE,"",1.89,2.89
-"crossover_3x40","run","run_tags",1,8,"drop_hold",1,NA,NA,NA,0,0,TRUE,"",1.89,2.89
-"crossover_3x40","run","run_telemetry",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.89,2.89
-"crossover_3x40","run","runs",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.89,2.89
-"crossover_3x40","run","fills",1,8,"drop_hold",1,NA,NA,NA,0,7,FALSE,"<missing>",1.89,2.89
-"crossover_3x40","run","trades",1,8,"drop_hold",1,NA,NA,NA,0,3,FALSE,"<missing>",1.89,2.89
-"crossover_3x40","run","metrics",1,8,"drop_hold",1,NA,NA,NA,0,9,FALSE,"<missing>",1.89,2.89
-"crossover_3x40","run","run_conditions",1,8,"drop_hold",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.89,2.89
-"tight_cash","run","equity_curve",1,8,"drop_hold",1,NA,NA,NA,0,10,FALSE,"<rows 10 vs 0>",1.88,1.69
-"tight_cash","run","ledger_events",1,8,"drop_hold",1,NA,NA,NA,0,5,FALSE,"<rows 5 vs 0>",1.88,1.69
-"tight_cash","run","run_completion",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.88,1.69
-"tight_cash","run","run_diagnostic_coverage",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 50 vs 1",1.88,1.69
-"tight_cash","run","run_diagnostic_implicit",1,8,"drop_hold",1,NA,NA,NA,0,26,FALSE,"<rows 26 vs 0>",1.88,1.69
-"tight_cash","run","run_diagnostic_summary",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 30 vs 0",1.88,1.69
-"tight_cash","run","run_diagnostics",1,8,"drop_hold",1,NA,NA,NA,0,50,FALSE,"<rows 50 vs 1>",1.88,1.69
-"tight_cash","run","run_promotion_context",1,8,"drop_hold",1,NA,NA,NA,0,0,TRUE,"",1.88,1.69
-"tight_cash","run","run_provenance",1,8,"drop_hold",1,NA,NA,NA,0,1,TRUE,"",1.88,1.69
-"tight_cash","run","run_tags",1,8,"drop_hold",1,NA,NA,NA,0,0,TRUE,"",1.88,1.69
-"tight_cash","run","run_telemetry",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.88,1.69
-"tight_cash","run","runs",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.88,1.69
-"tight_cash","run","fills",1,8,"drop_hold",1,NA,NA,NA,0,5,FALSE,"<missing>",1.88,1.69
-"tight_cash","run","trades",1,8,"drop_hold",1,NA,NA,NA,0,2,FALSE,"<missing>",1.88,1.69
-"tight_cash","run","metrics",1,8,"drop_hold",1,NA,NA,NA,0,9,FALSE,"<missing>",1.88,1.69
-"tight_cash","run","run_conditions",1,8,"drop_hold",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.88,1.69
-"reconciliation_stop","run","equity_curve",1,8,"drop_hold",1,NA,NA,NA,0,2,FALSE,"<rows 2 vs 0>",0.95,0.95
-"reconciliation_stop","run","ledger_events",1,8,"drop_hold",1,NA,NA,NA,0,2,FALSE,"<rows 2 vs 0>",0.95,0.95
-"reconciliation_stop","run","run_completion",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",0.95,0.95
-"reconciliation_stop","run","run_diagnostic_coverage",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 11 vs 1",0.95,0.95
-"reconciliation_stop","run","run_diagnostic_implicit",1,8,"drop_hold",1,NA,NA,NA,0,3,FALSE,"<rows 3 vs 0>",0.95,0.95
-"reconciliation_stop","run","run_diagnostic_summary",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 6 vs 0",0.95,0.95
-"reconciliation_stop","run","run_diagnostics",1,8,"drop_hold",1,NA,NA,NA,0,11,FALSE,"<rows 11 vs 1>",0.95,0.95
-"reconciliation_stop","run","run_promotion_context",1,8,"drop_hold",1,NA,NA,NA,0,0,TRUE,"",0.95,0.95
-"reconciliation_stop","run","run_provenance",1,8,"drop_hold",1,NA,NA,NA,0,1,TRUE,"",0.95,0.95
-"reconciliation_stop","run","run_tags",1,8,"drop_hold",1,NA,NA,NA,0,0,TRUE,"",0.95,0.95
-"reconciliation_stop","run","run_telemetry",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",0.95,0.95
-"reconciliation_stop","run","runs",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",0.95,0.95
-"reconciliation_stop","run","reader_refusal",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"<missing>",0.95,0.95
-"reconciliation_stop","run","run_conditions",1,8,"drop_hold",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",0.95,0.95
-"crossover_3x40","run","equity_curve",1,8,"hold_position",1,NA,NA,NA,0,40,TRUE,"",1.89,3.16
-"crossover_3x40","run","ledger_events",1,8,"hold_position",1,NA,NA,NA,0,7,TRUE,"",1.89,3.16
-"crossover_3x40","run","run_completion",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.89,3.16
-"crossover_3x40","run","run_diagnostic_coverage",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.89,3.16
-"crossover_3x40","run","run_diagnostic_implicit",1,8,"hold_position",1,NA,NA,NA,0,120,FALSE,"row 1 column target: 0 vs 1",1.89,3.16
-"crossover_3x40","run","run_diagnostic_summary",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.89,3.16
-"crossover_3x40","run","run_diagnostics",1,8,"hold_position",1,NA,NA,NA,0,168,FALSE,"row 2 column target: 0 vs 1",1.89,3.16
-"crossover_3x40","run","run_promotion_context",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",1.89,3.16
-"crossover_3x40","run","run_provenance",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.89,3.16
-"crossover_3x40","run","run_tags",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",1.89,3.16
-"crossover_3x40","run","run_telemetry",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.89,3.16
-"crossover_3x40","run","runs",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.89,3.16
-"crossover_3x40","run","fills",1,8,"hold_position",1,NA,NA,NA,0,7,TRUE,"",1.89,3.16
-"crossover_3x40","run","trades",1,8,"hold_position",1,NA,NA,NA,0,3,TRUE,"",1.89,3.16
-"crossover_3x40","run","metrics",1,8,"hold_position",1,NA,NA,NA,0,9,TRUE,"",1.89,3.16
-"crossover_3x40","run","run_conditions",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",1.89,3.16
-"tight_cash","run","equity_curve",1,8,"hold_position",1,NA,NA,NA,0,10,TRUE,"",1.82,2.09
-"tight_cash","run","ledger_events",1,8,"hold_position",1,NA,NA,NA,0,5,TRUE,"",1.82,2.09
-"tight_cash","run","run_completion",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.82,2.09
-"tight_cash","run","run_diagnostic_coverage",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.82,2.09
-"tight_cash","run","run_diagnostic_implicit",1,8,"hold_position",1,NA,NA,NA,0,26,FALSE,"row 1 column target: 0 vs 1",1.82,2.09
-"tight_cash","run","run_diagnostic_summary",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.82,2.09
-"tight_cash","run","run_diagnostics",1,8,"hold_position",1,NA,NA,NA,0,50,FALSE,"row 2 column target: 0 vs 1",1.82,2.09
-"tight_cash","run","run_promotion_context",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",1.82,2.09
-"tight_cash","run","run_provenance",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.82,2.09
-"tight_cash","run","run_tags",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",1.82,2.09
-"tight_cash","run","run_telemetry",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.82,2.09
-"tight_cash","run","runs",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.82,2.09
-"tight_cash","run","fills",1,8,"hold_position",1,NA,NA,NA,0,5,TRUE,"",1.82,2.09
-"tight_cash","run","trades",1,8,"hold_position",1,NA,NA,NA,0,2,TRUE,"",1.82,2.09
-"tight_cash","run","metrics",1,8,"hold_position",1,NA,NA,NA,0,9,TRUE,"",1.82,2.09
-"tight_cash","run","run_conditions",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",1.82,2.09
-"reconciliation_stop","run","equity_curve",1,8,"hold_position",1,NA,NA,NA,0,2,TRUE,"",0.92,1
-"reconciliation_stop","run","ledger_events",1,8,"hold_position",1,NA,NA,NA,0,2,TRUE,"",0.92,1
-"reconciliation_stop","run","run_completion",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",0.92,1
-"reconciliation_stop","run","run_diagnostic_coverage",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",0.92,1
-"reconciliation_stop","run","run_diagnostic_implicit",1,8,"hold_position",1,NA,NA,NA,0,3,FALSE,"row 3 column target: 0 vs 1",0.92,1
-"reconciliation_stop","run","run_diagnostic_summary",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",0.92,1
-"reconciliation_stop","run","run_diagnostics",1,8,"hold_position",1,NA,NA,NA,0,11,FALSE,"row 4 column target: 0 vs 1",0.92,1
-"reconciliation_stop","run","run_promotion_context",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",0.92,1
-"reconciliation_stop","run","run_provenance",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",0.92,1
-"reconciliation_stop","run","run_tags",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",0.92,1
-"reconciliation_stop","run","run_telemetry",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",0.92,1
-"reconciliation_stop","run","runs",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",0.92,1
-"reconciliation_stop","run","reader_refusal",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",0.92,1
-"reconciliation_stop","run","run_conditions",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",0.92,1
-"crossover_3x40","run","equity_curve",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,40,FALSE,"<rows 40 vs 0>",1.82,2.55
-"crossover_3x40","run","ledger_events",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,7,FALSE,"<rows 7 vs 0>",1.82,2.55
-"crossover_3x40","run","run_completion",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"<rows 1 vs 0>",1.82,2.55
-"crossover_3x40","run","run_diagnostic_coverage",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column logical_count: 168 vs 1",1.82,2.55
-"crossover_3x40","run","run_diagnostic_implicit",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,120,FALSE,"<rows 120 vs 0>",1.82,2.55
-"crossover_3x40","run","run_diagnostic_summary",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column decisions: 120 vs 0",1.82,2.55
-"crossover_3x40","run","run_diagnostics",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,168,FALSE,"<rows 168 vs 1>",1.82,2.55
-"crossover_3x40","run","run_promotion_context",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,TRUE,"",1.82,2.55
-"crossover_3x40","run","run_provenance",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,TRUE,"",1.82,2.55
-"crossover_3x40","run","run_tags",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,TRUE,"",1.82,2.55
-"crossover_3x40","run","run_telemetry",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column status: DONE vs FAILED",1.82,2.55
-"crossover_3x40","run","runs",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column status: DONE vs FAILED",1.82,2.55
-"crossover_3x40","run","fills",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,7,FALSE,"<missing>",1.82,2.55
-"crossover_3x40","run","trades",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,3,FALSE,"<missing>",1.82,2.55
-"crossover_3x40","run","metrics",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,9,FALSE,"<missing>",1.82,2.55
-"crossover_3x40","run","run_conditions",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,FALSE,"<rows 0 vs 1>",1.82,2.55
-"tight_cash","run","equity_curve",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,10,FALSE,"<rows 10 vs 0>",1.82,1.52
-"tight_cash","run","ledger_events",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,5,FALSE,"<rows 5 vs 0>",1.82,1.52
-"tight_cash","run","run_completion",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"<rows 1 vs 0>",1.82,1.52
-"tight_cash","run","run_diagnostic_coverage",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column logical_count: 50 vs 1",1.82,1.52
-"tight_cash","run","run_diagnostic_implicit",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,26,FALSE,"<rows 26 vs 0>",1.82,1.52
-"tight_cash","run","run_diagnostic_summary",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column decisions: 30 vs 0",1.82,1.52
-"tight_cash","run","run_diagnostics",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,50,FALSE,"<rows 50 vs 1>",1.82,1.52
-"tight_cash","run","run_promotion_context",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,TRUE,"",1.82,1.52
-"tight_cash","run","run_provenance",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,TRUE,"",1.82,1.52
-"tight_cash","run","run_tags",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,TRUE,"",1.82,1.52
-"tight_cash","run","run_telemetry",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column status: DONE vs FAILED",1.82,1.52
-"tight_cash","run","runs",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column status: DONE vs FAILED",1.82,1.52
-"tight_cash","run","fills",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,5,FALSE,"<missing>",1.82,1.52
-"tight_cash","run","trades",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,2,FALSE,"<missing>",1.82,1.52
-"tight_cash","run","metrics",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,9,FALSE,"<missing>",1.82,1.52
-"tight_cash","run","run_conditions",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,FALSE,"<rows 0 vs 1>",1.82,1.52
-"reconciliation_stop","run","equity_curve",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,2,FALSE,"<rows 2 vs 0>",1.05,0.87
-"reconciliation_stop","run","ledger_events",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,2,FALSE,"<rows 2 vs 0>",1.05,0.87
-"reconciliation_stop","run","run_completion",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"<rows 1 vs 0>",1.05,0.87
-"reconciliation_stop","run","run_diagnostic_coverage",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column logical_count: 11 vs 1",1.05,0.87
-"reconciliation_stop","run","run_diagnostic_implicit",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,3,FALSE,"<rows 3 vs 0>",1.05,0.87
-"reconciliation_stop","run","run_diagnostic_summary",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column decisions: 6 vs 0",1.05,0.87
-"reconciliation_stop","run","run_diagnostics",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,11,FALSE,"<rows 11 vs 1>",1.05,0.87
-"reconciliation_stop","run","run_promotion_context",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,TRUE,"",1.05,0.87
-"reconciliation_stop","run","run_provenance",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,TRUE,"",1.05,0.87
-"reconciliation_stop","run","run_tags",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,TRUE,"",1.05,0.87
-"reconciliation_stop","run","run_telemetry",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",1.05,0.87
-"reconciliation_stop","run","runs",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",1.05,0.87
-"reconciliation_stop","run","reader_refusal",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"<missing>",1.05,0.87
-"reconciliation_stop","run","run_conditions",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,FALSE,"<rows 0 vs 1>",1.05,0.87
-"crossover_3x40","run","equity_curve",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,40,TRUE,NA,1.85,3.22
-"crossover_3x40","run","ledger_events",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,7,TRUE,NA,1.85,3.22
-"crossover_3x40","run","run_completion",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.85,3.22
-"crossover_3x40","run","run_diagnostic_coverage",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.85,3.22
-"crossover_3x40","run","run_diagnostic_implicit",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,120,TRUE,NA,1.85,3.22
-"crossover_3x40","run","run_diagnostic_summary",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.85,3.22
-"crossover_3x40","run","run_diagnostics",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,168,TRUE,NA,1.85,3.22
-"crossover_3x40","run","run_promotion_context",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,1.85,3.22
-"crossover_3x40","run","run_provenance",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.85,3.22
-"crossover_3x40","run","run_tags",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,1.85,3.22
-"crossover_3x40","run","run_telemetry",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.85,3.22
-"crossover_3x40","run","runs",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.85,3.22
-"crossover_3x40","run","fills",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,7,TRUE,NA,1.85,3.22
-"crossover_3x40","run","trades",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,3,TRUE,NA,1.85,3.22
-"crossover_3x40","run","metrics",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,9,TRUE,NA,1.85,3.22
-"crossover_3x40","run","run_conditions",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,1.85,3.22
-"tight_cash","run","equity_curve",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,10,TRUE,NA,1.82,2.12
-"tight_cash","run","ledger_events",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,5,TRUE,NA,1.82,2.12
-"tight_cash","run","run_completion",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.82,2.12
-"tight_cash","run","run_diagnostic_coverage",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.82,2.12
-"tight_cash","run","run_diagnostic_implicit",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,26,TRUE,NA,1.82,2.12
-"tight_cash","run","run_diagnostic_summary",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.82,2.12
-"tight_cash","run","run_diagnostics",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,50,TRUE,NA,1.82,2.12
-"tight_cash","run","run_promotion_context",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,1.82,2.12
-"tight_cash","run","run_provenance",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.82,2.12
-"tight_cash","run","run_tags",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,1.82,2.12
-"tight_cash","run","run_telemetry",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.82,2.12
-"tight_cash","run","runs",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.82,2.12
-"tight_cash","run","fills",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,5,TRUE,NA,1.82,2.12
-"tight_cash","run","trades",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,2,TRUE,NA,1.82,2.12
-"tight_cash","run","metrics",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,9,TRUE,NA,1.82,2.12
-"tight_cash","run","run_conditions",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,1.82,2.12
-"reconciliation_stop","run","equity_curve",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,2,TRUE,NA,0.93,1.13
-"reconciliation_stop","run","ledger_events",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,2,TRUE,NA,0.93,1.13
-"reconciliation_stop","run","run_completion",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,0.93,1.13
-"reconciliation_stop","run","run_diagnostic_coverage",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,0.93,1.13
-"reconciliation_stop","run","run_diagnostic_implicit",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,3,TRUE,NA,0.93,1.13
-"reconciliation_stop","run","run_diagnostic_summary",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,0.93,1.13
-"reconciliation_stop","run","run_diagnostics",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,11,TRUE,NA,0.93,1.13
-"reconciliation_stop","run","run_promotion_context",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,0.93,1.13
-"reconciliation_stop","run","run_provenance",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,0.93,1.13
-"reconciliation_stop","run","run_tags",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,0.93,1.13
-"reconciliation_stop","run","run_telemetry",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,0.93,1.13
-"reconciliation_stop","run","runs",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,0.93,1.13
-"reconciliation_stop","run","reader_refusal",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,0.93,1.13
-"reconciliation_stop","run","run_conditions",1,8,"store_in_loop",1,NA,NA,"DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,0.93,1.13
-"crossover_3x40","run","equity_curve",1,8,"hold_in_loop",1,NA,NA,NA,1,40,TRUE,NA,1.82,3.18
-"crossover_3x40","run","ledger_events",1,8,"hold_in_loop",1,NA,NA,NA,1,7,TRUE,NA,1.82,3.18
-"crossover_3x40","run","run_completion",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.82,3.18
-"crossover_3x40","run","run_diagnostic_coverage",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.82,3.18
-"crossover_3x40","run","run_diagnostic_implicit",1,8,"hold_in_loop",1,NA,NA,NA,1,120,TRUE,NA,1.82,3.18
-"crossover_3x40","run","run_diagnostic_summary",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.82,3.18
-"crossover_3x40","run","run_diagnostics",1,8,"hold_in_loop",1,NA,NA,NA,1,168,TRUE,NA,1.82,3.18
-"crossover_3x40","run","run_promotion_context",1,8,"hold_in_loop",1,NA,NA,NA,1,0,TRUE,NA,1.82,3.18
-"crossover_3x40","run","run_provenance",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.82,3.18
-"crossover_3x40","run","run_tags",1,8,"hold_in_loop",1,NA,NA,NA,1,0,TRUE,NA,1.82,3.18
-"crossover_3x40","run","run_telemetry",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.82,3.18
-"crossover_3x40","run","runs",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.82,3.18
-"crossover_3x40","run","fills",1,8,"hold_in_loop",1,NA,NA,NA,1,7,TRUE,NA,1.82,3.18
-"crossover_3x40","run","trades",1,8,"hold_in_loop",1,NA,NA,NA,1,3,TRUE,NA,1.82,3.18
-"crossover_3x40","run","metrics",1,8,"hold_in_loop",1,NA,NA,NA,1,9,TRUE,NA,1.82,3.18
-"crossover_3x40","run","run_conditions",1,8,"hold_in_loop",1,NA,NA,NA,1,0,TRUE,NA,1.82,3.18
-"tight_cash","run","equity_curve",1,8,"hold_in_loop",1,NA,NA,NA,1,10,TRUE,NA,1.84,2.11
-"tight_cash","run","ledger_events",1,8,"hold_in_loop",1,NA,NA,NA,1,5,TRUE,NA,1.84,2.11
-"tight_cash","run","run_completion",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.84,2.11
-"tight_cash","run","run_diagnostic_coverage",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.84,2.11
-"tight_cash","run","run_diagnostic_implicit",1,8,"hold_in_loop",1,NA,NA,NA,1,26,TRUE,NA,1.84,2.11
-"tight_cash","run","run_diagnostic_summary",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.84,2.11
-"tight_cash","run","run_diagnostics",1,8,"hold_in_loop",1,NA,NA,NA,1,50,TRUE,NA,1.84,2.11
-"tight_cash","run","run_promotion_context",1,8,"hold_in_loop",1,NA,NA,NA,1,0,TRUE,NA,1.84,2.11
-"tight_cash","run","run_provenance",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.84,2.11
-"tight_cash","run","run_tags",1,8,"hold_in_loop",1,NA,NA,NA,1,0,TRUE,NA,1.84,2.11
-"tight_cash","run","run_telemetry",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.84,2.11
-"tight_cash","run","runs",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.84,2.11
-"tight_cash","run","fills",1,8,"hold_in_loop",1,NA,NA,NA,1,5,TRUE,NA,1.84,2.11
-"tight_cash","run","trades",1,8,"hold_in_loop",1,NA,NA,NA,1,2,TRUE,NA,1.84,2.11
-"tight_cash","run","metrics",1,8,"hold_in_loop",1,NA,NA,NA,1,9,TRUE,NA,1.84,2.11
-"tight_cash","run","run_conditions",1,8,"hold_in_loop",1,NA,NA,NA,1,0,TRUE,NA,1.84,2.11
+"crossover_3x40","run","equity_curve",1,8,"fill_price_ulp",1,NA,NA,NA,0,40,FALSE,"<rows 40 vs 0>",1.86,2.57
+"crossover_3x40","run","ledger_events",1,8,"fill_price_ulp",1,NA,NA,NA,0,7,FALSE,"<rows 7 vs 0>",1.86,2.57
+"crossover_3x40","run","run_completion",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.86,2.57
+"crossover_3x40","run","run_diagnostic_coverage",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 168 vs 1",1.86,2.57
+"crossover_3x40","run","run_diagnostic_implicit",1,8,"fill_price_ulp",1,NA,NA,NA,0,120,FALSE,"<rows 120 vs 0>",1.86,2.57
+"crossover_3x40","run","run_diagnostic_summary",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 120 vs 0",1.86,2.57
+"crossover_3x40","run","run_diagnostics",1,8,"fill_price_ulp",1,NA,NA,NA,0,168,FALSE,"<rows 168 vs 1>",1.86,2.57
+"crossover_3x40","run","run_promotion_context",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,TRUE,"",1.86,2.57
+"crossover_3x40","run","run_provenance",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,TRUE,"",1.86,2.57
+"crossover_3x40","run","run_tags",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,TRUE,"",1.86,2.57
+"crossover_3x40","run","run_telemetry",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.86,2.57
+"crossover_3x40","run","runs",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.86,2.57
+"crossover_3x40","run","fills",1,8,"fill_price_ulp",1,NA,NA,NA,0,7,FALSE,"<missing>",1.86,2.57
+"crossover_3x40","run","trades",1,8,"fill_price_ulp",1,NA,NA,NA,0,3,FALSE,"<missing>",1.86,2.57
+"crossover_3x40","run","metrics",1,8,"fill_price_ulp",1,NA,NA,NA,0,9,FALSE,"<missing>",1.86,2.57
+"crossover_3x40","run","run_conditions",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.86,2.57
+"tight_cash","run","equity_curve",1,8,"fill_price_ulp",1,NA,NA,NA,0,10,FALSE,"<rows 10 vs 0>",1.84,1.58
+"tight_cash","run","ledger_events",1,8,"fill_price_ulp",1,NA,NA,NA,0,5,FALSE,"<rows 5 vs 0>",1.84,1.58
+"tight_cash","run","run_completion",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.84,1.58
+"tight_cash","run","run_diagnostic_coverage",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 50 vs 1",1.84,1.58
+"tight_cash","run","run_diagnostic_implicit",1,8,"fill_price_ulp",1,NA,NA,NA,0,26,FALSE,"<rows 26 vs 0>",1.84,1.58
+"tight_cash","run","run_diagnostic_summary",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 30 vs 0",1.84,1.58
+"tight_cash","run","run_diagnostics",1,8,"fill_price_ulp",1,NA,NA,NA,0,50,FALSE,"<rows 50 vs 1>",1.84,1.58
+"tight_cash","run","run_promotion_context",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,TRUE,"",1.84,1.58
+"tight_cash","run","run_provenance",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,TRUE,"",1.84,1.58
+"tight_cash","run","run_tags",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,TRUE,"",1.84,1.58
+"tight_cash","run","run_telemetry",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.84,1.58
+"tight_cash","run","runs",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.84,1.58
+"tight_cash","run","fills",1,8,"fill_price_ulp",1,NA,NA,NA,0,5,FALSE,"<missing>",1.84,1.58
+"tight_cash","run","trades",1,8,"fill_price_ulp",1,NA,NA,NA,0,2,FALSE,"<missing>",1.84,1.58
+"tight_cash","run","metrics",1,8,"fill_price_ulp",1,NA,NA,NA,0,9,FALSE,"<missing>",1.84,1.58
+"tight_cash","run","run_conditions",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.84,1.58
+"reconciliation_stop","run","equity_curve",1,8,"fill_price_ulp",1,NA,NA,NA,0,2,FALSE,"<rows 2 vs 0>",1.04,0.88
+"reconciliation_stop","run","ledger_events",1,8,"fill_price_ulp",1,NA,NA,NA,0,2,FALSE,"<rows 2 vs 0>",1.04,0.88
+"reconciliation_stop","run","run_completion",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.04,0.88
+"reconciliation_stop","run","run_diagnostic_coverage",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 11 vs 1",1.04,0.88
+"reconciliation_stop","run","run_diagnostic_implicit",1,8,"fill_price_ulp",1,NA,NA,NA,0,3,FALSE,"<rows 3 vs 0>",1.04,0.88
+"reconciliation_stop","run","run_diagnostic_summary",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 6 vs 0",1.04,0.88
+"reconciliation_stop","run","run_diagnostics",1,8,"fill_price_ulp",1,NA,NA,NA,0,11,FALSE,"<rows 11 vs 1>",1.04,0.88
+"reconciliation_stop","run","run_promotion_context",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,TRUE,"",1.04,0.88
+"reconciliation_stop","run","run_provenance",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,TRUE,"",1.04,0.88
+"reconciliation_stop","run","run_tags",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,TRUE,"",1.04,0.88
+"reconciliation_stop","run","run_telemetry",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",1.04,0.88
+"reconciliation_stop","run","runs",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",1.04,0.88
+"reconciliation_stop","run","reader_refusal",1,8,"fill_price_ulp",1,NA,NA,NA,0,1,FALSE,"<missing>",1.04,0.88
+"reconciliation_stop","run","run_conditions",1,8,"fill_price_ulp",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.04,0.88
+"crossover_3x40","run","equity_curve",1,8,"drop_hold",1,NA,NA,NA,0,40,FALSE,"<rows 40 vs 0>",1.86,2.89
+"crossover_3x40","run","ledger_events",1,8,"drop_hold",1,NA,NA,NA,0,7,FALSE,"<rows 7 vs 0>",1.86,2.89
+"crossover_3x40","run","run_completion",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.86,2.89
+"crossover_3x40","run","run_diagnostic_coverage",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 168 vs 1",1.86,2.89
+"crossover_3x40","run","run_diagnostic_implicit",1,8,"drop_hold",1,NA,NA,NA,0,120,FALSE,"<rows 120 vs 0>",1.86,2.89
+"crossover_3x40","run","run_diagnostic_summary",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 120 vs 0",1.86,2.89
+"crossover_3x40","run","run_diagnostics",1,8,"drop_hold",1,NA,NA,NA,0,168,FALSE,"<rows 168 vs 1>",1.86,2.89
+"crossover_3x40","run","run_promotion_context",1,8,"drop_hold",1,NA,NA,NA,0,0,TRUE,"",1.86,2.89
+"crossover_3x40","run","run_provenance",1,8,"drop_hold",1,NA,NA,NA,0,1,TRUE,"",1.86,2.89
+"crossover_3x40","run","run_tags",1,8,"drop_hold",1,NA,NA,NA,0,0,TRUE,"",1.86,2.89
+"crossover_3x40","run","run_telemetry",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.86,2.89
+"crossover_3x40","run","runs",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.86,2.89
+"crossover_3x40","run","fills",1,8,"drop_hold",1,NA,NA,NA,0,7,FALSE,"<missing>",1.86,2.89
+"crossover_3x40","run","trades",1,8,"drop_hold",1,NA,NA,NA,0,3,FALSE,"<missing>",1.86,2.89
+"crossover_3x40","run","metrics",1,8,"drop_hold",1,NA,NA,NA,0,9,FALSE,"<missing>",1.86,2.89
+"crossover_3x40","run","run_conditions",1,8,"drop_hold",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.86,2.89
+"tight_cash","run","equity_curve",1,8,"drop_hold",1,NA,NA,NA,0,10,FALSE,"<rows 10 vs 0>",1.88,1.68
+"tight_cash","run","ledger_events",1,8,"drop_hold",1,NA,NA,NA,0,5,FALSE,"<rows 5 vs 0>",1.88,1.68
+"tight_cash","run","run_completion",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.88,1.68
+"tight_cash","run","run_diagnostic_coverage",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 50 vs 1",1.88,1.68
+"tight_cash","run","run_diagnostic_implicit",1,8,"drop_hold",1,NA,NA,NA,0,26,FALSE,"<rows 26 vs 0>",1.88,1.68
+"tight_cash","run","run_diagnostic_summary",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 30 vs 0",1.88,1.68
+"tight_cash","run","run_diagnostics",1,8,"drop_hold",1,NA,NA,NA,0,50,FALSE,"<rows 50 vs 1>",1.88,1.68
+"tight_cash","run","run_promotion_context",1,8,"drop_hold",1,NA,NA,NA,0,0,TRUE,"",1.88,1.68
+"tight_cash","run","run_provenance",1,8,"drop_hold",1,NA,NA,NA,0,1,TRUE,"",1.88,1.68
+"tight_cash","run","run_tags",1,8,"drop_hold",1,NA,NA,NA,0,0,TRUE,"",1.88,1.68
+"tight_cash","run","run_telemetry",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.88,1.68
+"tight_cash","run","runs",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.88,1.68
+"tight_cash","run","fills",1,8,"drop_hold",1,NA,NA,NA,0,5,FALSE,"<missing>",1.88,1.68
+"tight_cash","run","trades",1,8,"drop_hold",1,NA,NA,NA,0,2,FALSE,"<missing>",1.88,1.68
+"tight_cash","run","metrics",1,8,"drop_hold",1,NA,NA,NA,0,9,FALSE,"<missing>",1.88,1.68
+"tight_cash","run","run_conditions",1,8,"drop_hold",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.88,1.68
+"reconciliation_stop","run","equity_curve",1,8,"drop_hold",1,NA,NA,NA,0,2,FALSE,"<rows 2 vs 0>",0.94,0.92
+"reconciliation_stop","run","ledger_events",1,8,"drop_hold",1,NA,NA,NA,0,2,FALSE,"<rows 2 vs 0>",0.94,0.92
+"reconciliation_stop","run","run_completion",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",0.94,0.92
+"reconciliation_stop","run","run_diagnostic_coverage",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 11 vs 1",0.94,0.92
+"reconciliation_stop","run","run_diagnostic_implicit",1,8,"drop_hold",1,NA,NA,NA,0,3,FALSE,"<rows 3 vs 0>",0.94,0.92
+"reconciliation_stop","run","run_diagnostic_summary",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 6 vs 0",0.94,0.92
+"reconciliation_stop","run","run_diagnostics",1,8,"drop_hold",1,NA,NA,NA,0,11,FALSE,"<rows 11 vs 1>",0.94,0.92
+"reconciliation_stop","run","run_promotion_context",1,8,"drop_hold",1,NA,NA,NA,0,0,TRUE,"",0.94,0.92
+"reconciliation_stop","run","run_provenance",1,8,"drop_hold",1,NA,NA,NA,0,1,TRUE,"",0.94,0.92
+"reconciliation_stop","run","run_tags",1,8,"drop_hold",1,NA,NA,NA,0,0,TRUE,"",0.94,0.92
+"reconciliation_stop","run","run_telemetry",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",0.94,0.92
+"reconciliation_stop","run","runs",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",0.94,0.92
+"reconciliation_stop","run","reader_refusal",1,8,"drop_hold",1,NA,NA,NA,0,1,FALSE,"<missing>",0.94,0.92
+"reconciliation_stop","run","run_conditions",1,8,"drop_hold",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",0.94,0.92
+"crossover_3x40","run","equity_curve",1,8,"hold_position",1,NA,NA,NA,0,40,TRUE,"",1.88,3.18
+"crossover_3x40","run","ledger_events",1,8,"hold_position",1,NA,NA,NA,0,7,TRUE,"",1.88,3.18
+"crossover_3x40","run","run_completion",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.88,3.18
+"crossover_3x40","run","run_diagnostic_coverage",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.88,3.18
+"crossover_3x40","run","run_diagnostic_implicit",1,8,"hold_position",1,NA,NA,NA,0,120,FALSE,"row 1 column target: 0 vs 1",1.88,3.18
+"crossover_3x40","run","run_diagnostic_summary",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.88,3.18
+"crossover_3x40","run","run_diagnostics",1,8,"hold_position",1,NA,NA,NA,0,168,FALSE,"row 2 column target: 0 vs 1",1.88,3.18
+"crossover_3x40","run","run_promotion_context",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",1.88,3.18
+"crossover_3x40","run","run_provenance",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.88,3.18
+"crossover_3x40","run","run_tags",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",1.88,3.18
+"crossover_3x40","run","run_telemetry",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.88,3.18
+"crossover_3x40","run","runs",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.88,3.18
+"crossover_3x40","run","fills",1,8,"hold_position",1,NA,NA,NA,0,7,TRUE,"",1.88,3.18
+"crossover_3x40","run","trades",1,8,"hold_position",1,NA,NA,NA,0,3,TRUE,"",1.88,3.18
+"crossover_3x40","run","metrics",1,8,"hold_position",1,NA,NA,NA,0,9,TRUE,"",1.88,3.18
+"crossover_3x40","run","run_conditions",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",1.88,3.18
+"tight_cash","run","equity_curve",1,8,"hold_position",1,NA,NA,NA,0,10,TRUE,"",1.86,2.08
+"tight_cash","run","ledger_events",1,8,"hold_position",1,NA,NA,NA,0,5,TRUE,"",1.86,2.08
+"tight_cash","run","run_completion",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.86,2.08
+"tight_cash","run","run_diagnostic_coverage",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.86,2.08
+"tight_cash","run","run_diagnostic_implicit",1,8,"hold_position",1,NA,NA,NA,0,26,FALSE,"row 1 column target: 0 vs 1",1.86,2.08
+"tight_cash","run","run_diagnostic_summary",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.86,2.08
+"tight_cash","run","run_diagnostics",1,8,"hold_position",1,NA,NA,NA,0,50,FALSE,"row 2 column target: 0 vs 1",1.86,2.08
+"tight_cash","run","run_promotion_context",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",1.86,2.08
+"tight_cash","run","run_provenance",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.86,2.08
+"tight_cash","run","run_tags",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",1.86,2.08
+"tight_cash","run","run_telemetry",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.86,2.08
+"tight_cash","run","runs",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",1.86,2.08
+"tight_cash","run","fills",1,8,"hold_position",1,NA,NA,NA,0,5,TRUE,"",1.86,2.08
+"tight_cash","run","trades",1,8,"hold_position",1,NA,NA,NA,0,2,TRUE,"",1.86,2.08
+"tight_cash","run","metrics",1,8,"hold_position",1,NA,NA,NA,0,9,TRUE,"",1.86,2.08
+"tight_cash","run","run_conditions",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",1.86,2.08
+"reconciliation_stop","run","equity_curve",1,8,"hold_position",1,NA,NA,NA,0,2,TRUE,"",0.92,1.01
+"reconciliation_stop","run","ledger_events",1,8,"hold_position",1,NA,NA,NA,0,2,TRUE,"",0.92,1.01
+"reconciliation_stop","run","run_completion",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",0.92,1.01
+"reconciliation_stop","run","run_diagnostic_coverage",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",0.92,1.01
+"reconciliation_stop","run","run_diagnostic_implicit",1,8,"hold_position",1,NA,NA,NA,0,3,FALSE,"row 3 column target: 0 vs 1",0.92,1.01
+"reconciliation_stop","run","run_diagnostic_summary",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",0.92,1.01
+"reconciliation_stop","run","run_diagnostics",1,8,"hold_position",1,NA,NA,NA,0,11,FALSE,"row 4 column target: 0 vs 1",0.92,1.01
+"reconciliation_stop","run","run_promotion_context",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",0.92,1.01
+"reconciliation_stop","run","run_provenance",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",0.92,1.01
+"reconciliation_stop","run","run_tags",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",0.92,1.01
+"reconciliation_stop","run","run_telemetry",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",0.92,1.01
+"reconciliation_stop","run","runs",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",0.92,1.01
+"reconciliation_stop","run","reader_refusal",1,8,"hold_position",1,NA,NA,NA,0,1,TRUE,"",0.92,1.01
+"reconciliation_stop","run","run_conditions",1,8,"hold_position",1,NA,NA,NA,0,0,TRUE,"",0.92,1.01
+"crossover_3x40","run","equity_curve",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,40,FALSE,"<rows 40 vs 0>",1.83,2.52
+"crossover_3x40","run","ledger_events",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,7,FALSE,"<rows 7 vs 0>",1.83,2.52
+"crossover_3x40","run","run_completion",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"<rows 1 vs 0>",1.83,2.52
+"crossover_3x40","run","run_diagnostic_coverage",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column logical_count: 168 vs 1",1.83,2.52
+"crossover_3x40","run","run_diagnostic_implicit",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,120,FALSE,"<rows 120 vs 0>",1.83,2.52
+"crossover_3x40","run","run_diagnostic_summary",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column decisions: 120 vs 0",1.83,2.52
+"crossover_3x40","run","run_diagnostics",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,168,FALSE,"<rows 168 vs 1>",1.83,2.52
+"crossover_3x40","run","run_promotion_context",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,TRUE,"",1.83,2.52
+"crossover_3x40","run","run_provenance",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,TRUE,"",1.83,2.52
+"crossover_3x40","run","run_tags",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,TRUE,"",1.83,2.52
+"crossover_3x40","run","run_telemetry",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column status: DONE vs FAILED",1.83,2.52
+"crossover_3x40","run","runs",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column status: DONE vs FAILED",1.83,2.52
+"crossover_3x40","run","fills",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,7,FALSE,"<missing>",1.83,2.52
+"crossover_3x40","run","trades",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,3,FALSE,"<missing>",1.83,2.52
+"crossover_3x40","run","metrics",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,9,FALSE,"<missing>",1.83,2.52
+"crossover_3x40","run","run_conditions",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,FALSE,"<rows 0 vs 1>",1.83,2.52
+"tight_cash","run","equity_curve",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,10,FALSE,"<rows 10 vs 0>",1.81,1.52
+"tight_cash","run","ledger_events",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,5,FALSE,"<rows 5 vs 0>",1.81,1.52
+"tight_cash","run","run_completion",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"<rows 1 vs 0>",1.81,1.52
+"tight_cash","run","run_diagnostic_coverage",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column logical_count: 50 vs 1",1.81,1.52
+"tight_cash","run","run_diagnostic_implicit",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,26,FALSE,"<rows 26 vs 0>",1.81,1.52
+"tight_cash","run","run_diagnostic_summary",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column decisions: 30 vs 0",1.81,1.52
+"tight_cash","run","run_diagnostics",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,50,FALSE,"<rows 50 vs 1>",1.81,1.52
+"tight_cash","run","run_promotion_context",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,TRUE,"",1.81,1.52
+"tight_cash","run","run_provenance",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,TRUE,"",1.81,1.52
+"tight_cash","run","run_tags",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,TRUE,"",1.81,1.52
+"tight_cash","run","run_telemetry",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column status: DONE vs FAILED",1.81,1.52
+"tight_cash","run","runs",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column status: DONE vs FAILED",1.81,1.52
+"tight_cash","run","fills",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,5,FALSE,"<missing>",1.81,1.52
+"tight_cash","run","trades",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,2,FALSE,"<missing>",1.81,1.52
+"tight_cash","run","metrics",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,9,FALSE,"<missing>",1.81,1.52
+"tight_cash","run","run_conditions",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,FALSE,"<rows 0 vs 1>",1.81,1.52
+"reconciliation_stop","run","equity_curve",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,2,FALSE,"<rows 2 vs 0>",1.05,0.88
+"reconciliation_stop","run","ledger_events",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,2,FALSE,"<rows 2 vs 0>",1.05,0.88
+"reconciliation_stop","run","run_completion",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"<rows 1 vs 0>",1.05,0.88
+"reconciliation_stop","run","run_diagnostic_coverage",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column logical_count: 11 vs 1",1.05,0.88
+"reconciliation_stop","run","run_diagnostic_implicit",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,3,FALSE,"<rows 3 vs 0>",1.05,0.88
+"reconciliation_stop","run","run_diagnostic_summary",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column decisions: 6 vs 0",1.05,0.88
+"reconciliation_stop","run","run_diagnostics",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,11,FALSE,"<rows 11 vs 1>",1.05,0.88
+"reconciliation_stop","run","run_promotion_context",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,TRUE,"",1.05,0.88
+"reconciliation_stop","run","run_provenance",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,TRUE,"",1.05,0.88
+"reconciliation_stop","run","run_tags",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,TRUE,"",1.05,0.88
+"reconciliation_stop","run","run_telemetry",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",1.05,0.88
+"reconciliation_stop","run","runs",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",1.05,0.88
+"reconciliation_stop","run","reader_refusal",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,1,FALSE,"<missing>",1.05,0.88
+"reconciliation_stop","run","run_conditions",1,8,"write_in_loop",1,NA,NA,"write_fill_events",0,0,FALSE,"<rows 0 vs 1>",1.05,0.88
+"crossover_3x40","run","equity_curve",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,40,TRUE,NA,1.84,3.17
+"crossover_3x40","run","ledger_events",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,7,TRUE,NA,1.84,3.17
+"crossover_3x40","run","run_completion",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.84,3.17
+"crossover_3x40","run","run_diagnostic_coverage",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.84,3.17
+"crossover_3x40","run","run_diagnostic_implicit",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,120,TRUE,NA,1.84,3.17
+"crossover_3x40","run","run_diagnostic_summary",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.84,3.17
+"crossover_3x40","run","run_diagnostics",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,168,TRUE,NA,1.84,3.17
+"crossover_3x40","run","run_promotion_context",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,1.84,3.17
+"crossover_3x40","run","run_provenance",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.84,3.17
+"crossover_3x40","run","run_tags",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,1.84,3.17
+"crossover_3x40","run","run_telemetry",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.84,3.17
+"crossover_3x40","run","runs",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.84,3.17
+"crossover_3x40","run","fills",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,7,TRUE,NA,1.84,3.17
+"crossover_3x40","run","trades",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,3,TRUE,NA,1.84,3.17
+"crossover_3x40","run","metrics",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,9,TRUE,NA,1.84,3.17
+"crossover_3x40","run","run_conditions",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,1.84,3.17
+"tight_cash","run","equity_curve",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,10,TRUE,NA,1.81,2.14
+"tight_cash","run","ledger_events",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,5,TRUE,NA,1.81,2.14
+"tight_cash","run","run_completion",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.81,2.14
+"tight_cash","run","run_diagnostic_coverage",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.81,2.14
+"tight_cash","run","run_diagnostic_implicit",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,26,TRUE,NA,1.81,2.14
+"tight_cash","run","run_diagnostic_summary",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.81,2.14
+"tight_cash","run","run_diagnostics",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,50,TRUE,NA,1.81,2.14
+"tight_cash","run","run_promotion_context",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,1.81,2.14
+"tight_cash","run","run_provenance",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.81,2.14
+"tight_cash","run","run_tags",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,1.81,2.14
+"tight_cash","run","run_telemetry",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.81,2.14
+"tight_cash","run","runs",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,1.81,2.14
+"tight_cash","run","fills",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,5,TRUE,NA,1.81,2.14
+"tight_cash","run","trades",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,2,TRUE,NA,1.81,2.14
+"tight_cash","run","metrics",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,9,TRUE,NA,1.81,2.14
+"tight_cash","run","run_conditions",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,1.81,2.14
+"reconciliation_stop","run","equity_curve",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,2,TRUE,NA,0.94,1.05
+"reconciliation_stop","run","ledger_events",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,2,TRUE,NA,0.94,1.05
+"reconciliation_stop","run","run_completion",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,0.94,1.05
+"reconciliation_stop","run","run_diagnostic_coverage",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,0.94,1.05
+"reconciliation_stop","run","run_diagnostic_implicit",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,3,TRUE,NA,0.94,1.05
+"reconciliation_stop","run","run_diagnostic_summary",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,0.94,1.05
+"reconciliation_stop","run","run_diagnostics",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,11,TRUE,NA,0.94,1.05
+"reconciliation_stop","run","run_promotion_context",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,0.94,1.05
+"reconciliation_stop","run","run_provenance",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,0.94,1.05
+"reconciliation_stop","run","run_tags",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,0.94,1.05
+"reconciliation_stop","run","run_telemetry",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,0.94,1.05
+"reconciliation_stop","run","runs",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,0.94,1.05
+"reconciliation_stop","run","reader_refusal",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,1,TRUE,NA,0.94,1.05
+"reconciliation_stop","run","run_conditions",1,8,"store_in_loop",1,NA,NA,"DBI::dbSendQuery; DBI::dbExecute; DBI::dbSendStatement; ledgr::ledgr_store_append; DBI::dbAppendTable",0,0,TRUE,NA,0.94,1.05
+"crossover_3x40","run","equity_curve",1,8,"hold_in_loop",1,NA,NA,NA,1,40,TRUE,NA,1.86,3.17
+"crossover_3x40","run","ledger_events",1,8,"hold_in_loop",1,NA,NA,NA,1,7,TRUE,NA,1.86,3.17
+"crossover_3x40","run","run_completion",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.86,3.17
+"crossover_3x40","run","run_diagnostic_coverage",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.86,3.17
+"crossover_3x40","run","run_diagnostic_implicit",1,8,"hold_in_loop",1,NA,NA,NA,1,120,TRUE,NA,1.86,3.17
+"crossover_3x40","run","run_diagnostic_summary",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.86,3.17
+"crossover_3x40","run","run_diagnostics",1,8,"hold_in_loop",1,NA,NA,NA,1,168,TRUE,NA,1.86,3.17
+"crossover_3x40","run","run_promotion_context",1,8,"hold_in_loop",1,NA,NA,NA,1,0,TRUE,NA,1.86,3.17
+"crossover_3x40","run","run_provenance",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.86,3.17
+"crossover_3x40","run","run_tags",1,8,"hold_in_loop",1,NA,NA,NA,1,0,TRUE,NA,1.86,3.17
+"crossover_3x40","run","run_telemetry",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.86,3.17
+"crossover_3x40","run","runs",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.86,3.17
+"crossover_3x40","run","fills",1,8,"hold_in_loop",1,NA,NA,NA,1,7,TRUE,NA,1.86,3.17
+"crossover_3x40","run","trades",1,8,"hold_in_loop",1,NA,NA,NA,1,3,TRUE,NA,1.86,3.17
+"crossover_3x40","run","metrics",1,8,"hold_in_loop",1,NA,NA,NA,1,9,TRUE,NA,1.86,3.17
+"crossover_3x40","run","run_conditions",1,8,"hold_in_loop",1,NA,NA,NA,1,0,TRUE,NA,1.86,3.17
+"tight_cash","run","equity_curve",1,8,"hold_in_loop",1,NA,NA,NA,1,10,TRUE,NA,1.82,2.09
+"tight_cash","run","ledger_events",1,8,"hold_in_loop",1,NA,NA,NA,1,5,TRUE,NA,1.82,2.09
+"tight_cash","run","run_completion",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.82,2.09
+"tight_cash","run","run_diagnostic_coverage",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.82,2.09
+"tight_cash","run","run_diagnostic_implicit",1,8,"hold_in_loop",1,NA,NA,NA,1,26,TRUE,NA,1.82,2.09
+"tight_cash","run","run_diagnostic_summary",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.82,2.09
+"tight_cash","run","run_diagnostics",1,8,"hold_in_loop",1,NA,NA,NA,1,50,TRUE,NA,1.82,2.09
+"tight_cash","run","run_promotion_context",1,8,"hold_in_loop",1,NA,NA,NA,1,0,TRUE,NA,1.82,2.09
+"tight_cash","run","run_provenance",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.82,2.09
+"tight_cash","run","run_tags",1,8,"hold_in_loop",1,NA,NA,NA,1,0,TRUE,NA,1.82,2.09
+"tight_cash","run","run_telemetry",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.82,2.09
+"tight_cash","run","runs",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,1.82,2.09
+"tight_cash","run","fills",1,8,"hold_in_loop",1,NA,NA,NA,1,5,TRUE,NA,1.82,2.09
+"tight_cash","run","trades",1,8,"hold_in_loop",1,NA,NA,NA,1,2,TRUE,NA,1.82,2.09
+"tight_cash","run","metrics",1,8,"hold_in_loop",1,NA,NA,NA,1,9,TRUE,NA,1.82,2.09
+"tight_cash","run","run_conditions",1,8,"hold_in_loop",1,NA,NA,NA,1,0,TRUE,NA,1.82,2.09
 "reconciliation_stop","run","equity_curve",1,8,"hold_in_loop",1,NA,NA,NA,1,2,TRUE,NA,0.97,1.07
 "reconciliation_stop","run","ledger_events",1,8,"hold_in_loop",1,NA,NA,NA,1,2,TRUE,NA,0.97,1.07
 "reconciliation_stop","run","run_completion",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,0.97,1.07
@@ -275,49 +275,49 @@
 "reconciliation_stop","run","runs",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,0.97,1.07
 "reconciliation_stop","run","reader_refusal",1,8,"hold_in_loop",1,NA,NA,NA,1,1,TRUE,NA,0.97,1.07
 "reconciliation_stop","run","run_conditions",1,8,"hold_in_loop",1,NA,NA,NA,1,0,TRUE,NA,0.97,1.07
-"crossover_3x40","run","equity_curve",1,8,"batch_fault",1,NA,NA,NA,0,40,FALSE,"<rows 40 vs 0>",1.84,2.43
-"crossover_3x40","run","ledger_events",1,8,"batch_fault",1,NA,NA,NA,0,7,FALSE,"<rows 7 vs 0>",1.84,2.43
-"crossover_3x40","run","run_completion",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.84,2.43
-"crossover_3x40","run","run_diagnostic_coverage",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 168 vs 1",1.84,2.43
-"crossover_3x40","run","run_diagnostic_implicit",1,8,"batch_fault",1,NA,NA,NA,0,120,FALSE,"<rows 120 vs 0>",1.84,2.43
-"crossover_3x40","run","run_diagnostic_summary",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 120 vs 0",1.84,2.43
-"crossover_3x40","run","run_diagnostics",1,8,"batch_fault",1,NA,NA,NA,0,168,FALSE,"<rows 168 vs 1>",1.84,2.43
-"crossover_3x40","run","run_promotion_context",1,8,"batch_fault",1,NA,NA,NA,0,0,TRUE,"",1.84,2.43
-"crossover_3x40","run","run_provenance",1,8,"batch_fault",1,NA,NA,NA,0,1,TRUE,"",1.84,2.43
-"crossover_3x40","run","run_tags",1,8,"batch_fault",1,NA,NA,NA,0,0,TRUE,"",1.84,2.43
-"crossover_3x40","run","run_telemetry",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.84,2.43
-"crossover_3x40","run","runs",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.84,2.43
-"crossover_3x40","run","fills",1,8,"batch_fault",1,NA,NA,NA,0,7,FALSE,"<missing>",1.84,2.43
-"crossover_3x40","run","trades",1,8,"batch_fault",1,NA,NA,NA,0,3,FALSE,"<missing>",1.84,2.43
-"crossover_3x40","run","metrics",1,8,"batch_fault",1,NA,NA,NA,0,9,FALSE,"<missing>",1.84,2.43
-"crossover_3x40","run","run_conditions",1,8,"batch_fault",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.84,2.43
-"tight_cash","run","equity_curve",1,8,"batch_fault",1,NA,NA,NA,0,10,FALSE,"<rows 10 vs 0>",1.85,1.54
-"tight_cash","run","ledger_events",1,8,"batch_fault",1,NA,NA,NA,0,5,FALSE,"<rows 5 vs 0>",1.85,1.54
-"tight_cash","run","run_completion",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.85,1.54
-"tight_cash","run","run_diagnostic_coverage",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 50 vs 1",1.85,1.54
-"tight_cash","run","run_diagnostic_implicit",1,8,"batch_fault",1,NA,NA,NA,0,26,FALSE,"<rows 26 vs 0>",1.85,1.54
-"tight_cash","run","run_diagnostic_summary",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 30 vs 0",1.85,1.54
-"tight_cash","run","run_diagnostics",1,8,"batch_fault",1,NA,NA,NA,0,50,FALSE,"<rows 50 vs 1>",1.85,1.54
-"tight_cash","run","run_promotion_context",1,8,"batch_fault",1,NA,NA,NA,0,0,TRUE,"",1.85,1.54
-"tight_cash","run","run_provenance",1,8,"batch_fault",1,NA,NA,NA,0,1,TRUE,"",1.85,1.54
-"tight_cash","run","run_tags",1,8,"batch_fault",1,NA,NA,NA,0,0,TRUE,"",1.85,1.54
-"tight_cash","run","run_telemetry",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.85,1.54
-"tight_cash","run","runs",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.85,1.54
-"tight_cash","run","fills",1,8,"batch_fault",1,NA,NA,NA,0,5,FALSE,"<missing>",1.85,1.54
-"tight_cash","run","trades",1,8,"batch_fault",1,NA,NA,NA,0,2,FALSE,"<missing>",1.85,1.54
-"tight_cash","run","metrics",1,8,"batch_fault",1,NA,NA,NA,0,9,FALSE,"<missing>",1.85,1.54
-"tight_cash","run","run_conditions",1,8,"batch_fault",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.85,1.54
-"reconciliation_stop","run","equity_curve",1,8,"batch_fault",1,NA,NA,NA,0,2,FALSE,"<rows 2 vs 0>",0.95,0.88
-"reconciliation_stop","run","ledger_events",1,8,"batch_fault",1,NA,NA,NA,0,2,FALSE,"<rows 2 vs 0>",0.95,0.88
-"reconciliation_stop","run","run_completion",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",0.95,0.88
-"reconciliation_stop","run","run_diagnostic_coverage",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 11 vs 1",0.95,0.88
-"reconciliation_stop","run","run_diagnostic_implicit",1,8,"batch_fault",1,NA,NA,NA,0,3,FALSE,"<rows 3 vs 0>",0.95,0.88
-"reconciliation_stop","run","run_diagnostic_summary",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 6 vs 0",0.95,0.88
-"reconciliation_stop","run","run_diagnostics",1,8,"batch_fault",1,NA,NA,NA,0,11,FALSE,"<rows 11 vs 1>",0.95,0.88
-"reconciliation_stop","run","run_promotion_context",1,8,"batch_fault",1,NA,NA,NA,0,0,TRUE,"",0.95,0.88
-"reconciliation_stop","run","run_provenance",1,8,"batch_fault",1,NA,NA,NA,0,1,TRUE,"",0.95,0.88
-"reconciliation_stop","run","run_tags",1,8,"batch_fault",1,NA,NA,NA,0,0,TRUE,"",0.95,0.88
-"reconciliation_stop","run","run_telemetry",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",0.95,0.88
-"reconciliation_stop","run","runs",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",0.95,0.88
-"reconciliation_stop","run","reader_refusal",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"<missing>",0.95,0.88
-"reconciliation_stop","run","run_conditions",1,8,"batch_fault",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",0.95,0.88
+"crossover_3x40","run","equity_curve",1,8,"batch_fault",1,NA,NA,NA,0,40,FALSE,"<rows 40 vs 0>",1.84,2.48
+"crossover_3x40","run","ledger_events",1,8,"batch_fault",1,NA,NA,NA,0,7,FALSE,"<rows 7 vs 0>",1.84,2.48
+"crossover_3x40","run","run_completion",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.84,2.48
+"crossover_3x40","run","run_diagnostic_coverage",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 168 vs 1",1.84,2.48
+"crossover_3x40","run","run_diagnostic_implicit",1,8,"batch_fault",1,NA,NA,NA,0,120,FALSE,"<rows 120 vs 0>",1.84,2.48
+"crossover_3x40","run","run_diagnostic_summary",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 120 vs 0",1.84,2.48
+"crossover_3x40","run","run_diagnostics",1,8,"batch_fault",1,NA,NA,NA,0,168,FALSE,"<rows 168 vs 1>",1.84,2.48
+"crossover_3x40","run","run_promotion_context",1,8,"batch_fault",1,NA,NA,NA,0,0,TRUE,"",1.84,2.48
+"crossover_3x40","run","run_provenance",1,8,"batch_fault",1,NA,NA,NA,0,1,TRUE,"",1.84,2.48
+"crossover_3x40","run","run_tags",1,8,"batch_fault",1,NA,NA,NA,0,0,TRUE,"",1.84,2.48
+"crossover_3x40","run","run_telemetry",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.84,2.48
+"crossover_3x40","run","runs",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.84,2.48
+"crossover_3x40","run","fills",1,8,"batch_fault",1,NA,NA,NA,0,7,FALSE,"<missing>",1.84,2.48
+"crossover_3x40","run","trades",1,8,"batch_fault",1,NA,NA,NA,0,3,FALSE,"<missing>",1.84,2.48
+"crossover_3x40","run","metrics",1,8,"batch_fault",1,NA,NA,NA,0,9,FALSE,"<missing>",1.84,2.48
+"crossover_3x40","run","run_conditions",1,8,"batch_fault",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.84,2.48
+"tight_cash","run","equity_curve",1,8,"batch_fault",1,NA,NA,NA,0,10,FALSE,"<rows 10 vs 0>",1.86,1.53
+"tight_cash","run","ledger_events",1,8,"batch_fault",1,NA,NA,NA,0,5,FALSE,"<rows 5 vs 0>",1.86,1.53
+"tight_cash","run","run_completion",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.86,1.53
+"tight_cash","run","run_diagnostic_coverage",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 50 vs 1",1.86,1.53
+"tight_cash","run","run_diagnostic_implicit",1,8,"batch_fault",1,NA,NA,NA,0,26,FALSE,"<rows 26 vs 0>",1.86,1.53
+"tight_cash","run","run_diagnostic_summary",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 30 vs 0",1.86,1.53
+"tight_cash","run","run_diagnostics",1,8,"batch_fault",1,NA,NA,NA,0,50,FALSE,"<rows 50 vs 1>",1.86,1.53
+"tight_cash","run","run_promotion_context",1,8,"batch_fault",1,NA,NA,NA,0,0,TRUE,"",1.86,1.53
+"tight_cash","run","run_provenance",1,8,"batch_fault",1,NA,NA,NA,0,1,TRUE,"",1.86,1.53
+"tight_cash","run","run_tags",1,8,"batch_fault",1,NA,NA,NA,0,0,TRUE,"",1.86,1.53
+"tight_cash","run","run_telemetry",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.86,1.53
+"tight_cash","run","runs",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column status: DONE vs FAILED",1.86,1.53
+"tight_cash","run","fills",1,8,"batch_fault",1,NA,NA,NA,0,5,FALSE,"<missing>",1.86,1.53
+"tight_cash","run","trades",1,8,"batch_fault",1,NA,NA,NA,0,2,FALSE,"<missing>",1.86,1.53
+"tight_cash","run","metrics",1,8,"batch_fault",1,NA,NA,NA,0,9,FALSE,"<missing>",1.86,1.53
+"tight_cash","run","run_conditions",1,8,"batch_fault",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.86,1.53
+"reconciliation_stop","run","equity_curve",1,8,"batch_fault",1,NA,NA,NA,0,2,FALSE,"<rows 2 vs 0>",1.03,0.9
+"reconciliation_stop","run","ledger_events",1,8,"batch_fault",1,NA,NA,NA,0,2,FALSE,"<rows 2 vs 0>",1.03,0.9
+"reconciliation_stop","run","run_completion",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"<rows 1 vs 0>",1.03,0.9
+"reconciliation_stop","run","run_diagnostic_coverage",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column logical_count: 11 vs 1",1.03,0.9
+"reconciliation_stop","run","run_diagnostic_implicit",1,8,"batch_fault",1,NA,NA,NA,0,3,FALSE,"<rows 3 vs 0>",1.03,0.9
+"reconciliation_stop","run","run_diagnostic_summary",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column decisions: 6 vs 0",1.03,0.9
+"reconciliation_stop","run","run_diagnostics",1,8,"batch_fault",1,NA,NA,NA,0,11,FALSE,"<rows 11 vs 1>",1.03,0.9
+"reconciliation_stop","run","run_promotion_context",1,8,"batch_fault",1,NA,NA,NA,0,0,TRUE,"",1.03,0.9
+"reconciliation_stop","run","run_provenance",1,8,"batch_fault",1,NA,NA,NA,0,1,TRUE,"",1.03,0.9
+"reconciliation_stop","run","run_tags",1,8,"batch_fault",1,NA,NA,NA,0,0,TRUE,"",1.03,0.9
+"reconciliation_stop","run","run_telemetry",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",1.03,0.9
+"reconciliation_stop","run","runs",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",1.03,0.9
+"reconciliation_stop","run","reader_refusal",1,8,"batch_fault",1,NA,NA,NA,0,1,FALSE,"<missing>",1.03,0.9
+"reconciliation_stop","run","run_conditions",1,8,"batch_fault",1,NA,NA,NA,0,0,FALSE,"<rows 0 vs 1>",1.03,0.9

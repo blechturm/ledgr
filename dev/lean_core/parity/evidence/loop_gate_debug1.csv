@@ -1,159 +1,159 @@
 "workload","path","table","debug","batch_rows","mutation","lean_folds","refused","backstop","store_writes","hold_calls","rows","identical","first_difference","pinned_s","lean_s"
-"dense_cost","sweep_w1","sweep",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","sweep_w1","sweep_attrs",1,65536,"",0,"costs; compiled FIFO","","",0,25,TRUE,"",7.92,7.47
-"dense_cost","sweep_w1","sweep_returns",1,65536,"",0,"costs; compiled FIFO","","",0,24,TRUE,"",7.92,7.47
-"dense_cost","sweep_w1","sweep_trades",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","sweep_w1","memory_state",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","sweep_w1","memory_events",1,65536,"",0,"costs; compiled FIFO","","",0,6,TRUE,"",7.92,7.47
-"dense_cost","sweep_w1","memory_diagnostics",1,65536,"",0,"costs; compiled FIFO","","",0,1,TRUE,"",7.92,7.47
-"dense_cost","sweep_w1","memory_completion",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","sweep_w1","memory_equity",1,65536,"",0,"costs; compiled FIFO","","",0,24,TRUE,"",7.92,7.47
-"dense_cost","sweep_w1","memory_fills",1,65536,"",0,"costs; compiled FIFO","","",0,6,TRUE,"",7.92,7.47
-"dense_cost","sweep_w2","sweep",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","sweep_w2","sweep_attrs",1,65536,"",0,"costs; compiled FIFO","","",0,25,TRUE,"",7.92,7.47
-"dense_cost","sweep_w2","sweep_returns",1,65536,"",0,"costs; compiled FIFO","","",0,24,TRUE,"",7.92,7.47
-"dense_cost","sweep_w2","sweep_trades",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","sweep_compiled","sweep",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","sweep_compiled","sweep_attrs",1,65536,"",0,"costs; compiled FIFO","","",0,25,TRUE,"",7.92,7.47
-"dense_cost","sweep_compiled","sweep_returns",1,65536,"",0,"costs; compiled FIFO","","",0,24,TRUE,"",7.92,7.47
-"dense_cost","sweep_compiled","sweep_trades",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","sweep_compiled","memory_state",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","sweep_compiled","memory_events",1,65536,"",0,"costs; compiled FIFO","","",0,6,TRUE,"",7.92,7.47
-"dense_cost","sweep_compiled","memory_diagnostics",1,65536,"",0,"costs; compiled FIFO","","",0,1,TRUE,"",7.92,7.47
-"dense_cost","sweep_compiled","memory_completion",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","sweep_compiled","memory_equity",1,65536,"",0,"costs; compiled FIFO","","",0,24,TRUE,"",7.92,7.47
-"dense_cost","sweep_compiled","memory_fills",1,65536,"",0,"costs; compiled FIFO","","",0,6,TRUE,"",7.92,7.47
-"dense_cost","run","equity_curve",1,65536,"",0,"costs; compiled FIFO","","",0,24,TRUE,"",7.92,7.47
-"dense_cost","run","ledger_events",1,65536,"",0,"costs; compiled FIFO","","",0,6,TRUE,"",7.92,7.47
-"dense_cost","run","run_completion",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","run","run_diagnostic_coverage",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","run","run_diagnostic_implicit",1,65536,"",0,"costs; compiled FIFO","","",0,47,TRUE,"",7.92,7.47
-"dense_cost","run","run_diagnostic_summary",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","run","run_diagnostics",1,65536,"",0,"costs; compiled FIFO","","",0,82,TRUE,"",7.92,7.47
-"dense_cost","run","run_promotion_context",1,65536,"",0,"costs; compiled FIFO","","",0,0,TRUE,"",7.92,7.47
-"dense_cost","run","run_provenance",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","run","run_tags",1,65536,"",0,"costs; compiled FIFO","","",0,0,TRUE,"",7.92,7.47
-"dense_cost","run","run_telemetry",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","run","runs",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","run","fills",1,65536,"",0,"costs; compiled FIFO","","",0,6,TRUE,"",7.92,7.47
-"dense_cost","run","trades",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.92,7.47
-"dense_cost","run","metrics",1,65536,"",0,"costs; compiled FIFO","","",0,27,TRUE,"",7.92,7.47
-"dense_cost","run","run_conditions",1,65536,"",0,"costs; compiled FIFO","","",0,0,TRUE,"",7.92,7.47
-"dense_risk_features","sweep_w1","sweep",1,65536,"",0,"costs","","",0,2,TRUE,"",5.75,5.67
-"dense_risk_features","sweep_w1","sweep_attrs",1,65536,"",0,"costs","","",0,25,TRUE,"",5.75,5.67
-"dense_risk_features","sweep_w1","sweep_returns",1,65536,"",0,"costs","","",0,16,TRUE,"",5.75,5.67
-"dense_risk_features","sweep_w1","sweep_trades",1,65536,"",0,"costs","","",0,7,TRUE,"",5.75,5.67
-"dense_risk_features","sweep_w1","memory_state",1,65536,"",0,"costs","","",0,2,TRUE,"",5.75,5.67
-"dense_risk_features","sweep_w1","memory_events",1,65536,"",0,"costs","","",0,14,TRUE,"",5.75,5.67
-"dense_risk_features","sweep_w1","memory_diagnostics",1,65536,"",0,"costs","","",0,2,TRUE,"",5.75,5.67
-"dense_risk_features","sweep_w1","memory_completion",1,65536,"",0,"costs","","",0,2,TRUE,"",5.75,5.67
-"dense_risk_features","sweep_w1","memory_equity",1,65536,"",0,"costs","","",0,16,TRUE,"",5.75,5.67
-"dense_risk_features","sweep_w1","memory_fills",1,65536,"",0,"costs","","",0,12,TRUE,"",5.75,5.67
-"dense_risk_features","sweep_w2","sweep",1,65536,"",0,"costs","","",0,2,TRUE,"",5.75,5.67
-"dense_risk_features","sweep_w2","sweep_attrs",1,65536,"",0,"costs","","",0,25,TRUE,"",5.75,5.67
-"dense_risk_features","sweep_w2","sweep_returns",1,65536,"",0,"costs","","",0,16,TRUE,"",5.75,5.67
-"dense_risk_features","sweep_w2","sweep_trades",1,65536,"",0,"costs","","",0,7,TRUE,"",5.75,5.67
-"dense_risk_features","run","equity_curve",1,65536,"",0,"costs","","",0,16,TRUE,"",5.75,5.67
-"dense_risk_features","run","ledger_events",1,65536,"",0,"costs","","",0,14,TRUE,"",5.75,5.67
-"dense_risk_features","run","run_completion",1,65536,"",0,"costs","","",0,2,TRUE,"",5.75,5.67
-"dense_risk_features","run","run_diagnostic_coverage",1,65536,"",0,"costs","","",0,2,TRUE,"",5.75,5.67
-"dense_risk_features","run","run_diagnostic_implicit",1,65536,"",0,"costs","","",0,22,TRUE,"",5.75,5.67
-"dense_risk_features","run","run_diagnostic_summary",1,65536,"",0,"costs","","",0,2,TRUE,"",5.75,5.67
-"dense_risk_features","run","run_diagnostics",1,65536,"",0,"costs","","",0,64,TRUE,"",5.75,5.67
-"dense_risk_features","run","run_promotion_context",1,65536,"",0,"costs","","",0,0,TRUE,"",5.75,5.67
-"dense_risk_features","run","run_provenance",1,65536,"",0,"costs","","",0,2,TRUE,"",5.75,5.67
-"dense_risk_features","run","run_tags",1,65536,"",0,"costs","","",0,0,TRUE,"",5.75,5.67
-"dense_risk_features","run","run_telemetry",1,65536,"",0,"costs","","",0,2,TRUE,"",5.75,5.67
-"dense_risk_features","run","runs",1,65536,"",0,"costs","","",0,2,TRUE,"",5.75,5.67
-"dense_risk_features","run","fills",1,65536,"",0,"costs","","",0,12,TRUE,"",5.75,5.67
-"dense_risk_features","run","trades",1,65536,"",0,"costs","","",0,7,TRUE,"",5.75,5.67
-"dense_risk_features","run","metrics",1,65536,"",0,"costs","","",0,18,TRUE,"",5.75,5.67
-"dense_risk_features","run","run_conditions",1,65536,"",0,"costs","","",0,0,TRUE,"",5.75,5.67
-"dense_dividend_state","sweep_w1","sweep",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.47,2.58
-"dense_dividend_state","sweep_w1","sweep_attrs",1,65536,"",0,"corporate actions","","",0,25,TRUE,"",2.47,2.58
-"dense_dividend_state","sweep_w1","sweep_returns",1,65536,"",0,"corporate actions","","",0,8,TRUE,"",2.47,2.58
-"dense_dividend_state","sweep_w1","sweep_trades",1,65536,"",0,"corporate actions","","",0,0,TRUE,"",2.47,2.58
-"dense_dividend_state","sweep_w1","memory_state",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.47,2.58
-"dense_dividend_state","sweep_w1","memory_events",1,65536,"",0,"corporate actions","","",0,5,TRUE,"",2.47,2.58
-"dense_dividend_state","sweep_w1","memory_diagnostics",1,65536,"",0,"corporate actions","","",0,0,TRUE,"",2.47,2.58
-"dense_dividend_state","sweep_w1","memory_completion",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.47,2.58
-"dense_dividend_state","sweep_w1","memory_equity",1,65536,"",0,"corporate actions","","",0,8,TRUE,"",2.47,2.58
-"dense_dividend_state","sweep_w1","memory_fills",1,65536,"",0,"corporate actions","","",0,1,TRUE,"",2.47,2.58
-"dense_dividend_state","run","equity_curve",1,65536,"",0,"corporate actions","","",0,8,TRUE,"",2.47,2.58
-"dense_dividend_state","run","ledger_events",1,65536,"",0,"corporate actions","","",0,5,TRUE,"",2.47,2.58
-"dense_dividend_state","run","run_completion",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.47,2.58
-"dense_dividend_state","run","run_diagnostic_coverage",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.47,2.58
-"dense_dividend_state","run","run_diagnostic_implicit",1,65536,"",0,"corporate actions","","",0,8,TRUE,"",2.47,2.58
-"dense_dividend_state","run","run_diagnostic_summary",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.47,2.58
-"dense_dividend_state","run","run_diagnostics",1,65536,"",0,"corporate actions","","",0,19,TRUE,"",2.47,2.58
-"dense_dividend_state","run","run_promotion_context",1,65536,"",0,"corporate actions","","",0,0,TRUE,"",2.47,2.58
-"dense_dividend_state","run","run_provenance",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.47,2.58
-"dense_dividend_state","run","run_tags",1,65536,"",0,"corporate actions","","",0,0,TRUE,"",2.47,2.58
-"dense_dividend_state","run","run_telemetry",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.47,2.58
-"dense_dividend_state","run","runs",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.47,2.58
-"dense_dividend_state","run","fills",1,65536,"",0,"corporate actions","","",0,1,TRUE,"",2.47,2.58
-"dense_dividend_state","run","trades",1,65536,"",0,"corporate actions","","",0,0,TRUE,"",2.47,2.58
-"dense_dividend_state","run","metrics",1,65536,"",0,"corporate actions","","",0,18,TRUE,"",2.47,2.58
-"dense_dividend_state","run","run_conditions",1,65536,"",0,"corporate actions","","",0,0,TRUE,"",2.47,2.58
-"avail_terminal_resume","sweep_w1","sweep",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","sweep_w1","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",6.17,6.2
-"avail_terminal_resume","sweep_w1","sweep_returns",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",6.17,6.2
-"avail_terminal_resume","sweep_w1","sweep_trades",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","sweep_w1","memory_state",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","sweep_w1","memory_events",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",6.17,6.2
-"avail_terminal_resume","sweep_w1","memory_diagnostics",1,65536,"",0,"declared sessions","","",0,7,TRUE,"",6.17,6.2
-"avail_terminal_resume","sweep_w1","memory_completion",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","sweep_w1","memory_equity",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",6.17,6.2
-"avail_terminal_resume","sweep_w1","memory_fills",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","sweep_w2","sweep",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","sweep_w2","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",6.17,6.2
-"avail_terminal_resume","sweep_w2","sweep_returns",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",6.17,6.2
-"avail_terminal_resume","sweep_w2","sweep_trades",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_failed","equity_curve",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_failed","ledger_events",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_failed","run_completion",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_failed","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_failed","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_failed","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_failed","run_diagnostics",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_failed","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_failed","run_provenance",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_failed","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_failed","run_telemetry",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_failed","runs",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_failed","run_conditions",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","equity_curve",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","ledger_events",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","run_completion",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,10,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","run_diagnostics",1,65536,"",0,"declared sessions","","",0,34,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","run_provenance",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","run_telemetry",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","runs",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","fills",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","trades",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","metrics",1,65536,"",0,"declared sessions","","",0,9,TRUE,"",6.17,6.2
-"avail_terminal_resume","run","run_conditions",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","equity_curve",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","ledger_events",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","run_completion",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,10,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","run_diagnostics",1,65536,"",0,"declared sessions","","",0,34,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","run_provenance",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","run_telemetry",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","runs",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","fills",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","trades",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","metrics",1,65536,"",0,"declared sessions","","",0,9,TRUE,"",6.17,6.2
-"avail_terminal_resume","run_restarted","run_conditions",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.17,6.2
+"dense_cost","sweep_w1","sweep",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","sweep_w1","sweep_attrs",1,65536,"",0,"costs; compiled FIFO","","",0,25,TRUE,"",7.72,7.39
+"dense_cost","sweep_w1","sweep_returns",1,65536,"",0,"costs; compiled FIFO","","",0,24,TRUE,"",7.72,7.39
+"dense_cost","sweep_w1","sweep_trades",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","sweep_w1","memory_state",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","sweep_w1","memory_events",1,65536,"",0,"costs; compiled FIFO","","",0,6,TRUE,"",7.72,7.39
+"dense_cost","sweep_w1","memory_diagnostics",1,65536,"",0,"costs; compiled FIFO","","",0,1,TRUE,"",7.72,7.39
+"dense_cost","sweep_w1","memory_completion",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","sweep_w1","memory_equity",1,65536,"",0,"costs; compiled FIFO","","",0,24,TRUE,"",7.72,7.39
+"dense_cost","sweep_w1","memory_fills",1,65536,"",0,"costs; compiled FIFO","","",0,6,TRUE,"",7.72,7.39
+"dense_cost","sweep_w2","sweep",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","sweep_w2","sweep_attrs",1,65536,"",0,"costs; compiled FIFO","","",0,25,TRUE,"",7.72,7.39
+"dense_cost","sweep_w2","sweep_returns",1,65536,"",0,"costs; compiled FIFO","","",0,24,TRUE,"",7.72,7.39
+"dense_cost","sweep_w2","sweep_trades",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","sweep_compiled","sweep",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","sweep_compiled","sweep_attrs",1,65536,"",0,"costs; compiled FIFO","","",0,25,TRUE,"",7.72,7.39
+"dense_cost","sweep_compiled","sweep_returns",1,65536,"",0,"costs; compiled FIFO","","",0,24,TRUE,"",7.72,7.39
+"dense_cost","sweep_compiled","sweep_trades",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","sweep_compiled","memory_state",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","sweep_compiled","memory_events",1,65536,"",0,"costs; compiled FIFO","","",0,6,TRUE,"",7.72,7.39
+"dense_cost","sweep_compiled","memory_diagnostics",1,65536,"",0,"costs; compiled FIFO","","",0,1,TRUE,"",7.72,7.39
+"dense_cost","sweep_compiled","memory_completion",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","sweep_compiled","memory_equity",1,65536,"",0,"costs; compiled FIFO","","",0,24,TRUE,"",7.72,7.39
+"dense_cost","sweep_compiled","memory_fills",1,65536,"",0,"costs; compiled FIFO","","",0,6,TRUE,"",7.72,7.39
+"dense_cost","run","equity_curve",1,65536,"",0,"costs; compiled FIFO","","",0,24,TRUE,"",7.72,7.39
+"dense_cost","run","ledger_events",1,65536,"",0,"costs; compiled FIFO","","",0,6,TRUE,"",7.72,7.39
+"dense_cost","run","run_completion",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","run","run_diagnostic_coverage",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","run","run_diagnostic_implicit",1,65536,"",0,"costs; compiled FIFO","","",0,47,TRUE,"",7.72,7.39
+"dense_cost","run","run_diagnostic_summary",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","run","run_diagnostics",1,65536,"",0,"costs; compiled FIFO","","",0,82,TRUE,"",7.72,7.39
+"dense_cost","run","run_promotion_context",1,65536,"",0,"costs; compiled FIFO","","",0,0,TRUE,"",7.72,7.39
+"dense_cost","run","run_provenance",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","run","run_tags",1,65536,"",0,"costs; compiled FIFO","","",0,0,TRUE,"",7.72,7.39
+"dense_cost","run","run_telemetry",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","run","runs",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","run","fills",1,65536,"",0,"costs; compiled FIFO","","",0,6,TRUE,"",7.72,7.39
+"dense_cost","run","trades",1,65536,"",0,"costs; compiled FIFO","","",0,3,TRUE,"",7.72,7.39
+"dense_cost","run","metrics",1,65536,"",0,"costs; compiled FIFO","","",0,27,TRUE,"",7.72,7.39
+"dense_cost","run","run_conditions",1,65536,"",0,"costs; compiled FIFO","","",0,0,TRUE,"",7.72,7.39
+"dense_risk_features","sweep_w1","sweep",1,65536,"",0,"costs","","",0,2,TRUE,"",5.56,5.62
+"dense_risk_features","sweep_w1","sweep_attrs",1,65536,"",0,"costs","","",0,25,TRUE,"",5.56,5.62
+"dense_risk_features","sweep_w1","sweep_returns",1,65536,"",0,"costs","","",0,16,TRUE,"",5.56,5.62
+"dense_risk_features","sweep_w1","sweep_trades",1,65536,"",0,"costs","","",0,7,TRUE,"",5.56,5.62
+"dense_risk_features","sweep_w1","memory_state",1,65536,"",0,"costs","","",0,2,TRUE,"",5.56,5.62
+"dense_risk_features","sweep_w1","memory_events",1,65536,"",0,"costs","","",0,14,TRUE,"",5.56,5.62
+"dense_risk_features","sweep_w1","memory_diagnostics",1,65536,"",0,"costs","","",0,2,TRUE,"",5.56,5.62
+"dense_risk_features","sweep_w1","memory_completion",1,65536,"",0,"costs","","",0,2,TRUE,"",5.56,5.62
+"dense_risk_features","sweep_w1","memory_equity",1,65536,"",0,"costs","","",0,16,TRUE,"",5.56,5.62
+"dense_risk_features","sweep_w1","memory_fills",1,65536,"",0,"costs","","",0,12,TRUE,"",5.56,5.62
+"dense_risk_features","sweep_w2","sweep",1,65536,"",0,"costs","","",0,2,TRUE,"",5.56,5.62
+"dense_risk_features","sweep_w2","sweep_attrs",1,65536,"",0,"costs","","",0,25,TRUE,"",5.56,5.62
+"dense_risk_features","sweep_w2","sweep_returns",1,65536,"",0,"costs","","",0,16,TRUE,"",5.56,5.62
+"dense_risk_features","sweep_w2","sweep_trades",1,65536,"",0,"costs","","",0,7,TRUE,"",5.56,5.62
+"dense_risk_features","run","equity_curve",1,65536,"",0,"costs","","",0,16,TRUE,"",5.56,5.62
+"dense_risk_features","run","ledger_events",1,65536,"",0,"costs","","",0,14,TRUE,"",5.56,5.62
+"dense_risk_features","run","run_completion",1,65536,"",0,"costs","","",0,2,TRUE,"",5.56,5.62
+"dense_risk_features","run","run_diagnostic_coverage",1,65536,"",0,"costs","","",0,2,TRUE,"",5.56,5.62
+"dense_risk_features","run","run_diagnostic_implicit",1,65536,"",0,"costs","","",0,22,TRUE,"",5.56,5.62
+"dense_risk_features","run","run_diagnostic_summary",1,65536,"",0,"costs","","",0,2,TRUE,"",5.56,5.62
+"dense_risk_features","run","run_diagnostics",1,65536,"",0,"costs","","",0,64,TRUE,"",5.56,5.62
+"dense_risk_features","run","run_promotion_context",1,65536,"",0,"costs","","",0,0,TRUE,"",5.56,5.62
+"dense_risk_features","run","run_provenance",1,65536,"",0,"costs","","",0,2,TRUE,"",5.56,5.62
+"dense_risk_features","run","run_tags",1,65536,"",0,"costs","","",0,0,TRUE,"",5.56,5.62
+"dense_risk_features","run","run_telemetry",1,65536,"",0,"costs","","",0,2,TRUE,"",5.56,5.62
+"dense_risk_features","run","runs",1,65536,"",0,"costs","","",0,2,TRUE,"",5.56,5.62
+"dense_risk_features","run","fills",1,65536,"",0,"costs","","",0,12,TRUE,"",5.56,5.62
+"dense_risk_features","run","trades",1,65536,"",0,"costs","","",0,7,TRUE,"",5.56,5.62
+"dense_risk_features","run","metrics",1,65536,"",0,"costs","","",0,18,TRUE,"",5.56,5.62
+"dense_risk_features","run","run_conditions",1,65536,"",0,"costs","","",0,0,TRUE,"",5.56,5.62
+"dense_dividend_state","sweep_w1","sweep",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.45,2.53
+"dense_dividend_state","sweep_w1","sweep_attrs",1,65536,"",0,"corporate actions","","",0,25,TRUE,"",2.45,2.53
+"dense_dividend_state","sweep_w1","sweep_returns",1,65536,"",0,"corporate actions","","",0,8,TRUE,"",2.45,2.53
+"dense_dividend_state","sweep_w1","sweep_trades",1,65536,"",0,"corporate actions","","",0,0,TRUE,"",2.45,2.53
+"dense_dividend_state","sweep_w1","memory_state",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.45,2.53
+"dense_dividend_state","sweep_w1","memory_events",1,65536,"",0,"corporate actions","","",0,5,TRUE,"",2.45,2.53
+"dense_dividend_state","sweep_w1","memory_diagnostics",1,65536,"",0,"corporate actions","","",0,0,TRUE,"",2.45,2.53
+"dense_dividend_state","sweep_w1","memory_completion",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.45,2.53
+"dense_dividend_state","sweep_w1","memory_equity",1,65536,"",0,"corporate actions","","",0,8,TRUE,"",2.45,2.53
+"dense_dividend_state","sweep_w1","memory_fills",1,65536,"",0,"corporate actions","","",0,1,TRUE,"",2.45,2.53
+"dense_dividend_state","run","equity_curve",1,65536,"",0,"corporate actions","","",0,8,TRUE,"",2.45,2.53
+"dense_dividend_state","run","ledger_events",1,65536,"",0,"corporate actions","","",0,5,TRUE,"",2.45,2.53
+"dense_dividend_state","run","run_completion",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.45,2.53
+"dense_dividend_state","run","run_diagnostic_coverage",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.45,2.53
+"dense_dividend_state","run","run_diagnostic_implicit",1,65536,"",0,"corporate actions","","",0,8,TRUE,"",2.45,2.53
+"dense_dividend_state","run","run_diagnostic_summary",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.45,2.53
+"dense_dividend_state","run","run_diagnostics",1,65536,"",0,"corporate actions","","",0,19,TRUE,"",2.45,2.53
+"dense_dividend_state","run","run_promotion_context",1,65536,"",0,"corporate actions","","",0,0,TRUE,"",2.45,2.53
+"dense_dividend_state","run","run_provenance",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.45,2.53
+"dense_dividend_state","run","run_tags",1,65536,"",0,"corporate actions","","",0,0,TRUE,"",2.45,2.53
+"dense_dividend_state","run","run_telemetry",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.45,2.53
+"dense_dividend_state","run","runs",1,65536,"",0,"corporate actions","","",0,2,TRUE,"",2.45,2.53
+"dense_dividend_state","run","fills",1,65536,"",0,"corporate actions","","",0,1,TRUE,"",2.45,2.53
+"dense_dividend_state","run","trades",1,65536,"",0,"corporate actions","","",0,0,TRUE,"",2.45,2.53
+"dense_dividend_state","run","metrics",1,65536,"",0,"corporate actions","","",0,18,TRUE,"",2.45,2.53
+"dense_dividend_state","run","run_conditions",1,65536,"",0,"corporate actions","","",0,0,TRUE,"",2.45,2.53
+"avail_terminal_resume","sweep_w1","sweep",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","sweep_w1","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",6.05,6.12
+"avail_terminal_resume","sweep_w1","sweep_returns",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",6.05,6.12
+"avail_terminal_resume","sweep_w1","sweep_trades",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","sweep_w1","memory_state",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","sweep_w1","memory_events",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",6.05,6.12
+"avail_terminal_resume","sweep_w1","memory_diagnostics",1,65536,"",0,"declared sessions","","",0,7,TRUE,"",6.05,6.12
+"avail_terminal_resume","sweep_w1","memory_completion",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","sweep_w1","memory_equity",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",6.05,6.12
+"avail_terminal_resume","sweep_w1","memory_fills",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","sweep_w2","sweep",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","sweep_w2","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",6.05,6.12
+"avail_terminal_resume","sweep_w2","sweep_returns",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",6.05,6.12
+"avail_terminal_resume","sweep_w2","sweep_trades",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_failed","equity_curve",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_failed","ledger_events",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_failed","run_completion",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_failed","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_failed","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_failed","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_failed","run_diagnostics",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_failed","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_failed","run_provenance",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_failed","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_failed","run_telemetry",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_failed","runs",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_failed","run_conditions",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","equity_curve",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","ledger_events",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","run_completion",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,10,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","run_diagnostics",1,65536,"",0,"declared sessions","","",0,34,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","run_provenance",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","run_telemetry",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","runs",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","fills",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","trades",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","metrics",1,65536,"",0,"declared sessions","","",0,9,TRUE,"",6.05,6.12
+"avail_terminal_resume","run","run_conditions",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","equity_curve",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","ledger_events",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","run_completion",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,10,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","run_diagnostics",1,65536,"",0,"declared sessions","","",0,34,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","run_provenance",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","run_telemetry",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","runs",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","fills",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","trades",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","metrics",1,65536,"",0,"declared sessions","","",0,9,TRUE,"",6.05,6.12
+"avail_terminal_resume","run_restarted","run_conditions",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",6.05,6.12
 "avail_acquisition","sweep_w1","sweep",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",2.63,2.48
 "avail_acquisition","sweep_w1","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",2.63,2.48
 "avail_acquisition","sweep_w1","sweep_returns",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",2.63,2.48
@@ -180,513 +180,555 @@
 "avail_acquisition","run","trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",2.63,2.48
 "avail_acquisition","run","metrics",1,65536,"",0,"declared sessions","","",0,18,TRUE,"",2.63,2.48
 "avail_acquisition","run","run_conditions",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",2.63,2.48
-"avail_incomplete","sweep_w1","sweep",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","sweep_w1","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",5.5,5.39
-"avail_incomplete","sweep_w1","sweep_returns",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.5,5.39
-"avail_incomplete","sweep_w1","sweep_trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.5,5.39
-"avail_incomplete","sweep_w1","memory_state",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","sweep_w1","memory_events",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","sweep_w1","memory_diagnostics",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","sweep_w1","memory_completion",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","sweep_w1","memory_equity",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.5,5.39
-"avail_incomplete","sweep_w1","memory_fills",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","sweep_w2","sweep",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","sweep_w2","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",5.5,5.39
-"avail_incomplete","sweep_w2","sweep_returns",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.5,5.39
-"avail_incomplete","sweep_w2","sweep_trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.5,5.39
-"avail_incomplete","run","equity_curve",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.5,5.39
-"avail_incomplete","run","ledger_events",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","run","run_completion",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","run","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","run","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.5,5.39
-"avail_incomplete","run","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","run","run_diagnostics",1,65536,"",0,"declared sessions","","",0,14,TRUE,"",5.5,5.39
-"avail_incomplete","run","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.5,5.39
-"avail_incomplete","run","run_provenance",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","run","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.5,5.39
-"avail_incomplete","run","run_telemetry",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","run","runs",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","run","fills",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.39
-"avail_incomplete","run","trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.5,5.39
-"avail_incomplete","run","metrics",1,65536,"",0,"declared sessions","","",0,18,TRUE,"",5.5,5.39
-"avail_incomplete","run","run_conditions",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.5,5.39
-"walk_forward","sweep_w1","sweep",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","sweep_w1","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",5.58,5.69
-"walk_forward","sweep_w1","sweep_returns",1,65536,"",0,"declared sessions","","",0,20,TRUE,"",5.58,5.69
-"walk_forward","sweep_w1","sweep_trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.58,5.69
-"walk_forward","sweep_w1","memory_state",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","sweep_w1","memory_events",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",5.58,5.69
-"walk_forward","sweep_w1","memory_diagnostics",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.58,5.69
-"walk_forward","sweep_w1","memory_completion",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","sweep_w1","memory_equity",1,65536,"",0,"declared sessions","","",0,20,TRUE,"",5.58,5.69
-"walk_forward","sweep_w1","memory_fills",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","run","equity_curve",1,65536,"",0,"declared sessions","","",0,20,TRUE,"",5.58,5.69
-"walk_forward","run","ledger_events",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",5.58,5.69
-"walk_forward","run","run_completion",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","run","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","run","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,36,TRUE,"",5.58,5.69
-"walk_forward","run","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","run","run_diagnostics",1,65536,"",0,"declared sessions","","",0,68,TRUE,"",5.58,5.69
-"walk_forward","run","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.58,5.69
-"walk_forward","run","run_provenance",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","run","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.58,5.69
-"walk_forward","run","run_telemetry",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","run","runs",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","run","fills",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","run","trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.58,5.69
-"walk_forward","run","metrics",1,65536,"",0,"declared sessions","","",0,18,TRUE,"",5.58,5.69
-"walk_forward","run","run_conditions",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","wf_folds",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","wf_scores",1,65536,"",0,"declared sessions","","",0,54,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","wf_status",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","equity_curve",1,65536,"",0,"declared sessions","","",0,7,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","ledger_events",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","run_completion",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,12,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","run_diagnostics",1,65536,"",0,"declared sessions","","",0,26,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","run_provenance",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","run_telemetry",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","runs",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","fills",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","metrics",1,65536,"",0,"declared sessions","","",0,18,TRUE,"",5.58,5.69
-"walk_forward","walk_forward","run_conditions",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.58,5.69
-"failures","sweep_w1","sweep",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.18,5.18
-"failures","sweep_w1","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",5.18,5.18
-"failures","sweep_w1","sweep_returns",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.18,5.18
-"failures","sweep_w1","sweep_trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","sweep_w1","memory_state",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.18,5.18
-"failures","sweep_w1","memory_events",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.18,5.18
-"failures","sweep_w1","memory_diagnostics",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","sweep_w1","memory_completion",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.18,5.18
-"failures","sweep_w1","memory_equity",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.18,5.18
-"failures","sweep_w1","memory_fills",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.18,5.18
-"failures","sweep_w2","sweep",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.18,5.18
-"failures","sweep_w2","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",5.18,5.18
-"failures","sweep_w2","sweep_returns",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.18,5.18
-"failures","sweep_w2","sweep_trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run","equity_curve",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.18,5.18
-"failures","run","ledger_events",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.18,5.18
-"failures","run","run_completion",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.18,5.18
-"failures","run","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.18,5.18
-"failures","run","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,7,TRUE,"",5.18,5.18
-"failures","run","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.18,5.18
-"failures","run","run_diagnostics",1,65536,"",0,"declared sessions","","",0,15,TRUE,"",5.18,5.18
-"failures","run","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run","run_provenance",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.18,5.18
-"failures","run","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run","run_telemetry",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.18,5.18
-"failures","run","runs",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.18,5.18
-"failures","run","fills",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.18,5.18
-"failures","run","trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run","metrics",1,65536,"",0,"declared sessions","","",0,9,TRUE,"",5.18,5.18
-"failures","run","run_conditions",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.18,5.18
-"failures","run_abort","equity_curve",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run_abort","ledger_events",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run_abort","run_completion",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run_abort","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run_abort","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run_abort","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run_abort","run_diagnostics",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run_abort","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run_abort","run_provenance",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run_abort","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run_abort","run_telemetry",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run_abort","runs",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.18,5.18
-"failures","run_abort","run_conditions",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.18,5.18
-"crossover_3x40","run","equity_curve",1,65536,"",1,"","","",0,40,TRUE,"",1.53,3
-"crossover_3x40","run","ledger_events",1,65536,"",1,"","","",0,7,TRUE,"",1.53,3
-"crossover_3x40","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1.53,3
-"crossover_3x40","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.53,3
-"crossover_3x40","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,120,TRUE,"",1.53,3
-"crossover_3x40","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.53,3
-"crossover_3x40","run","run_diagnostics",1,65536,"",1,"","","",0,168,TRUE,"",1.53,3
-"crossover_3x40","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.53,3
-"crossover_3x40","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.53,3
-"crossover_3x40","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.53,3
-"crossover_3x40","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.53,3
-"crossover_3x40","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.53,3
-"crossover_3x40","run","fills",1,65536,"",1,"","","",0,7,TRUE,"",1.53,3
-"crossover_3x40","run","trades",1,65536,"",1,"","","",0,3,TRUE,"",1.53,3
-"crossover_3x40","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",1.53,3
-"crossover_3x40","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.53,3
-"crossover_10x300","run","equity_curve",1,65536,"",1,"","","",0,300,TRUE,"",2.83,12.42
-"crossover_10x300","run","ledger_events",1,65536,"",1,"","","",0,313,TRUE,"",2.83,12.42
-"crossover_10x300","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",2.83,12.42
-"crossover_10x300","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",2.83,12.42
-"crossover_10x300","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,2998,TRUE,"",2.83,12.42
-"crossover_10x300","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",2.83,12.42
-"crossover_10x300","run","run_diagnostics",1,65536,"",1,"","","",0,3616,TRUE,"",2.83,12.42
-"crossover_10x300","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",2.83,12.42
-"crossover_10x300","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",2.83,12.42
-"crossover_10x300","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",2.83,12.42
-"crossover_10x300","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",2.83,12.42
-"crossover_10x300","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",2.83,12.42
-"crossover_10x300","run","fills",1,65536,"",1,"","","",0,313,TRUE,"",2.83,12.42
-"crossover_10x300","run","trades",1,65536,"",1,"","","",0,155,TRUE,"",2.83,12.42
-"crossover_10x300","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",2.83,12.42
-"crossover_10x300","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",2.83,12.42
-"crossover_10x7200","run","equity_curve",1,65536,"",1,"","","",0,7200,TRUE,"",33.08,285.76
-"crossover_10x7200","run","ledger_events",1,65536,"",1,"","","",0,7971,TRUE,"",33.08,285.76
-"crossover_10x7200","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",33.08,285.76
-"crossover_10x7200","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",33.08,285.76
-"crossover_10x7200","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,71999,TRUE,"",33.08,285.76
-"crossover_10x7200","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",33.08,285.76
-"crossover_10x7200","run","run_diagnostics",1,65536,"",1,"","","",0,87173,TRUE,"",33.08,285.76
-"crossover_10x7200","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",33.08,285.76
-"crossover_10x7200","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",33.08,285.76
-"crossover_10x7200","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",33.08,285.76
-"crossover_10x7200","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",33.08,285.76
-"crossover_10x7200","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",33.08,285.76
-"crossover_10x7200","run","fills",1,65536,"",1,"","","",0,7971,TRUE,"",33.08,285.76
-"crossover_10x7200","run","trades",1,65536,"",1,"","","",0,3983,TRUE,"",33.08,285.76
-"crossover_10x7200","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",33.08,285.76
-"crossover_10x7200","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",33.08,285.76
-"crossover_20x23400","run","equity_curve",1,65536,"",1,"","","",0,23400,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","ledger_events",1,65536,"",1,"","","",0,51242,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,467997,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","run_diagnostics",1,65536,"",1,"","","",0,542646,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","fills",1,65536,"",1,"","","",0,51242,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","trades",1,65536,"",1,"","","",0,25617,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",131.72,1302.54
-"crossover_20x23400","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",131.72,1302.54
-"crossover_500x1260","run","equity_curve",1,65536,"",1,"","","",0,1260,TRUE,"",63.42,111.94
-"crossover_500x1260","run","ledger_events",1,65536,"",1,"","","",0,67725,TRUE,"",63.42,111.94
-"crossover_500x1260","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",63.42,111.94
-"crossover_500x1260","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",63.42,111.94
-"crossover_500x1260","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,629946,TRUE,"",63.42,111.94
-"crossover_500x1260","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",63.42,111.94
-"crossover_500x1260","run","run_diagnostics",1,65536,"",1,"","","",0,699040,TRUE,"",63.42,111.94
-"crossover_500x1260","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",63.42,111.94
-"crossover_500x1260","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",63.42,111.94
-"crossover_500x1260","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",63.42,111.94
-"crossover_500x1260","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",63.42,111.94
-"crossover_500x1260","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",63.42,111.94
-"crossover_500x1260","run","fills",1,65536,"",1,"","","",0,67725,TRUE,"",63.42,111.94
-"crossover_500x1260","run","trades",1,65536,"",1,"","","",0,33710,TRUE,"",63.42,111.94
-"crossover_500x1260","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",63.42,111.94
-"crossover_500x1260","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",63.42,111.94
-"fill_heavy_500x1260","run","equity_curve",1,65536,"",1,"","","",0,1260,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","ledger_events",1,65536,"",1,"","","",0,67725,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,629946,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","run_diagnostics",1,65536,"",1,"","","",0,699040,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","fills",1,65536,"",1,"","","",0,67725,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","trades",1,65536,"",1,"","","",0,33710,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",61.39,104.59
-"fill_heavy_500x1260","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",61.39,104.59
-"momentum_40x504","run","equity_curve",1,65536,"",0,"schedules","","",0,504,TRUE,"",3.2,2.86
-"momentum_40x504","run","ledger_events",1,65536,"",0,"schedules","","",0,296,TRUE,"",3.2,2.86
-"momentum_40x504","run","run_completion",1,65536,"",0,"schedules","","",0,1,TRUE,"",3.2,2.86
-"momentum_40x504","run","run_diagnostic_coverage",1,65536,"",0,"schedules","","",0,1,TRUE,"",3.2,2.86
-"momentum_40x504","run","run_diagnostic_implicit",1,65536,"",0,"schedules","","",0,920,TRUE,"",3.2,2.86
-"momentum_40x504","run","run_diagnostic_summary",1,65536,"",0,"schedules","","",0,1,TRUE,"",3.2,2.86
-"momentum_40x504","run","run_diagnostics",1,65536,"",0,"schedules","","",0,2500,TRUE,"",3.2,2.86
-"momentum_40x504","run","run_promotion_context",1,65536,"",0,"schedules","","",0,0,TRUE,"",3.2,2.86
-"momentum_40x504","run","run_provenance",1,65536,"",0,"schedules","","",0,1,TRUE,"",3.2,2.86
-"momentum_40x504","run","run_tags",1,65536,"",0,"schedules","","",0,0,TRUE,"",3.2,2.86
-"momentum_40x504","run","run_telemetry",1,65536,"",0,"schedules","","",0,1,TRUE,"",3.2,2.86
-"momentum_40x504","run","runs",1,65536,"",0,"schedules","","",0,1,TRUE,"",3.2,2.86
-"momentum_40x504","run","fills",1,65536,"",0,"schedules","","",0,296,TRUE,"",3.2,2.86
-"momentum_40x504","run","trades",1,65536,"",0,"schedules","","",0,165,TRUE,"",3.2,2.86
-"momentum_40x504","run","metrics",1,65536,"",0,"schedules","","",0,9,TRUE,"",3.2,2.86
-"momentum_40x504","run","run_conditions",1,65536,"",0,"schedules","","",0,0,TRUE,"",3.2,2.86
-"prep_fixture","run","equity_curve",1,65536,"",0,"declared sessions","","",0,47,TRUE,"",2.08,2.08
-"prep_fixture","run","ledger_events",1,65536,"",0,"declared sessions","","",0,72,TRUE,"",2.08,2.08
-"prep_fixture","run","run_completion",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",2.08,2.08
-"prep_fixture","run","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",2.08,2.08
-"prep_fixture","run","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,237,TRUE,"",2.08,2.08
-"prep_fixture","run","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",2.08,2.08
-"prep_fixture","run","run_diagnostics",1,65536,"",0,"declared sessions","","",0,507,TRUE,"",2.08,2.08
-"prep_fixture","run","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",2.08,2.08
-"prep_fixture","run","run_provenance",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",2.08,2.08
-"prep_fixture","run","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",2.08,2.08
-"prep_fixture","run","run_telemetry",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",2.08,2.08
-"prep_fixture","run","runs",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",2.08,2.08
-"prep_fixture","run","fills",1,65536,"",0,"declared sessions","","",0,71,TRUE,"",2.08,2.08
-"prep_fixture","run","trades",1,65536,"",0,"declared sessions","","",0,35,TRUE,"",2.08,2.08
-"prep_fixture","run","metrics",1,65536,"",0,"declared sessions","","",0,9,TRUE,"",2.08,2.08
-"prep_fixture","run","run_conditions",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",2.08,2.08
-"tight_cash","run","equity_curve",1,65536,"",1,"","","",0,10,TRUE,"",1.78,1.71
-"tight_cash","run","ledger_events",1,65536,"",1,"","","",0,5,TRUE,"",1.78,1.71
-"tight_cash","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1.78,1.71
-"tight_cash","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.78,1.71
-"tight_cash","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,26,TRUE,"",1.78,1.71
-"tight_cash","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.78,1.71
-"tight_cash","run","run_diagnostics",1,65536,"",1,"","","",0,50,TRUE,"",1.78,1.71
-"tight_cash","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.78,1.71
-"tight_cash","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.78,1.71
-"tight_cash","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.78,1.71
-"tight_cash","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.78,1.71
-"tight_cash","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.78,1.71
-"tight_cash","run","fills",1,65536,"",1,"","","",0,5,TRUE,"",1.78,1.71
-"tight_cash","run","trades",1,65536,"",1,"","","",0,2,TRUE,"",1.78,1.71
-"tight_cash","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",1.78,1.71
-"tight_cash","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.78,1.71
-"sell_buy_same_pulse","run","equity_curve",1,65536,"",1,"","","",0,8,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","ledger_events",1,65536,"",1,"","","",0,5,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,16,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","run_diagnostics",1,65536,"",1,"","","",0,30,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","fills",1,65536,"",1,"","","",0,5,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","trades",1,65536,"",1,"","","",0,2,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",1.34,1.61
-"sell_buy_same_pulse","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.34,1.61
-"final_pulse_trades","run","equity_curve",1,65536,"",1,"","","",0,6,TRUE,"",1.36,1.55
-"final_pulse_trades","run","ledger_events",1,65536,"",1,"","","",0,4,TRUE,"",1.36,1.55
-"final_pulse_trades","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1.36,1.55
-"final_pulse_trades","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.36,1.55
-"final_pulse_trades","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,10,TRUE,"",1.36,1.55
-"final_pulse_trades","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.36,1.55
-"final_pulse_trades","run","run_diagnostics",1,65536,"",1,"","","",0,25,TRUE,"",1.36,1.55
-"final_pulse_trades","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.36,1.55
-"final_pulse_trades","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.36,1.55
-"final_pulse_trades","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.36,1.55
-"final_pulse_trades","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.36,1.55
-"final_pulse_trades","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.36,1.55
-"final_pulse_trades","run","fills",1,65536,"",1,"","","",0,4,TRUE,"",1.36,1.55
-"final_pulse_trades","run","trades",1,65536,"",1,"","","",0,1,TRUE,"",1.36,1.55
-"final_pulse_trades","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",1.36,1.55
-"final_pulse_trades","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.36,1.55
-"reconciliation_stop","run","equity_curve",1,65536,"",1,"","","",0,2,TRUE,"",0.99,1.04
-"reconciliation_stop","run","ledger_events",1,65536,"",1,"","","",0,2,TRUE,"",0.99,1.04
-"reconciliation_stop","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",0.99,1.04
-"reconciliation_stop","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",0.99,1.04
-"reconciliation_stop","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,3,TRUE,"",0.99,1.04
-"reconciliation_stop","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",0.99,1.04
-"reconciliation_stop","run","run_diagnostics",1,65536,"",1,"","","",0,11,TRUE,"",0.99,1.04
-"reconciliation_stop","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",0.99,1.04
-"reconciliation_stop","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",0.99,1.04
-"reconciliation_stop","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",0.99,1.04
-"reconciliation_stop","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",0.99,1.04
-"reconciliation_stop","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",0.99,1.04
-"reconciliation_stop","run","reader_refusal",1,65536,"",1,"","","",0,1,TRUE,"",0.99,1.04
-"reconciliation_stop","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",0.99,1.04
-"witness_surface_seeded","run","equity_curve",1,65536,"",1,"","","",0,14,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","ledger_events",1,65536,"",1,"","","",0,32,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,40,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","run_diagnostics",1,65536,"",1,"","","",0,98,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","fills",1,65536,"",1,"","","",0,32,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","trades",1,65536,"",1,"","","",0,12,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.53,1.98
-"witness_surface_seeded","run","rng_after",1,65536,"",1,"","","",0,1,TRUE,"",1.53,1.98
-"witness_surface_unseeded","run","equity_curve",1,65536,"",1,"","","",0,14,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","ledger_events",1,65536,"",1,"","","",0,32,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,40,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","run_diagnostics",1,65536,"",1,"","","",0,98,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","fills",1,65536,"",1,"","","",0,32,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","trades",1,65536,"",1,"","","",0,11,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.54,2.03
-"witness_surface_unseeded","run","rng_after",1,65536,"",1,"","","",0,1,TRUE,"",1.54,2.03
-"witness_nonfinite","run","equity_curve",1,65536,"",1,"","","",0,0,TRUE,"",0.86,1.06
-"witness_nonfinite","run","ledger_events",1,65536,"",1,"","","",0,0,TRUE,"",0.86,1.06
-"witness_nonfinite","run","run_completion",1,65536,"",1,"","","",0,0,TRUE,"",0.86,1.06
-"witness_nonfinite","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",0.86,1.06
-"witness_nonfinite","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,0,TRUE,"",0.86,1.06
-"witness_nonfinite","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",0.86,1.06
-"witness_nonfinite","run","run_diagnostics",1,65536,"",1,"","","",0,1,TRUE,"",0.86,1.06
-"witness_nonfinite","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",0.86,1.06
-"witness_nonfinite","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",0.86,1.06
-"witness_nonfinite","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",0.86,1.06
-"witness_nonfinite","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",0.86,1.06
-"witness_nonfinite","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",0.86,1.06
-"witness_nonfinite","run","run_conditions",1,65536,"",1,"","","",0,1,TRUE,"",0.86,1.06
-"witness_max_pulses","run","equity_curve",1,65536,"",1,"","","",0,7,TRUE,"",1.12,1.35
-"witness_max_pulses","run","ledger_events",1,65536,"",1,"","","",0,16,TRUE,"",1.12,1.35
-"witness_max_pulses","run","run_completion",1,65536,"",1,"","","",0,0,TRUE,"",1.12,1.35
-"witness_max_pulses","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.12,1.35
-"witness_max_pulses","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,21,TRUE,"",1.12,1.35
-"witness_max_pulses","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.12,1.35
-"witness_max_pulses","run","run_diagnostics",1,65536,"",1,"","","",0,48,TRUE,"",1.12,1.35
-"witness_max_pulses","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.12,1.35
-"witness_max_pulses","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.12,1.35
-"witness_max_pulses","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.12,1.35
-"witness_max_pulses","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.12,1.35
-"witness_max_pulses","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.12,1.35
-"witness_max_pulses","run","reader_refusal",1,65536,"",1,"","","",0,1,TRUE,"",1.12,1.35
-"witness_max_pulses","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.12,1.35
-"witness_backstop","run","equity_curve",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,14,TRUE,"",1.41,2.45
-"witness_backstop","run","ledger_events",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,11,TRUE,"",1.41,2.45
-"witness_backstop","run","run_completion",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.41,2.45
-"witness_backstop","run","run_diagnostic_coverage",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.41,2.45
-"witness_backstop","run","run_diagnostic_implicit",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,41,TRUE,"",1.41,2.45
-"witness_backstop","run","run_diagnostic_summary",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.41,2.45
-"witness_backstop","run","run_diagnostics",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,69,TRUE,"",1.41,2.45
-"witness_backstop","run","run_promotion_context",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.41,2.45
-"witness_backstop","run","run_provenance",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.41,2.45
-"witness_backstop","run","run_tags",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.41,2.45
-"witness_backstop","run","run_telemetry",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.41,2.45
-"witness_backstop","run","runs",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.41,2.45
-"witness_backstop","run","fills",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,11,TRUE,"",1.41,2.45
-"witness_backstop","run","trades",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,4,TRUE,"",1.41,2.45
-"witness_backstop","run","metrics",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,9,TRUE,"",1.41,2.45
-"witness_backstop","run","run_conditions",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.41,2.45
-"witness_backstop","run","rng_after",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.41,2.45
-"witness_backstop_sweep","sweep","sweep",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.67,1.52
-"witness_backstop_sweep","sweep","sweep_attrs",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,24,TRUE,"",0.67,1.52
-"witness_backstop_sweep","sweep","sweep_returns",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,28,TRUE,"",0.67,1.52
-"witness_backstop_sweep","sweep","sweep_trades",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,7,TRUE,"",0.67,1.52
-"witness_backstop_sweep","sweep","memory_state",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.67,1.52
-"witness_backstop_sweep","sweep","memory_events",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,21,TRUE,"",0.67,1.52
-"witness_backstop_sweep","sweep","memory_diagnostics",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",0.67,1.52
-"witness_backstop_sweep","sweep","memory_completion",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.67,1.52
-"witness_backstop_sweep","sweep","memory_equity",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,28,TRUE,"",0.67,1.52
-"witness_backstop_sweep","sweep","memory_fills",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,21,TRUE,"",0.67,1.52
-"witness_backstop_sweep","sweep","rng_after",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",0.67,1.52
-"witness_checkpoint_control","run","equity_curve",1,65536,"",0,"a checkpoint_every control","","",0,14,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","ledger_events",1,65536,"",0,"a checkpoint_every control","","",0,32,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","run_completion",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","run_diagnostic_coverage",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","run_diagnostic_implicit",1,65536,"",0,"a checkpoint_every control","","",0,40,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","run_diagnostic_summary",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","run_diagnostics",1,65536,"",0,"a checkpoint_every control","","",0,98,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","run_promotion_context",1,65536,"",0,"a checkpoint_every control","","",0,0,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","run_provenance",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","run_tags",1,65536,"",0,"a checkpoint_every control","","",0,0,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","run_telemetry",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","runs",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","fills",1,65536,"",0,"a checkpoint_every control","","",0,32,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","trades",1,65536,"",0,"a checkpoint_every control","","",0,12,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","metrics",1,65536,"",0,"a checkpoint_every control","","",0,9,TRUE,"",1.52,1.56
-"witness_checkpoint_control","run","run_conditions",1,65536,"",0,"a checkpoint_every control","","",0,0,TRUE,"",1.52,1.56
-"witness_caught_backstop","run","equity_curve",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,14,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","ledger_events",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,10,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","run_completion",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","run_diagnostic_coverage",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","run_diagnostic_implicit",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,41,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","run_diagnostic_summary",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","run_diagnostics",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,68,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","run_promotion_context",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","run_provenance",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","run_tags",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","run_telemetry",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","runs",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","fills",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,10,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","trades",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,5,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","metrics",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,9,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","run_conditions",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.4,2.47
-"witness_caught_backstop","run","rng_after",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.4,2.47
-"witness_caught_backstop_sweep","sweep","sweep",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.68,1.57
-"witness_caught_backstop_sweep","sweep","sweep_attrs",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,24,TRUE,"",0.68,1.57
-"witness_caught_backstop_sweep","sweep","sweep_returns",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,28,TRUE,"",0.68,1.57
-"witness_caught_backstop_sweep","sweep","sweep_trades",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,10,TRUE,"",0.68,1.57
-"witness_caught_backstop_sweep","sweep","memory_state",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.68,1.57
-"witness_caught_backstop_sweep","sweep","memory_events",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,21,TRUE,"",0.68,1.57
-"witness_caught_backstop_sweep","sweep","memory_diagnostics",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.68,1.57
-"witness_caught_backstop_sweep","sweep","memory_completion",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.68,1.57
-"witness_caught_backstop_sweep","sweep","memory_equity",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,28,TRUE,"",0.68,1.57
-"witness_caught_backstop_sweep","sweep","memory_fills",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,21,TRUE,"",0.68,1.57
-"witness_caught_backstop_sweep","sweep","rng_after",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",0.68,1.57
-"witness_checkpoint_null","run","equity_curve",1,65536,"",0,"a checkpoint_every control","","",0,14,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","ledger_events",1,65536,"",0,"a checkpoint_every control","","",0,32,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","run_completion",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","run_diagnostic_coverage",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","run_diagnostic_implicit",1,65536,"",0,"a checkpoint_every control","","",0,40,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","run_diagnostic_summary",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","run_diagnostics",1,65536,"",0,"a checkpoint_every control","","",0,98,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","run_promotion_context",1,65536,"",0,"a checkpoint_every control","","",0,0,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","run_provenance",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","run_tags",1,65536,"",0,"a checkpoint_every control","","",0,0,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","run_telemetry",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","runs",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","fills",1,65536,"",0,"a checkpoint_every control","","",0,32,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","trades",1,65536,"",0,"a checkpoint_every control","","",0,12,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","metrics",1,65536,"",0,"a checkpoint_every control","","",0,9,TRUE,"",1.53,1.5
-"witness_checkpoint_null","run","run_conditions",1,65536,"",0,"a checkpoint_every control","","",0,0,TRUE,"",1.53,1.5
-"witness_capacity","run","equity_curve",1,65536,"",1,"","","",0,0,TRUE,"",0.86,0.97
-"witness_capacity","run","ledger_events",1,65536,"",1,"","","",0,0,TRUE,"",0.86,0.97
-"witness_capacity","run","run_completion",1,65536,"",1,"","","",0,0,TRUE,"",0.86,0.97
-"witness_capacity","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",0.86,0.97
-"witness_capacity","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,0,TRUE,"",0.86,0.97
-"witness_capacity","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",0.86,0.97
-"witness_capacity","run","run_diagnostics",1,65536,"",1,"","","",0,1,TRUE,"",0.86,0.97
-"witness_capacity","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",0.86,0.97
-"witness_capacity","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",0.86,0.97
-"witness_capacity","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",0.86,0.97
-"witness_capacity","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",0.86,0.97
-"witness_capacity","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",0.86,0.97
-"witness_capacity","run","run_conditions",1,65536,"",1,"","","",0,1,TRUE,"",0.86,0.97
-"witness_prefix_reads","run","equity_curve",1,65536,"",1,"","","",0,8,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","ledger_events",1,65536,"",1,"","","",0,5,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,16,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","run_diagnostics",1,65536,"",1,"","","",0,30,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","fills",1,65536,"",1,"","","",0,5,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","trades",1,65536,"",1,"","","",0,2,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.36,1.67
-"witness_prefix_reads","run","prefix_reads",1,65536,"",1,"","","",0,8,TRUE,"",1.36,1.67
-"witness_prefix_reads_sweep","sweep","sweep",1,65536,"",2,"","","",0,2,TRUE,"",0.79,1.75
-"witness_prefix_reads_sweep","sweep","sweep_attrs",1,65536,"",2,"","","",0,25,TRUE,"",0.79,1.75
-"witness_prefix_reads_sweep","sweep","sweep_returns",1,65536,"",2,"","","",0,28,TRUE,"",0.79,1.75
-"witness_prefix_reads_sweep","sweep","sweep_trades",1,65536,"",2,"","","",0,23,TRUE,"",0.79,1.75
-"witness_prefix_reads_sweep","sweep","memory_state",1,65536,"",2,"","","",0,2,TRUE,"",0.79,1.75
-"witness_prefix_reads_sweep","sweep","memory_events",1,65536,"",2,"","","",0,64,TRUE,"",0.79,1.75
-"witness_prefix_reads_sweep","sweep","memory_diagnostics",1,65536,"",2,"","","",0,4,TRUE,"",0.79,1.75
-"witness_prefix_reads_sweep","sweep","memory_completion",1,65536,"",2,"","","",0,2,TRUE,"",0.79,1.75
-"witness_prefix_reads_sweep","sweep","memory_equity",1,65536,"",2,"","","",0,28,TRUE,"",0.79,1.75
-"witness_prefix_reads_sweep","sweep","memory_fills",1,65536,"",2,"","","",0,64,TRUE,"",0.79,1.75
-"witness_prefix_reads_sweep","sweep","rng_after",1,65536,"",2,"","","",0,1,TRUE,"",0.79,1.75
-"witness_prefix_reads_sweep","sweep","prefix_reads",1,65536,"",2,"","","",0,28,TRUE,"",0.79,1.75
-"witness_sweep","sweep","sweep",1,65536,"",2,"","","",0,2,TRUE,"",0.77,1.37
-"witness_sweep","sweep","sweep_attrs",1,65536,"",2,"","","",0,25,TRUE,"",0.77,1.37
-"witness_sweep","sweep","sweep_returns",1,65536,"",2,"","","",0,28,TRUE,"",0.77,1.37
-"witness_sweep","sweep","sweep_trades",1,65536,"",2,"","","",0,23,TRUE,"",0.77,1.37
-"witness_sweep","sweep","memory_state",1,65536,"",2,"","","",0,2,TRUE,"",0.77,1.37
-"witness_sweep","sweep","memory_events",1,65536,"",2,"","","",0,64,TRUE,"",0.77,1.37
-"witness_sweep","sweep","memory_diagnostics",1,65536,"",2,"","","",0,4,TRUE,"",0.77,1.37
-"witness_sweep","sweep","memory_completion",1,65536,"",2,"","","",0,2,TRUE,"",0.77,1.37
-"witness_sweep","sweep","memory_equity",1,65536,"",2,"","","",0,28,TRUE,"",0.77,1.37
-"witness_sweep","sweep","memory_fills",1,65536,"",2,"","","",0,64,TRUE,"",0.77,1.37
-"witness_sweep","sweep","rng_after",1,65536,"",2,"","","",0,1,TRUE,"",0.77,1.37
+"avail_incomplete","sweep_w1","sweep",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","sweep_w1","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",5.5,5.35
+"avail_incomplete","sweep_w1","sweep_returns",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.5,5.35
+"avail_incomplete","sweep_w1","sweep_trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.5,5.35
+"avail_incomplete","sweep_w1","memory_state",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","sweep_w1","memory_events",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","sweep_w1","memory_diagnostics",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","sweep_w1","memory_completion",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","sweep_w1","memory_equity",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.5,5.35
+"avail_incomplete","sweep_w1","memory_fills",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","sweep_w2","sweep",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","sweep_w2","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",5.5,5.35
+"avail_incomplete","sweep_w2","sweep_returns",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.5,5.35
+"avail_incomplete","sweep_w2","sweep_trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.5,5.35
+"avail_incomplete","run","equity_curve",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.5,5.35
+"avail_incomplete","run","ledger_events",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","run","run_completion",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","run","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","run","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.5,5.35
+"avail_incomplete","run","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","run","run_diagnostics",1,65536,"",0,"declared sessions","","",0,14,TRUE,"",5.5,5.35
+"avail_incomplete","run","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.5,5.35
+"avail_incomplete","run","run_provenance",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","run","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.5,5.35
+"avail_incomplete","run","run_telemetry",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","run","runs",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","run","fills",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.5,5.35
+"avail_incomplete","run","trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.5,5.35
+"avail_incomplete","run","metrics",1,65536,"",0,"declared sessions","","",0,18,TRUE,"",5.5,5.35
+"avail_incomplete","run","run_conditions",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.5,5.35
+"walk_forward","sweep_w1","sweep",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","sweep_w1","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",5.61,5.63
+"walk_forward","sweep_w1","sweep_returns",1,65536,"",0,"declared sessions","","",0,20,TRUE,"",5.61,5.63
+"walk_forward","sweep_w1","sweep_trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.61,5.63
+"walk_forward","sweep_w1","memory_state",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","sweep_w1","memory_events",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",5.61,5.63
+"walk_forward","sweep_w1","memory_diagnostics",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.61,5.63
+"walk_forward","sweep_w1","memory_completion",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","sweep_w1","memory_equity",1,65536,"",0,"declared sessions","","",0,20,TRUE,"",5.61,5.63
+"walk_forward","sweep_w1","memory_fills",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","run","equity_curve",1,65536,"",0,"declared sessions","","",0,20,TRUE,"",5.61,5.63
+"walk_forward","run","ledger_events",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",5.61,5.63
+"walk_forward","run","run_completion",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","run","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","run","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,36,TRUE,"",5.61,5.63
+"walk_forward","run","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","run","run_diagnostics",1,65536,"",0,"declared sessions","","",0,68,TRUE,"",5.61,5.63
+"walk_forward","run","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.61,5.63
+"walk_forward","run","run_provenance",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","run","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.61,5.63
+"walk_forward","run","run_telemetry",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","run","runs",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","run","fills",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","run","trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.61,5.63
+"walk_forward","run","metrics",1,65536,"",0,"declared sessions","","",0,18,TRUE,"",5.61,5.63
+"walk_forward","run","run_conditions",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","wf_folds",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","wf_scores",1,65536,"",0,"declared sessions","","",0,54,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","wf_status",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","equity_curve",1,65536,"",0,"declared sessions","","",0,7,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","ledger_events",1,65536,"",0,"declared sessions","","",0,6,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","run_completion",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,12,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","run_diagnostics",1,65536,"",0,"declared sessions","","",0,26,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","run_provenance",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","run_telemetry",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","runs",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","fills",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","metrics",1,65536,"",0,"declared sessions","","",0,18,TRUE,"",5.61,5.63
+"walk_forward","walk_forward","run_conditions",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.61,5.63
+"failures","sweep_w1","sweep",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.12,5.21
+"failures","sweep_w1","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",5.12,5.21
+"failures","sweep_w1","sweep_returns",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.12,5.21
+"failures","sweep_w1","sweep_trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","sweep_w1","memory_state",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.12,5.21
+"failures","sweep_w1","memory_events",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.12,5.21
+"failures","sweep_w1","memory_diagnostics",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","sweep_w1","memory_completion",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.12,5.21
+"failures","sweep_w1","memory_equity",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.12,5.21
+"failures","sweep_w1","memory_fills",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.12,5.21
+"failures","sweep_w2","sweep",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.12,5.21
+"failures","sweep_w2","sweep_attrs",1,65536,"",0,"declared sessions","","",0,25,TRUE,"",5.12,5.21
+"failures","sweep_w2","sweep_returns",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.12,5.21
+"failures","sweep_w2","sweep_trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run","equity_curve",1,65536,"",0,"declared sessions","","",0,4,TRUE,"",5.12,5.21
+"failures","run","ledger_events",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.12,5.21
+"failures","run","run_completion",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.12,5.21
+"failures","run","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.12,5.21
+"failures","run","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,7,TRUE,"",5.12,5.21
+"failures","run","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.12,5.21
+"failures","run","run_diagnostics",1,65536,"",0,"declared sessions","","",0,15,TRUE,"",5.12,5.21
+"failures","run","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run","run_provenance",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.12,5.21
+"failures","run","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run","run_telemetry",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.12,5.21
+"failures","run","runs",1,65536,"",0,"declared sessions","","",0,2,TRUE,"",5.12,5.21
+"failures","run","fills",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.12,5.21
+"failures","run","trades",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run","metrics",1,65536,"",0,"declared sessions","","",0,9,TRUE,"",5.12,5.21
+"failures","run","run_conditions",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.12,5.21
+"failures","run_abort","equity_curve",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run_abort","ledger_events",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run_abort","run_completion",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run_abort","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run_abort","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run_abort","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run_abort","run_diagnostics",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run_abort","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run_abort","run_provenance",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run_abort","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run_abort","run_telemetry",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run_abort","runs",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",5.12,5.21
+"failures","run_abort","run_conditions",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",5.12,5.21
+"crossover_3x40","run","equity_curve",1,65536,"",1,"","","",0,40,TRUE,"",1.52,2.95
+"crossover_3x40","run","ledger_events",1,65536,"",1,"","","",0,7,TRUE,"",1.52,2.95
+"crossover_3x40","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1.52,2.95
+"crossover_3x40","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.52,2.95
+"crossover_3x40","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,120,TRUE,"",1.52,2.95
+"crossover_3x40","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.52,2.95
+"crossover_3x40","run","run_diagnostics",1,65536,"",1,"","","",0,168,TRUE,"",1.52,2.95
+"crossover_3x40","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.52,2.95
+"crossover_3x40","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.52,2.95
+"crossover_3x40","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.52,2.95
+"crossover_3x40","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.52,2.95
+"crossover_3x40","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.52,2.95
+"crossover_3x40","run","fills",1,65536,"",1,"","","",0,7,TRUE,"",1.52,2.95
+"crossover_3x40","run","trades",1,65536,"",1,"","","",0,3,TRUE,"",1.52,2.95
+"crossover_3x40","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",1.52,2.95
+"crossover_3x40","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.52,2.95
+"crossover_10x300","run","equity_curve",1,65536,"",1,"","","",0,300,TRUE,"",2.73,12.44
+"crossover_10x300","run","ledger_events",1,65536,"",1,"","","",0,313,TRUE,"",2.73,12.44
+"crossover_10x300","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",2.73,12.44
+"crossover_10x300","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",2.73,12.44
+"crossover_10x300","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,2998,TRUE,"",2.73,12.44
+"crossover_10x300","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",2.73,12.44
+"crossover_10x300","run","run_diagnostics",1,65536,"",1,"","","",0,3616,TRUE,"",2.73,12.44
+"crossover_10x300","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",2.73,12.44
+"crossover_10x300","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",2.73,12.44
+"crossover_10x300","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",2.73,12.44
+"crossover_10x300","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",2.73,12.44
+"crossover_10x300","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",2.73,12.44
+"crossover_10x300","run","fills",1,65536,"",1,"","","",0,313,TRUE,"",2.73,12.44
+"crossover_10x300","run","trades",1,65536,"",1,"","","",0,155,TRUE,"",2.73,12.44
+"crossover_10x300","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",2.73,12.44
+"crossover_10x300","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",2.73,12.44
+"crossover_10x7200","run","equity_curve",1,65536,"",1,"","","",0,7200,TRUE,"",32.86,286.78
+"crossover_10x7200","run","ledger_events",1,65536,"",1,"","","",0,7971,TRUE,"",32.86,286.78
+"crossover_10x7200","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",32.86,286.78
+"crossover_10x7200","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",32.86,286.78
+"crossover_10x7200","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,71999,TRUE,"",32.86,286.78
+"crossover_10x7200","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",32.86,286.78
+"crossover_10x7200","run","run_diagnostics",1,65536,"",1,"","","",0,87173,TRUE,"",32.86,286.78
+"crossover_10x7200","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",32.86,286.78
+"crossover_10x7200","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",32.86,286.78
+"crossover_10x7200","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",32.86,286.78
+"crossover_10x7200","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",32.86,286.78
+"crossover_10x7200","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",32.86,286.78
+"crossover_10x7200","run","fills",1,65536,"",1,"","","",0,7971,TRUE,"",32.86,286.78
+"crossover_10x7200","run","trades",1,65536,"",1,"","","",0,3983,TRUE,"",32.86,286.78
+"crossover_10x7200","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",32.86,286.78
+"crossover_10x7200","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",32.86,286.78
+"crossover_20x23400","run","equity_curve",1,65536,"",1,"","","",0,23400,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","ledger_events",1,65536,"",1,"","","",0,51242,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,467997,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","run_diagnostics",1,65536,"",1,"","","",0,542646,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","fills",1,65536,"",1,"","","",0,51242,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","trades",1,65536,"",1,"","","",0,25617,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",132.05,1303.45
+"crossover_20x23400","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",132.05,1303.45
+"crossover_500x1260","run","equity_curve",1,65536,"",1,"","","",0,1260,TRUE,"",62.56,109.2
+"crossover_500x1260","run","ledger_events",1,65536,"",1,"","","",0,67725,TRUE,"",62.56,109.2
+"crossover_500x1260","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",62.56,109.2
+"crossover_500x1260","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",62.56,109.2
+"crossover_500x1260","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,629946,TRUE,"",62.56,109.2
+"crossover_500x1260","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",62.56,109.2
+"crossover_500x1260","run","run_diagnostics",1,65536,"",1,"","","",0,699040,TRUE,"",62.56,109.2
+"crossover_500x1260","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",62.56,109.2
+"crossover_500x1260","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",62.56,109.2
+"crossover_500x1260","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",62.56,109.2
+"crossover_500x1260","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",62.56,109.2
+"crossover_500x1260","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",62.56,109.2
+"crossover_500x1260","run","fills",1,65536,"",1,"","","",0,67725,TRUE,"",62.56,109.2
+"crossover_500x1260","run","trades",1,65536,"",1,"","","",0,33710,TRUE,"",62.56,109.2
+"crossover_500x1260","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",62.56,109.2
+"crossover_500x1260","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",62.56,109.2
+"fill_heavy_500x1260","run","equity_curve",1,65536,"",1,"","","",0,1260,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","ledger_events",1,65536,"",1,"","","",0,67725,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,629946,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","run_diagnostics",1,65536,"",1,"","","",0,699040,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","fills",1,65536,"",1,"","","",0,67725,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","trades",1,65536,"",1,"","","",0,33710,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",62.25,104.62
+"fill_heavy_500x1260","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",62.25,104.62
+"momentum_40x504","run","equity_curve",1,65536,"",0,"schedules","","",0,504,TRUE,"",3.06,3.03
+"momentum_40x504","run","ledger_events",1,65536,"",0,"schedules","","",0,296,TRUE,"",3.06,3.03
+"momentum_40x504","run","run_completion",1,65536,"",0,"schedules","","",0,1,TRUE,"",3.06,3.03
+"momentum_40x504","run","run_diagnostic_coverage",1,65536,"",0,"schedules","","",0,1,TRUE,"",3.06,3.03
+"momentum_40x504","run","run_diagnostic_implicit",1,65536,"",0,"schedules","","",0,920,TRUE,"",3.06,3.03
+"momentum_40x504","run","run_diagnostic_summary",1,65536,"",0,"schedules","","",0,1,TRUE,"",3.06,3.03
+"momentum_40x504","run","run_diagnostics",1,65536,"",0,"schedules","","",0,2500,TRUE,"",3.06,3.03
+"momentum_40x504","run","run_promotion_context",1,65536,"",0,"schedules","","",0,0,TRUE,"",3.06,3.03
+"momentum_40x504","run","run_provenance",1,65536,"",0,"schedules","","",0,1,TRUE,"",3.06,3.03
+"momentum_40x504","run","run_tags",1,65536,"",0,"schedules","","",0,0,TRUE,"",3.06,3.03
+"momentum_40x504","run","run_telemetry",1,65536,"",0,"schedules","","",0,1,TRUE,"",3.06,3.03
+"momentum_40x504","run","runs",1,65536,"",0,"schedules","","",0,1,TRUE,"",3.06,3.03
+"momentum_40x504","run","fills",1,65536,"",0,"schedules","","",0,296,TRUE,"",3.06,3.03
+"momentum_40x504","run","trades",1,65536,"",0,"schedules","","",0,165,TRUE,"",3.06,3.03
+"momentum_40x504","run","metrics",1,65536,"",0,"schedules","","",0,9,TRUE,"",3.06,3.03
+"momentum_40x504","run","run_conditions",1,65536,"",0,"schedules","","",0,0,TRUE,"",3.06,3.03
+"prep_fixture","run","equity_curve",1,65536,"",0,"declared sessions","","",0,47,TRUE,"",2.14,2.09
+"prep_fixture","run","ledger_events",1,65536,"",0,"declared sessions","","",0,72,TRUE,"",2.14,2.09
+"prep_fixture","run","run_completion",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",2.14,2.09
+"prep_fixture","run","run_diagnostic_coverage",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",2.14,2.09
+"prep_fixture","run","run_diagnostic_implicit",1,65536,"",0,"declared sessions","","",0,237,TRUE,"",2.14,2.09
+"prep_fixture","run","run_diagnostic_summary",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",2.14,2.09
+"prep_fixture","run","run_diagnostics",1,65536,"",0,"declared sessions","","",0,507,TRUE,"",2.14,2.09
+"prep_fixture","run","run_promotion_context",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",2.14,2.09
+"prep_fixture","run","run_provenance",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",2.14,2.09
+"prep_fixture","run","run_tags",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",2.14,2.09
+"prep_fixture","run","run_telemetry",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",2.14,2.09
+"prep_fixture","run","runs",1,65536,"",0,"declared sessions","","",0,1,TRUE,"",2.14,2.09
+"prep_fixture","run","fills",1,65536,"",0,"declared sessions","","",0,71,TRUE,"",2.14,2.09
+"prep_fixture","run","trades",1,65536,"",0,"declared sessions","","",0,35,TRUE,"",2.14,2.09
+"prep_fixture","run","metrics",1,65536,"",0,"declared sessions","","",0,9,TRUE,"",2.14,2.09
+"prep_fixture","run","run_conditions",1,65536,"",0,"declared sessions","","",0,0,TRUE,"",2.14,2.09
+"tight_cash","run","equity_curve",1,65536,"",1,"","","",0,10,TRUE,"",1.79,1.71
+"tight_cash","run","ledger_events",1,65536,"",1,"","","",0,5,TRUE,"",1.79,1.71
+"tight_cash","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1.79,1.71
+"tight_cash","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.79,1.71
+"tight_cash","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,26,TRUE,"",1.79,1.71
+"tight_cash","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.79,1.71
+"tight_cash","run","run_diagnostics",1,65536,"",1,"","","",0,50,TRUE,"",1.79,1.71
+"tight_cash","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.79,1.71
+"tight_cash","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.79,1.71
+"tight_cash","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.79,1.71
+"tight_cash","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.79,1.71
+"tight_cash","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.79,1.71
+"tight_cash","run","fills",1,65536,"",1,"","","",0,5,TRUE,"",1.79,1.71
+"tight_cash","run","trades",1,65536,"",1,"","","",0,2,TRUE,"",1.79,1.71
+"tight_cash","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",1.79,1.71
+"tight_cash","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.79,1.71
+"sell_buy_same_pulse","run","equity_curve",1,65536,"",1,"","","",0,8,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","ledger_events",1,65536,"",1,"","","",0,5,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,16,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","run_diagnostics",1,65536,"",1,"","","",0,30,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","fills",1,65536,"",1,"","","",0,5,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","trades",1,65536,"",1,"","","",0,2,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",1.33,1.64
+"sell_buy_same_pulse","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.33,1.64
+"final_pulse_trades","run","equity_curve",1,65536,"",1,"","","",0,6,TRUE,"",1.32,1.54
+"final_pulse_trades","run","ledger_events",1,65536,"",1,"","","",0,4,TRUE,"",1.32,1.54
+"final_pulse_trades","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1.32,1.54
+"final_pulse_trades","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.32,1.54
+"final_pulse_trades","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,10,TRUE,"",1.32,1.54
+"final_pulse_trades","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.32,1.54
+"final_pulse_trades","run","run_diagnostics",1,65536,"",1,"","","",0,25,TRUE,"",1.32,1.54
+"final_pulse_trades","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.32,1.54
+"final_pulse_trades","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.32,1.54
+"final_pulse_trades","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.32,1.54
+"final_pulse_trades","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.32,1.54
+"final_pulse_trades","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.32,1.54
+"final_pulse_trades","run","fills",1,65536,"",1,"","","",0,4,TRUE,"",1.32,1.54
+"final_pulse_trades","run","trades",1,65536,"",1,"","","",0,1,TRUE,"",1.32,1.54
+"final_pulse_trades","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",1.32,1.54
+"final_pulse_trades","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.32,1.54
+"reconciliation_stop","run","equity_curve",1,65536,"",1,"","","",0,2,TRUE,"",1,1.07
+"reconciliation_stop","run","ledger_events",1,65536,"",1,"","","",0,2,TRUE,"",1,1.07
+"reconciliation_stop","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1,1.07
+"reconciliation_stop","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1,1.07
+"reconciliation_stop","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,3,TRUE,"",1,1.07
+"reconciliation_stop","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1,1.07
+"reconciliation_stop","run","run_diagnostics",1,65536,"",1,"","","",0,11,TRUE,"",1,1.07
+"reconciliation_stop","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1,1.07
+"reconciliation_stop","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1,1.07
+"reconciliation_stop","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1,1.07
+"reconciliation_stop","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1,1.07
+"reconciliation_stop","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1,1.07
+"reconciliation_stop","run","reader_refusal",1,65536,"",1,"","","",0,1,TRUE,"",1,1.07
+"reconciliation_stop","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1,1.07
+"witness_surface_seeded","run","equity_curve",1,65536,"",1,"","","",0,14,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","ledger_events",1,65536,"",1,"","","",0,32,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,40,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","run_diagnostics",1,65536,"",1,"","","",0,98,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","fills",1,65536,"",1,"","","",0,32,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","trades",1,65536,"",1,"","","",0,12,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.57,2.03
+"witness_surface_seeded","run","rng_after",1,65536,"",1,"","","",0,1,TRUE,"",1.57,2.03
+"witness_surface_unseeded","run","equity_curve",1,65536,"",1,"","","",0,14,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","ledger_events",1,65536,"",1,"","","",0,32,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,40,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","run_diagnostics",1,65536,"",1,"","","",0,98,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","fills",1,65536,"",1,"","","",0,32,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","trades",1,65536,"",1,"","","",0,11,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.78,1.92
+"witness_surface_unseeded","run","rng_after",1,65536,"",1,"","","",0,1,TRUE,"",1.78,1.92
+"witness_nonfinite","run","equity_curve",1,65536,"",1,"","","",0,0,TRUE,"",0.83,1
+"witness_nonfinite","run","ledger_events",1,65536,"",1,"","","",0,0,TRUE,"",0.83,1
+"witness_nonfinite","run","run_completion",1,65536,"",1,"","","",0,0,TRUE,"",0.83,1
+"witness_nonfinite","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",0.83,1
+"witness_nonfinite","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,0,TRUE,"",0.83,1
+"witness_nonfinite","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",0.83,1
+"witness_nonfinite","run","run_diagnostics",1,65536,"",1,"","","",0,1,TRUE,"",0.83,1
+"witness_nonfinite","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",0.83,1
+"witness_nonfinite","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",0.83,1
+"witness_nonfinite","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",0.83,1
+"witness_nonfinite","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",0.83,1
+"witness_nonfinite","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",0.83,1
+"witness_nonfinite","run","run_conditions",1,65536,"",1,"","","",0,1,TRUE,"",0.83,1
+"witness_max_pulses","run","equity_curve",1,65536,"",1,"","","",0,7,TRUE,"",1.08,1.29
+"witness_max_pulses","run","ledger_events",1,65536,"",1,"","","",0,16,TRUE,"",1.08,1.29
+"witness_max_pulses","run","run_completion",1,65536,"",1,"","","",0,0,TRUE,"",1.08,1.29
+"witness_max_pulses","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.08,1.29
+"witness_max_pulses","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,21,TRUE,"",1.08,1.29
+"witness_max_pulses","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.08,1.29
+"witness_max_pulses","run","run_diagnostics",1,65536,"",1,"","","",0,48,TRUE,"",1.08,1.29
+"witness_max_pulses","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.08,1.29
+"witness_max_pulses","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.08,1.29
+"witness_max_pulses","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.08,1.29
+"witness_max_pulses","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.08,1.29
+"witness_max_pulses","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.08,1.29
+"witness_max_pulses","run","reader_refusal",1,65536,"",1,"","","",0,1,TRUE,"",1.08,1.29
+"witness_max_pulses","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.08,1.29
+"witness_backstop","run","equity_curve",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,14,TRUE,"",1.36,2.31
+"witness_backstop","run","ledger_events",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,11,TRUE,"",1.36,2.31
+"witness_backstop","run","run_completion",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.36,2.31
+"witness_backstop","run","run_diagnostic_coverage",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.36,2.31
+"witness_backstop","run","run_diagnostic_implicit",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,41,TRUE,"",1.36,2.31
+"witness_backstop","run","run_diagnostic_summary",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.36,2.31
+"witness_backstop","run","run_diagnostics",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,69,TRUE,"",1.36,2.31
+"witness_backstop","run","run_promotion_context",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.36,2.31
+"witness_backstop","run","run_provenance",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.36,2.31
+"witness_backstop","run","run_tags",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.36,2.31
+"witness_backstop","run","run_telemetry",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.36,2.31
+"witness_backstop","run","runs",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.36,2.31
+"witness_backstop","run","fills",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,11,TRUE,"",1.36,2.31
+"witness_backstop","run","trades",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,4,TRUE,"",1.36,2.31
+"witness_backstop","run","metrics",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,9,TRUE,"",1.36,2.31
+"witness_backstop","run","run_conditions",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.36,2.31
+"witness_backstop","run","rng_after",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.36,2.31
+"witness_backstop_sweep","sweep","sweep",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.62,1.43
+"witness_backstop_sweep","sweep","sweep_attrs",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,24,TRUE,"",0.62,1.43
+"witness_backstop_sweep","sweep","sweep_returns",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,28,TRUE,"",0.62,1.43
+"witness_backstop_sweep","sweep","sweep_trades",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,7,TRUE,"",0.62,1.43
+"witness_backstop_sweep","sweep","memory_state",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.62,1.43
+"witness_backstop_sweep","sweep","memory_events",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,21,TRUE,"",0.62,1.43
+"witness_backstop_sweep","sweep","memory_diagnostics",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",0.62,1.43
+"witness_backstop_sweep","sweep","memory_completion",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.62,1.43
+"witness_backstop_sweep","sweep","memory_equity",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,28,TRUE,"",0.62,1.43
+"witness_backstop_sweep","sweep","memory_fills",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,21,TRUE,"",0.62,1.43
+"witness_backstop_sweep","sweep","rng_after",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",0.62,1.43
+"witness_checkpoint_control","run","equity_curve",1,65536,"",0,"a checkpoint_every control","","",0,14,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","ledger_events",1,65536,"",0,"a checkpoint_every control","","",0,32,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","run_completion",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","run_diagnostic_coverage",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","run_diagnostic_implicit",1,65536,"",0,"a checkpoint_every control","","",0,40,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","run_diagnostic_summary",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","run_diagnostics",1,65536,"",0,"a checkpoint_every control","","",0,98,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","run_promotion_context",1,65536,"",0,"a checkpoint_every control","","",0,0,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","run_provenance",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","run_tags",1,65536,"",0,"a checkpoint_every control","","",0,0,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","run_telemetry",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","runs",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","fills",1,65536,"",0,"a checkpoint_every control","","",0,32,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","trades",1,65536,"",0,"a checkpoint_every control","","",0,12,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","metrics",1,65536,"",0,"a checkpoint_every control","","",0,9,TRUE,"",1.45,1.47
+"witness_checkpoint_control","run","run_conditions",1,65536,"",0,"a checkpoint_every control","","",0,0,TRUE,"",1.45,1.47
+"witness_caught_backstop","run","equity_curve",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,14,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","ledger_events",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,10,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","run_completion",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","run_diagnostic_coverage",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","run_diagnostic_implicit",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,41,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","run_diagnostic_summary",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","run_diagnostics",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,68,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","run_promotion_context",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","run_provenance",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","run_tags",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","run_telemetry",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","runs",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","fills",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,10,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","trades",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,5,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","metrics",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,9,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","run_conditions",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.37,2.33
+"witness_caught_backstop","run","rng_after",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.37,2.33
+"witness_caught_backstop_sweep","sweep","sweep",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.61,1.42
+"witness_caught_backstop_sweep","sweep","sweep_attrs",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,24,TRUE,"",0.61,1.42
+"witness_caught_backstop_sweep","sweep","sweep_returns",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,28,TRUE,"",0.61,1.42
+"witness_caught_backstop_sweep","sweep","sweep_trades",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,10,TRUE,"",0.61,1.42
+"witness_caught_backstop_sweep","sweep","memory_state",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.61,1.42
+"witness_caught_backstop_sweep","sweep","memory_events",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,21,TRUE,"",0.61,1.42
+"witness_caught_backstop_sweep","sweep","memory_diagnostics",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.61,1.42
+"witness_caught_backstop_sweep","sweep","memory_completion",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.61,1.42
+"witness_caught_backstop_sweep","sweep","memory_equity",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,28,TRUE,"",0.61,1.42
+"witness_caught_backstop_sweep","sweep","memory_fills",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,21,TRUE,"",0.61,1.42
+"witness_caught_backstop_sweep","sweep","rng_after",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",0.61,1.42
+"witness_caught_rethrow","run","equity_curve",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,14,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","ledger_events",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,13,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","run_completion",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","run_diagnostic_coverage",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","run_diagnostic_implicit",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,41,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","run_diagnostic_summary",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","run_diagnostics",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,71,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","run_promotion_context",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","run_provenance",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","run_tags",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","run_telemetry",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","runs",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","fills",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,13,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","trades",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,5,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","metrics",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,9,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","run_conditions",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,0,TRUE,"",1.4,2.35
+"witness_caught_rethrow","run","rng_after",1,65536,"",1,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",1.4,2.35
+"witness_caught_rethrow_sweep","sweep","sweep",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.64,1.42
+"witness_caught_rethrow_sweep","sweep","sweep_attrs",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,24,TRUE,"",0.64,1.42
+"witness_caught_rethrow_sweep","sweep","sweep_returns",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,28,TRUE,"",0.64,1.42
+"witness_caught_rethrow_sweep","sweep","sweep_trades",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,9,TRUE,"",0.64,1.42
+"witness_caught_rethrow_sweep","sweep","memory_state",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.64,1.42
+"witness_caught_rethrow_sweep","sweep","memory_events",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,22,TRUE,"",0.64,1.42
+"witness_caught_rethrow_sweep","sweep","memory_diagnostics",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.64,1.42
+"witness_caught_rethrow_sweep","sweep","memory_completion",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,2,TRUE,"",0.64,1.42
+"witness_caught_rethrow_sweep","sweep","memory_equity",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,28,TRUE,"",0.64,1.42
+"witness_caught_rethrow_sweep","sweep","memory_fills",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,22,TRUE,"",0.64,1.42
+"witness_caught_rethrow_sweep","sweep","rng_after",1,65536,"",2,"","`ledgr_history_matrix()` in the strategy","",0,1,TRUE,"",0.64,1.42
+"witness_state_refusal","run","equity_curve",1,65536,"",1,"","","",0,0,TRUE,"",0.89,1.03
+"witness_state_refusal","run","ledger_events",1,65536,"",1,"","","",0,0,TRUE,"",0.89,1.03
+"witness_state_refusal","run","run_completion",1,65536,"",1,"","","",0,0,TRUE,"",0.89,1.03
+"witness_state_refusal","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",0.89,1.03
+"witness_state_refusal","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,0,TRUE,"",0.89,1.03
+"witness_state_refusal","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",0.89,1.03
+"witness_state_refusal","run","run_diagnostics",1,65536,"",1,"","","",0,1,TRUE,"",0.89,1.03
+"witness_state_refusal","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",0.89,1.03
+"witness_state_refusal","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",0.89,1.03
+"witness_state_refusal","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",0.89,1.03
+"witness_state_refusal","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",0.89,1.03
+"witness_state_refusal","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",0.89,1.03
+"witness_state_refusal","run","run_conditions",1,65536,"",1,"","","",0,1,TRUE,"",0.89,1.03
+"witness_state_refusal","run","prefix_reads",1,65536,"",1,"","","",0,12,TRUE,"",0.89,1.03
+"witness_checkpoint_null","run","equity_curve",1,65536,"",0,"a checkpoint_every control","","",0,14,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","ledger_events",1,65536,"",0,"a checkpoint_every control","","",0,32,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","run_completion",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","run_diagnostic_coverage",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","run_diagnostic_implicit",1,65536,"",0,"a checkpoint_every control","","",0,40,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","run_diagnostic_summary",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","run_diagnostics",1,65536,"",0,"a checkpoint_every control","","",0,98,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","run_promotion_context",1,65536,"",0,"a checkpoint_every control","","",0,0,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","run_provenance",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","run_tags",1,65536,"",0,"a checkpoint_every control","","",0,0,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","run_telemetry",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","runs",1,65536,"",0,"a checkpoint_every control","","",0,1,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","fills",1,65536,"",0,"a checkpoint_every control","","",0,32,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","trades",1,65536,"",0,"a checkpoint_every control","","",0,12,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","metrics",1,65536,"",0,"a checkpoint_every control","","",0,9,TRUE,"",1.52,1.47
+"witness_checkpoint_null","run","run_conditions",1,65536,"",0,"a checkpoint_every control","","",0,0,TRUE,"",1.52,1.47
+"witness_capacity","run","equity_curve",1,65536,"",1,"","","",0,0,TRUE,"",0.83,0.94
+"witness_capacity","run","ledger_events",1,65536,"",1,"","","",0,0,TRUE,"",0.83,0.94
+"witness_capacity","run","run_completion",1,65536,"",1,"","","",0,0,TRUE,"",0.83,0.94
+"witness_capacity","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",0.83,0.94
+"witness_capacity","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,0,TRUE,"",0.83,0.94
+"witness_capacity","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",0.83,0.94
+"witness_capacity","run","run_diagnostics",1,65536,"",1,"","","",0,1,TRUE,"",0.83,0.94
+"witness_capacity","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",0.83,0.94
+"witness_capacity","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",0.83,0.94
+"witness_capacity","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",0.83,0.94
+"witness_capacity","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",0.83,0.94
+"witness_capacity","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",0.83,0.94
+"witness_capacity","run","run_conditions",1,65536,"",1,"","","",0,1,TRUE,"",0.83,0.94
+"witness_prefix_reads","run","equity_curve",1,65536,"",1,"","","",0,8,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","ledger_events",1,65536,"",1,"","","",0,5,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","run_completion",1,65536,"",1,"","","",0,1,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","run_diagnostic_coverage",1,65536,"",1,"","","",0,1,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","run_diagnostic_implicit",1,65536,"",1,"","","",0,16,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","run_diagnostic_summary",1,65536,"",1,"","","",0,1,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","run_diagnostics",1,65536,"",1,"","","",0,30,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","run_promotion_context",1,65536,"",1,"","","",0,0,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","run_provenance",1,65536,"",1,"","","",0,1,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","run_tags",1,65536,"",1,"","","",0,0,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","run_telemetry",1,65536,"",1,"","","",0,1,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","runs",1,65536,"",1,"","","",0,1,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","fills",1,65536,"",1,"","","",0,5,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","trades",1,65536,"",1,"","","",0,2,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","metrics",1,65536,"",1,"","","",0,9,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","run_conditions",1,65536,"",1,"","","",0,0,TRUE,"",1.31,1.56
+"witness_prefix_reads","run","prefix_reads",1,65536,"",1,"","","",0,16,TRUE,"",1.31,1.56
+"witness_prefix_reads_sweep","sweep","sweep",1,65536,"",2,"","","",0,2,TRUE,"",0.83,1.47
+"witness_prefix_reads_sweep","sweep","sweep_attrs",1,65536,"",2,"","","",0,25,TRUE,"",0.83,1.47
+"witness_prefix_reads_sweep","sweep","sweep_returns",1,65536,"",2,"","","",0,28,TRUE,"",0.83,1.47
+"witness_prefix_reads_sweep","sweep","sweep_trades",1,65536,"",2,"","","",0,23,TRUE,"",0.83,1.47
+"witness_prefix_reads_sweep","sweep","memory_state",1,65536,"",2,"","","",0,2,TRUE,"",0.83,1.47
+"witness_prefix_reads_sweep","sweep","memory_events",1,65536,"",2,"","","",0,64,TRUE,"",0.83,1.47
+"witness_prefix_reads_sweep","sweep","memory_diagnostics",1,65536,"",2,"","","",0,4,TRUE,"",0.83,1.47
+"witness_prefix_reads_sweep","sweep","memory_completion",1,65536,"",2,"","","",0,2,TRUE,"",0.83,1.47
+"witness_prefix_reads_sweep","sweep","memory_equity",1,65536,"",2,"","","",0,28,TRUE,"",0.83,1.47
+"witness_prefix_reads_sweep","sweep","memory_fills",1,65536,"",2,"","","",0,64,TRUE,"",0.83,1.47
+"witness_prefix_reads_sweep","sweep","rng_after",1,65536,"",2,"","","",0,1,TRUE,"",0.83,1.47
+"witness_prefix_reads_sweep","sweep","prefix_reads",1,65536,"",2,"","","",0,56,TRUE,"",0.83,1.47
+"witness_sweep","sweep","sweep",1,65536,"",2,"","","",0,2,TRUE,"",0.75,1.39
+"witness_sweep","sweep","sweep_attrs",1,65536,"",2,"","","",0,25,TRUE,"",0.75,1.39
+"witness_sweep","sweep","sweep_returns",1,65536,"",2,"","","",0,28,TRUE,"",0.75,1.39
+"witness_sweep","sweep","sweep_trades",1,65536,"",2,"","","",0,23,TRUE,"",0.75,1.39
+"witness_sweep","sweep","memory_state",1,65536,"",2,"","","",0,2,TRUE,"",0.75,1.39
+"witness_sweep","sweep","memory_events",1,65536,"",2,"","","",0,64,TRUE,"",0.75,1.39
+"witness_sweep","sweep","memory_diagnostics",1,65536,"",2,"","","",0,4,TRUE,"",0.75,1.39
+"witness_sweep","sweep","memory_completion",1,65536,"",2,"","","",0,2,TRUE,"",0.75,1.39
+"witness_sweep","sweep","memory_equity",1,65536,"",2,"","","",0,28,TRUE,"",0.75,1.39
+"witness_sweep","sweep","memory_fills",1,65536,"",2,"","","",0,64,TRUE,"",0.75,1.39
+"witness_sweep","sweep","rng_after",1,65536,"",2,"","","",0,1,TRUE,"",0.75,1.39
