@@ -1,22 +1,26 @@
 # Whole-run parity of the compact-state lean loop (LDG-3219, interface
-# Section 19.6). Each workload runs on the pinned build, then through
-# lean_loop_run() (the harness entry: lean loop installed, pre-pulse refusals
-# on the pin, a mid-run coverage condition reruns the complete workload on
-# the pin). Every run-store table (diagnostics decoded), the public readers,
-# the conditions and the sweep results are compared in A0 canonical form
-# (dev/bench/v0_2_3_output_freeze/lib.R, doubles at %.17g). The detectors
-# (no handler call and no hold expansion while pulses run) are checked on
-# every lean workload.
+# Section 19.6; obligations in loop_checklist.md). Each workload runs on the
+# pinned build, then through lean_loop_run() (the harness entry: lean loop
+# installed, entry and pre-pulse refusals on the pin, a marked attempt rerun
+# on the pin). Every run-store table (diagnostics decoded), the public
+# readers, the conditions and the sweep results are compared in A0 canonical
+# form (dev/bench/v0_2_3_output_freeze/lib.R, doubles at %.17g).
+#
+# A workload passes when its tables are identical and, on its lean arm:
+# no store access and no output-handler call while pulses ran, no hold
+# expansion inside the loop, every completed terminal append within the
+# batch bound (and one pulse per expanded range at bound one), and its
+# registered refusal (loop_expect_refused) named.
 #
 #   Rscript dev/lean_core/parity/loop_parity.R --lib=<pinned library>
 #     --debug=0|1 --out=<csv> [--workloads=<id,...>] [--batch-rows=<n>]
 #     [--mutation=<name>]
 #
-# --mutation runs a registered mutation or witness fault and inverts the
-# verdict: fill_price_ulp, drop_hold and hold_position must make some table
-# differ; write_in_loop must fire the store-write detector, hold_in_loop the
-# hold detector, store_in_loop (DBI and ledgr_store_append on a scratch store) the store-boundary detector; batch_fault must fail the run after a real terminal store write and roll it back.
-# PASS* marks a workload whose public call stopped before any fold ran.
+# --mutation loads loop.R or loop_harness.R with one registered text patch
+# (loop_mutations below; the production code holds no witness branch) and
+# inverts the verdict: the patch must be CAUGHT by the evidence named in its
+# `expect`. PASS* marks a workload whose public call stopped before any fold
+# ran.
 
 here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/"))
 arg <- function(name, default = NULL) {
@@ -30,11 +34,76 @@ debug <- identical(arg("debug", "0"), "1")
 out <- arg("out")
 batch_rows <- as.integer(arg("batch-rows", "65536"))
 mutation <- arg("mutation", "")
-mutations <- c("fill_price_ulp", "drop_hold", "hold_position", "write_in_loop", "store_in_loop", "hold_in_loop", "batch_fault")
-if (nzchar(mutation) && !mutation %in% mutations) stop("unknown --mutation: ", mutation, call. = FALSE)
+inert <- identical(arg("inert", "0"), "1")   # bind the fold without the harness hooks (row 15)
+
+# Text mutations. Each edit names a file of dev/lean_core, one exact anchor
+# line, and lines inserted before or after it or replacing it.
+edit <- function(file, at, lines = character(), where = "replace") list(file = file, at = at, lines = lines, where = where)
+loop_mutations <- list(
+  fill_price_ulp = list(expect = "differ", edits = list(edit("loop.R", "    src <- fl",
+    "    if (nf > 0L) src$price[[1L]] <- src$price[[1L]] * (1 + .Machine$double.eps)", "after"))),
+  drop_hold = list(expect = "differ", edits = list(edit("loop.R", "      hc <- which(hold)",
+    "      if (a == 1L && any(hold)) hold[which(hold)[[1L]]] <- FALSE", "before"))),
+  hold_position = list(expect = "differ", edits = list(edit("loop.R", "      hpos <- lean_loop_positions_at(hk, hp, a, b, fr, carry)",
+    "      if (a == 1L && length(hpos)) hpos[[1L]] <- hpos[[1L]] + 1", "after"))),
+  write_in_loop = list(expect = "sink", edits = list(edit("loop.R",
+    "        last_executed <<- max(last_executed, fill$exec_ts, na.rm = TRUE)",
+    c("        if (nf == n_fill) output_handler$write_fill_events(fill = fill, i = seq_len(n_fill),",
+      "          instrument_id = ids[fill$pos], event_seq = event_seq - n_fill, use_transaction = FALSE)"), "after"))),
+  store_in_loop = list(expect = "store", edits = list(edit("loop.R",
+    "        last_executed <<- max(last_executed, fill$exec_ts, na.rm = TRUE)",
+    c("        if (nf == n_fill) {",
+      "          scratch <- DBI::dbConnect(duckdb::duckdb())",
+      "          DBI::dbExecute(scratch, \"CREATE TABLE probe (value INTEGER)\")",
+      "          stmt <- DBI::dbSendStatement(scratch, \"INSERT INTO probe VALUES (?)\")",
+      "          DBI::dbBind(stmt, list(7L)); DBI::dbClearResult(stmt)",
+      "          DBI::dbGetQuery(scratch, \"INSERT INTO probe VALUES (2) RETURNING value\")",
+      "          ledgr_store_append(scratch, \"probe\", data.frame(value = 1L))",
+      "          DBI::dbDisconnect(scratch, shutdown = TRUE)",
+      "        }"), "after"))),
+  hold_in_loop = list(expect = "hold", edits = list(edit("loop.R", "      processed <<- processed + 1L",
+    "      if (i == 1L) lean_loop_expand(1L, 1L, lean_loop_layout(), state0$positions)", "before"))),
+  batch_fault = list(expect = "rollback", edits = list(edit("loop.R", "      live$batches <- live$batches + 1L",
+    "      if (\"ledger_events\" %in% lean_entry$terminal_appends) stop(\"lean witness: batch fault\")", "after"))),
+  fault_before_append = list(expect = "fault_without_append", edits = list(edit("loop.R",
+    "      live$batches <- live$batches + 1L", "      stop(\"lean witness: early batch fault\")", "after"))),
+  patch_container = list(expect = "differ", edits = list(edit("loop.R",
+    "    if (!is.list(update) || is.data.frame(update)) {", "    if (FALSE) {"))),
+  zero_pulse_completion = list(expect = "differ", edits = list(edit("loop.R", "    if (n_pulse == 0L) {", "    if (FALSE) {"))),
+  read_fast_path = list(expect = "differ", edits = list(edit("loop.R",
+    "  if (!is.character(name) || length(name) != 1L || is.na(name) || !nzchar(name)) return(lean_pin_ctx_dollar(x, name))",
+    "  if (identical(name, \"\")) return(lean_pin_ctx_dollar(x, name))"))),
+  entry_guard_off = list(expect = "unrefused", edits = list(edit("loop.R", "  if (!is.null(entry)) lean_not_covered(entry)"))),
+  backstop_off = list(expect = "differ", edits = list(edit("loop_harness.R",
+    "  if (length(lean_entry$backstop) > 0L) {", "  if (FALSE) {"))),
+  capacity_late = list(expect = "differ", edits = list(edit("loop.R", "      if (nf > capacity) {", "      if (FALSE) {"))),
+  commit_late = list(expect = "differ", edits = list(
+    edit("loop.R", "      n_committed <<- nf                # the pin flushes the pulse's fills here, before reconciliation"),
+    edit("loop.R", "      processed <<- processed + 1L", "      n_committed <<- nf", "before"))),
+  expand_whole = list(expect = "unbounded", edits = list(edit("loop.R",
+    "      b <- max(a, findInterval(cs[[a]] - lay$rows[[a]] + bound, cs))", "      b <- lay$np")))
+)
+if (nzchar(mutation) && is.null(loop_mutations[[mutation]])) stop("unknown --mutation: ", mutation, call. = FALSE)
+
 source(file.path(here, "..", "load.R"))
 lean <- lean_core_load(lib, debug = debug)
 ns <- asNamespace("ledgr")
+if (nzchar(mutation)) {
+  m <- loop_mutations[[mutation]]
+  for (file in unique(vapply(m$edits, `[[`, "", "file"))) {
+    x <- readLines(file.path(lean_core_home, file))
+    for (e in Filter(function(e) identical(e$file, file), m$edits)) {
+      hit <- which(x == e$at)
+      if (length(hit) != 1L) stop("mutation ", mutation, ": anchor not unique in ", file, ": ", e$at, call. = FALSE)
+      x <- switch(e$where,
+        replace = c(x[seq_len(hit - 1L)], e$lines, x[-seq_len(hit)]),
+        before = c(x[seq_len(hit - 1L)], e$lines, x[hit:length(x)]),
+        after = c(x[seq_len(hit)], e$lines, x[-seq_len(hit)]))
+    }
+    eval(parse(text = x, keep.source = FALSE), envir = lean)
+  }
+  lean$lean_entry$mutation <- mutation
+}
 
 repo <- normalizePath(file.path(here, "..", "..", ".."), winslash = "/")
 source(file.path(repo, "dev/bench/v0_2_3_ws16_entry/workloads.R"))
@@ -123,23 +192,27 @@ first_difference <- function(a, b) {
   }
   "<attributes>"
 }
+# An error escaping a whole workload is itself an output, compared as a table.
+escaped <- function(e) list(escaped = list(error = data.frame(class = class(e)[[1L]], message = conditionMessage(e),
+                                                              stringsAsFactors = FALSE)))
 rows <- list()
 verdicts <- character()
 for (id in ids) {
   t0 <- proc.time()[["elapsed"]]
-  pinned <- run_tables(id)
+  pinned <- tryCatch(run_tables(id), error = escaped)
   t1 <- proc.time()[["elapsed"]]
-  attempt <- lean$lean_loop_run(function() {
+  attempt <- if (inert) {
+    restore <- lean$lean_loop_install(hooks = FALSE)
+    value <- tryCatch(run_tables(id), error = escaped, finally = restore())
+    structure(list(value = value), lean = as.list(lean$lean_entry))
+  } else tryCatch(lean$lean_loop_run(function() {
     lean$lean_entry$batch_rows <- batch_rows
-    if (nzchar(mutation)) lean$lean_entry$mutation <- mutation
     run_tables(id)
-  })
+  }), error = function(e) structure(list(value = escaped(e)), lean = as.list(lean$lean_entry)))
   t2 <- proc.time()[["elapsed"]]
   candidate <- attempt$value
   rec <- attr(attempt, "lean")
-  refused <- paste(unique(rec$refused), collapse = "; ")
-  backstop <- paste(unique(rec$backstop), collapse = "; ")
-  writes <- paste(unique(rec$store_writes), collapse = "; ")
+  show <- function(x) paste(unique(x), collapse = "; ")
   path_rows <- list()
   for (path in union(names(pinned), names(candidate))) {
     for (tab in union(names(pinned[[path]]), names(candidate[[path]]))) {
@@ -147,37 +220,48 @@ for (id in ids) {
       same <- identical(a, b)
       path_rows[[length(path_rows) + 1L]] <- data.frame(
         workload = id, path = path, table = tab, debug = as.integer(debug), batch_rows = batch_rows,
-        mutation = mutation, lean_folds = rec$lean_folds, refused = refused, backstop = backstop,
-        store_writes = writes, hold_calls = rec$hold_calls, rows = if (is.null(a)) NA_integer_ else nrow(a),
-        identical = same,
+        mutation = mutation, lean_folds = rec$lean_folds, refused = show(rec$refused), backstop = show(rec$backstop),
+        store_access = show(rec$store_access), sink_calls = show(rec$sink_calls), hold_calls = rec$hold_calls,
+        max_append_rows = rec$max_append_rows, max_range_pulses = rec$max_range_pulses,
+        rows = if (is.null(a)) NA_integer_ else nrow(a), identical = same,
         first_difference = if (same) "" else if (is.null(a) || is.null(b)) "<missing>" else first_difference(a, b),
         pinned_s = round(t1 - t0, 2), lean_s = round(t2 - t1, 2), stringsAsFactors = FALSE)
     }
   }
   res <- do.call(rbind, path_rows)
   rows <- c(rows, path_rows)
-  same_all <- all(res$identical)
   events_left <- sum(vapply(candidate, function(p) if (is.data.frame(p$ledger_events)) nrow(p$ledger_events) else 0L, 0L))
-  verdict <- switch(if (nzchar(mutation)) mutation else "none",
-    none = if (!(same_all && !nzchar(writes) && rec$hold_calls == 0L)) "FAIL" else
-      if (rec$lean_folds == 0L && !nzchar(refused)) "PASS*" else "PASS",
-    fill_price_ulp = , drop_hold = , hold_position = if (rec$lean_folds == 0L) "NOT RUN" else if (!same_all) "CAUGHT" else "MISSED",
-    write_in_loop = if (rec$lean_folds == 0L) "NOT RUN" else if (nzchar(writes)) "CAUGHT" else "MISSED",
-    store_in_loop = if (rec$lean_folds == 0L) "NOT RUN" else
-      if (all(c("DBI::dbExecute", "ledgr::ledgr_store_append") %in% rec$store_writes)) "CAUGHT" else "MISSED",
-    hold_in_loop = if (rec$lean_folds == 0L) "NOT RUN" else if (rec$hold_calls > 0L) "CAUGHT" else "MISSED",
-    # the fault fires only after a real terminal store write, which must be rolled back
-    batch_fault = if (rec$lean_folds == 0L) "NOT RUN" else
-      if (!same_all && events_left == 0L && isTRUE(rec$writes_before_fault > 0L)) "ROLLED BACK" else "MISSED")
+  expected_refusal <- loop_expect_refused[[id]]
+  seen <- list(
+    differ = !all(res$identical),
+    sink = length(rec$sink_calls) > 0L,
+    store = length(rec$store_access) > 0L,
+    hold = rec$hold_calls > 0L,
+    unrefused = !is.null(expected_refusal) && !expected_refusal %in% rec$refused,
+    unbounded = rec$lean_folds > 0L && (rec$max_append_rows > batch_rows || (batch_rows == 1L && rec$max_range_pulses > 1L)),
+    # a terminal fault after a completed events append, rolled back
+    rollback = !all(res$identical) && events_left == 0L && "ledger_events" %in% rec$terminal_appends,
+    # a fault with no completed events append before it: not a rollback witness
+    fault_without_append = !all(res$identical) && !"ledger_events" %in% rec$terminal_appends)
+  verdict <- if (!nzchar(mutation)) {
+    if (seen$differ || seen$sink || seen$store || seen$hold || seen$unrefused || seen$unbounded) "FAIL"
+    else if (rec$lean_folds == 0L && !length(rec$refused)) "PASS*" else "PASS"
+  } else {
+    expect <- loop_mutations[[mutation]]$expect
+    needs_lean <- !identical(expect, "unrefused")
+    if (needs_lean && rec$lean_folds == 0L && !length(rec$backstop)) "NOT RUN"
+    else if (isTRUE(seen[[expect]])) "CAUGHT" else "MISSED"
+  }
   verdicts[[id]] <- verdict
-  cat(sprintf("%-26s %-11s %s  lean folds %d  refused [%s]  backstop [%s]  writes [%s]  holds %d  pinned %.1f s  lean %.1f s\n",
-              id, verdict, if (same_all) "identical" else "DIFFERENT", rec$lean_folds, refused, backstop, writes,
-              rec$hold_calls, t1 - t0, t2 - t1))
+  cat(sprintf("%-28s %-8s %s  lean %d  refused [%s]  backstop [%s]  store [%s]  sink [%s]  holds %d  append<=%d  range<=%d  pinned %.1f s  lean %.1f s\n",
+              id, verdict, if (seen$differ) "DIFFERENT" else "identical", rec$lean_folds, show(rec$refused),
+              show(rec$backstop), show(rec$store_access), show(rec$sink_calls), rec$hold_calls, rec$max_append_rows,
+              rec$max_range_pulses, t1 - t0, t2 - t1))
 }
 res <- do.call(rbind, rows)
 dir.create(dirname(out), recursive = TRUE, showWarnings = FALSE)
 utils::write.csv(res, out, row.names = FALSE)
 cat(sprintf("%d tables, %d different; verdicts: %s\n", nrow(res), sum(!res$identical),
             paste(names(table(verdicts)), table(verdicts), sep = " ", collapse = ", ")))
-bad <- if (nzchar(mutation)) verdicts %in% c("MISSED") else verdicts == "FAIL"
+bad <- if (nzchar(mutation)) verdicts == "MISSED" else verdicts == "FAIL"
 if (any(bad)) quit(status = 1L)

@@ -339,6 +339,98 @@ loop_witnesses <- list(
   # type error on pulse 6, after fills), with committed reads at each
   # reconciliation check up to it.
   witness_state_refusal = function() lw_prefix_reads(memory = FALSE, workload = lw_state_refusal),
+  # Round 3, finding 1: a state patch whose container is not a list (a
+  # classed atomic vector) is refused by the pin in production; portfolio
+  # and asset fields.
+  witness_state_container = function() {
+    db <- lw_witness_db()
+    patch <- function(field, value) {
+      strategy <- function(ctx, params) {
+        i <- as.integer(as.Date(substr(ctx$ts_utc, 1L, 10L)) - as.Date("2021-01-04")) + 1L
+        targets <- ctx$hold()
+        targets[["A"]] <- i
+        update <- if (i == 3L) structure(stats::setNames(VALUE, FIELD), class = "ledgr_strategy_state_patch") else NULL
+        list(targets = targets, state_update = update)
+      }
+      body(strategy) <- do.call(substitute, list(body(strategy), list(FIELD = field, VALUE = value)))
+      environment(strategy) <- ns
+      strategy
+    }
+    run <- collect(db, "lw_witness", "lw-state-container", function(s) ledgr::ledgr_experiment(s, patch("n", 1L),
+      opening = ledgr::ledgr_opening(cash = 5000), cost_model = ledgr::ledgr_cost_zero(), portfolio_state = list(n = 0L)))
+    asset <- collect(db, "lw_witness", "lw-state-container-asset", function(s) ledgr::ledgr_experiment(s,
+      patch("flag", TRUE), opening = ledgr::ledgr_opening(cash = 5000), cost_model = ledgr::ledgr_cost_zero(),
+      asset_state = list(flag = FALSE)))
+    list(run = run$run, run_asset = asset$run)
+  },
+  # Round 3, finding 5: a validated execution spec with no pulses returns the
+  # pin's empty result through the installed envelope.
+  witness_zero_pulses = function() {
+    db <- lw_witness_db()
+    seen <- new.env(parent = emptyenv())
+    restore <- lw_rebind("ledgr_fold_envelope", local({
+      inner <- get("ledgr_fold_envelope", envir = ns)
+      function(execution, output_handler) { seen$execution <- execution; seen$inner <- inner; inner(execution, output_handler) }
+    }))
+    on.exit(restore())
+    tables <- collect(db, "lw_witness", "lw-zero-source", function(s) ledgr::ledgr_experiment(s,
+      lw_schedule_strategy(list()), opening = ledgr::ledgr_opening(cash = 5000), cost_model = ledgr::ledgr_cost_zero()))
+    e <- seen$execution
+    e$pulses_posix <- e$pulses_posix[0L]
+    e$pulses_iso <- character()
+    e$execution_opportunities_posix <- e$execution_opportunities_posix[0L]
+    h <- ns$ledgr_output_handler(ns$ledgr_output_sink_memory("lw-zero"))
+    res <- tryCatch(seen$inner(ns$ledgr_validate_execution_spec(e), h), error = function(err) err)
+    tables$run$zero_pulses <- if (inherits(res, "error")) {
+      data.frame(status = "<error>", processed = NA_integer_, full_run = NA, equity_n = NA_integer_,
+                 diagnostics = NA_integer_, completion_null = NA, error = class(res)[[1L]], stringsAsFactors = FALSE)
+    } else {
+      data.frame(status = res$status, processed = res$processed, full_run = res$full_run,
+                 equity_n = as.integer(res$equity_facts$n), diagnostics = NROW(h$diagnostics()),
+                 completion_null = is.null(h$completion()), error = "", stringsAsFactors = FALSE)
+    }
+    tables
+  },
+  # Round 3, finding 2: the caller wraps the workload in its own handler; a
+  # marked attempt still reruns on the pin.
+  witness_outer_handler = function() {
+    db <- lw_witness_db()
+    snapshot <- ledgr::ledgr_snapshot_open(db, "lw_witness", verify = TRUE)
+    on.exit(ledgr::ledgr_snapshot_close(snapshot))
+    set.seed(4248L)
+    tryCatch(close(ledgr::ledgr_run(lw_backstop_exp(snapshot), run_id = "lw-outer")),
+             error = function(e) stop("job failed: ", conditionMessage(e), call. = FALSE))
+    lw_rng_table(list(run = c(a0_store_tables(db, "lw-outer"), a0_reader_tables(snapshot, "lw-outer"))))
+  },
+  # Round 3, finding 3: walk-forward is refused at entry (slice 5) and runs
+  # on the pin.
+  witness_walk_forward = function() {
+    db <- lw_witness_db()
+    snapshot <- ledgr::ledgr_snapshot_open(db, "lw_witness", verify = TRUE)
+    on.exit(ledgr::ledgr_snapshot_close(snapshot))
+    strategy <- function(ctx, params) {
+      targets <- ctx$hold()
+      targets[["A"]] <- params$qty
+      targets
+    }
+    environment(strategy) <- ns
+    exp <- ledgr::ledgr_experiment(snapshot, strategy, opening = ledgr::ledgr_opening(cash = 5000),
+      cost_model = ledgr::ledgr_cost_zero())
+    grid <- ledgr::ledgr_grid_named(small = list(strategy = list(qty = 2)), large = list(strategy = list(qty = 4)))
+    folds <- ns$ledgr_fold_list(list(
+      ledgr::ledgr_fold("2021-01-04T00:00:00Z", "2021-01-07T00:00:00Z", "2021-01-08T00:00:00Z", "2021-01-11T00:00:00Z", fold_seq = 1L),
+      ledgr::ledgr_fold("2021-01-08T00:00:00Z", "2021-01-11T00:00:00Z", "2021-01-12T00:00:00Z", "2021-01-17T00:00:00Z", fold_seq = 2L)
+    ), constructor = list(type_id = "explicit"))
+    wf <- ledgr::ledgr_walk_forward(exp, grid = grid, folds = folds, selection_rule = ledgr::ledgr_rule_argmax("sharpe_ratio"),
+                                    seed = 24L)
+    ids <- vapply(wf$test_runs, function(bt) bt$run_id, character(1L))
+    lapply(wf$test_runs, close)
+    list(walk_forward = c(list(
+      wf_folds = a0_canon(as.data.frame(wf$folds), "wf_folds", "fold_seq"),
+      wf_scores = a0_canon(as.data.frame(wf$scores), "wf_scores", c("fold_seq", "window", "candidate_key", "metric_name")),
+      wf_status = a0_canon(data.frame(status = wf$status, test_run_ids = paste(ids, collapse = ","), stringsAsFactors = FALSE),
+                           "wf_status", "status")), a0_store_tables(db, ids)))
+  },
   # Finding 5: a control$checkpoint_every key is refused even when NULL.
   witness_checkpoint_null = function() {
     db <- lw_witness_db()
@@ -385,4 +477,12 @@ loop_witnesses <- list(
     obs <- a0_observe_memory(ledgr::ledgr_sweep(exp, grid, seed = 17L, retain = a0_retain()))
     lw_rng_table(list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value))), "sweep")
   }
+)
+
+# Workloads whose lean arm must name this refusal before the first pulse;
+# a missing refusal fails the workload even when the outputs match.
+loop_expect_refused <- list(
+  witness_walk_forward = "walk-forward",
+  witness_checkpoint_control = "a checkpoint_every control",
+  witness_checkpoint_null = "a checkpoint_every control"
 )

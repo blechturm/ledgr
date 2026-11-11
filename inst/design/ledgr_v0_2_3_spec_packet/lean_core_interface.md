@@ -826,6 +826,21 @@ exceed the run's limit, `max(1, pulses x instruments)` as handed to
 `init_buffers()`, on that pulse; harnesses force a smaller limit through
 `lean_entry$capacity` (the pin's seam is its handler's `init_buffers()`).
 
+Harness seam (maintainer, 2026-11-11, close review round 3): `loop.R` holds
+the fold only. It reaches a harness through one hooks object,
+`lean_hooks`, whose default is inert (nothing recorded, watched or forced);
+`loop_harness.R` installs its own set. The harness answers entry refusals
+the fold cannot see (a `control$checkpoint_every` key; walk-forward,
+refused at `ledgr_walk_forward()` entry), binds the backstop stubs, which
+mark the attempt for a complete rerun on the pin however the attempt ends,
+and runs two detectors while pulses run: every call into the DuckDB
+backend bridges (`duckdb:::rapi_*`, which every statement, bind,
+registration and relation goes through) and every call to the fold's output
+handler. Broken variants for the witnesses are text patches the parity
+runner applies when it loads the code; the production code holds no
+witness branch. Obligations and their witnesses:
+`dev/lean_core/parity/loop_checklist.md`.
+
 Context reads (maintainer, 2026-11-10): the same install also rebinds the
 `$` methods of the pulse context and the strategy-state view
 (`R/pulse-context.R:166`, `R/strategy-state.R:207`) to lean methods for as

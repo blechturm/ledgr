@@ -1,48 +1,141 @@
 # The harness side of the compact-state lean loop (LDG-3219; interface
-# Sections 19.2 and 19.6): the install function, the entry record, the
-# store-write detector, the backstop stubs and lean_loop_run(), the entry
-# that reruns a workload on the pin after a mid-run coverage condition.
-# Only harnesses call these; nothing in R/ does.
+# Sections 19.1, 19.2 and 19.6). The fold (loop.R) reaches it only through
+# `lean_hooks`; lean_loop_install() replaces the inert default with
+# lean_harness_hooks() and binds the lean envelope, the two context read
+# methods and two entry recorders over the pin. Only harnesses call these;
+# nothing in R/ does.
+#
+# What the harness adds around a lean fold:
+# - the entry record (`lean_entry`): folds run lean, refusals, attempt marks;
+# - entry refusals the fold cannot see: a control$checkpoint_every key (D3
+#   Section 2) and walk-forward (slice 5);
+# - backstop stubs (19.2 point 1) for history reads and sizing helpers the
+#   static scan missed, which mark the attempt for a rerun on the pin;
+# - two detectors while pulses run: every call into the DuckDB backend
+#   bridges (any store statement, registration or relation) and every call
+#   to the fold's output handler (the terminal sink);
+# - witness seams: a lower fill-event limit, the terminal batch bound, a
+#   memory measurement around the terminal transfer.
 
 lean_pin_run_fold <- get("ledgr_run_fold", envir = asNamespace("ledgr"))
+lean_pin_walk_forward <- get("ledgr_walk_forward", envir = asNamespace("ledgr"))
 
-# The last fold's pulse-loop and publication seconds, for harness timing.
+# The last fold's pulse-loop and transfer seconds and record statistics.
 lean_loop_last_times <- new.env(parent = emptyenv())
 
-# Entry records: folds run lean, features refused before the first pulse,
-# coverage conditions raised mid-run, and whether the run carried a
-# control$checkpoint_every key (D3 Section 2; set by lean_run_fold).
 lean_entry <- new.env(parent = emptyenv())
 lean_entry_reset <- function() {
   lean_entry$lean_folds <- 0L
-  lean_entry$refused <- character()
-  lean_entry$backstop <- character()
-  lean_entry$control_checkpoint <- FALSE
-  lean_entry$store_writes <- character()   # store-boundary calls while pulses run
-  lean_entry$terminal_writes <- 0L         # store-boundary calls after the loop
-  lean_entry$terminal_appends <- character() # tables of completed nonempty package appends after the loop
-  lean_entry$writes_before_fault <- NA_integer_
-  lean_entry$uncovered <- character()      # stubs reached in this fold (sticky)
-  lean_entry$committed <- NULL             # the running fold's committed-prefix reads
-  lean_entry$capacity <- NULL              # witness seam: the fill-event limit
-  lean_entry$hold_calls <- 0L              # hold-expansion calls and rows while pulses run
+  lean_entry$refused <- character()           # features refused before a first pulse
+  lean_entry$backstop <- character()          # attempt marks: features that force a rerun on the pin
+  lean_entry$uncovered <- character()         # stubs reached during the current fold
+  lean_entry$control_checkpoint <- FALSE      # the run carries a control$checkpoint_every key
+  lean_entry$walk_forward <- FALSE            # inside ledgr_walk_forward()
+  lean_entry$store_access <- character()      # backend or package-writer calls while pulses run
+  lean_entry$sink_calls <- character()        # output-handler calls while pulses run
+  lean_entry$terminal_appends <- character()  # tables of completed nonempty appends after the loop
+  lean_entry$max_append_rows <- 0L            # largest such append
+  lean_entry$hold_calls <- 0L                 # hold expansions while pulses run
   lean_entry$hold_rows <- 0L
-  lean_entry$batch_rows <- 65536L          # terminal batch bound (rows)
-  lean_entry$mutation <- NULL              # a registered mutation or witness fault
-  lean_entry$measure <- FALSE              # record the terminal-materialization peak
+  lean_entry$committed <- NULL                # the running fold's committed-prefix reader
+  lean_entry$batch_rows <- 65536L             # seam: terminal batch bound (rows)
+  lean_entry$capacity <- NULL                 # seam: a lower fill-event limit
+  lean_entry$measure <- FALSE                 # seam: record the terminal-transfer peak
+  lean_entry$mutation <- ""                   # the text mutation loaded, for the record only
+  lean_entry$max_range_pulses <- 0L           # widest expanded pulse range
 }
 lean_entry_reset()
 
-# The store-write detector (19.6, D3 Section 5), part 1: every handler
-# method but the transaction itself records its name when called while
-# pulses run.
+lean_mark <- function(feature) lean_entry$backstop <- c(lean_entry$backstop, feature)
+
+lean_harness_hooks <- function() list(
+  entry_refusal = function() {
+    if (isTRUE(lean_entry$walk_forward)) return("walk-forward")
+    if (isTRUE(lean_entry$control_checkpoint)) return("a checkpoint_every control")
+    NULL
+  },
+  refused = function(feature) lean_entry$refused <- c(lean_entry$refused, feature),
+  fold_start = function(live) {
+    lean_entry$lean_folds <- lean_entry$lean_folds + 1L
+    lean_entry$uncovered <- character()
+    lean_stubs_bind(lean_stubs)
+    unwatch <- lean_watch_backend(live)
+    function() {
+      unwatch()
+      lean_stubs_bind()
+    }
+  },
+  handler = function(h, live) lean_watch_handler(h, live),
+  uncovered = function() lean_entry$uncovered,
+  mark = lean_mark,
+  committed = function(reader) lean_entry$committed <- reader,
+  capacity = function(default) lean_entry$capacity %||% default,
+  batch_rows = function() lean_entry$batch_rows,
+  hold_expansion = function(in_pulses, rows) {
+    if (in_pulses) {
+      lean_entry$hold_calls <- lean_entry$hold_calls + 1L
+      lean_entry$hold_rows <- lean_entry$hold_rows + rows
+    }
+  },
+  publish = function(fn) {
+    if (!isTRUE(lean_entry$measure)) return(fn())
+    invisible(gc(reset = TRUE))
+    fn()
+    lean_loop_last_times$publish_peak_mb <- sum(gc()[, 6L])
+  },
+  fold_end = function(stats) {
+    for (name in names(stats)) assign(name, stats[[name]], envir = lean_loop_last_times)
+    lean_entry$max_range_pulses <- max(lean_entry$max_range_pulses, stats$capacity[["max_range_pulses"]])
+  }
+)
+
+# Wraps `name` in `home` for as long as the returned function is not called.
+lean_wrap_binding <- function(home, name, make) {
+  original <- get(name, envir = home)
+  unlockBinding(name, home); assign(name, make(original), envir = home); lockBinding(name, home)
+  function() { unlockBinding(name, home); assign(name, original, envir = home); lockBinding(name, home) }
+}
+
+# Detector, store side (D3 Section 5): every DuckDB backend bridge (the
+# rapi_* functions every DBI statement, bind, registration and relation
+# goes through) and the package writer. A call while pulses run is store
+# access; slice 1 makes none. After the loop, completed nonempty package
+# appends are recorded with their table and size.
+lean_watch_backend <- function(live) {
+  restores <- list()
+  duckdb_ns <- asNamespace("duckdb")
+  for (name in grep("^rapi_", ls(duckdb_ns), value = TRUE)) {
+    restores[[length(restores) + 1L]] <- lean_wrap_binding(duckdb_ns, name, function(f) {
+      label <- paste0("duckdb:::", name)
+      function(...) {
+        if (isTRUE(live$in_pulses)) lean_entry$store_access <- c(lean_entry$store_access, label)
+        f(...)
+      }
+    })
+  }
+  restores[[length(restores) + 1L]] <- lean_wrap_binding(asNamespace("ledgr"), "ledgr_store_append", function(f) {
+    function(con, name, value) {
+      if (isTRUE(live$in_pulses)) lean_entry$store_access <- c(lean_entry$store_access, "ledgr::ledgr_store_append")
+      out <- f(con, name, value)
+      if (!isTRUE(live$in_pulses) && NROW(value) > 0L) {
+        lean_entry$terminal_appends <- c(lean_entry$terminal_appends, as.character(name))
+        lean_entry$max_append_rows <- max(lean_entry$max_append_rows, NROW(value))
+      }
+      out
+    }
+  })
+  function() for (r in rev(restores)) r()
+}
+
+# Detector, sink side: every method of the fold's output handler but the
+# transaction itself records its name when called while pulses run.
 lean_watch_handler <- function(h, live) {
   for (name in setdiff(names(h)[vapply(h, is.function, logical(1L))], "run_transaction")) {
     h[[name]] <- local({
       f <- h[[name]]
       nm <- name
       function(...) {
-        if (isTRUE(live$in_pulses)) lean_entry$store_writes <- c(lean_entry$store_writes, nm)
+        if (isTRUE(live$in_pulses)) lean_entry$sink_calls <- c(lean_entry$sink_calls, nm)
         f(...)
       }
     })
@@ -50,66 +143,34 @@ lean_watch_handler <- function(h, live) {
   h
 }
 
-# The store-write detector, part 2: the package writer and every DBI
-# statement path, execute and query alike (a query can write, as INSERT ...
-# RETURNING does), wrapped for the duration of a lean fold. Any call while
-# pulses run is recorded as store access; slice 1 makes none. A call after
-# the loop is counted as a terminal write. Returns the function that
-# restores them.
-lean_store_boundaries <- list(ledgr = "ledgr_store_append",
-  DBI = c("dbExecute", "dbAppendTable", "dbWriteTable", "dbSendStatement", "dbSendQuery", "dbGetQuery"))
-lean_watch_store <- function(live) {
-  saved <- list()
-  for (pkg in names(lean_store_boundaries)) {
-    home <- asNamespace(pkg)
-    for (name in lean_store_boundaries[[pkg]]) {
-      original <- get(name, envir = home)
-      saved[[length(saved) + 1L]] <- list(home = home, name = name, value = original)
-      wrapper <- local({
-        f <- original
-        label <- paste0(pkg, "::", name)
-        function(...) {
-          if (isTRUE(live$in_pulses)) lean_entry$store_writes <- c(lean_entry$store_writes, label)
-          else lean_entry$terminal_writes <- lean_entry$terminal_writes + 1L
-          out <- f(...)
-          # a completed, nonempty package append outside the loop (witness bookkeeping)
-          if (!isTRUE(live$in_pulses) && identical(label, "ledgr::ledgr_store_append")) {
-            a <- list(...)
-            if (NROW(a[[3L]]) > 0L) lean_entry$terminal_appends <- c(lean_entry$terminal_appends, as.character(a[[2L]]))
-          }
-          out
-        }
-      })
-      unlockBinding(name, home)
-      assign(name, wrapper, envir = home)
-      lockBinding(name, home)
-    }
-  }
-  function() {
-    for (s in rev(saved)) {
-      unlockBinding(s$name, s$home)
-      assign(s$name, s$value, envir = s$home)
-      lockBinding(s$name, s$home)
-    }
-  }
-}
-
+# Entry recorders: the run's control list and walk-forward, which the fold
+# cannot see, become entry refusals (D3 Section 2; slice 5).
 lean_run_fold <- function(config, run_id = NULL, control = list(), metric_context = NULL, history_substrate = NULL) {
   lean_entry$control_checkpoint <- "checkpoint_every" %in% names(control)
   on.exit(lean_entry$control_checkpoint <- FALSE)
   lean_pin_run_fold(config, run_id, control, metric_context, history_substrate)
 }
+lean_walk_forward <- local({
+  w <- lean_pin_walk_forward
+  body(w) <- substitute({
+    lean_entry$walk_forward <- TRUE
+    on.exit(lean_entry$walk_forward <- FALSE, add = TRUE)
+    B
+  }, list(B = body(lean_pin_walk_forward)))
+  environment(w) <- list2env(list(lean_entry = lean_entry), parent = environment(lean_pin_walk_forward))
+  w
+})
 
 # Backstop stubs (19.2 point 1): while a lean fold runs, a sizing helper or
-# history read the static scan missed signals the coverage condition.
+# history read the static scan missed marks the attempt for a rerun on the
+# pin, records itself for the fold's callback check and signals.
 lean_stubs <- lapply(stats::setNames(lean_loop_scan_names, lean_loop_scan_names), function(name) {
   force(name)
   function(...) {
-    # Sticky: a strategy that catches the condition cannot keep the attempt.
-    lean_entry$uncovered <- c(lean_entry$uncovered, sprintf("`%s()` in the strategy", name))
-    # attempt-level: lean_loop_run reruns the workload even if no fold error escapes
-    lean_entry$backstop <- c(lean_entry$backstop, sprintf("`%s()` in the strategy", name))
-    lean_not_covered(sprintf("`%s()` in the strategy", name))
+    feature <- sprintf("`%s()` in the strategy", name)
+    lean_mark(feature)
+    lean_entry$uncovered <- c(lean_entry$uncovered, feature)
+    lean_not_covered(feature)
   }
 })
 lean_stub_homes <- function() {
@@ -141,34 +202,39 @@ lean_stubs_bind <- function(values = NULL) {
 }
 
 # The harness entry (19.2 point 1): runs `fn` (a complete public workload)
-# with the lean loop installed. If any lean fold raised a coverage
-# condition mid-run, the attempt is discarded: the RNG state at entry is
-# restored and the complete workload reruns on the pin. Returns fn()'s value
-# with the entry record as attribute "lean".
+# with the lean loop installed. If the attempt was marked, however it ended
+# (returned, failed, or failed inside a caller's own handler), it is
+# discarded: the entry RNG state is restored and the complete workload
+# reruns on the pin. An unmarked error is re-signalled unchanged. Returns
+# fn()'s value with the entry record as attribute "lean".
 lean_loop_run <- function(fn) {
   had_seed <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
   seed <- if (had_seed) get(".Random.seed", envir = globalenv())
   lean_entry_reset()
   restore <- lean_loop_install()
-  out <- tryCatch(fn(), ledgr_lean_coverage = function(c) c, finally = restore())
+  out <- tryCatch(fn(), error = function(e) e, finally = restore())
   record <- as.list(lean_entry)
   if (length(lean_entry$backstop) > 0L) {
     if (had_seed) assign(".Random.seed", seed, envir = globalenv())
     else if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) rm(".Random.seed", envir = globalenv())
     out <- fn()
-  } else if (inherits(out, "condition")) {
+  } else if (inherits(out, "error")) {
     rlang::cnd_signal(out)
   }
   structure(list(value = out), lean = record)
 }
 
-# Binds the lean envelope, the two context read methods and the run-fold
-# entry recorder over the pin; returns the function that restores the pin.
-lean_loop_install <- function() {
+# Binds the lean envelope, the two context read methods and the entry
+# recorders over the pin and installs the harness hooks; returns the
+# function that restores the pin and the inert hooks. With hooks = FALSE
+# only the envelope and the read methods are bound and the hooks stay
+# inert, as the fold would run in production (checklist row 15).
+lean_loop_install <- function(hooks = TRUE) {
   ns <- asNamespace("ledgr")
   lean <- list(ledgr_fold_envelope = lean_fold_envelope,
                "$.ledgr_pulse_context" = lean_ctx_dollar, "$.ledgr_strategy_state_view" = lean_state_dollar,
-               ledgr_run_fold = lean_run_fold)
+               ledgr_run_fold = lean_run_fold, ledgr_walk_forward = lean_walk_forward)
+  if (!hooks) lean <- lean[1:3]
   pinned <- lapply(stats::setNames(names(lean), names(lean)), get, envir = ns)
   if (!identical(pinned[[2L]], lean_pin_ctx_dollar) || !identical(pinned[[3L]], lean_pin_state_dollar)) {
     stop("lean_loop_install: the pinned read methods are not bound (already installed?)", call. = FALSE)
@@ -179,9 +245,19 @@ lean_loop_install <- function() {
       assign(name, values[[name]], envir = ns)
       lockBinding(name, ns)
     }
+    if (!is.null(values$ledgr_walk_forward) && "package:ledgr" %in% search()) {
+      pkg <- as.environment("package:ledgr")
+      unlockBinding("ledgr_walk_forward", pkg)
+      assign("ledgr_walk_forward", values$ledgr_walk_forward, envir = pkg)
+      lockBinding("ledgr_walk_forward", pkg)
+    }
     registerS3method("$", "ledgr_pulse_context", values[[2L]], envir = ns)
     registerS3method("$", "ledgr_strategy_state_view", values[[3L]], envir = ns)
   }
   bind(lean)
-  function() bind(pinned)
+  if (hooks) lean_hooks <<- lean_harness_hooks()
+  function() {
+    bind(pinned)
+    lean_hooks <<- lean_hooks_inert()
+  }
 }
