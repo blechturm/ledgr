@@ -144,20 +144,20 @@ lw_surface_exp <- function(snapshot) ledgr::ledgr_experiment(snapshot, lw_surfac
 # Trades every pulse with unseeded draws; from pulse 6 it reads history
 # through a name the static scan does not see. With `caught`, the strategy
 # wraps that read in its own error handler.
-lw_backstop_exp <- function(snapshot, caught = FALSE) {
+lw_backstop_exp <- function(snapshot, caught = FALSE, rethrow = FALSE) {
   strategy <- function(ctx, params) {
     i <- as.integer(as.Date(substr(ctx$ts_utc, 1L, 10L)) - as.Date("2021-01-04")) + 1L
     targets <- ctx$hold()
     targets[["A"]] <- floor(5 * stats::runif(1L)) + (params$k %||% 0)
     if (i >= 6L) {
       read <- getExportedValue("ledgr", paste0("ledgr_history", "_matrix"))
-      m <- if (CAUGHT) tryCatch(read(ctx, bar = "close", lookback = 2L), error = function(e) NA_real_)
+      m <- if (CAUGHT) tryCatch(read(ctx, bar = "close", lookback = 2L), error = function(e) if (RETHROW) stop("history read failed") else NA_real_)
            else read(ctx, bar = "close", lookback = 2L)
       targets[["B"]] <- if (is.finite(sum(m))) 1 else 0
     }
     targets
   }
-  body(strategy) <- do.call(substitute, list(body(strategy), list(CAUGHT = isTRUE(caught))))
+  body(strategy) <- do.call(substitute, list(body(strategy), list(CAUGHT = isTRUE(caught), RETHROW = isTRUE(rethrow))))
   environment(strategy) <- ns
   ledgr::ledgr_experiment(snapshot, strategy, opening = ledgr::ledgr_opening(cash = 5000),
     cost_model = ledgr::ledgr_cost_zero())
@@ -177,7 +177,7 @@ lw_rebind <- function(name, value) {
 # a memory sink, a digest of the committed event table. The pin is read
 # through its handler (captured from the envelope), the lean loop through
 # its committed-prefix reads.
-lw_prefix_reads <- function(memory) {
+lw_prefix_reads <- function(memory, workload = NULL) {
   seen <- new.env(parent = emptyenv())
   seen$rows <- list()
   installed <- lw_lean_installed()
@@ -198,11 +198,37 @@ lw_prefix_reads <- function(memory) {
       inner(fn, ctx, params, signature)
     }
   }))
-  on.exit({ restore_call(); restore_env() })
-  tables <- if (memory) loop_witnesses$witness_sweep() else loop_constructed$sell_buy_same_pulse()
+  restore_recon <- lw_rebind("ledgr_fold_reconciliation_check", local({
+    inner <- get("ledgr_fold_reconciliation_check", envir = ns)
+    function(...) {
+      count <- if (installed) lean$lean_entry$committed$count() else if (memory) nrow(seen$h$events()) else
+        seen$h$pending_event_count()
+      seen$rows[[length(seen$rows) + 1L]] <- data.frame(ts_utc = "reconciliation", events = count, digest = "",
+        stringsAsFactors = FALSE)
+      inner(...)
+    }
+  }))
+  on.exit({ restore_recon(); restore_call(); restore_env() })
+  tables <- if (is.function(workload)) workload() else if (memory) loop_witnesses$witness_sweep() else loop_constructed$sell_buy_same_pulse()
   path <- if (memory) "sweep" else "run"
   tables[[path]]$prefix_reads <- do.call(rbind, seen$rows)
   tables
+}
+
+# Trades from pulse 2; on pulse 6 the declared-state patch has the wrong
+# type, refused at P5 after that pulse's fills are committed.
+lw_state_refusal <- function() {
+  db <- lw_witness_db()
+  strategy <- function(ctx, params) {
+    i <- as.integer(as.Date(substr(ctx$ts_utc, 1L, 10L)) - as.Date("2021-01-04")) + 1L
+    targets <- ctx$hold()
+    targets[["A"]] <- i
+    if (i == 6L) ledgr::ledgr_strategy_result(targets, n = "six") else ledgr::ledgr_strategy_result(targets, n = i)
+  }
+  environment(strategy) <- ns
+  exp <- function(snapshot) ledgr::ledgr_experiment(snapshot, strategy, opening = ledgr::ledgr_opening(cash = 5000),
+    cost_model = ledgr::ledgr_cost_zero(), portfolio_state = list(n = 0L))
+  collect(db, "lw_witness", "lw-state-refusal", exp)
 }
 
 # The caller's RNG stream after the run, as a table (restoration rules).
@@ -292,6 +318,27 @@ loop_witnesses <- list(
     obs <- a0_observe_memory(ledgr::ledgr_sweep(lw_backstop_exp(snapshot, caught = TRUE), grid, retain = a0_retain()))
     lw_rng_table(list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value))), "sweep")
   },
+  # Round 2, finding 1: the strategy catches the condition, then fails with
+  # its own error; the attempt must still rerun on the pin.
+  witness_caught_rethrow = function() {
+    db <- lw_witness_db()
+    set.seed(4246L)
+    lw_rng_table(collect(db, "lw_witness", "lw-caught-rethrow", function(s) lw_backstop_exp(s, caught = TRUE, rethrow = TRUE)))
+  },
+  witness_caught_rethrow_sweep = function() {
+    db <- lw_witness_db()
+    snapshot <- ledgr::ledgr_snapshot_open(db, "lw_witness", verify = TRUE)
+    on.exit(ledgr::ledgr_snapshot_close(snapshot))
+    grid <- ledgr::ledgr_grid_named(a = list(strategy = list(k = 1)), b = list(strategy = list(k = 2)))
+    set.seed(4247L)
+    obs <- a0_observe_memory(ledgr::ledgr_sweep(lw_backstop_exp(snapshot, caught = TRUE, rethrow = TRUE), grid,
+      retain = a0_retain()))
+    lw_rng_table(list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value))), "sweep")
+  },
+  # Round 2, finding 2: a refusal after P5's commitment (a declared-state
+  # type error on pulse 6, after fills), with committed reads at each
+  # reconciliation check up to it.
+  witness_state_refusal = function() lw_prefix_reads(memory = FALSE, workload = lw_state_refusal),
   # Finding 5: a control$checkpoint_every key is refused even when NULL.
   witness_checkpoint_null = function() {
     db <- lw_witness_db()

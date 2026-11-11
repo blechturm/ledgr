@@ -116,7 +116,7 @@ lean_ctx_retired <- lean_name_set(setdiff(ledgr_pulse_context_retired_fields(), 
 lean_ctx_asset <- lean_name_set(ledgr_pulse_context_asset_fields())
 
 lean_ctx_dollar <- function(x, name) {
-  if (!nzchar(name)) return(lean_pin_ctx_dollar(x, name))
+  if (!is.character(name) || length(name) != 1L || is.na(name) || !nzchar(name)) return(lean_pin_ctx_dollar(x, name))
   if (!is.null(lean_ctx_retired[[name]])) return(lean_pin_ctx_dollar(x, name))
   v <- .subset2(x, name)
   if (!is.null(v) && !startsWith(name, ".")) return(v)
@@ -512,7 +512,12 @@ lean_fold_envelope <- function(execution, output_handler) {
         } else {
           strategy_fn(ctx)
         }
-      }, error = function(e) if (inherits(e, "ledgr_lean_coverage")) rlang::cnd_signal(e) else ledgr_abort_strategy_error(e, ctx))
+      }, error = function(e) {
+        # a stub reached in this callback outranks whatever error followed it
+        if (inherits(e, "ledgr_lean_coverage")) rlang::cnd_signal(e)
+        if (length(lean_entry$uncovered)) lean_not_covered(lean_entry$uncovered[[1L]])
+        ledgr_abort_strategy_error(e, ctx)
+      })
       if (length(lean_entry$uncovered)) lean_not_covered(lean_entry$uncovered[[1L]])
       if (is.object(result) && ledgr_is_strategy_intermediate(result)) ledgr_abort_intermediate_strategy_result(result)
       if (is.numeric(result)) result <- list(targets = result, state_update = NULL)
@@ -693,6 +698,7 @@ lean_fold_envelope <- function(execution, output_handler) {
         rlang::abort("Ledger event buffer exceeded the run's maximum event capacity.",
                      class = "ledgr_event_buffer_capacity_exceeded")
       }
+      n_committed <<- nf                # the pin flushes the pulse's fills here, before reconciliation
       if (!is.null(batch) && !isTRUE(cash == batch$expected_final_cash) && !isTRUE(all.equal(as.numeric(cash), as.numeric(batch$expected_final_cash),
                                                tolerance = ledgr_availability_cash_tolerance))) {
         rlang::abort("Recorded cash does not reconcile with the availability affordability ledger.",
@@ -730,7 +736,6 @@ lean_fold_envelope <- function(execution, output_handler) {
           state_declaration, ids, patch = FALSE, default_scalars = state_defaults)
       }
       if (identical(lean_entry$mutation, "hold_in_loop") && i == 1L) lean_loop_expand(1L, 1L, lean_loop_layout(), state0$positions)  # witness only
-      n_committed <<- nf
       processed <<- processed + 1L
       if (processed >= max_pulses) {
         full_run <<- FALSE
@@ -777,8 +782,8 @@ lean_fold_envelope <- function(execution, output_handler) {
     tick <- function() {
       live$batches <- live$batches + 1L
       # Witness only: a fault in the first batch after a real store append.
-      if (identical(lean_entry$mutation, "batch_fault") && lean_entry$terminal_writes > 0L) {
-        lean_entry$writes_before_fault <- lean_entry$terminal_writes
+      if (identical(lean_entry$mutation, "batch_fault") && "ledger_events" %in% lean_entry$terminal_appends) {
+        lean_entry$writes_before_fault <- sum(lean_entry$terminal_appends == "ledger_events")
         stop("lean witness: batch fault")
       }
     }

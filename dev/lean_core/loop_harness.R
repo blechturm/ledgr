@@ -20,6 +20,7 @@ lean_entry_reset <- function() {
   lean_entry$control_checkpoint <- FALSE
   lean_entry$store_writes <- character()   # store-boundary calls while pulses run
   lean_entry$terminal_writes <- 0L         # store-boundary calls after the loop
+  lean_entry$terminal_appends <- character() # tables of completed nonempty package appends after the loop
   lean_entry$writes_before_fault <- NA_integer_
   lean_entry$uncovered <- character()      # stubs reached in this fold (sticky)
   lean_entry$committed <- NULL             # the running fold's committed-prefix reads
@@ -49,12 +50,14 @@ lean_watch_handler <- function(h, live) {
   h
 }
 
-# The store-write detector, part 2: the package writer and the DBI write
-# generics, wrapped for the duration of a lean fold. A call while pulses
-# run is recorded as a misplaced write; a call after the loop is counted
-# as a terminal write. Returns the function that restores them.
+# The store-write detector, part 2: the package writer and every DBI
+# statement path, execute and query alike (a query can write, as INSERT ...
+# RETURNING does), wrapped for the duration of a lean fold. Any call while
+# pulses run is recorded as store access; slice 1 makes none. A call after
+# the loop is counted as a terminal write. Returns the function that
+# restores them.
 lean_store_boundaries <- list(ledgr = "ledgr_store_append",
-  DBI = c("dbExecute", "dbAppendTable", "dbWriteTable", "dbSendStatement"))
+  DBI = c("dbExecute", "dbAppendTable", "dbWriteTable", "dbSendStatement", "dbSendQuery", "dbGetQuery"))
 lean_watch_store <- function(live) {
   saved <- list()
   for (pkg in names(lean_store_boundaries)) {
@@ -68,7 +71,13 @@ lean_watch_store <- function(live) {
         function(...) {
           if (isTRUE(live$in_pulses)) lean_entry$store_writes <- c(lean_entry$store_writes, label)
           else lean_entry$terminal_writes <- lean_entry$terminal_writes + 1L
-          f(...)
+          out <- f(...)
+          # a completed, nonempty package append outside the loop (witness bookkeeping)
+          if (!isTRUE(live$in_pulses) && identical(label, "ledgr::ledgr_store_append")) {
+            a <- list(...)
+            if (NROW(a[[3L]]) > 0L) lean_entry$terminal_appends <- c(lean_entry$terminal_appends, as.character(a[[2L]]))
+          }
+          out
         }
       })
       unlockBinding(name, home)
@@ -98,6 +107,8 @@ lean_stubs <- lapply(stats::setNames(lean_loop_scan_names, lean_loop_scan_names)
   function(...) {
     # Sticky: a strategy that catches the condition cannot keep the attempt.
     lean_entry$uncovered <- c(lean_entry$uncovered, sprintf("`%s()` in the strategy", name))
+    # attempt-level: lean_loop_run reruns the workload even if no fold error escapes
+    lean_entry$backstop <- c(lean_entry$backstop, sprintf("`%s()` in the strategy", name))
     lean_not_covered(sprintf("`%s()` in the strategy", name))
   }
 })
