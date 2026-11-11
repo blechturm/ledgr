@@ -831,7 +831,8 @@ the fold only. It reaches a harness through one hooks object,
 `lean_hooks`, whose default is inert (nothing recorded, watched or forced);
 `loop_harness.R` installs its own set. The harness answers entry refusals
 the fold cannot see (a `control$checkpoint_every` key; walk-forward,
-refused at `ledgr_walk_forward()` entry), binds the backstop stubs, which
+refused at `ledgr_walk_forward()` entry; a sweep with more than one worker,
+refused at sweep entry before dispatch, round 4), binds the backstop stubs, which
 mark the attempt for a complete rerun on the pin however the attempt ends,
 and runs two detectors while pulses run: every call into the DuckDB
 backend bridges (`duckdb:::rapi_*`, which every statement, bind,

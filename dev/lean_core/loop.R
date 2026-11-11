@@ -271,8 +271,9 @@ lean_fold_envelope <- function(execution, output_handler) {
   position_facts <- execution$position_facts %||% ledgr_position_fact_state(n)
   strategy_state <- execution$strategy_state$values
   state_axis <- execution$strategy_state$axis
-  if (!identical(ids, state_axis)) {
-    # The pin aligns at the first pulse's P1; the fixed axis never changes.
+  if (n_pulse > 0L && !identical(ids, state_axis)) {
+    # The pin aligns at the first pulse's P1 (with no pulse, never); the
+    # fixed axis never changes.
     strategy_state <- ledgr_strategy_state_align(execution$strategy_state$values,
       execution$strategy_state_declaration, state_axis %||% character(), ids,
       default_scalars = execution$strategy_state_default_scalars)
@@ -823,8 +824,6 @@ lean_fold_envelope <- function(execution, output_handler) {
     while (a <= lay$np) {
       b <- max(a, findInterval(cs[[a]] - lay$rows[[a]] + bound, cs))
       ex <- lean_loop_expand(a, b, lay, carry)
-      live$ranges <- live$ranges + 1L
-      live$max_range_pulses <- max(live$max_range_pulses, b - a + 1L)
       carry <- ex$carry
       for (r in pieces(length(ex$fill_rows))) {
         tick()
@@ -895,6 +894,8 @@ lean_fold_envelope <- function(execution, output_handler) {
   # then holds). `carry` holds each instrument's position entering pulse a;
   # the returned carry enters pulse b + 1.
   lean_loop_expand <- function(a, b, lay, carry) {
+    live$ranges <- live$ranges + 1L
+    live$max_range_pulses <- max(live$max_range_pulses, b - a + 1L)
     p <- seq.int(a, b)
     parts <- list()
     add <- function(seq, pulse, fields) parts[[length(parts) + 1L]] <<- c(list(seq = seq, pulse = pulse), fields)

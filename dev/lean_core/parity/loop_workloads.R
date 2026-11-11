@@ -232,11 +232,43 @@ lw_state_refusal <- function() {
 }
 
 # The caller's RNG stream after the run, as a table (restoration rules).
-lw_rng_table <- function(tables, path = "run") {
-  tables[[path]]$rng_after <- data.frame(state = paste(utils::head(.Random.seed, 8L), collapse = ","),
-                                        stringsAsFactors = FALSE)
+lw_rng_table <- function(tables, path = "run", entry = NULL) {
+  tables[[path]]$rng_after <- lw_rng_state()
+  if (!is.null(entry)) tables[[path]]$rng_entry <- entry
   tables
 }
+# The caller's RNG state at workload entry, then one draw from the caller's
+# stream outside ledgr: ledgr_run() and ledgr_sweep() restore the caller's
+# state themselves, so only a workload's own draws show a rerun that does
+# not restore the entry state (round 4, finding 1).
+lw_entry_draw <- function() {
+  entry <- lw_rng_state()
+  entry$draw <- stats::runif(1L)
+  entry
+}
+# The caller's RNG kinds and seed (or its absence), as a one-row table.
+lw_rng_state <- function() {
+  seed <- if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) get(".Random.seed", envir = globalenv())
+  data.frame(kind = paste(RNGkind(), collapse = ","),
+             seed = if (is.null(seed)) "<absent>" else paste(seed, collapse = ","), stringsAsFactors = FALSE)
+}
+
+# The caller's RNG state at workload entry, set by the runner before each
+# arm, outside the workload a backstop reruns (round 4, finding 1).
+loop_entry_rng <- list(
+  witness_backstop = function() set.seed(4242L),
+  witness_backstop_sweep = function() set.seed(4243L),
+  witness_caught_backstop = function() set.seed(4244L),
+  witness_caught_backstop_sweep = function() set.seed(4245L),
+  witness_caught_rethrow = function() set.seed(4246L),
+  witness_caught_rethrow_sweep = function() set.seed(4247L),
+  witness_outer_handler = function() set.seed(4248L),
+  # No seed and a non-default kind: the rerun must restore the kind too.
+  witness_backstop_kind = function() {
+    suppressWarnings(RNGkind("Wichmann-Hill", "Box-Muller", "Rounding"))
+    if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) rm(".Random.seed", envir = globalenv())
+  }
+)
 
 loop_witnesses <- list(
   witness_surface_seeded = function() {
@@ -278,18 +310,18 @@ loop_witnesses <- list(
   # aborts, the RNG state at entry is restored and the complete workload
   # reruns on the pin under the same run_id.
   witness_backstop = function() {
+    entry <- lw_entry_draw()
     db <- lw_witness_db()
-    set.seed(4242L)
-    lw_rng_table(collect(db, "lw_witness", "lw-backstop", lw_backstop_exp))
+    lw_rng_table(entry = entry, collect(db, "lw_witness", "lw-backstop", lw_backstop_exp))
   },
   witness_backstop_sweep = function() {
+    entry <- lw_entry_draw()
     db <- lw_witness_db()
     snapshot <- ledgr::ledgr_snapshot_open(db, "lw_witness", verify = TRUE)
     on.exit(ledgr::ledgr_snapshot_close(snapshot))
     grid <- ledgr::ledgr_grid_named(a = list(strategy = list(k = 1)), b = list(strategy = list(k = 2)))
-    set.seed(4243L)
     obs <- a0_observe_memory(ledgr::ledgr_sweep(lw_backstop_exp(snapshot), grid, retain = a0_retain()))
-    lw_rng_table(list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value))), "sweep")
+    lw_rng_table(entry = entry, list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value))), "sweep")
   },
   # D3 Section 2: an explicit control$checkpoint_every key is refused before
   # the first pulse, even at the default value; the pin runs it.
@@ -305,35 +337,35 @@ loop_witnesses <- list(
   # Close review round 1, finding 1: the strategy catches the stub's
   # condition with its own handler; the attempt must still rerun on the pin.
   witness_caught_backstop = function() {
+    entry <- lw_entry_draw()
     db <- lw_witness_db()
-    set.seed(4244L)
-    lw_rng_table(collect(db, "lw_witness", "lw-caught-backstop", function(s) lw_backstop_exp(s, caught = TRUE)))
+    lw_rng_table(entry = entry, collect(db, "lw_witness", "lw-caught-backstop", function(s) lw_backstop_exp(s, caught = TRUE)))
   },
   witness_caught_backstop_sweep = function() {
+    entry <- lw_entry_draw()
     db <- lw_witness_db()
     snapshot <- ledgr::ledgr_snapshot_open(db, "lw_witness", verify = TRUE)
     on.exit(ledgr::ledgr_snapshot_close(snapshot))
     grid <- ledgr::ledgr_grid_named(a = list(strategy = list(k = 1)), b = list(strategy = list(k = 2)))
-    set.seed(4245L)
     obs <- a0_observe_memory(ledgr::ledgr_sweep(lw_backstop_exp(snapshot, caught = TRUE), grid, retain = a0_retain()))
-    lw_rng_table(list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value))), "sweep")
+    lw_rng_table(entry = entry, list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value))), "sweep")
   },
   # Round 2, finding 1: the strategy catches the condition, then fails with
   # its own error; the attempt must still rerun on the pin.
   witness_caught_rethrow = function() {
+    entry <- lw_entry_draw()
     db <- lw_witness_db()
-    set.seed(4246L)
-    lw_rng_table(collect(db, "lw_witness", "lw-caught-rethrow", function(s) lw_backstop_exp(s, caught = TRUE, rethrow = TRUE)))
+    lw_rng_table(entry = entry, collect(db, "lw_witness", "lw-caught-rethrow", function(s) lw_backstop_exp(s, caught = TRUE, rethrow = TRUE)))
   },
   witness_caught_rethrow_sweep = function() {
+    entry <- lw_entry_draw()
     db <- lw_witness_db()
     snapshot <- ledgr::ledgr_snapshot_open(db, "lw_witness", verify = TRUE)
     on.exit(ledgr::ledgr_snapshot_close(snapshot))
     grid <- ledgr::ledgr_grid_named(a = list(strategy = list(k = 1)), b = list(strategy = list(k = 2)))
-    set.seed(4247L)
     obs <- a0_observe_memory(ledgr::ledgr_sweep(lw_backstop_exp(snapshot, caught = TRUE, rethrow = TRUE), grid,
       retain = a0_retain()))
-    lw_rng_table(list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value))), "sweep")
+    lw_rng_table(entry = entry, list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value))), "sweep")
   },
   # Round 2, finding 2: a refusal after P5's commitment (a declared-state
   # type error on pulse 6, after fills), with committed reads at each
@@ -374,33 +406,73 @@ loop_witnesses <- list(
     }))
     on.exit(restore())
     tables <- collect(db, "lw_witness", "lw-zero-source", function(s) ledgr::ledgr_experiment(s,
-      lw_schedule_strategy(list()), opening = ledgr::ledgr_opening(cash = 5000), cost_model = ledgr::ledgr_cost_zero()))
+      lw_schedule_strategy(list()), opening = ledgr::ledgr_opening(cash = 5000), cost_model = ledgr::ledgr_cost_zero(),
+      asset_state = list(flag = FALSE)))
     e <- seen$execution
     e$pulses_posix <- e$pulses_posix[0L]
     e$pulses_iso <- character()
     e$execution_opportunities_posix <- e$execution_opportunities_posix[0L]
-    h <- ns$ledgr_output_handler(ns$ledgr_output_sink_memory("lw-zero"))
-    res <- tryCatch(seen$inner(ns$ledgr_validate_execution_spec(e), h), error = function(err) err)
-    tables$run$zero_pulses <- if (inherits(res, "error")) {
-      data.frame(status = "<error>", processed = NA_integer_, full_run = NA, equity_n = NA_integer_,
-                 diagnostics = NA_integer_, completion_null = NA, error = class(res)[[1L]], stringsAsFactors = FALSE)
-    } else {
-      data.frame(status = res$status, processed = res$processed, full_run = res$full_run,
-                 equity_n = as.integer(res$equity_facts$n), diagnostics = NROW(h$diagnostics()),
-                 completion_null = is.null(h$completion()), error = "", stringsAsFactors = FALSE)
+    # Round 4, finding 2: the full return (telemetry aside, an allowed
+    # difference) on the fold's axis and on a reordered incoming state axis.
+    reordered <- e
+    reordered$strategy_state$axis <- rev(e$strategy_state$axis)
+    reordered$strategy_state$values$flag <- e$strategy_state$values$flag[reordered$strategy_state$axis]
+    for (case in c("aligned", "reordered")) {
+      h <- ns$ledgr_output_handler(ns$ledgr_output_sink_memory("lw-zero"))
+      spec <- ns$ledgr_validate_execution_spec(if (case == "aligned") e else reordered)
+      res <- tryCatch(seen$inner(spec, h), error = function(err) err)
+      tables$run[[paste0("zero_pulses_", case)]] <- if (inherits(res, "error")) {
+        data.frame(field = "<error>", value = class(res)[[1L]], stringsAsFactors = FALSE)
+      } else {
+        fields <- setdiff(names(res), "telemetry")
+        data.frame(field = c(fields, "diagnostics", "completion_null"),
+                   value = c(vapply(res[fields], rlang::hash, ""), as.character(NROW(h$diagnostics())),
+                             as.character(is.null(h$completion()))), stringsAsFactors = FALSE)
+      }
     }
     tables
   },
   # Round 3, finding 2: the caller wraps the workload in its own handler; a
   # marked attempt still reruns on the pin.
   witness_outer_handler = function() {
+    entry <- lw_entry_draw()
     db <- lw_witness_db()
     snapshot <- ledgr::ledgr_snapshot_open(db, "lw_witness", verify = TRUE)
     on.exit(ledgr::ledgr_snapshot_close(snapshot))
-    set.seed(4248L)
     tryCatch(close(ledgr::ledgr_run(lw_backstop_exp(snapshot), run_id = "lw-outer")),
              error = function(e) stop("job failed: ", conditionMessage(e), call. = FALSE))
-    lw_rng_table(list(run = c(a0_store_tables(db, "lw-outer"), a0_reader_tables(snapshot, "lw-outer"))))
+    lw_rng_table(entry = entry, list(run = c(a0_store_tables(db, "lw-outer"), a0_reader_tables(snapshot, "lw-outer"))))
+  },
+  # Round 4, finding 1: the caller enters with no seed and a non-default
+  # kind (loop_entry_rng), and the workload itself seeds under another kind.
+  # A rerun that restores only the seed starts from the workload's kind.
+  witness_backstop_kind = function() {
+    entry <- lw_rng_state()
+    set.seed(77L, kind = "Mersenne-Twister", normal.kind = "Inversion", sample.kind = "Rejection")
+    tables <- lw_rng_table(collect(lw_witness_db(), "lw_witness", "lw-backstop-kind", lw_backstop_exp))
+    tables$run$rng_entry <- entry
+    tables
+  },
+  # Round 4, finding 3: a sweep with workers is refused by name at entry
+  # and runs whole on the pin. The workers load the pinned library, not
+  # this source tree (the working directory is moved off it).
+  witness_sweep_workers = function() {
+    db <- lw_witness_db()
+    snapshot <- ledgr::ledgr_snapshot_open(db, "lw_witness", verify = TRUE)
+    on.exit(ledgr::ledgr_snapshot_close(snapshot))
+    old <- setwd(work)
+    on.exit(setwd(old), add = TRUE)
+    strategy <- function(ctx, params) {
+      targets <- ctx$hold()
+      targets[["A"]] <- params$qty
+      targets
+    }
+    environment(strategy) <- ns
+    exp <- ledgr::ledgr_experiment(snapshot, strategy, opening = ledgr::ledgr_opening(cash = 5000),
+      cost_model = ledgr::ledgr_cost_zero())
+    grid <- ledgr::ledgr_grid_named(a = list(strategy = list(qty = 1)), b = list(strategy = list(qty = 2)))
+    obs <- a0_observe_memory(ledgr::ledgr_sweep(exp, grid, seed = 5L, workers = 2L, retain = a0_retain()))
+    list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value)))
   },
   # Round 3, finding 3: walk-forward is refused at entry (slice 5) and runs
   # on the pin.
@@ -484,5 +556,6 @@ loop_witnesses <- list(
 loop_expect_refused <- list(
   witness_walk_forward = "walk-forward",
   witness_checkpoint_control = "a checkpoint_every control",
-  witness_checkpoint_null = "a checkpoint_every control"
+  witness_checkpoint_null = "a checkpoint_every control",
+  witness_sweep_workers = "sweep workers"
 )

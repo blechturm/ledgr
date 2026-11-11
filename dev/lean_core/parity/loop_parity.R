@@ -39,6 +39,13 @@ inert <- identical(arg("inert", "0"), "1")   # bind the fold without the harness
 # Text mutations. Each edit names a file of dev/lean_core, one exact anchor
 # line, and lines inserted before or after it or replacing it.
 edit <- function(file, at, lines = character(), where = "replace") list(file = file, at = at, lines = lines, where = where)
+store_variant <- function(call, prepare = FALSE) list(expect = "store", edits = list(
+  edit("loop.R", "    live$in_pulses <- TRUE", c(
+    "    scratch <- DBI::dbConnect(duckdb::duckdb())",
+    "    DBI::dbExecute(scratch, \"CREATE TABLE probe (value INTEGER)\")",
+    if (prepare) "    stmt <- DBI::dbSendStatement(scratch, \"INSERT INTO probe VALUES (?)\")"), "before"),
+  edit("loop.R", "        last_executed <<- max(last_executed, fill$exec_ts, na.rm = TRUE)",
+    paste0("        if (nf == n_fill) ", call), "after")))
 loop_mutations <- list(
   fill_price_ulp = list(expect = "differ", edits = list(edit("loop.R", "    src <- fl",
     "    if (nf > 0L) src$price[[1L]] <- src$price[[1L]] * (1 + .Machine$double.eps)", "after"))),
@@ -50,17 +57,12 @@ loop_mutations <- list(
     "        last_executed <<- max(last_executed, fill$exec_ts, na.rm = TRUE)",
     c("        if (nf == n_fill) output_handler$write_fill_events(fill = fill, i = seq_len(n_fill),",
       "          instrument_id = ids[fill$pos], event_seq = event_seq - n_fill, use_transaction = FALSE)"), "after"))),
-  store_in_loop = list(expect = "store", edits = list(edit("loop.R",
-    "        last_executed <<- max(last_executed, fill$exec_ts, na.rm = TRUE)",
-    c("        if (nf == n_fill) {",
-      "          scratch <- DBI::dbConnect(duckdb::duckdb())",
-      "          DBI::dbExecute(scratch, \"CREATE TABLE probe (value INTEGER)\")",
-      "          stmt <- DBI::dbSendStatement(scratch, \"INSERT INTO probe VALUES (?)\")",
-      "          DBI::dbBind(stmt, list(7L)); DBI::dbClearResult(stmt)",
-      "          DBI::dbGetQuery(scratch, \"INSERT INTO probe VALUES (2) RETURNING value\")",
-      "          ledgr_store_append(scratch, \"probe\", data.frame(value = 1L))",
-      "          DBI::dbDisconnect(scratch, shutdown = TRUE)",
-      "        }"), "after"))),
+  # One store path per variant, its scratch store prepared before the pulses
+  # run, so a detector missing that one path cannot hide behind another.
+  store_execute = store_variant("DBI::dbExecute(scratch, \"INSERT INTO probe VALUES (1)\")"),
+  store_bind = store_variant("DBI::dbBind(stmt, list(7L))", prepare = TRUE),
+  store_query = store_variant("DBI::dbGetQuery(scratch, \"INSERT INTO probe VALUES (2) RETURNING value\")"),
+  store_append = store_variant("ledgr_store_append(scratch, \"probe\", data.frame(value = 1L))"),
   hold_in_loop = list(expect = "hold", edits = list(edit("loop.R", "      processed <<- processed + 1L",
     "      if (i == 1L) lean_loop_expand(1L, 1L, lean_loop_layout(), state0$positions)", "before"))),
   batch_fault = list(expect = "rollback", edits = list(edit("loop.R", "      live$batches <- live$batches + 1L",
@@ -81,7 +83,18 @@ loop_mutations <- list(
     edit("loop.R", "      n_committed <<- nf                # the pin flushes the pulse's fills here, before reconciliation"),
     edit("loop.R", "      processed <<- processed + 1L", "      n_committed <<- nf", "before"))),
   expand_whole = list(expect = "unbounded", edits = list(edit("loop.R",
-    "      b <- max(a, findInterval(cs[[a]] - lay$rows[[a]] + bound, cs))", "      b <- lay$np")))
+    "      b <- max(a, findInterval(cs[[a]] - lay$rows[[a]] + bound, cs))", "      b <- lay$np"))),
+  # Round 4, finding 4: a whole-run expansion beside the bounded transfer.
+  expand_extra = list(expect = "unbounded", edits = list(edit("loop.R", "    lay <- lean_loop_layout()",
+    "    whole_run_temporary <- lean_loop_expand(1L, lay$np, lay, state0$positions)", "after"))),
+  # Round 4, finding 1: the rerun without the entry RNG restored.
+  rng_restore_off = list(expect = "differ", edits = list(edit("loop_harness.R", "    ledgr_rng_restore(rng)"))),
+  # Round 4, finding 2: first-pulse state alignment on an empty execution.
+  zero_pulse_align = list(expect = "differ", edits = list(edit("loop.R",
+    "  if (n_pulse > 0L && !identical(ids, state_axis)) {", "  if (!identical(ids, state_axis)) {"))),
+  # Round 4, finding 3: a sweep with workers not refused at entry.
+  workers_guard_off = list(expect = "unrefused", edits = list(edit("loop_harness.R",
+    "      lean_entry$refused <- c(lean_entry$refused, \"sweep workers\")")))
 )
 if (nzchar(mutation) && is.null(loop_mutations[[mutation]])) stop("unknown --mutation: ", mutation, call. = FALSE)
 
@@ -198,9 +211,14 @@ escaped <- function(e) list(escaped = list(error = data.frame(class = class(e)[[
 rows <- list()
 verdicts <- character()
 for (id in ids) {
+  # The caller's RNG state at entry, set outside the workload lean_loop_run()
+  # reruns (loop_entry_rng), so a rerun that does not restore it differs.
+  entry_rng <- loop_entry_rng[[id]] %||% function() NULL
   t0 <- proc.time()[["elapsed"]]
+  entry_rng()
   pinned <- tryCatch(run_tables(id), error = escaped)
   t1 <- proc.time()[["elapsed"]]
+  entry_rng()
   attempt <- if (inert) {
     restore <- lean$lean_loop_install(hooks = FALSE)
     value <- tryCatch(run_tables(id), error = escaped, finally = restore())
@@ -210,6 +228,7 @@ for (id in ids) {
     run_tables(id)
   }), error = function(e) structure(list(value = escaped(e)), lean = as.list(lean$lean_entry)))
   t2 <- proc.time()[["elapsed"]]
+  if (!is.null(loop_entry_rng[[id]])) RNGkind("default", "default", "default")
   candidate <- attempt$value
   rec <- attr(attempt, "lean")
   show <- function(x) paste(unique(x), collapse = "; ")
@@ -229,7 +248,6 @@ for (id in ids) {
     }
   }
   res <- do.call(rbind, path_rows)
-  rows <- c(rows, path_rows)
   events_left <- sum(vapply(candidate, function(p) if (is.data.frame(p$ledger_events)) nrow(p$ledger_events) else 0L, 0L))
   expected_refusal <- loop_expect_refused[[id]]
   seen <- list(
@@ -253,6 +271,11 @@ for (id in ids) {
     else if (isTRUE(seen[[expect]])) "CAUGHT" else "MISSED"
   }
   verdicts[[id]] <- verdict
+  # The verdict and every signal that fired, so the CSV shows what caught a variant.
+  res$expect <- if (nzchar(mutation)) loop_mutations[[mutation]]$expect else ""
+  res$signals <- paste(names(seen)[vapply(seen, isTRUE, logical(1L))], collapse = ";")
+  res$verdict <- verdict
+  rows <- c(rows, list(res))
   cat(sprintf("%-28s %-8s %s  lean %d  refused [%s]  backstop [%s]  store [%s]  sink [%s]  holds %d  append<=%d  range<=%d  pinned %.1f s  lean %.1f s\n",
               id, verdict, if (seen$differ) "DIFFERENT" else "identical", rec$lean_folds, show(rec$refused),
               show(rec$backstop), show(rec$store_access), show(rec$sink_calls), rec$hold_calls, rec$max_append_rows,

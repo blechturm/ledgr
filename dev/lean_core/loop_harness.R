@@ -8,7 +8,7 @@
 # What the harness adds around a lean fold:
 # - the entry record (`lean_entry`): folds run lean, refusals, attempt marks;
 # - entry refusals the fold cannot see: a control$checkpoint_every key (D3
-#   Section 2) and walk-forward (slice 5);
+#   Section 2), walk-forward and a sweep with workers (slice 5);
 # - backstop stubs (19.2 point 1) for history reads and sizing helpers the
 #   static scan missed, which mark the attempt for a rerun on the pin;
 # - two detectors while pulses run: every call into the DuckDB backend
@@ -150,6 +150,21 @@ lean_run_fold <- function(config, run_id = NULL, control = list(), metric_contex
   on.exit(lean_entry$control_checkpoint <- FALSE)
   lean_pin_run_fold(config, run_id, control, metric_context, history_substrate)
 }
+# A sweep with more than one worker (slice 5) runs its candidates in other
+# processes, which never load the lean fold: refused by name at sweep entry,
+# before dispatch, and run whole on the pin.
+lean_pin_sweep_impl <- get("ledgr_sweep_impl", envir = asNamespace("ledgr"))
+lean_sweep_impl <- local({
+  w <- lean_pin_sweep_impl
+  body(w) <- substitute({
+    if (isTRUE(tryCatch(ledgr_parallel_workers_normalize(workers) > 1L, error = function(e) FALSE))) {
+      lean_entry$refused <- c(lean_entry$refused, "sweep workers")
+    }
+    B
+  }, list(B = body(lean_pin_sweep_impl)))
+  environment(w) <- list2env(list(lean_entry = lean_entry), parent = environment(lean_pin_sweep_impl))
+  w
+})
 lean_walk_forward <- local({
   w <- lean_pin_walk_forward
   body(w) <- substitute({
@@ -208,15 +223,14 @@ lean_stubs_bind <- function(values = NULL) {
 # reruns on the pin. An unmarked error is re-signalled unchanged. Returns
 # fn()'s value with the entry record as attribute "lean".
 lean_loop_run <- function(fn) {
-  had_seed <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
-  seed <- if (had_seed) get(".Random.seed", envir = globalenv())
+  # The pin's caller-state pair: the seed or its absence, and the kinds.
+  rng <- ledgr_rng_caller_state()
   lean_entry_reset()
   restore <- lean_loop_install()
   out <- tryCatch(fn(), error = function(e) e, finally = restore())
   record <- as.list(lean_entry)
   if (length(lean_entry$backstop) > 0L) {
-    if (had_seed) assign(".Random.seed", seed, envir = globalenv())
-    else if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) rm(".Random.seed", envir = globalenv())
+    ledgr_rng_restore(rng)
     out <- fn()
   } else if (inherits(out, "error")) {
     rlang::cnd_signal(out)
@@ -233,7 +247,8 @@ lean_loop_install <- function(hooks = TRUE) {
   ns <- asNamespace("ledgr")
   lean <- list(ledgr_fold_envelope = lean_fold_envelope,
                "$.ledgr_pulse_context" = lean_ctx_dollar, "$.ledgr_strategy_state_view" = lean_state_dollar,
-               ledgr_run_fold = lean_run_fold, ledgr_walk_forward = lean_walk_forward)
+               ledgr_run_fold = lean_run_fold, ledgr_walk_forward = lean_walk_forward,
+               ledgr_sweep_impl = lean_sweep_impl)
   if (!hooks) lean <- lean[1:3]
   pinned <- lapply(stats::setNames(names(lean), names(lean)), get, envir = ns)
   if (!identical(pinned[[2L]], lean_pin_ctx_dollar) || !identical(pinned[[3L]], lean_pin_state_dollar)) {
