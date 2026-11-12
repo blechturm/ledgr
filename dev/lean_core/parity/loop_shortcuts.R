@@ -78,14 +78,15 @@ delegations <- list(
 # back to the pin in one arm.
 delegations15 <- list(
   state_view = list(e("loop.R", "lean_context",
-    "      state = lean_state_view(strategy_state), .safety_state = \"GREEN\",",
+    "      state = lean_strategy_view(strategy_state), .safety_state = \"GREEN\",",
     "      state = ledgr_strategy_state_view(strategy_state), .safety_state = \"GREEN\",")),
   cache_set = list(e("loop.R", "lean_ctx_dollar", "      counts <- lookup$build_counts",
     "      return(ledgr_pulse_context_cache_set(lookup, name, value))")),
   feature_table = list(e("loop.R", "lean_fold_envelope",
-    "    assign(nm, ledgr_resolve_feature_name(nm, name_lookup), envir = resolved_names)", "    NULL"))
+    "    assign(nm, ledgr_resolve_feature_name(nm, name_lookup), envir = resolved_names)", "    NULL")),
+  fifo_simple = list(e("fifo.R", "lean_lot_apply", "  simple <- lean_lot_simple(book, input)", "  simple <- NULL"))
 )
-if (identical(arg("set", "cut14"), "cut15")) delegations <- delegations15
+set15 <- identical(arg("set", "cut14"), "cut15")
 
 # An arm: the lean environment's other files, with loop.R and loop_harness.R
 # evaluated from `texts` (file name -> lines), byte-compiled.
@@ -182,7 +183,19 @@ if (mode == "isolation") {
   if (!all(res$isolated)) quit(status = 1L)
   quit(status = 0L)
 }
-arms <- if (mode == "shortcuts") {
+arms <- if (mode == "shortcuts" && set15) {
+  # every lean source from --candidate (a commit, or the working tree in
+  # development), each delegation applied to its own copy
+  src <- lean_sources(arg("candidate", "worktree"))
+  utils::write.csv(identity_rows("shortcuts", src), file.path(out, "shortcuts_identity.csv"), row.names = FALSE)
+  with_edits <- function(edits) {
+    t <- src
+    for (f in unique(vapply(edits, `[[`, "", "file"))) t[[f]] <- lean_apply_edits(t[[f]], Filter(function(x) x$file == f, edits))
+    attr(t, "hashes") <- vapply(t, function(x) rlang::hash(x), "")
+    t
+  }
+  c(list(shortcuts = make_arm_full(src)), lapply(delegations15, function(d) make_arm_full(with_edits(d))))
+} else if (mode == "shortcuts") {
   c(list(shortcuts = make_arm(tracked)), lapply(delegations, function(d) make_arm(edited(d))))
 } else if (mode == "final") {
   list(final = make_arm(tracked), base_4a3e08b8 = make_arm(at_commit("4a3e08b8")))

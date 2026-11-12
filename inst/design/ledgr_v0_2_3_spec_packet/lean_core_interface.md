@@ -1079,7 +1079,7 @@ Dispatch on both sides is shown by `parity/loop_dispatch.R`.
 
 LDG-3222 (the strategy boundary in P2):
 
-- State view, `lean_state_view()`. Predicate: the declared state is a list
+- State view, `lean_strategy_view()`. Predicate: the declared state is a list
   whose only attribute is its names. Guarantee: the fold's declared state is
   such a list, empty when nothing is declared, and the loop replaces state
   values but never writes into them, so R's copy-on-modify keeps a retained
@@ -1105,3 +1105,26 @@ LDG-3222 (the strategy boundary in P2):
 
 The per-pulse `tryCatch()` around the strategy call stays (its cheaper forms
 save under the stop rule's 2 percent; Cut 15 R2).
+
+LDG-3223 (planner and FIFO kernel):
+
+- Simple lot path, `lean_lot_simple()` inside `lean_lot_apply()`.
+  Predicate: a non-empty block of fill rows on distinct positions inside the
+  book axis, each row either opening from a flat instrument (empty segment,
+  cached net exactly zero, segment capacity at least one) or closing exactly
+  the one live lot it opposes (one live lot, opposite sign, absolute
+  quantity equal to the row's), with every resulting value finite.
+  Guarantee: for such rows the general kernel takes one consumption step
+  with no remainder, or appends one lot with no compaction or growth; the
+  simple path performs the same floating-point operations in the same
+  order (including its `0 + x` accumulations and the row-order compensated
+  realized scan). Comparator: the general lean kernel `lean_lot_general()`
+  on the same input, checked in debug on every served block; the pinned
+  kernel stays the independent oracle of both through the FIFO suites
+  (`fifo_check.R`, `fifo_simple_cases.R`). Fallback: any other block, and
+  any non-finite value, goes to the general lean kernel, which grows,
+  compacts, refuses and reports as before. The FIFO calls no new ledgr
+  function.
+- The planner keeps one path: a prototype fast path for the same common
+  case saved about 8 us per call (about 1.8 percent of the loop on
+  10 x 7,200), under the stop rule's 2 percent.

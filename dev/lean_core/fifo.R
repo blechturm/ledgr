@@ -132,12 +132,122 @@ lean_fill_leg_fees <- function(fee, close_qty, open_qty) {
   list(close = close_fee, open = open_fee)
 }
 
-# The kernel: one block of operations on distinct instruments. Work on
+# The kernel: lean_lot_simple() when it admits the block, else the general
+# kernel; in debug a served block is also run through the general kernel and
+# the two results must be identical (Cut 15, LDG-3223).
+lean_lot_apply <- function(book, input) {
+  simple <- lean_lot_simple(book, input)
+  if (is.null(simple)) return(lean_lot_general(book, input))
+  if (.lean_debug && !identical(simple, lean_lot_general(book, input))) {
+    rlang::abort("Lean simple lot path differs from the general kernel.", class = "ledgr_internal_error")
+  }
+  simple
+}
+
+# The simple fill block (Cut 15, LDG-3223): every row a fill that either
+# opens from a flat instrument with an empty segment of capacity at least
+# one, or closes exactly the one live lot it opposes. Anything else returns
+# NULL (the general kernel). The arithmetic is the general kernel's for
+# these rows, operation for operation (one consumption step, no remainder,
+# no compaction, no growth); a value that is not finite returns NULL, so
+# the general kernel refuses or reports it.
+lean_lot_simple <- function(book, input) {
+  pos <- input$pos
+  m <- length(pos)
+  op <- input$operation
+  if (m == 0L || !all(op == .lean_fill) || max(pos) > length(book$offset) || anyDuplicated(pos)) return(NULL)
+  side <- input$side
+  quantity <- input$qty
+  price <- input$price
+  fee <- input$fee
+  q <- book$lot_qty
+  p <- book$lot_price
+  base <- book$offset[pos]
+  head <- book$head[pos]
+  tail <- book$tail[pos]
+  net <- book$net_by_inst[pos]
+  old_basis <- book$cost_basis_by_inst[pos]
+  live <- tail - head + 1L
+  slot <- base + head
+  lot <- rep(NA_real_, m)
+  held <- which(live == 1L)
+  lot[held] <- q[slot[held]]
+  opens <- live <= 0L & net == 0 & book$capacity[pos] >= 1L
+  closes <- live == 1L & !is.na(lot) & lot * side < 0 & abs(lot) == quantity
+  opens[is.na(opens)] <- FALSE
+  closes[is.na(closes)] <- FALSE
+  if (!all(opens | closes)) return(NULL)
+  o <- which(opens)
+  k <- which(closes)
+  close_qty <- numeric(m)
+  realized_close <- numeric(m)
+  basis_delta <- numeric(m)
+  open_qty <- numeric(m)
+  position_before <- net
+  net_closing <- 0
+  if (length(k) > 0L) {
+    # one consumption step: take = |lot| = quantity, nothing left
+    s <- side[k]
+    take <- abs(lot[k])
+    net_closing <- (net[k] - lot[k]) + 0   # the general kernel's overflow check reads it
+    realized_close[k] <- 0 + ((price[k] - p[slot[k]]) * -s) * take
+    basis_delta[k] <- 0 + s * (take * p[slot[k]])
+    close_qty[k] <- 0 + take
+    net[k] <- 0
+    q[slot[k]] <- NA_real_
+    p[slot[k]] <- NA_real_
+  }
+  if (length(o) > 0L) {
+    open_qty[o] <- as.numeric(quantity[o])
+    signed <- side[o] * open_qty[o]
+    basis_delta[o] <- 0 + signed * price[o]
+    net[o] <- net[o] + signed
+    q[base[o] + 1L] <- signed
+    p[base[o] + 1L] <- price[o]
+  }
+  realized_delta <- realized_close - fee
+  new_basis <- old_basis + basis_delta
+  tol <- lean_lot_tol(new_basis, net, quantity, price)
+  new_basis[abs(new_basis) <= tol] <- 0
+  total <- book$total_cost_basis
+  realized <- book$realized_pnl
+  comp <- book$realized_comp
+  event_cost_basis <- numeric(m)
+  event_realized <- numeric(m)
+  for (j in seq_len(m)) {
+    total <- total - old_basis[[j]] + new_basis[[j]]
+    y <- realized_delta[[j]] - comp
+    t <- realized + y
+    comp <- (t - realized) - y
+    realized <- t
+    event_cost_basis[[j]] <- total
+    event_realized[[j]] <- realized
+  }
+  if (!is.finite(sum(position_before, net, close_qty, open_qty, realized_close, realized_delta,
+                     event_realized, event_cost_basis, new_basis, basis_delta, net_closing, comp))) return(NULL)
+  head[] <- 1L
+  tail[] <- 0L
+  tail[o] <- 1L
+  book$head[pos] <- head
+  book$tail[pos] <- tail
+  book$lot_qty <- q
+  book$lot_price <- p
+  book$net_by_inst[pos] <- net
+  book$cost_basis_by_inst[pos] <- new_basis
+  book$total_cost_basis <- total
+  book$realized_pnl <- realized
+  book$realized_comp <- comp
+  list(book = book, applied = list(position_before = position_before, position_after = net,
+    close_qty = close_qty, open_qty = open_qty, realized_close = realized_close, realized_delta = realized_delta,
+    event_realized = event_realized, event_cost_basis = event_cost_basis))
+}
+
+# The general kernel: one block of operations on distinct instruments. Work on
 # different instruments is vectorized; FIFO consumption is sequential within
 # an instrument (the depth loop); total basis and realized P&L are one scalar
 # scan in row order, the canonical event order. Returns list(book, applied);
 # the input book is not modified (copy on modify).
-lean_lot_apply <- function(book, input) {
+lean_lot_general <- function(book, input) {
   pos <- input$pos
   m <- length(pos)
   if (m > 0L && max(pos) > length(book$offset)) {

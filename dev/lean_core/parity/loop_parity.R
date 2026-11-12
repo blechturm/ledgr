@@ -151,7 +151,7 @@ loop_mutations <- list(
       "    makeActiveBinding(\"positions\", function() { p <- pos; names(p) <- ids; p }, lookup)"), "after")),
     tables = "^run_diagnostic"),
   # Cut 15 decision 2: the new fast paths, wrong.
-  state_view_fast = variant("differ", list(edit("loop.R", "lean_state_view",
+  state_view_fast = variant("differ", list(edit("loop.R", "lean_strategy_view",
     "    class(view) <- c(\"ledgr_strategy_state_view\", \"list\")", "    class(view) <- \"ledgr_strategy_state_view\"")),
     error = "Lean state view differs from the pin's"),
   feature_table = variant("differ", list(edit("loop.R", "lean_fold_envelope",

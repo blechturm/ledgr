@@ -2,7 +2,7 @@
 # predicate is taken, counted by load-time edits (loop_edits.R; the tracked
 # code holds no counter), against the side established independently:
 #
-#   state_view  lean_state_view(): fast for a list whose only attribute is
+#   state_view  lean_strategy_view(): fast for a list whose only attribute is
 #               its names. The fold's declared state is such a list, empty
 #               when nothing is declared, so every fold takes the fast side;
 #               the pin's side is reached by direct inputs below.
@@ -10,7 +10,7 @@
 #               or concrete id), the pin's resolver for any other input.
 #
 # Workloads run on the lean loop with debug off (production dispatch) and on
-# the pin; their fills must match. Direct cases compare lean_state_view()
+# the pin; their fills must match. Direct cases compare lean_strategy_view()
 # with ledgr_strategy_state_view() on inputs on both sides of its
 # predicate, and its boundaries.
 #
@@ -24,8 +24,8 @@ lean <- lean_core_load(arg("lib"), debug = FALSE)
 ns <- asNamespace("ledgr")
 count <- function(tag) sprintf("lean_entry$dispatch <- c(lean_entry$dispatch, %s)", tag)
 lean_load_edited(lean, lean_core_home, list(
-  lean_edit("loop.R", "lean_state_view", "    view <- values", count("\"state_view:fast\""), "before", mark = FALSE),
-  lean_edit("loop.R", "lean_state_view", "  ledgr_strategy_state_view(values)", count("\"state_view:pin\""), "before", mark = FALSE),
+  lean_edit("loop.R", "lean_strategy_view", "    view <- values", count("\"state_view:fast\""), "before", mark = FALSE),
+  lean_edit("loop.R", "lean_strategy_view", "  ledgr_strategy_state_view(values)", count("\"state_view:pin\""), "before", mark = FALSE),
   lean_edit("loop.R", "feature_fn",
     "      feature_name <- resolved %||% ledgr_resolve_feature_name(feature_name, name_lookup)",
     count("if (is.null(resolved)) \"feature:resolver\" else \"feature:table\""), "before", mark = FALSE)))
@@ -105,7 +105,7 @@ expect_fast <- c(named_atomic = TRUE, named_empty = TRUE, named_with_list_field 
 caught <- function(expr) tryCatch(expr, error = function(e) list(class(e), conditionMessage(e)))
 for (id in names(direct)) {
   lean$lean_entry$dispatch <- character()
-  got <- caught(lean$lean_state_view(direct[[id]]))
+  got <- caught(lean$lean_strategy_view(direct[[id]]))
   calls <- tally()
   rows[[paste0("direct_", id)]] <- data.frame(case = paste0("direct_", id), branch = branches[1:2], calls = calls[1:2],
     expected = c(expect_fast[[id]], !expect_fast[[id]]),

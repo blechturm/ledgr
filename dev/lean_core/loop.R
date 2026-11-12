@@ -178,7 +178,7 @@ lean_ctx_dollar <- function(x, name) {
 # fold's declared state, empty or not) is shared instead. Values are never
 # written in place, so R's copy-on-modify keeps a retained view frozen; any
 # other input goes to the pin.
-lean_state_view <- function(values) {
+lean_strategy_view <- function(values) {
   if (is.list(values) && identical(names(attributes(values)), "names")) {
     view <- values
     class(view) <- c("ledgr_strategy_state_view", "list")
@@ -431,7 +431,7 @@ lean_fold_envelope <- function(execution, output_handler) {
       run_id = run_id, ts_utc = pulses_iso[[i]], universe = ids, .positions = positions_snapshot,
       cash = cash, equity = cash + pv, seed = seed,
       pulse_seed = if (is.null(pulse_seeds)) NULL else pulse_seeds[[i]],
-      state = lean_state_view(strategy_state), .safety_state = "GREEN",
+      state = lean_strategy_view(strategy_state), .safety_state = "GREEN",
       .schedule_query = schedule_fn(i), members = members0, .history = history_reader$view(i),
       .pulse_lookup = lookup, flat = helpers$flat, hold = helpers$hold, .feature_vector = fv,
       .notes = pulse_notes)

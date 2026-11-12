@@ -169,7 +169,7 @@ stream_rows <- lapply(names(streams), function(s) {
 streams_out <- do.call(rbind, stream_rows)
 utils::write.csv(streams_out, file.path(out, "fifo_streams.csv"), row.names = FALSE)
 
-# 3. Mutations: one textual change to fifo.R each, sourced into a fresh
+# 3. Mutations (six, plus two for Cut 15's simple path): one textual change to fifo.R each, sourced into a fresh
 # environment; each must make at least one generated stream or fill-heavy
 # call differ.
 fifo_src <- readLines(file.path(lean_core_home, "fifo.R"))
@@ -180,7 +180,11 @@ mutations <- list(
   swapped_fee_split = c("list(close = close_fee, open = open_fee)", "list(close = open_fee, open = close_fee)"),
   kahan_step_on_openings = c("if (consuming[[k]]) {", "if (TRUE) {"),
   merged_repeated_openings = c("block <- ledgr_lot_blocks(pos, new_run)", "block <- cumsum(new_run)"),
-  last_row_refusal = c("k <- first[[1L]]", "k <- first[[length(first)]]")
+  last_row_refusal = c("k <- first[[1L]]", "k <- first[[length(first)]]"),
+  # Cut 15, LDG-3223: the simple lot path admits an over-close, or books the
+  # realized close with the wrong sign.
+  simple_admits_over = c("lot * side < 0 & abs(lot) == quantity", "lot * side < 0 & abs(lot) <= quantity"),
+  simple_close_sign = c("((price[k] - p[slot[k]]) * -s) * take", "((price[k] - p[slot[k]]) * s) * take")
 )
 mutation_rows <- lapply(names(mutations), function(name) {
   mu <- mutations[[name]]
