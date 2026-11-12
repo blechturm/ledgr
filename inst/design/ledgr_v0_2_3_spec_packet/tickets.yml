@@ -1683,7 +1683,7 @@ cuts:
       for maintainer disposition. Findings, reviewed ranges and
       consequential rejection reasons are kept under rfc_cycle.md's record
       rule.
-    cut_review: null
+    cut_review: "CHANGES_REQUIRED in cut_review_14.md (independent clean-context Codex CLI, gpt-6.1-sol/high, at ff90fa3b): R1-R7 required, all applied with the review's replacement text: frozen execution paths, debug checks and hooks seam (R1); a complete, fail-closed variant manifest (R2); a paired protocol for the shortcut rule and a blocking regression bound (R3); matched, reconciled cost-map arms with the snapshot boundary timed (R4); features_h1.R specified with value checks on matched rows (R5); measured_input corrected (R6); the close-review stop rule cannot waive acceptance (R7). Added with the patches: the strategy call split into its body and ledgr's wrapper (maintainer question, 2026-11-12)."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
