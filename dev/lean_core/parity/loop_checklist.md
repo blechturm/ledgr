@@ -62,8 +62,8 @@ rounds 1-4 (C:/Users/maxth/ledgr-wt/ws30-close-out*).
 | Nonterminal fresh restart | refused in slice 1 (restart); owner: its slice |
 | Checkpoint entry restriction; store-write wrap; middle-batch rollback | rows 14, 8, 13 |
 
-The open rows are for the maintainer: close them in this ticket or record
-them in the switch cut's census, which cannot ship with any case unowned.
+The open rows are owned by the switch cut's census (maintainer,
+2026-11-12), which cannot ship with any case unowned.
 
 ## Measurements and analyses (evidence, not variants)
 
