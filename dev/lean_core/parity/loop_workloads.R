@@ -215,7 +215,7 @@ lw_retained_strategy <- function() {
 # tryCatch logs every error signal that reaches the caller. Tables: the
 # events, the final condition's classes, message, parent and original_error,
 # the store and the caller's RNG state.
-lw_error_boundary <- function(case) {
+lw_error_boundary <- function(case, seed = NULL) {
   db <- lw_witness_db()
   log <- new.env(parent = emptyenv())
   log$events <- character()
@@ -249,13 +249,13 @@ lw_error_boundary <- function(case) {
     targets
   }
   environment(strategy) <- list2env(list(log = log, case = case), parent = ns)
-  run_id <- paste0("lw-error-", case)
+  run_id <- paste0("lw-error-", case, if (!is.null(seed)) "-seeded")
   snapshot <- ledgr::ledgr_snapshot_open(db, "lw_witness", verify = TRUE)
   on.exit(ledgr::ledgr_snapshot_close(snapshot))
   exp <- ledgr::ledgr_experiment(snapshot, strategy, opening = ledgr::ledgr_opening(cash = 5000),
     cost_model = ledgr::ledgr_cost_zero())
   set.seed(4250L)
-  res <- tryCatch(withCallingHandlers(ledgr::ledgr_run(exp, run_id = run_id),
+  res <- tryCatch(withCallingHandlers(ledgr::ledgr_run(exp, run_id = run_id, seed = seed),
     error = function(e) log$events <- c(log$events, paste0("signal:", paste(class(e), collapse = "/")))),
     error = function(e) e)
   cnd <- if (inherits(res, "condition")) res else NULL
@@ -656,6 +656,9 @@ loop_witnesses <- list(
   witness_error_cleanup = function() lw_error_boundary("cleanup"),
   witness_error_cleanup_error = function() lw_error_boundary("cleanup_error"),
   witness_error_custom = function() lw_error_boundary("custom"),
+  # the same boundary on a seeded run: the run's own stream and the caller's
+  # state after the error
+  witness_error_cleanup_seeded = function() lw_error_boundary("cleanup_error", seed = 31L),
   # A one-worker sweep over a covered experiment: the keep rule.
   witness_sweep = function() {
     db <- lw_witness_db()
