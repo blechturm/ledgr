@@ -33,6 +33,12 @@
 # --selftest=1 shows the checks reject a replay mismatch and a duplicated
 # attribution cell, on a 3 x 40 run.
 #
+# --arms=lean (Cut 15, LDG-3225) times the lean arm alone and requires its
+# result signatures to equal the pin's recorded ones
+# (--pin-signatures=<a clock_raw.csv holding pin rows>). Synthetic stack
+# witnesses check, before any run, that the frames Cut 15 added fall in the
+# cells their callers own.
+#
 # Outputs in <out>: identity.txt, clock_raw.csv, cells.csv, reconcile.csv,
 # strategy_split.csv, replay.csv (and selftest.csv).
 
@@ -269,8 +275,33 @@ check_cells <- function(cells, reconcile) {
 }
 check_replay <- function(same) if (all(same)) "ok" else sprintf("replay output differs on %d pulse(s)", sum(!same))
 
+# Synthetic stack witnesses (Cut 15, LDG-3225, R6): the frames Cut 15 added
+# fall in the cells their callers own. Leaf first, as Rprof writes them.
+stack_witnesses <- list(
+  "P4 FIFO" = c("lean_lot_simple", "lean_lot_apply", "lean_lot_fill", "lean_p4_apply", "run_loop"),
+  "P4 FIFO" = c("lean_lot_tol", "lean_lot_general", "lean_lot_apply", "lean_lot_fill", "lean_p4_apply"),
+  "P2 context" = c("lean_strategy_view", "lean_context", "lean_p2_decide", "run_loop"),
+  "transfer: expand" = c("ledgr_json_write_canonical_ndjson", "lean_recon_detail", "lean_loop_expand", "fn",
+                         "hooks$publish", "run_loop"),
+  "strategy: ledgr callees" = c("$.ledgr_pulse_context", "$", "fn", "ledgr_call_strategy_fn", "doTryCatch",
+                                "tryCatchOne", "tryCatchList", "tryCatch", "lean_p2_decide"),
+  "strategy: call wrapper" = c("tryCatchList", "tryCatch", "lean_p2_decide", "run_loop")
+)
+stack_fail <- names(stack_witnesses)[vapply(seq_along(stack_witnesses), function(i)
+  !identical(cell_of(stack_witnesses[[i]]), names(stack_witnesses)[[i]]), logical(1L))]
+if (length(stack_fail)) stop("attribution: synthetic stacks misattributed for ", paste(stack_fail, collapse = ", "), call. = FALSE)
+
 # --- runs -----------------------------------------------------------------------
-arms <- c("lean", "pin")
+# --arms=lean (LDG-3225): the lean arm alone; its results must equal the pin's
+# recorded signatures (--pin-signatures=<a clock_raw.csv with pin rows>).
+arms <- strsplit(arg("arms", "lean,pin"), ",")[[1L]]
+if (!all(arms %in% c("lean", "pin")) || !"lean" %in% arms) stop("--arms must name lean, optionally pin", call. = FALSE)
+pin_signatures <- if (!"pin" %in% arms) {
+  ps <- utils::read.csv(arg("pin-signatures"), stringsAsFactors = FALSE)
+  ps <- ps[ps$arm == "pin", ]
+  if (!all(shapes %in% ps$shape)) stop("--pin-signatures lacks a shape", call. = FALSE)
+  tapply(ps$digest, ps$shape, function(d) if (length(unique(d)) == 1L) d[[1L]] else NA_character_)
+}
 for (s in shapes) for (a in arms) run_arm(a, s)   # warm-up
 clock <- list()
 for (r in seq_len(reps)) for (s in shapes) for (a in if (r %% 2L) arms else rev(arms)) {
@@ -283,6 +314,11 @@ for (r in seq_len(reps)) for (s in shapes) for (a in if (r %% 2L) arms else rev(
 clock <- do.call(rbind, clock)
 sig <- tapply(clock$digest, clock$shape, function(d) length(unique(d)))
 if (any(sig != 1L)) stop("lean and pin results differ on: ", paste(names(sig)[sig != 1L], collapse = ", "), call. = FALSE)
+if (!is.null(pin_signatures)) {
+  lean_sig <- tapply(clock$digest, clock$shape, function(d) d[[1L]])
+  bad <- shapes[is.na(pin_signatures[shapes]) | lean_sig[shapes] != pin_signatures[shapes]]
+  if (length(bad)) stop("lean results differ from the recorded pin signatures on: ", paste(bad, collapse = ", "), call. = FALSE)
+}
 utils::write.csv(clock, file.path(out, "clock_raw.csv"), row.names = FALSE)
 med <- stats::aggregate(cbind(snapshot_open_s, run_s, envelope_s, loop_s) ~ arm + shape + pulses + instruments, clock, stats::median)
 
