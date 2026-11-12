@@ -502,275 +502,324 @@ lean_fold_envelope <- function(execution, output_handler) {
     if (length(u)) lean_not_covered(u[[1L]])
   }
 
+  # --- the pulse stages (macro WS16 compact-state point 1) -----------------
+  # Each stage takes the pulse index and what the earlier stages of the same
+  # pulse returned, and writes by index into the run-long state above. The
+  # loop body only calls them in order.
+
+  # P1: valuation at the close and the equity row.
+  lean_p1_value <- function(i) {
+    ts <- ts_num[[i]]
+    live$cur_ts <- ts
+    live$cur_stage <- "valuation"
+    col <- pulse_cols[[i]]
+    close <- bars$close[, col]
+    active <- pos != 0
+    pv <- if (any(active)) sum(pos[active] * close[active]) else 0
+    last_fully_valued <<- ts
+    n_eq <<- n_eq + 1L
+    eq$ts[[n_eq]] <<- ts_num[[i]]
+    eq$cash[[n_eq]] <<- cash
+    eq$positions_value[[n_eq]] <<- pv
+    eq$realized_pnl[[n_eq]] <<- book$realized_pnl
+    eq$cost_basis[[n_eq]] <<- book$total_cost_basis
+    n_done <<- i
+    list(col = col, close = close, pv = pv)
+  }
+
+  # P2: a fresh context (Section 19.4), the strategy call, the checks on its
+  # output and the short-exposure refusal (slice 1 has no risk step).
+  lean_p2_decide <- function(i, v1) {
+    col <- v1$col
+    close <- v1$close
+    pv <- v1$pv
+    pos_start <- pos
+    positions_snapshot <- stats::setNames(pos, ids)
+    view <- view0
+    view$held[] <- pos != 0
+    view$risk_mark[] <- close
+    if (.lean_debug) {
+      packet <- list(
+        pulse_idx = i, ts = ts_num[[i]], context_pos = ctx_pos, cash = cash, positions_value = pv,
+        position = pos, member = rep(TRUE, n), held = pos != 0, buyable = rep(TRUE, n),
+        target_restricted = rep(FALSE, n), restriction_offset = integer(n), restriction_count = integer(n),
+        restriction_code = integer(), status = rep(3L, n), lifetime = rep(1L, n),
+        terminal_event = rep("", n), lifetime_fact_id = rep("", n), mark = close, reference = close,
+        source_ts = rep(ts_num[[i]], n), mark_age = integer(n), mark_source = rep(3L, n),
+        priced = rep(TRUE, n), permissible = rep(TRUE, n), frozen = rep(FALSE, n))
+      lean_loop_debug_packet(packet, provider, pulses_posix[[i]], pos, ids, i, substrate, history_reader)
+      p2 <- ledgr_carrier_p2_input(packet, ids)
+      if (!identical(p2$view, view) || !identical(p2$members, members0)) {
+        rlang::abort(sprintf("Lean availability view differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
+      }
+      lean_loop_debug_ctx(lean_context(i, col, close, pv, positions_snapshot, view, NULL),
+        lean_loop_pin_ctx(i, col, close, pv, positions_snapshot, p2), i)
+    }
+    ctx <- lean_context(i, col, close, pv, positions_snapshot, view, counts)
+    pulse_notes$sizing_skipped <- character()
+    result <- tryCatch({
+      live$cur_stage <- "strategy"
+      if (strategy_functional) {
+        ledgr_call_strategy_fn(strategy_fn, ctx, strategy_params, strategy_signature)
+      } else {
+        strategy_fn(ctx)
+      }
+    }, error = function(e) {
+      # a stub reached in this callback outranks whatever error followed it
+      if (inherits(e, "ledgr_lean_coverage")) rlang::cnd_signal(e)
+      check_uncovered()
+      ledgr_abort_strategy_error(e, ctx)
+    })
+    check_uncovered()
+    if (is.object(result) && ledgr_is_strategy_intermediate(result)) ledgr_abort_intermediate_strategy_result(result)
+    if (is.numeric(result)) result <- list(targets = result, state_update = NULL)
+    if (!is.list(result) || is.null(result$targets)) {
+      rlang::abort(sprintf("Strategy must return %s or a list with `targets`.", ledgr_strategy_targets_contract()),
+                   class = "ledgr_invalid_strategy_result")
+    }
+    intent_reason <- ledgr_validate_strategy_intent_reason(result$intent_reason)
+    sizing_evidence <- attr(result$targets, "sizing_evidence", exact = TRUE)
+    if (!is.null(sizing_evidence)) lean_abort_attempt("sizing helpers")
+    raw_targets <- result$targets
+    # Fast path: a full, finite, named numeric vector in context order is
+    # returned by the pin's validator unchanged.
+    targets <- if (is.numeric(raw_targets) && identical(attributes(raw_targets), ids_attr) &&
+                   all(is.finite(raw_targets))) {
+      raw_targets
+    } else {
+      ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE)
+    }
+    if (.lean_debug && !identical(targets, ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE))) {
+      rlang::abort(sprintf("Lean target validation differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
+    }
+    sq <- as.numeric(targets)
+    pre <- 0L
+    if (!is.null(intent_reason)) { hd_intent[[i]] <<- intent_reason; pre <- pre + 1L }
+    if (!isTRUE(pulse_notes$raw_sizing_notice_written)) {
+      hd_sizing[[i]] <<- TRUE
+      pre <- pre + 1L
+      pulse_notes$raw_sizing_notice_written <- TRUE
+    }
+    hd_pre[[i]] <<- pre
+    tq <- sq
+    if (n > 0L) {
+      # A fixed basket has no restricted or nonmember instrument, and slice 1
+      # has no risk step: the post-risk targets are the strategy targets.
+      # Only the short-exposure refusal can fire.
+      if (.lean_debug) ledgr_availability_validate_strategy_targets(targets, positions_snapshot, view)
+      live$cur_stage <- "risk"
+      if (any(sq < pmin(pos, 0))) ledgr_availability_validate_short_exposure(targets, positions_snapshot)
+    }
+    list(result = result, sq = sq, tq = tq, pos_start = pos_start)
+  }
+
+  # P3: the order plan, or the affordability reconciliation stop (cut review
+  # R1: the whole decision segment is staged, then the stop row; no P4 or
+  # P5). Returns the plan's batch and whether the run stops here.
+  lean_p3_plan <- function(i, v1, v2) {
+    col <- v1$col
+    sq <- v2$sq
+    tq <- v2$tq
+    live$cur_stage <- "execution"
+    actionable <- which(abs(tq - pos) > act_tol)
+    exec_ts <- if (i <= length(epochs)) epochs[[i]] else NA_real_
+    batch <- NULL
+    if (length(actionable) > 0L) {
+      next_col <- if (i < n_pulse) pulse_cols[[i + 1L]] else col + 1L
+      has_next <- next_col <= length(bar_axis)
+      execution_packet <- list(exec_ts = exec_ts, has_next = has_next,
+        open = if (has_next) bars$open[, next_col] else rep(NA_real_, n))
+      view <- if (!is.na(exec_ts)) lean_exec_view(length(actionable))
+      if (.lean_debug && !is.na(exec_ts)) {
+        pv_view <- lean_plan_execution_view(provider, exec_ts, ids[actionable])
+        if (!identical(lapply(unclass(pv_view)[names(view)], unname), view)) {
+          rlang::abort(sprintf("Lean execution view differs from the provider's at pulse %d.", i), class = "ledgr_internal_error")
+        }
+      }
+      batch <- lean_plan_pulse(context_pos = seq_len(n), target_qty = tq, position = pos,
+        actionable_k = actionable, member = rep(TRUE, n), execution = execution_packet,
+        execution_view = view, epoch_valid = i > length(epochs) || epoch_valid[[i]],
+        cost_resolver = cost_resolver, cash = cash, instrument_ids = ids)
+      fill <- batch$fill
+      recorded <- cash + sum(fill$cash_delta)
+      if (!isTRUE(recorded == batch$expected_final_cash) &&
+          !isTRUE(all.equal(as.numeric(recorded), as.numeric(batch$expected_final_cash),
+                            tolerance = ledgr_availability_cash_tolerance))) {
+        hd_all_explicit[[i]] <<- TRUE
+        lean_loop_add_decisions(seq_len(n), i, sq, tq, pos)
+        hd_stop_detail[[i]] <<- canonical_json(list(cash_before = cash,
+          virtual_final_cash = batch$expected_final_cash, recorded_final_cash = recorded))
+        status <<- "INCOMPLETE"
+        stop_reason <<- "affordability_reconciliation_failed"
+        processed <<- processed + 1L
+        return(list(batch = batch, stop = TRUE))
+      }
+    }
+    list(batch = batch, stop = FALSE)
+  }
+
+  # P4: the plan's fills applied to the book and the fill records, its
+  # rejections, and the explicit decision rows (every target that differs
+  # from the position, clean fills taken out). Returns the fill count.
+  lean_p4_apply <- function(i, v1, v2, batch) {
+    close <- v1$close
+    sq <- v2$sq
+    tq <- v2$tq
+    differs <- which(!(is.finite(sq) & sq == pos & is.finite(close)))
+    n_fill <- if (is.null(batch)) 0L else length(batch$fill$k)
+    n_rej <- if (is.null(batch)) 0L else length(batch$rejection$k)
+    clean_k <- integer()
+    if (n_fill > 0L) {
+      fill <- batch$fill
+      fr <- ledgr_carrier_segment_text(fill$info_offset, fill$info_count, fill$info_code, .ledgr_plan_reason_levels)
+      k <- fill$k
+      clean <- if (can_encode) {
+        is.finite(sq[k]) & is.finite(close[k]) & is.finite(fill$position_before) &
+          pos[k] == fill$position_before & is.finite(fill$planned_position_after) &
+          sq[k] == fill$planned_position_after & !nzchar(fr$reason) & !nzchar(fr$reasons)
+      } else rep(FALSE, n_fill)
+      clean[is.na(clean)] <- FALSE
+      clean_k <- k[clean]
+      live$cur_stage <- "accounting"
+      applied <- lean_lot_fill(book, fill$pos, fill$side, fill$qty, fill$price, fill$fee)
+      book <<- applied$book
+      fill_bar <- if (i <= length(fill_axis$bar) && !anyNA(fill$exec_ts) &&
+                      all(fill$exec_ts == fill_axis$opportunity[[i]])) fill_axis$bar[[i]] else
+        ledgr_position_fact_fill_bar(fill_axis, i, fill$exec_ts)
+      position_facts <<- ledgr_position_facts_apply(position_facts, fill$pos, fill$position_before,
+        fill$planned_position_after, fill_bar, TRUE)
+      rows <- nf + seq_len(n_fill)
+      if (nf + n_fill > fcap) {
+        while (nf + n_fill > fcap) fcap <<- fcap * 2L
+        fl <<- grow(fl, fcap)
+      }
+      hd_fill_start[[i]] <<- nf
+      hd_nfill[[i]] <<- n_fill
+      a <- applied$applied
+      fl$pulse[rows] <<- i
+      fl$k[rows] <<- k
+      fl$pos[rows] <<- fill$pos
+      fl$side[rows] <<- fill$side
+      fl$qty[rows] <<- fill$qty
+      fl$price[rows] <<- fill$price
+      fl$fee[rows] <<- fill$fee
+      fl$cash_delta[rows] <<- fill$cash_delta
+      fl$position_delta[rows] <<- fill$position_delta
+      fl$exec_ts[rows] <<- fill$exec_ts
+      fl$position_before[rows] <<- fill$position_before
+      fl$planned_position_after[rows] <<- fill$planned_position_after
+      fl$clean[rows] <<- clean
+      fl$info[rows] <<- fr$reason
+      fl$infos[rows] <<- fr$reasons
+      fl$target[rows] <<- tq[k]
+      fl$strategy_target[rows] <<- sq[k]
+      fl$close_qty[rows] <<- a$close_qty
+      fl$open_qty[rows] <<- a$open_qty
+      fl$realized_close[rows] <<- a$realized_close
+      nf <<- nf + n_fill
+      event_seq <<- event_seq + n_fill
+      pos[fill$pos] <<- book$net_by_inst[fill$pos]
+      fl$net_after[rows] <<- book$net_by_inst[fill$pos]
+      cash <<- ledgr_cash_scan(cash, fill$cash_delta)[[n_fill]]
+      last_executed <<- max(last_executed, fill$exec_ts, na.rm = TRUE)
+    }
+    if (n_rej > 0L) {
+      rejection <- batch$rejection
+      rr <- ledgr_carrier_segment_text(rejection$reason_offset, rejection$reason_count,
+        rejection$reason_code, .ledgr_plan_reason_levels)
+      rj$pulse <<- c(rj$pulse, rep(i, n_rej))
+      rj$k <<- c(rj$k, rejection$k)
+      rj$pos <<- c(rj$pos, rejection$pos)
+      rj$primary <<- c(rj$primary, .ledgr_plan_reason_levels[rejection$primary])
+      rj$reasons <<- c(rj$reasons, rr$reasons)
+      rj$target <<- c(rj$target, tq[rejection$k])
+      rj$strategy_target <<- c(rj$strategy_target, sq[rejection$k])
+      rj$position <<- c(rj$position, rejection$position)
+      rj$resolved_price <<- c(rj$resolved_price, rejection$resolved_price)
+      rj$exec_ts <<- c(rj$exec_ts, rejection$exec_ts)
+      hd_nrej[[i]] <<- n_rej
+    }
+    explicit_k <- if (length(clean_k)) differs[match(differs, clean_k, 0L) == 0L] else differs
+    if (length(explicit_k) > 0L) {
+      lean_loop_add_decisions(explicit_k, i, sq, tq, v2$pos_start)
+    }
+    n_fill
+  }
+
+  # P5: the capacity refusal, commitment, the reconciliation record and the
+  # declared-state update.
+  lean_p5_commit <- function(i, v1, v2, batch, n_fill) {
+    close <- v1$close
+    sq <- v2$sq
+    tq <- v2$tq
+    live$cur_stage <- "accounting"
+    if (nf > capacity) {
+      rlang::abort("Ledger event buffer exceeded the run's maximum event capacity.",
+                   class = "ledgr_event_buffer_capacity_exceeded")
+    }
+    n_committed <<- nf                # the pin flushes the pulse's fills here, before reconciliation
+    if (!is.null(batch) && !isTRUE(cash == batch$expected_final_cash) && !isTRUE(all.equal(as.numeric(cash), as.numeric(batch$expected_final_cash),
+                                             tolerance = ledgr_availability_cash_tolerance))) {
+      rlang::abort("Recorded cash does not reconcile with the availability affordability ledger.",
+        class = c("ledgr_affordability_reconciliation_failed", "ledgr_invalid_fold_execution"))
+    }
+    expected <- if (is.null(batch)) cash else batch$expected_final_cash
+    fill_cash <- if (n_fill > 0L) batch$fill$cash_delta else numeric()
+    intended <- lean_gross(sq, close)
+    recon <- c(
+      lean_gross(pos, close),
+      cash - sum(fill_cash),
+      intended,
+      intended,                       # no risk step: post-risk == strategy targets
+      cash,
+      expected)
+    ledgr_fold_reconciliation_check(recon[[2L]], recon[[6L]], recon[[5L]], recon[[3L]], recon[[4L]], recon[[1L]])
+    if (.lean_debug && !identical(recon[c(1L, 3L, 4L)], c(ledgr_availability_marked_gross(pos, close),
+        ledgr_availability_marked_gross(sq, close), ledgr_availability_marked_gross(tq, close)))) {
+      rlang::abort(sprintf("Lean gross exposure differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
+    }
+    hd_recon[i, ] <<- recon
+    hd_has_recon[[i]] <<- TRUE
+    state_update <- v2$result$state_update
+    if (inherits(state_update, "ledgr_strategy_state_reset")) {
+      strategy_state <<- ledgr_strategy_state_defaults(state_declaration, ids, default_scalars = state_defaults)
+    } else if (inherits(state_update, "ledgr_strategy_state_patch")) {
+      patched <- lean_state_patch(unclass(state_update))
+      if (.lean_debug && !identical(patched, ledgr_strategy_state_apply_values(strategy_state,
+          unclass(state_update), state_declaration, ids, patch = TRUE, default_scalars = state_defaults))) {
+        rlang::abort(sprintf("Lean state patch differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
+      }
+      strategy_state <<- patched
+    } else if (!is.null(state_update)) {
+      strategy_state <<- ledgr_strategy_state_apply_values(strategy_state, state_update,
+        state_declaration, ids, patch = FALSE, default_scalars = state_defaults)
+    }
+    invisible(NULL)
+  }
+
+  # E: counts the pulse; FALSE once max_pulses is reached.
+  lean_e_advance <- function() {
+    processed <<- processed + 1L
+    if (processed >= max_pulses) {
+      full_run <<- FALSE
+      return(FALSE)
+    }
+    TRUE
+  }
+
+  # E: the pulse loop inside the run transaction, then the terminal transfer.
   run_loop <- function() {
     live$t_start <- ledgr_time_now()
     live$in_pulses <- TRUE
     on.exit(live$in_pulses <- FALSE)   # also when an error unwinds the loop, before rollback
     for (i in seq_len(n_pulse)) {
-      ts <- ts_num[[i]]
-      live$cur_ts <- ts
-      live$cur_stage <- "valuation"
-      col <- pulse_cols[[i]]
-      close <- bars$close[, col]
-      # P1 valuation and equity
-      active <- pos != 0
-      pv <- if (any(active)) sum(pos[active] * close[active]) else 0
-      last_fully_valued <<- ts
-      n_eq <<- n_eq + 1L
-      eq$ts[[n_eq]] <<- ts_num[[i]]
-      eq$cash[[n_eq]] <<- cash
-      eq$positions_value[[n_eq]] <<- pv
-      eq$realized_pnl[[n_eq]] <<- book$realized_pnl
-      eq$cost_basis[[n_eq]] <<- book$total_cost_basis
-      n_done <<- i
-
-      # P2 context and strategy: a fresh context per pulse (Section 19.4)
-      pos_start <- pos
-      positions_snapshot <- stats::setNames(pos, ids)
-      view <- view0
-      view$held[] <- pos != 0
-      view$risk_mark[] <- close
-      if (.lean_debug) {
-        packet <- list(
-          pulse_idx = i, ts = ts_num[[i]], context_pos = ctx_pos, cash = cash, positions_value = pv,
-          position = pos, member = rep(TRUE, n), held = pos != 0, buyable = rep(TRUE, n),
-          target_restricted = rep(FALSE, n), restriction_offset = integer(n), restriction_count = integer(n),
-          restriction_code = integer(), status = rep(3L, n), lifetime = rep(1L, n),
-          terminal_event = rep("", n), lifetime_fact_id = rep("", n), mark = close, reference = close,
-          source_ts = rep(ts_num[[i]], n), mark_age = integer(n), mark_source = rep(3L, n),
-          priced = rep(TRUE, n), permissible = rep(TRUE, n), frozen = rep(FALSE, n))
-        lean_loop_debug_packet(packet, provider, pulses_posix[[i]], pos, ids, i, substrate, history_reader)
-        p2 <- ledgr_carrier_p2_input(packet, ids)
-        if (!identical(p2$view, view) || !identical(p2$members, members0)) {
-          rlang::abort(sprintf("Lean availability view differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
-        }
-        lean_loop_debug_ctx(lean_context(i, col, close, pv, positions_snapshot, view, NULL),
-          lean_loop_pin_ctx(i, col, close, pv, positions_snapshot, p2), i)
-      }
-      ctx <- lean_context(i, col, close, pv, positions_snapshot, view, counts)
-      pulse_notes$sizing_skipped <- character()
-      result <- tryCatch({
-        live$cur_stage <- "strategy"
-        if (strategy_functional) {
-          ledgr_call_strategy_fn(strategy_fn, ctx, strategy_params, strategy_signature)
-        } else {
-          strategy_fn(ctx)
-        }
-      }, error = function(e) {
-        # a stub reached in this callback outranks whatever error followed it
-        if (inherits(e, "ledgr_lean_coverage")) rlang::cnd_signal(e)
-        check_uncovered()
-        ledgr_abort_strategy_error(e, ctx)
-      })
-      check_uncovered()
-      if (is.object(result) && ledgr_is_strategy_intermediate(result)) ledgr_abort_intermediate_strategy_result(result)
-      if (is.numeric(result)) result <- list(targets = result, state_update = NULL)
-      if (!is.list(result) || is.null(result$targets)) {
-        rlang::abort(sprintf("Strategy must return %s or a list with `targets`.", ledgr_strategy_targets_contract()),
-                     class = "ledgr_invalid_strategy_result")
-      }
-      intent_reason <- ledgr_validate_strategy_intent_reason(result$intent_reason)
-      sizing_evidence <- attr(result$targets, "sizing_evidence", exact = TRUE)
-      if (!is.null(sizing_evidence)) lean_abort_attempt("sizing helpers")
-      raw_targets <- result$targets
-      # Fast path: a full, finite, named numeric vector in context order is
-      # returned by the pin's validator unchanged.
-      targets <- if (is.numeric(raw_targets) && identical(attributes(raw_targets), ids_attr) &&
-                     all(is.finite(raw_targets))) {
-        raw_targets
-      } else {
-        ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE)
-      }
-      if (.lean_debug && !identical(targets, ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE))) {
-        rlang::abort(sprintf("Lean target validation differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
-      }
-      sq <- as.numeric(targets)
-      pre <- 0L
-      if (!is.null(intent_reason)) { hd_intent[[i]] <<- intent_reason; pre <- pre + 1L }
-      if (!isTRUE(pulse_notes$raw_sizing_notice_written)) {
-        hd_sizing[[i]] <<- TRUE
-        pre <- pre + 1L
-        pulse_notes$raw_sizing_notice_written <- TRUE
-      }
-      hd_pre[[i]] <<- pre
-      tq <- sq
-      if (n > 0L) {
-        # A fixed basket has no restricted or nonmember instrument, and slice 1
-        # has no risk step: the post-risk targets are the strategy targets.
-        # Only the short-exposure refusal can fire.
-        if (.lean_debug) ledgr_availability_validate_strategy_targets(targets, positions_snapshot, view)
-        live$cur_stage <- "risk"
-        if (any(sq < pmin(pos, 0))) ledgr_availability_validate_short_exposure(targets, positions_snapshot)
-      }
-
-      # P3 plan
-      live$cur_stage <- "execution"
-      actionable <- which(abs(tq - pos) > act_tol)
-      exec_ts <- if (i <= length(epochs)) epochs[[i]] else NA_real_
-      batch <- NULL
-      if (length(actionable) > 0L) {
-        next_col <- if (i < n_pulse) pulse_cols[[i + 1L]] else col + 1L
-        has_next <- next_col <= length(bar_axis)
-        execution_packet <- list(exec_ts = exec_ts, has_next = has_next,
-          open = if (has_next) bars$open[, next_col] else rep(NA_real_, n))
-        view <- if (!is.na(exec_ts)) lean_exec_view(length(actionable))
-        if (.lean_debug && !is.na(exec_ts)) {
-          pv_view <- lean_plan_execution_view(provider, exec_ts, ids[actionable])
-          if (!identical(lapply(unclass(pv_view)[names(view)], unname), view)) {
-            rlang::abort(sprintf("Lean execution view differs from the provider's at pulse %d.", i), class = "ledgr_internal_error")
-          }
-        }
-        batch <- lean_plan_pulse(context_pos = seq_len(n), target_qty = tq, position = pos,
-          actionable_k = actionable, member = rep(TRUE, n), execution = execution_packet,
-          execution_view = view, epoch_valid = i > length(epochs) || epoch_valid[[i]],
-          cost_resolver = cost_resolver, cash = cash, instrument_ids = ids)
-        fill <- batch$fill
-        recorded <- cash + sum(fill$cash_delta)
-        if (!isTRUE(recorded == batch$expected_final_cash) &&
-            !isTRUE(all.equal(as.numeric(recorded), as.numeric(batch$expected_final_cash),
-                              tolerance = ledgr_availability_cash_tolerance))) {
-          # The affordability reconciliation stop (cut review R1): the whole
-          # decision segment is staged, then the stop row; no P4 or P5.
-          hd_all_explicit[[i]] <<- TRUE
-          lean_loop_add_decisions(seq_len(n), i, sq, tq, pos)
-          hd_stop_detail[[i]] <<- canonical_json(list(cash_before = cash,
-            virtual_final_cash = batch$expected_final_cash, recorded_final_cash = recorded))
-          status <<- "INCOMPLETE"
-          stop_reason <<- "affordability_reconciliation_failed"
-          processed <<- processed + 1L
-          break
-        }
-      }
-      # explicit decision rows: every target that differs from the position
-      # (clean fills are taken out below)
-      differs <- which(!(is.finite(sq) & sq == pos & is.finite(close)))
-      n_fill <- if (is.null(batch)) 0L else length(batch$fill$k)
-      n_rej <- if (is.null(batch)) 0L else length(batch$rejection$k)
-      clean_k <- integer()
-      if (n_fill > 0L) {
-        fill <- batch$fill
-        fr <- ledgr_carrier_segment_text(fill$info_offset, fill$info_count, fill$info_code, .ledgr_plan_reason_levels)
-        k <- fill$k
-        clean <- if (can_encode) {
-          is.finite(sq[k]) & is.finite(close[k]) & is.finite(fill$position_before) &
-            pos[k] == fill$position_before & is.finite(fill$planned_position_after) &
-            sq[k] == fill$planned_position_after & !nzchar(fr$reason) & !nzchar(fr$reasons)
-        } else rep(FALSE, n_fill)
-        clean[is.na(clean)] <- FALSE
-        clean_k <- k[clean]
-        # P4 apply
-        live$cur_stage <- "accounting"
-        applied <- lean_lot_fill(book, fill$pos, fill$side, fill$qty, fill$price, fill$fee)
-        book <<- applied$book
-        fill_bar <- if (i <= length(fill_axis$bar) && !anyNA(fill$exec_ts) &&
-                        all(fill$exec_ts == fill_axis$opportunity[[i]])) fill_axis$bar[[i]] else
-          ledgr_position_fact_fill_bar(fill_axis, i, fill$exec_ts)
-        position_facts <<- ledgr_position_facts_apply(position_facts, fill$pos, fill$position_before,
-          fill$planned_position_after, fill_bar, TRUE)
-        rows <- nf + seq_len(n_fill)
-        if (nf + n_fill > fcap) {
-          while (nf + n_fill > fcap) fcap <<- fcap * 2L
-          fl <<- grow(fl, fcap)
-        }
-        hd_fill_start[[i]] <<- nf
-        hd_nfill[[i]] <<- n_fill
-        a <- applied$applied
-        fl$pulse[rows] <<- i
-        fl$k[rows] <<- k
-        fl$pos[rows] <<- fill$pos
-        fl$side[rows] <<- fill$side
-        fl$qty[rows] <<- fill$qty
-        fl$price[rows] <<- fill$price
-        fl$fee[rows] <<- fill$fee
-        fl$cash_delta[rows] <<- fill$cash_delta
-        fl$position_delta[rows] <<- fill$position_delta
-        fl$exec_ts[rows] <<- fill$exec_ts
-        fl$position_before[rows] <<- fill$position_before
-        fl$planned_position_after[rows] <<- fill$planned_position_after
-        fl$clean[rows] <<- clean
-        fl$info[rows] <<- fr$reason
-        fl$infos[rows] <<- fr$reasons
-        fl$target[rows] <<- tq[k]
-        fl$strategy_target[rows] <<- sq[k]
-        fl$close_qty[rows] <<- a$close_qty
-        fl$open_qty[rows] <<- a$open_qty
-        fl$realized_close[rows] <<- a$realized_close
-        nf <<- nf + n_fill
-        event_seq <<- event_seq + n_fill
-        pos[fill$pos] <<- book$net_by_inst[fill$pos]
-        fl$net_after[rows] <<- book$net_by_inst[fill$pos]
-        cash <<- ledgr_cash_scan(cash, fill$cash_delta)[[n_fill]]
-        last_executed <<- max(last_executed, fill$exec_ts, na.rm = TRUE)
-      }
-      if (n_rej > 0L) {
-        rejection <- batch$rejection
-        rr <- ledgr_carrier_segment_text(rejection$reason_offset, rejection$reason_count,
-          rejection$reason_code, .ledgr_plan_reason_levels)
-        rj$pulse <<- c(rj$pulse, rep(i, n_rej))
-        rj$k <<- c(rj$k, rejection$k)
-        rj$pos <<- c(rj$pos, rejection$pos)
-        rj$primary <<- c(rj$primary, .ledgr_plan_reason_levels[rejection$primary])
-        rj$reasons <<- c(rj$reasons, rr$reasons)
-        rj$target <<- c(rj$target, tq[rejection$k])
-        rj$strategy_target <<- c(rj$strategy_target, sq[rejection$k])
-        rj$position <<- c(rj$position, rejection$position)
-        rj$resolved_price <<- c(rj$resolved_price, rejection$resolved_price)
-        rj$exec_ts <<- c(rj$exec_ts, rejection$exec_ts)
-        hd_nrej[[i]] <<- n_rej
-      }
-      explicit_k <- if (length(clean_k)) differs[match(differs, clean_k, 0L) == 0L] else differs
-      if (length(explicit_k) > 0L) {
-        lean_loop_add_decisions(explicit_k, i, sq, tq, pos_start)
-      }
-
-      # P5 capacity, commitment, reconciliation record and state
-      live$cur_stage <- "accounting"
-      if (nf > capacity) {
-        rlang::abort("Ledger event buffer exceeded the run's maximum event capacity.",
-                     class = "ledgr_event_buffer_capacity_exceeded")
-      }
-      n_committed <<- nf                # the pin flushes the pulse's fills here, before reconciliation
-      if (!is.null(batch) && !isTRUE(cash == batch$expected_final_cash) && !isTRUE(all.equal(as.numeric(cash), as.numeric(batch$expected_final_cash),
-                                               tolerance = ledgr_availability_cash_tolerance))) {
-        rlang::abort("Recorded cash does not reconcile with the availability affordability ledger.",
-          class = c("ledgr_affordability_reconciliation_failed", "ledgr_invalid_fold_execution"))
-      }
-      expected <- if (is.null(batch)) cash else batch$expected_final_cash
-      fill_cash <- if (n_fill > 0L) batch$fill$cash_delta else numeric()
-      intended <- lean_gross(sq, close)
-      recon <- c(
-        lean_gross(pos, close),
-        cash - sum(fill_cash),
-        intended,
-        intended,                       # no risk step: post-risk == strategy targets
-        cash,
-        expected)
-      ledgr_fold_reconciliation_check(recon[[2L]], recon[[6L]], recon[[5L]], recon[[3L]], recon[[4L]], recon[[1L]])
-      if (.lean_debug && !identical(recon[c(1L, 3L, 4L)], c(ledgr_availability_marked_gross(pos, close),
-          ledgr_availability_marked_gross(sq, close), ledgr_availability_marked_gross(tq, close)))) {
-        rlang::abort(sprintf("Lean gross exposure differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
-      }
-      hd_recon[i, ] <<- recon
-      hd_has_recon[[i]] <<- TRUE
-      state_update <- result$state_update
-      if (inherits(state_update, "ledgr_strategy_state_reset")) {
-        strategy_state <<- ledgr_strategy_state_defaults(state_declaration, ids, default_scalars = state_defaults)
-      } else if (inherits(state_update, "ledgr_strategy_state_patch")) {
-        patched <- lean_state_patch(unclass(state_update))
-        if (.lean_debug && !identical(patched, ledgr_strategy_state_apply_values(strategy_state,
-            unclass(state_update), state_declaration, ids, patch = TRUE, default_scalars = state_defaults))) {
-          rlang::abort(sprintf("Lean state patch differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
-        }
-        strategy_state <<- patched
-      } else if (!is.null(state_update)) {
-        strategy_state <<- ledgr_strategy_state_apply_values(strategy_state, state_update,
-          state_declaration, ids, patch = FALSE, default_scalars = state_defaults)
-      }
-      processed <<- processed + 1L
-      if (processed >= max_pulses) {
-        full_run <<- FALSE
-        break
-      }
+      v1 <- lean_p1_value(i)
+      v2 <- lean_p2_decide(i, v1)
+      v3 <- lean_p3_plan(i, v1, v2)
+      if (v3$stop) break
+      n_fill <- lean_p4_apply(i, v1, v2, v3$batch)
+      lean_p5_commit(i, v1, v2, v3$batch, n_fill)
+      if (!lean_e_advance()) break
     }
     live$in_pulses <- FALSE
     live$t_pulses <- ledgr_time_elapsed(live$t_start, ledgr_time_now())

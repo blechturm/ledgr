@@ -6,9 +6,19 @@ executable witness and the broken variants that witness must reject;
 measurements and analyses map to their evidence; D3's close census
 (Section 5) maps each case to a witness, a refusal with its later owner, or
 an open entry. A behavioural row is done only when its witness passes and
-rejects each of its variants for the signal the variant expects (the CSV's
-`expect` and `signals` columns); `loop_parity.R --mutation=` runs them and
-`loop_mutations.sh` runs all of them in both debug modes.
+rejects each of its variants for the fault the variant intends.
+
+Since LDG-3220 (Cut 14): each variant names the function it patches
+(`loop_edits.R`; the stages are `lean_p1_value` ... `lean_p5_commit`,
+interface Section 19.4) and carries a reached marker; it is CAUGHT only if
+the patch ran, its expected signal fired, every new condition matches its
+declared fault (`error`), a removed pin refusal is missing (`lost`) or the
+named tables differ (`tables`). `loop_variants.R` runs the frozen 4a3e08b8
+manifest (`loop_variants.csv`, changes in `loop_variant_changes.csv`) in
+both debug modes and fails on any row not CAUGHT, a missing row or a failed
+subprocess; two negative controls (an unrelated error, an unreached patch)
+must come back UNRELATED and UNREACHED. `loop_parity.R --freeze` checks the
+gate's execution paths against `loop_freeze.csv`.
 
 Sources: A = LDG-3219 acceptance (tickets.yml); S = interface Section 19
 (19.1-19.6); D = diagnostic-records D3 synthesis; R1-R4 = close review

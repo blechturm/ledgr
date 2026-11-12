@@ -965,6 +965,21 @@ epochs, the pulse seeds, ISO timestamps.
 - **P5** records the reconciliation tuple and the strategy state update,
   counts the pulse and stops at `max_pulses`.
 
+Structure (LDG-3220, Cut 14): inside `lean_fold_envelope` (E) the stages
+are named functions: `lean_p1_value(i)`, `lean_p2_decide(i, v1)`,
+`lean_p3_plan(i, v1, v2)` (returning the plan's batch and whether the
+affordability stop ended the run), `lean_p4_apply(i, v1, v2, batch)`
+(including the explicit decision rows; returns the fill count) and
+`lean_p5_commit(i, v1, v2, batch, n_fill)`. Each takes the pulse index and
+what earlier stages of the pulse returned and writes by index into the
+run-long state of 19.3. `lean_e_advance()` counts the pulse and stops at
+`max_pulses`; `run_loop()` calls the stages in order inside the run
+transaction and then the terminal transfer `lean_loop_publish()` (19.5),
+whose helpers are `lean_loop_layout()`, `lean_loop_expand()`,
+`lean_loop_keep()`, `lean_loop_positions_at()` and
+`lean_loop_explicit_block()`. Statement order inside each stage is the
+slice-1 loop's.
+
 Diagnostics per pulse: the hold count is the number of decision-axis
 instruments whose decision is clean (the pin's clean-hold conditions,
 Section 18's fused pass); the pulse records rows only for non-clean
