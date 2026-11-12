@@ -1718,8 +1718,10 @@ cuts:
       1,166 x 252: P3 plan 53/94/148/162; P4 FIFO 44/65/118/194; P5 commit
       39/42/49/93; strategy, ledgr callees 38/29/70/83; P2 context build
       35/38/41/66; P4 other 30/38/89/96; P2 other (output checks)
-      27/24/37/59; strategy call wrapper 11/11/13/7; P1 8/11/11/26; E 1-2;
-      terminal expansion 0.06-0.07 s per run. Stage drill-down
+      27/24/37/59; strategy call wrapper 11/11/13/7; P1 8/11/11/26; E
+      advance 1/unresolved/2/unresolved (no profile sample on the second
+      and fourth shapes); terminal expansion, estimated seconds per run,
+      0.060/0.352/0.123/0.070 in the same shape order. Stage drill-down
       (stage_drill.R, results/stage_drill.csv, Rprof shares of the samples
       inside each frame, 10 x 7,200 / 500 x 1,260): P2 is the strategy call
       (49 percent, its tryCatch included) and the context build (30-31: in
@@ -1740,24 +1742,50 @@ cuts:
       frozen execution paths (loop_freeze.csv); every manifest variant is
       still caught and the three negative controls still fail closed. Pin
       functions that strategy code calls itself (ledgr_strategy_result and
-      the exported helpers) stay the pin's. (2) A tuned stage serves its
-      common case and hands anything else to the pin's function unchanged,
-      as the FIFO kernel and the full-target fast path already do; with
-      debug on, each such replacement is compared with the pin's function
-      on every call it serves, and each gets at least one registered
-      variant whose fault the gate or that comparison catches. (3) The
+      the exported helpers) stay the pin's. (2) Every new or materially
+      changed fast path names its exact dispatch predicate, the upstream
+      guarantees it uses, its canonical comparator and its runtime fallback
+      in Section 19's tuning paragraph. Registered differential cases
+      exercise both sides of the predicate and its boundaries, with
+      expected dispatch established independently from the pin and
+      contracts. Compare complete results, ordering and refusal
+      class/message/order exactly. In debug, compare each served
+      deterministic computation with the canonical computation on
+      independent input snapshots; do not execute user callbacks twice.
+      Strategy-facing shortcuts delegate unchanged inputs outside their
+      predicate to the pin. A specialization of the shared FIFO instead
+      retains its existing general lean kernel as the runtime fallback; the
+      pin remains its independent comparison oracle, not a new production
+      arithmetic dependency. Each new path and each changed selection
+      predicate has a reached variant demonstrating its intended fault.
+      These are witnesses for existing behavior, not additional lean
+      feature coverage; existing fixtures and oracles are not weakened. (3) The
       context stays fresh per pulse (Section 19.4): a context kept by the
       strategy reads its own pulse's values on later pulses, and a gate
       witness shows it. (4) Cut 14's rule carries over: a new lean copy of
       the pin's logic stays only if, against an arm delegating that one
       copy to the pin, its median paired saving is at least 0.02 of the
       pulse loop on some shape, by Cut 14's paired protocol; otherwise it
-      is deleted, and an unresolved result goes to the maintainer. (5) Each
-      tuning ticket closes with its head compared to the previous ticket's
-      head (Cut 14's final for the first) by loop_shortcuts.R --mode=final's
-      method; a pulse-loop median regression above five percent, or a
-      regression displaced outside the loop, blocks until fixed or accepted
-      by the maintainer. (6) No numeric target gates the cut. Each tuning
+      is deleted, and an unresolved result goes to the maintainer. (5)
+      Extend loop_shortcuts.R's shared comparison method with explicit base
+      and candidate source identities. Before each tuning ticket, record its
+      immutable base commit: Cut 14's accepted final code for LDG-3222, then
+      the preceding ticket's closing commit. Load every lean source needed
+      by each arm, including plan.R and fifo.R, from that arm's own identity
+      into independent environments; use the same pinned package for both.
+      Refuse missing source, unresolved commits or source-identity
+      mismatch, and retain the identities and reproduction command with raw
+      observations. A short untimed harness check must demonstrate that a
+      planner-only change and a FIFO-only change affect only the candidate
+      arm. Keep the seven alternating pairs, compilation, warm-up, fixtures,
+      hooks, clocks, result-signature check, GC and host policy already
+      specified. Report pulse-loop, complete-envelope and whole-run medians
+      and paired observations on the three specified shapes. Apply the
+      existing regression rule (a pulse-loop median regression above five
+      percent, or a regression displaced outside the loop, blocks until
+      fixed or accepted by the maintainer) to these genuine before/after
+      arms; an unresolved displaced-regression result is reported for
+      maintainer disposition, not recorded as no regression. (6) No numeric target gates the cut. Each tuning
       ticket works its cells in measured cost order and stops when the next
       change it can name would save less than 0.02 of the pulse loop on
       every shape, or after one working day of tuning, and then reports to
@@ -1772,7 +1800,8 @@ cuts:
       None. No file in R/, tests/, DESCRIPTION, NAMESPACE, vignettes or the
       store format changes, and no dependency is added. Design impact:
       lean_core_interface.md Section 19 gains one tuning paragraph naming
-      each replacement, its fallback to the pin and its debug comparison.
+      each fast path's dispatch predicate, upstream guarantees, canonical
+      comparator and runtime fallback (decision 2).
     sequencing: >-
       One workstream, four serial tickets in measured cost order: LDG-3222
       (the strategy boundary in P2), LDG-3223 (planner and FIFO kernel),
@@ -1801,7 +1830,7 @@ cuts:
       disposition. A third correction round stops for maintainer
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
-    cut_review: null
+    cut_review: "CHANGES_REQUIRED in cut_review_15.md (independent clean-context Codex CLI, gpt-6.1-sol/high, at bd767d20): R1-R5 required and R6 advisory, all applied with the review's replacement text: fast-path dispatch predicates, differential cases on both sides and the FIFO's own fallback, with the FIFO and planner suites rerun separately (R1); error-handler equivalence including unwinding, cleanup order and the original condition (R2); a retained-context witness over every value later writes could change, rerun after LDG-3224 (R3); a per-ticket comparison loading real base and candidate sources, planner and FIFO included (R4); terminal expansion and E advance corrected in measured_input (R5); the cost-map and summary-checker extensions in LDG-3225's scope (R6)."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -4819,10 +4848,10 @@ tickets:
       coverage-stub precedence). The context stays fresh per pulse.
     acceptance:
       - "Full gate, batch one and inert hooks against the freeze (loop_parity.R --freeze) identical with debug off and on, every frozen execution path matched; the variant driver (loop_variants.R) passes with every manifest row CAUGHT, each new variant recorded in loop_variant_changes.csv as an addition, and the three negative controls failing closed"
-      - "Each new lean copy of pin logic is timed against an arm delegating that copy to the pin (decision 4) and kept or deleted by the rule; each replacement hands inputs outside its common case to the pin's function unchanged and, with debug on, is compared with it on every call it serves"
-      - "A gate witness keeps the context of an early pulse and reads its fields and features on later pulses; the values equal what the pin's retained context returns"
-      - "Strategy errors, coverage stubs reached in the callback and invalid results keep the pin's condition class, message and order; the existing caught, rethrow and backstop witnesses stay identical"
-      - "Same crossover fixtures, method and host as Cut 14's final comparison (loop_shortcuts.R --mode=final, seven alternating pairs, byte-compiled, debug off, inert hooks plus a fold_end clock, High performance plan, P-core affinity): this ticket's head against the previous ticket's head on 10 x 7,200, 20 x 23,400 and 500 x 1,260, pulse loop, complete envelope and whole run reported with raw observations; decision 5's regression bound applies"
+      - "Each new lean copy of pin logic is timed against an arm delegating that copy to the pin (decision 4) and kept or deleted by the rule; each new or materially changed fast path meets decision 2: its dispatch predicate, upstream guarantees, comparator and fallback named in Section 19's tuning paragraph, differential cases on both sides of the predicate and its boundaries, the debug comparison, and a reached variant per new path and changed guard"
+      - "A gate witness retains an early context across later fills and state updates. Compare with the pin its retained positions, cash, equity, declared portfolio and asset state, hold()/flat() results, feature reads and lazy position-fact fields. Exercise both previously forced/cache-hit and previously unforced reads. Record the retained values on multiple later pulses; preserve any intentionally shared field's behavior exactly as the pin does. Register faults for a reused pulse lookup and for a later write through a retained state or position vector. Run this witness and its variants with debug off and on after context tuning and again after recording/commit tuning. Existing retained-context witnesses remain unchanged"
+      - "Strategy errors, callback coverage stubs and invalid results retain the pin's complete condition classes, message, original_error and parent condition data, wrapping boundary and refusal order. Add pin-versus-lean witnesses for a callback with on.exit cleanup, a cleanup that itself errors, and a custom error carrying additional data, observed by an outer handler. Compare cleanup/handler order and seeded and unseeded RNG state, as well as the final condition. The existing caught, rethrow, backstop and invalid-result witnesses remain unchanged. If handling moves outside P2, demonstrate that only errors escaping the callback are wrapped and that cleanup-time coverage marks retain precedence. Register faults for early wrapping and loss of the original parent. Do not replay the callback to perform a debug comparison. Retain the current exiting handler unless the replacement passes these witnesses"
+      - "By decision 5's comparison method (independent base and candidate source identities, every lean source including plan.R and fifo.R loaded per arm): this ticket's recorded base commit against its head on 10 x 7,200, 20 x 23,400 and 500 x 1,260, pulse loop, complete envelope and whole run reported with identities, reproduction command and raw observations; decision 5's regression rule applies"
       - "The ticket reports, per cell it touched, the cost-map estimate before and the paired loop saving after, and states which stop condition of decision 6 ended it"
     evidence: []
   - id: "LDG-3223"
@@ -4842,9 +4871,9 @@ tickets:
       bit-identical; anything else takes the existing path.
     acceptance:
       - "Full gate, batch one and inert hooks against the freeze (loop_parity.R --freeze) identical with debug off and on, every frozen execution path matched; the variant driver (loop_variants.R) passes with every manifest row CAUGHT, each new variant recorded in loop_variant_changes.csv as an addition, and the three negative controls failing closed"
-      - "Each new lean copy of pin logic is timed against an arm delegating that copy to the pin (decision 4) and kept or deleted by the rule; each replacement hands inputs outside its common case to the pin's function unchanged and, with debug on, is compared with it on every call it serves"
-      - "The kernels' existing witnesses and variants (fill_price_ulp and the FIFO and planner variants of the manifest) stay CAUGHT, and each new fast path has its own variant"
-      - "Same crossover fixtures, method and host as Cut 14's final comparison (loop_shortcuts.R --mode=final, seven alternating pairs, byte-compiled, debug off, inert hooks plus a fold_end clock, High performance plan, P-core affinity): this ticket's head against the previous ticket's head on 10 x 7,200, 20 x 23,400 and 500 x 1,260, pulse loop, complete envelope and whole run reported with raw observations; decision 5's regression bound applies"
+      - "Each new lean copy of pin logic is timed against an arm delegating that copy to the pin (decision 4) and kept or deleted by the rule; each new or materially changed fast path meets decision 2: its dispatch predicate, upstream guarantees, comparator and fallback named in Section 19's tuning paragraph, differential cases on both sides of the predicate and its boundaries, the debug comparison, and a reached variant per new path and changed guard"
+      - "Preserve the loop manifest, including fill_price_ulp, and separately rerun the existing FIFO captured-call, generated-stream, ownership, input-refusal and six-mutation checks with debug off and on, plus the existing planner parity and three mutations. Name their runners and source/capture identities in the evidence; do not describe them as loop-manifest rows. For each new fast path add differential dispatch cases for admitted and fallback inputs, including empty/singleton batches, final-pulse rejection, invalid prices, insufficient cash, sell-before-buy order, tolerance boundaries, partial FIFO consumption and overflow where applicable. Preserve the complete book, applied rows, plan and refusal order; register a reached fault for each new path and changed guard. Retarget implementation anchors explicitly without changing the existing witnesses' inputs or expected behavior"
+      - "By decision 5's comparison method (independent base and candidate source identities, every lean source including plan.R and fifo.R loaded per arm): this ticket's recorded base commit against its head on 10 x 7,200, 20 x 23,400 and 500 x 1,260, pulse loop, complete envelope and whole run reported with identities, reproduction command and raw observations; decision 5's regression rule applies"
       - "The ticket reports, per cell it touched, the cost-map estimate before and the paired loop saving after, and states which stop condition of decision 6 ended it"
     evidence: []
   - id: "LDG-3224"
@@ -4863,9 +4892,10 @@ tickets:
       local accumulation, are in scope.
     acceptance:
       - "Full gate, batch one and inert hooks against the freeze (loop_parity.R --freeze) identical with debug off and on, every frozen execution path matched; the variant driver (loop_variants.R) passes with every manifest row CAUGHT, each new variant recorded in loop_variant_changes.csv as an addition, and the three negative controls failing closed"
-      - "Each new lean copy of pin logic is timed against an arm delegating that copy to the pin (decision 4) and kept or deleted by the rule; each replacement hands inputs outside its common case to the pin's function unchanged and, with debug on, is compared with it on every call it serves"
+      - "Each new lean copy of pin logic is timed against an arm delegating that copy to the pin (decision 4) and kept or deleted by the rule; each new or materially changed fast path meets decision 2: its dispatch predicate, upstream guarantees, comparator and fallback named in Section 19's tuning paragraph, differential cases on both sides of the predicate and its boundaries, the debug comparison, and a reached variant per new path and changed guard"
       - "The terminal transfer writes the same tables row for row on every gate workload, with batch one and with the default bound"
-      - "Same crossover fixtures, method and host as Cut 14's final comparison (loop_shortcuts.R --mode=final, seven alternating pairs, byte-compiled, debug off, inert hooks plus a fold_end clock, High performance plan, P-core affinity): this ticket's head against the previous ticket's head on 10 x 7,200, 20 x 23,400 and 500 x 1,260, pulse loop, complete envelope and whole run reported with raw observations; decision 5's regression bound applies"
+      - "LDG-3222's retained-context witness and its registered faults rerun with debug off and on after this ticket's recording and commit changes and pass"
+      - "By decision 5's comparison method (independent base and candidate source identities, every lean source including plan.R and fifo.R loaded per arm): this ticket's recorded base commit against its head on 10 x 7,200, 20 x 23,400 and 500 x 1,260, pulse loop, complete envelope and whole run reported with identities, reproduction command and raw observations; decision 5's regression rule applies"
       - "The ticket reports, per cell it touched, the cost-map estimate before and the paired loop saving after, and states which stop condition of decision 6 ended it"
     evidence: []
   - id: "LDG-3225"
@@ -4879,10 +4909,12 @@ tickets:
       Close measurement. A timing record under dev/bench/timing/ with
       protocol folder cut15-loop-1 (cut13-loop-1's method, the pin against
       the tuned lean loop, adding 500 x 1,260), and a rerun of the cost map's
-      lean arm on the final code. Measurement only.
+      lean arm on the final code. Measurement only: the cost-map runner and
+      its summary checker gain the lean-only and two-version extensions
+      below; dev/lean_core does not change.
     acceptance:
       - "No code change in dev/lean_core; the gate and the variant driver pass on the final code as recorded by LDG-3224"
       - "Timing record cut15-loop-1: eight alternating pairs per cell on 10 x 7,200, 20 x 23,400, 500 x 1,260 and 1,166 x 252, run and fold clocks, every cell's bound 1.0 against the pin; the record's check passes"
-      - "cost_map.R rerun on the final code, lean arm, all four shapes; summary.md updated with the new per-cell figures beside Cut 14's, every number rebuilt by summary_check.R"
+      - "Extend cost_map.R with an explicit lean-only selection and summary_check.R with explicit Cut 14 and Cut 15 result directories. Preserve Cut 14's committed CSVs, write the final lean rerun separately on all four shapes, and compare its result signatures with the recorded pin signatures. Check the attribution rules against the final call stacks, including any changed handler frames, using synthetic stack witnesses without timing. The updated summary places old and new cells beside each other with their source identities, sample counts and resolution labels; its checker rebuilds both columns and rejects a missing required cell, mismatched signature or stale/missing comparison input. Preserve the existing reconciliation and rejection checks. These measurement-tool changes are in LDG-3225's scope; dev/lean_core remains unchanged in that ticket"
       - "One page in the profile directory sets the final loop against Cut 14's final, the skeleton floor (39, 45, 114 us), R-floor stage 2 (26, 29, 103 us) and PMwR (historical, labelled as in LDG-3221); it proposes no design"
     evidence: []
