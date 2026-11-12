@@ -158,13 +158,36 @@ lean_ctx_dollar <- function(x, name) {
     hit <- get0(name, envir = cache, inherits = FALSE)
     if (!is.null(hit)) return(hit)
     prepared <- lookup$feature_lookup
-    if (is.null(lean_ctx_asset[[name]]) && is.list(prepared) && is.environment(prepared$readable_env) &&
-        exists(name, envir = prepared$readable_env, inherits = FALSE)) {
-      value <- stats::setNames(as.numeric(lookup$feature_vector(name)), as.character(lookup$universe %||% character()))
-      return(ledgr_pulse_context_cache_set(lookup, name, value))
+    # the pin's readable_env binds every readable name to TRUE
+    if (is.null(lean_ctx_asset[[name]]) && is.list(prepared) && is.environment(readable <- prepared$readable_env) &&
+        !is.null(readable[[name]])) {
+      value <- as.numeric(lookup$feature_vector(name))
+      names(value) <- as.character(lookup$universe %||% character())
+      # ledgr_pulse_context_cache_set(lookup, name, value), inline
+      counts <- lookup$build_counts
+      if (is.environment(counts)) counts[[name]] <- as.integer((counts[[name]] %||% 0L) + 1L)
+      assign(name, value, envir = cache)
+      return(value)
     }
   }
   lean_pin_ctx_dollar(x, name)
+}
+
+# Fast path for the pin's ledgr_strategy_state_view(), which copies every
+# field (x[]) under a class: a list whose only attribute is its names (the
+# fold's declared state, empty or not) is shared instead. Values are never
+# written in place, so R's copy-on-modify keeps a retained view frozen; any
+# other input goes to the pin.
+lean_state_view <- function(values) {
+  if (is.list(values) && identical(names(attributes(values)), "names")) {
+    view <- values
+    class(view) <- c("ledgr_strategy_state_view", "list")
+    if (.lean_debug && !identical(view, ledgr_strategy_state_view(values))) {
+      rlang::abort("Lean state view differs from the pin's.", class = "ledgr_internal_error")
+    }
+    return(view)
+  }
+  ledgr_strategy_state_view(values)
 }
 
 # flat() is the pin's; hold() returns the aligned finite positions directly.
@@ -361,15 +384,29 @@ lean_fold_envelope <- function(execution, output_handler) {
   counts <- list(build = context_build_counts, prep = context_preparation_counts)
   schedule_fn <- function(i) { force(i); function(schedule) schedule_query(schedule, i) }
   # The pin's projection accessor composed with its context filter.
+  # Fast path: a readable name resolves through a table built once from the
+  # pin's resolver; any other name goes to the resolver.
+  resolved_names <- new.env(parent = emptyenv())
+  for (nm in feature_lookup_state$readable_names) {
+    assign(nm, ledgr_resolve_feature_name(nm, name_lookup), envir = resolved_names)
+  }
   feature_fn <- function(pidx) {
     force(pidx)
     function(feature_name, default = NA_real_) {
-      feature_name <- ledgr_resolve_feature_name(feature_name, name_lookup)
+      resolved <- if (is.character(feature_name) && length(feature_name) == 1L && !is.na(feature_name) &&
+                      nzchar(feature_name)) get0(feature_name, envir = resolved_names, inherits = FALSE)
+      if (.lean_debug && !is.null(resolved) &&
+          !identical(resolved, ledgr_resolve_feature_name(feature_name, name_lookup))) {
+        rlang::abort("Lean feature-name resolution differs from the pin's.", class = "ledgr_internal_error")
+      }
+      feature_name <- resolved %||% ledgr_resolve_feature_name(feature_name, name_lookup)
       mat <- feature_values[[feature_name]]
       if (is.null(mat)) return(rep(as.numeric(default), n_proj)[ctx_pos])
-      as.numeric(mat[, pidx])[ctx_pos]
+      v <- as.numeric(mat[, pidx])
+      if (all_pos) v else v[ctx_pos]
     }
   }
+  all_pos <- identical(ctx_pos, seq_len(n_proj))   # the subset by ctx_pos is the identity
 
   # The pulse context: the pin's class, raw-field order and lookup service,
   # filled directly from the prepared planes.
@@ -390,15 +427,18 @@ lean_fold_envelope <- function(execution, output_handler) {
     lookup$build_counts <- counts$build
     lookup$preparation_counts <- counts$prep
     helpers <- lean_ctx_helpers(lookup)
-    structure(list(
+    ctx <- list(
       run_id = run_id, ts_utc = pulses_iso[[i]], universe = ids, .positions = positions_snapshot,
       cash = cash, equity = cash + pv, seed = seed,
       pulse_seed = if (is.null(pulse_seeds)) NULL else pulse_seeds[[i]],
-      state = ledgr_strategy_state_view(strategy_state), .safety_state = "GREEN",
+      state = lean_state_view(strategy_state), .safety_state = "GREEN",
       .schedule_query = schedule_fn(i), members = members0, .history = history_reader$view(i),
       .pulse_lookup = lookup, flat = helpers$flat, hold = helpers$hold, .feature_vector = fv,
-      .notes = pulse_notes), class = "ledgr_pulse_context")
+      .notes = pulse_notes)
+    class(ctx) <- "ledgr_pulse_context"
+    ctx
   }
+
 
   # Debug only: the pin's context builder for the same pulse.
   lean_loop_pin_ctx <- function(i, col, close, pv, positions_snapshot, p2) {
@@ -453,8 +493,12 @@ lean_fold_envelope <- function(execution, output_handler) {
       }
     }
     if (!identical(ra$flat(), rb$flat()) || !identical(ra$hold(), rb$hold())) fail("flat()/hold()")
-    for (nm in feature_lookup_state$readable_names) {
-      if (!identical(ra$.feature_vector(nm), rb$.feature_vector(nm))) fail(paste0(".feature_vector(", nm, ")"))
+    # the resolution table's names, then names outside it (the resolver's side)
+    for (nm in c(lapply(feature_lookup_state$readable_names, identity),
+                 list("lean_no_such_feature", "", NA_character_, c("a", "b"), 1L, NULL))) {
+      if (!identical(caught(ra$.feature_vector(nm)), caught(rb$.feature_vector(nm)))) {
+        fail(paste0(".feature_vector(", paste(format(nm), collapse = ","), ")"))
+      }
     }
     invisible(TRUE)
   }
@@ -523,7 +567,8 @@ lean_fold_envelope <- function(execution, output_handler) {
     close <- v1$close
     pv <- v1$pv
     pos_start <- pos
-    positions_snapshot <- stats::setNames(pos, ids)
+    positions_snapshot <- pos
+    names(positions_snapshot) <- ids
     view <- view0
     view$held[] <- pos != 0
     view$risk_mark[] <- close
@@ -597,7 +642,7 @@ lean_fold_envelope <- function(execution, output_handler) {
       # Only the short-exposure refusal can fire.
       if (.lean_debug) ledgr_availability_validate_strategy_targets(targets, positions_snapshot, view)
       live$cur_stage <- "risk"
-      if (any(sq < pmin(pos, 0))) ledgr_availability_validate_short_exposure(targets, positions_snapshot)
+      if (any(sq < 0 & sq < pos)) ledgr_availability_validate_short_exposure(targets, positions_snapshot)
     }
     list(result = result, sq = sq, tq = tq, pos_start = pos_start)
   }

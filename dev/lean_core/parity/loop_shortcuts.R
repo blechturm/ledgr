@@ -5,8 +5,15 @@
 #
 #   --mode=shortcuts  the restructured all-shortcuts arm against six arms,
 #                     each delegating exactly one shortcut to the pin
+#                     (--set=cut15: Cut 15's new copies, decision 4)
 #   --mode=final      the final arm against 4a3e08b8's loop, loaded in the
 #                     same process by the same method
+#   --mode=compare    (Cut 15 decision 5) --candidate=<commit|worktree>
+#                     against --base=<commit>, every lean source of each arm
+#                     loaded from its own identity (compare_identity.csv,
+#                     compare_command.txt); the candidate is the first arm
+#   --mode=isolation  untimed: --base=<commit> with a probe edit in the
+#                     planner and in the FIFO reaches the candidate arm only
 #
 # Each comparison of the first arm with another runs in its own pairs, the
 # order reversed on every pair; every run gets a fresh copy of the sealed snapshot and a gc() first,
@@ -67,6 +74,19 @@ delegations <- list(
     e("loop.R", "lean_p5_commit", "      lean_gross(pos, close),", "      ledgr_availability_marked_gross(pos, close),"))
 )
 
+# Cut 15 decision 4 (--set=cut15): each new lean copy of pin logic, delegated
+# back to the pin in one arm.
+delegations15 <- list(
+  state_view = list(e("loop.R", "lean_context",
+    "      state = lean_state_view(strategy_state), .safety_state = \"GREEN\",",
+    "      state = ledgr_strategy_state_view(strategy_state), .safety_state = \"GREEN\",")),
+  cache_set = list(e("loop.R", "lean_ctx_dollar", "      counts <- lookup$build_counts",
+    "      return(ledgr_pulse_context_cache_set(lookup, name, value))")),
+  feature_table = list(e("loop.R", "lean_fold_envelope",
+    "    assign(nm, ledgr_resolve_feature_name(nm, name_lookup), envir = resolved_names)", "    NULL"))
+)
+if (identical(arg("set", "cut14"), "cut15")) delegations <- delegations15
+
 # An arm: the lean environment's other files, with loop.R and loop_harness.R
 # evaluated from `texts` (file name -> lines), byte-compiled.
 make_arm <- function(texts) {
@@ -87,11 +107,94 @@ edited <- function(edits) {
 }
 at_commit <- function(commit) lapply(c(loop.R = "loop.R", loop_harness.R = "loop_harness.R"), function(f)
   system2("git", c("-C", repo, "show", paste0(commit, ":dev/lean_core/", f)), stdout = TRUE))
+# Cut 15 decision 5: arms from explicit source identities. Every lean source
+# (each *.R of dev/lean_core but load.R: plan.R and fifo.R included) is read
+# from the arm's own identity, a commit or, for development runs only, the
+# working tree, and evaluated into an environment of its own over the same
+# pinned namespace. Missing sources, an unresolved commit or texts that do
+# not hash to the recorded identity refuse the run.
+lean_required <- c("fifo.R", "loop.R", "loop_harness.R", "plan.R", "prepare.R")
+lean_sources <- function(identity) {
+  if (identical(identity, "worktree")) {
+    files <- sort(setdiff(list.files(lean_core_home, pattern = "[.]R$"), "load.R"), method = "radix")
+    texts <- lapply(stats::setNames(files, files), function(f) readLines(file.path(lean_core_home, f)))
+    commit <- paste0("worktree@", system2("git", c("-C", repo, "rev-parse", "HEAD"), stdout = TRUE))
+  } else {
+    commit <- suppressWarnings(system2("git", c("-C", repo, "rev-parse", "--verify", "--quiet",
+      paste0(identity, "^{commit}")), stdout = TRUE, stderr = FALSE))
+    if (!length(commit) || !is.null(attr(commit, "status"))) stop("unresolved commit: ", identity, call. = FALSE)
+    listed <- system2("git", c("-C", repo, "ls-tree", "--name-only", commit, "dev/lean_core/"), stdout = TRUE)
+    files <- sort(setdiff(basename(listed[grepl("[.]R$", listed)]), "load.R"), method = "radix")
+    texts <- lapply(stats::setNames(files, files), function(f)
+      system2("git", c("-C", repo, "show", paste0(commit, ":dev/lean_core/", f)), stdout = TRUE))
+  }
+  missing <- setdiff(lean_required, names(texts))
+  if (length(missing)) stop("source ", identity, " lacks ", paste(missing, collapse = ", "), call. = FALSE)
+  structure(texts, identity = identity, commit = commit[[1L]],
+            hashes = vapply(texts, function(t) rlang::hash(t), ""))
+}
+make_arm_full <- function(texts) {
+  if (!identical(vapply(texts, function(t) rlang::hash(t), ""), attr(texts, "hashes"))) {
+    stop("source-identity mismatch for ", attr(texts, "identity"), call. = FALSE)
+  }
+  env <- new.env(parent = ns)
+  env$.lean_debug <- FALSE
+  env$.lean_pin <- lean$.lean_pin
+  env$.lean_lib <- lean$.lean_lib
+  env$.lean_home <- lean$.lean_home
+  for (f in names(texts)) eval(parse(text = texts[[f]], keep.source = FALSE), envir = env)
+  for (nm in ls(env, all.names = TRUE)) {
+    f <- get(nm, envir = env)
+    if (is.function(f) && identical(environment(f), env)) assign(nm, compiler::cmpfun(f), envir = env)
+  }
+  env
+}
+identity_rows <- function(label, texts) data.frame(arm = label, identity = attr(texts, "identity"),
+  commit = attr(texts, "commit"), file = names(texts), hash = unname(attr(texts, "hashes")), stringsAsFactors = FALSE)
+# A probe statement as the first line of `fn`'s body in `file`.
+probe_edit <- function(texts, file, fn, tag) {
+  x <- texts[[file]]
+  r <- lean_fn_range(x, fn)
+  open <- r[[1L]] - 1L + which(grepl("\\{\\s*$", x[r[[1L]]:r[[2L]]]))[[1L]]
+  texts[[file]] <- c(x[seq_len(open)], sprintf("  invisible(\"%s\")", tag), x[-seq_len(open)])
+  attr(texts, "hashes") <- vapply(texts, function(t) rlang::hash(t), "")
+  texts
+}
+if (mode == "isolation") {
+  # Untimed: a planner-only and a FIFO-only change reach the candidate arm only.
+  base_src <- lean_sources(arg("base"))
+  probes <- list(c("plan.R", "lean_plan_pulse"), c("fifo.R", "lean_lot_apply"))
+  rows <- list()
+  for (p in probes) {
+    tag <- paste0("isolation-probe-", p[[2L]])
+    base <- make_arm_full(base_src)
+    cand <- make_arm_full(probe_edit(base_src, p[[1L]], p[[2L]], tag))
+    has <- function(env) any(grepl(tag, deparse(body(get(p[[2L]], envir = environment(env$lean_fold_envelope)))), fixed = TRUE))
+    ok <- has(cand) && !has(base) && identical(environment(get(p[[2L]], envir = cand)), cand) &&
+      identical(environment(get(p[[2L]], envir = base)), base) &&
+      !identical(get(p[[2L]], envir = cand), get(p[[2L]], envir = base))
+    rows[[length(rows) + 1L]] <- data.frame(file = p[[1L]], fn = p[[2L]], candidate_sees_change = has(cand),
+      base_sees_change = has(base), isolated = ok)
+  }
+  res <- do.call(rbind, rows)
+  utils::write.csv(res, file.path(out, "isolation.csv"), row.names = FALSE)
+  print(res, row.names = FALSE)
+  if (!all(res$isolated)) quit(status = 1L)
+  quit(status = 0L)
+}
 arms <- if (mode == "shortcuts") {
   c(list(shortcuts = make_arm(tracked)), lapply(delegations, function(d) make_arm(edited(d))))
 } else if (mode == "final") {
   list(final = make_arm(tracked), base_4a3e08b8 = make_arm(at_commit("4a3e08b8")))
-} else stop("--mode must be shortcuts or final", call. = FALSE)
+} else if (mode == "compare") {
+  cand_src <- lean_sources(arg("candidate"))
+  base_src <- lean_sources(arg("base"))
+  utils::write.csv(rbind(identity_rows("candidate", cand_src), identity_rows("base", base_src)),
+                   file.path(out, "compare_identity.csv"), row.names = FALSE)
+  writeLines(paste(c(file.path(R.home("bin"), "Rscript"), commandArgs(TRUE)), collapse = " "),
+             file.path(out, "compare_command.txt"))
+  list(candidate = make_arm_full(cand_src), base = make_arm_full(base_src))
+} else stop("--mode must be shortcuts, final, compare or isolation", call. = FALSE)
 
 work <- file.path(tempdir(), "loop_shortcuts")
 dir.create(work, showWarnings = FALSE)

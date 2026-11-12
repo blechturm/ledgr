@@ -1068,3 +1068,40 @@ oracle (D3 final review note).
   and that a batch fault rolls back every prior transfer in the fold;
 - that position facts need nothing beyond the fill columns and pulse counts;
 - the strategy-state carrier's update rules for `ledgr_strategy_result()`.
+
+### 19.8 Tuning (Cut 15, workstream 32)
+
+Cut 15 tunes the slice-1 loop with no behaviour change (decisions 1-6 of
+Cut 15 in `tickets.yml`). Each fast path below names its dispatch
+predicate, the upstream guarantees it relies on, its canonical comparator
+(checked in debug on every call it serves) and its runtime fallback.
+Dispatch on both sides is shown by `parity/loop_dispatch.R`.
+
+LDG-3222 (the strategy boundary in P2):
+
+- State view, `lean_state_view()`. Predicate: the declared state is a list
+  whose only attribute is its names. Guarantee: the fold's declared state is
+  such a list, empty when nothing is declared, and the loop replaces state
+  values but never writes into them, so R's copy-on-modify keeps a retained
+  view frozen. Comparator: `ledgr_strategy_state_view()`, whose result it
+  equals (`identical()`). Fallback: any other input goes to
+  `ledgr_strategy_state_view()`.
+- Feature-name table. Predicate: the accessor's name is a non-empty,
+  non-missing character scalar found in a table built once per run from the
+  readable names through `ledgr_resolve_feature_name()`. Guarantee: name
+  resolution depends only on the run's prepared lookup. Comparator: the
+  resolver on the same name. Fallback: every other input goes to the
+  resolver, which refuses as the pin does; the debug context comparison
+  also reads `.feature_vector` with names outside the table.
+- Context reads: the feature branch of `lean_ctx_dollar()` inlines
+  `ledgr_pulse_context_cache_set()` and tests readability by the pin's
+  readable environment (each readable name is bound to `TRUE`); the
+  accessor skips its context subset when that subset is the identity. The
+  context is built as a list with its class assigned, not through
+  `structure()`; the positions snapshot uses `names<-`; the short-exposure
+  test is `any(sq < 0 & sq < pos)`, the same set as `sq < pmin(pos, 0)` for
+  finite values (targets are finite here). Comparator: the debug context
+  comparison of every raw field and public read.
+
+The per-pulse `tryCatch()` around the strategy call stays (its cheaper forms
+save under the stop rule's 2 percent; Cut 15 R2).

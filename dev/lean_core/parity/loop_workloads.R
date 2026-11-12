@@ -163,6 +163,113 @@ lw_backstop_exp <- function(snapshot, caught = FALSE, rethrow = FALSE) {
     cost_model = ledgr::ledgr_cost_zero())
 }
 
+# Cut 15 R3: contexts kept from pulse 1 and pulse 4, read on every later
+# pulse after fills and declared-state updates. Each keeps some reads forced
+# at its own pulse (cache hits later) and leaves others for the first time
+# later (unforced): positions, cash, equity, declared portfolio and asset
+# state, hold()/flat(), features, bars and lazy position-fact fields. The
+# values read go out through the intent reason, so the decision rows carry
+# them into the compared tables.
+lw_retained_strategy <- function() {
+  kept <- new.env(parent = emptyenv())
+  strategy <- function(ctx, params) {
+    dig <- function(...) paste(vapply(list(...), function(x) {
+      if (inherits(x, "POSIXct")) x <- as.numeric(x)
+      v <- if (is.double(x)) sprintf("%.17g", x) else as.character(x)
+      paste(names(x), v, sep = "=", collapse = ",")
+    }, character(1L)), collapse = ";")
+    i <- as.integer(as.Date(substr(ctx$ts_utc, 1L, 10L)) - as.Date("2021-01-04")) + 1L
+    if (i == 1L) {
+      kept$a <- ctx
+      invisible(list(ctx$fast, ctx$close, ctx$hold()))
+    }
+    if (i == 4L) {
+      kept$b <- ctx
+      invisible(list(ctx$slow, ctx$entry_at, ctx$position))
+    }
+    reads <- "first"
+    for (nm in c("a", "b")) {
+      k <- kept[[nm]]
+      if (is.null(k) || identical(k, ctx)) next
+      reads <- paste(reads, nm, dig(k$cash, k$equity, k$position, k$held, k$state$n, k$state$flag, k$hold(),
+        k$flat(), k$flat(3), k$fast, k$slow, k$close, k$open, k$volume, k$entry_at, k$entry_price,
+        k$bars_since_entry, k$holding_value), sep = "|")
+    }
+    targets <- ctx$hold()
+    targets[["A"]] <- (i %% 3L) + 1
+    targets[["B"]] <- if (i %% 2L == 0L) 2 else 0
+    flag <- ctx$state$flag
+    flag[] <- (seq_along(flag) + i) %% 2L == 0L
+    ledgr::ledgr_strategy_result(targets, n = i, flag = flag, intent_reason = reads)
+  }
+  environment(strategy) <- list2env(list(kept = kept), parent = ns)
+  strategy
+}
+
+# Cut 15 R2: the strategy-error boundary on pulse 5, after earlier fills:
+# an error with an on.exit cleanup, a cleanup that itself errors, or a
+# custom error class carrying data. The cleanup also rewrites the pulse
+# lookup's available-feature message, which the wrapper reads when it builds
+# its own message, so the final message shows whether the error was wrapped
+# before or after the callback unwound. A calling handler inside the outer
+# tryCatch logs every error signal that reaches the caller. Tables: the
+# events, the final condition's classes, message, parent and original_error,
+# the store and the caller's RNG state.
+lw_error_boundary <- function(case) {
+  db <- lw_witness_db()
+  log <- new.env(parent = emptyenv())
+  log$events <- character()
+  strategy <- function(ctx, params) {
+    i <- as.integer(as.Date(substr(ctx$ts_utc, 1L, 10L)) - as.Date("2021-01-04")) + 1L
+    targets <- ctx$hold()
+    targets[["A"]] <- (i %% 3L) + 1
+    cleanup <- function() {
+      log$events <- c(log$events, "cleanup")
+      lookup <- .subset2(ctx, paste0(".pulse", "_lookup"))   # a name the preflight scan does not see
+      prepared <- lookup$feature_lookup
+      prepared$available_message <- "after_cleanup"
+      lookup$feature_lookup <- prepared
+    }
+    if (i == 5L) {
+      log$events <- c(log$events, sprintf("draw:%.17g", stats::runif(1L)))
+      if (identical(case, "cleanup")) {
+        on.exit(cleanup())
+        stop("primary failure")
+      }
+      if (identical(case, "cleanup_error")) {
+        on.exit({
+          cleanup()
+          stop("cleanup failure")
+        })
+        stop("primary failure")
+      }
+      stop(structure(class = c("lw_custom_error", "error", "condition"),
+                     list(message = "custom failure", call = NULL, data = 42L)))
+    }
+    targets
+  }
+  environment(strategy) <- list2env(list(log = log, case = case), parent = ns)
+  run_id <- paste0("lw-error-", case)
+  snapshot <- ledgr::ledgr_snapshot_open(db, "lw_witness", verify = TRUE)
+  on.exit(ledgr::ledgr_snapshot_close(snapshot))
+  exp <- ledgr::ledgr_experiment(snapshot, strategy, opening = ledgr::ledgr_opening(cash = 5000),
+    cost_model = ledgr::ledgr_cost_zero())
+  set.seed(4250L)
+  res <- tryCatch(withCallingHandlers(ledgr::ledgr_run(exp, run_id = run_id),
+    error = function(e) log$events <- c(log$events, paste0("signal:", paste(class(e), collapse = "/")))),
+    error = function(e) e)
+  cnd <- if (inherits(res, "condition")) res else NULL
+  if (is.null(cnd)) close(res)
+  parent <- cnd$parent
+  field <- c("events", "class", "message", "parent_class", "parent_message", "parent_data", "original_is_parent")
+  value <- c(paste(log$events, collapse = " > "), paste(class(cnd), collapse = "/"),
+             if (is.null(cnd)) "<none>" else conditionMessage(cnd),
+             paste(class(parent), collapse = "/"), if (is.null(parent)) "<none>" else conditionMessage(parent),
+             paste(format(parent$data), collapse = ","), as.character(identical(cnd$original_error, parent)))
+  lw_rng_table(list(run = c(a0_store_tables(db, run_id),
+    list(error_boundary = data.frame(field = field, value = value, stringsAsFactors = FALSE)))))
+}
+
 # Whether the lean loop is installed (the lean arm of a parity run).
 lw_lean_installed <- function() identical(get("ledgr_fold_envelope", envir = ns), lean$lean_fold_envelope)
 
@@ -538,6 +645,17 @@ loop_witnesses <- list(
   # committed prefix of fill events (the pin's handler; the lean records).
   witness_prefix_reads = function() lw_prefix_reads(memory = FALSE),
   witness_prefix_reads_sweep = function() lw_prefix_reads(memory = TRUE),
+  # Cut 15 R3: retained contexts read after later fills and state updates.
+  witness_retained_context = function() {
+    db <- lw_witness_db()
+    collect(db, "lw_witness", "lw-retained", function(s) ledgr::ledgr_experiment(s, lw_retained_strategy(),
+      features = lw_feature_map(), opening = ledgr::ledgr_opening(cash = 5000), cost_model = ledgr::ledgr_cost_zero(),
+      portfolio_state = list(n = 0L), asset_state = list(flag = FALSE)), seed = 12L)
+  },
+  # Cut 15 R2: the strategy-error boundary.
+  witness_error_cleanup = function() lw_error_boundary("cleanup"),
+  witness_error_cleanup_error = function() lw_error_boundary("cleanup_error"),
+  witness_error_custom = function() lw_error_boundary("custom"),
   # A one-worker sweep over a covered experiment: the keep rule.
   witness_sweep = function() {
     db <- lw_witness_db()

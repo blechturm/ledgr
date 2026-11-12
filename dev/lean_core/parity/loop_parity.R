@@ -132,6 +132,32 @@ loop_mutations <- list(
   zero_pulse_align = variant("differ", list(edit("loop.R", "lean_fold_envelope",
     "  if (n_pulse > 0L && !identical(ids, state_axis)) {", "  if (!identical(ids, state_axis)) {")),
     tables = "^zero_pulses_reordered$"),
+  # Cut 15 R2: the strategy error wrapped before the callback unwinds, and
+  # the original condition lost as parent.
+  early_wrap = variant("differ", list(edit("loop.R", "lean_p2_decide", "    result <- tryCatch({",
+    "    result <- withCallingHandlers({")), error = "cleanup failure|Strategy error", tables = "^error_boundary$"),
+  lost_parent = variant("differ", list(edit("loop.R", "lean_p2_decide", "      ledgr_abort_strategy_error(e, ctx)",
+    "      ledgr_abort_strategy_error(simpleError(conditionMessage(e)), ctx)")), error = "Strategy error at",
+    tables = "^error_boundary$"),
+  # Cut 15 R3: a pulse lookup cache shared across pulses, and a retained
+  # context whose positions follow later writes.
+  reused_lookup = variant("differ", list(edit("loop.R", "lean_context",
+    "      cache = new.env(parent = emptyenv())), parent = emptyenv())",
+    paste("      cache = {lean_entry$variant_reached <- TRUE; lean_entry$shared_cache %||%",
+          "(lean_entry$shared_cache <- new.env(parent = emptyenv()))}), parent = emptyenv())"), mark = FALSE)),
+    error = "Lean context .* differs from the pin's", tables = "^run_diagnostic"),
+  live_positions = variant("differ", list(edit("loop.R", "lean_context", "    lookup$preparation_counts <- counts$prep",
+    c("    rm(\"positions\", envir = lookup)",
+      "    makeActiveBinding(\"positions\", function() { p <- pos; names(p) <- ids; p }, lookup)"), "after")),
+    tables = "^run_diagnostic"),
+  # Cut 15 decision 2: the new fast paths, wrong.
+  state_view_fast = variant("differ", list(edit("loop.R", "lean_state_view",
+    "    class(view) <- c(\"ledgr_strategy_state_view\", \"list\")", "    class(view) <- \"ledgr_strategy_state_view\"")),
+    error = "Lean state view differs from the pin's"),
+  feature_table = variant("differ", list(edit("loop.R", "lean_fold_envelope",
+    "    assign(nm, ledgr_resolve_feature_name(nm, name_lookup), envir = resolved_names)",
+    "    assign(nm, rev(def_ids)[[1L]], envir = resolved_names)")),
+    error = "Lean feature-name resolution differs from the pin's|Lean context field .* differs from the pin's"),
   # Round 4, finding 3: a sweep with workers not refused at entry.
   # Negative controls (loop_variants.R): each must NOT be caught.
   control_unrelated = variant("differ", list(edit("loop.R", "lean_p4_apply",
