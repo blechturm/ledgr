@@ -101,3 +101,82 @@ input treatment, the expected-session mask, segment, carry and reason
 evidence, the causality probe and certification; this is not a claim of
 feature-surface equivalence. Input: the H1 store of LDG-3215-prep (the W1
 build of 953338df refuses under the pin with `ledgr_store_rebuild_required`).
+
+## Cut 15 close (LDG-3225): lean cells before and after
+
+The lean arm alone, rerun on the final workstream 32 code with
+`cost_map.R --arms=lean`, under the same method as above. Every shape
+reproduces the pin's recorded result signatures. Cut 14's CSVs are
+unchanged. Sources:
+
+- Cut 14: `dev/bench/v0_2_3_lean_tuning_profile/results/cost_map`, head 718b49c9, dev/lean_core changes against head 7
+- Cut 15: `dev/bench/v0_2_3_lean_tuning_profile/results/cost_map_cut15`, head 4cdc01da, dev/lean_core changes against head 0
+
+Cut 14's seven uncommitted changes are the LDG-3220 head (LDG-3221's
+evidence). Medians of 5 clock reps; samples are Rprof loop samples.
+
+| shape | Cut 14 run | Cut 15 run | Cut 14 loop | Cut 15 loop | Cut 14 us/pulse | Cut 15 us/pulse | Cut 14 loop samples | Cut 15 loop samples |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 10 x 7,200 | 3.40 | 3.22 | 2.15 | 1.97 | 299 | 274 | 426 | 389 |
+| 20 x 23,400 | 12.48 | 11.68 | 8.58 | 7.77 | 367 | 332 | 558 | 517 |
+| 500 x 1,260 | 3.80 | 3.73 | 0.76 | 0.70 | 603 | 556 | 502 | 460 |
+| 1,166 x 252 | 2.58 | 2.52 | 0.21 | 0.19 | 833 | 754 | 580 | 535 |
+
+Loop cells, estimated us per pulse, with samples and resolution:
+
+| shape | cell | Cut 14 us | samples | resolution | Cut 15 us | samples | resolution |
+| --- | --- | ---: | ---: | --- | ---: | ---: | --- |
+| 10 x 7,200 | P3 plan | 53 | 75 | measured | 53 | 76 | measured |
+| 10 x 7,200 | strategy: ledgr callees | 38 | 54 | measured | 49 | 69 | measured |
+| 10 x 7,200 | P2 context build | 35 | 50 | measured | 28 | 40 | measured |
+| 10 x 7,200 | P4 FIFO | 44 | 63 | measured | 25 | 36 | measured |
+| 10 x 7,200 | P4 other (fill records, position facts) | 30 | 43 | measured | 34 | 48 | measured |
+| 10 x 7,200 | P5 commit | 39 | 56 | measured | 32 | 46 | measured |
+| 10 x 7,200 | P2 other (output checks) | 27 | 38 | measured | 18 | 25 | measured |
+| 10 x 7,200 | strategy: own work | 11 | 15 | measured | 17 | 24 | measured |
+| 10 x 7,200 | strategy: call wrapper | 11 | 16 | measured | 4 | 6 | rough |
+| 10 x 7,200 | P1 valuation | 8 | 11 | measured | 10 | 14 | measured |
+| 10 x 7,200 | E advance | 1 | 2 | rough | unresolved | 0 | unresolved |
+| 10 x 7,200 | loop body, base code (residual) | 2 | 3 | rough | 4 | 5 | rough |
+| 20 x 23,400 | P3 plan | 94 | 143 | measured | 88 | 137 | measured |
+| 20 x 23,400 | strategy: ledgr callees | 29 | 44 | measured | 40 | 62 | measured |
+| 20 x 23,400 | P2 context build | 38 | 58 | measured | 35 | 55 | measured |
+| 20 x 23,400 | P4 FIFO | 65 | 99 | measured | 43 | 67 | measured |
+| 20 x 23,400 | P4 other (fill records, position facts) | 38 | 58 | measured | 47 | 73 | measured |
+| 20 x 23,400 | P5 commit | 42 | 64 | measured | 30 | 46 | measured |
+| 20 x 23,400 | P2 other (output checks) | 24 | 37 | measured | 15 | 24 | measured |
+| 20 x 23,400 | strategy: own work | 13 | 20 | measured | 13 | 20 | measured |
+| 20 x 23,400 | strategy: call wrapper | 11 | 17 | measured | 8 | 12 | measured |
+| 20 x 23,400 | P1 valuation | 11 | 16 | measured | 10 | 15 | measured |
+| 20 x 23,400 | E advance | unresolved | 0 | unresolved | 1 | 2 | rough |
+| 20 x 23,400 | loop body, base code (residual) | 1 | 2 | rough | 3 | 4 | rough |
+| 500 x 1,260 | P3 plan | 148 | 123 | measured | 155 | 128 | measured |
+| 500 x 1,260 | strategy: ledgr callees | 70 | 58 | measured | 60 | 50 | measured |
+| 500 x 1,260 | P2 context build | 41 | 34 | measured | 33 | 27 | measured |
+| 500 x 1,260 | P4 FIFO | 118 | 98 | measured | 93 | 77 | measured |
+| 500 x 1,260 | P4 other (fill records, position facts) | 89 | 74 | measured | 77 | 64 | measured |
+| 500 x 1,260 | P5 commit | 49 | 41 | measured | 36 | 30 | measured |
+| 500 x 1,260 | P2 other (output checks) | 37 | 31 | measured | 27 | 22 | measured |
+| 500 x 1,260 | strategy: own work | 19 | 16 | measured | 37 | 31 | measured |
+| 500 x 1,260 | strategy: call wrapper | 13 | 11 | measured | 11 | 9 | rough |
+| 500 x 1,260 | P1 valuation | 11 | 9 | rough | 19 | 16 | measured |
+| 500 x 1,260 | E advance | 2 | 2 | rough | 1 | 1 | rough |
+| 500 x 1,260 | loop body, base code (residual) | 6 | 5 | rough | 6 | 5 | rough |
+| 1,166 x 252 | P3 plan | 162 | 113 | measured | 163 | 116 | measured |
+| 1,166 x 252 | strategy: ledgr callees | 83 | 58 | measured | 66 | 47 | measured |
+| 1,166 x 252 | P2 context build | 66 | 46 | measured | 47 | 33 | measured |
+| 1,166 x 252 | P4 FIFO | 194 | 135 | measured | 182 | 129 | measured |
+| 1,166 x 252 | P4 other (fill records, position facts) | 96 | 67 | measured | 99 | 70 | measured |
+| 1,166 x 252 | P5 commit | 93 | 65 | measured | 54 | 38 | measured |
+| 1,166 x 252 | P2 other (output checks) | 59 | 41 | measured | 47 | 33 | measured |
+| 1,166 x 252 | strategy: own work | 42 | 29 | measured | 52 | 37 | measured |
+| 1,166 x 252 | strategy: call wrapper | 7 | 5 | rough | 13 | 9 | rough |
+| 1,166 x 252 | P1 valuation | 26 | 18 | measured | 30 | 21 | measured |
+| 1,166 x 252 | E advance | unresolved | 0 | unresolved | unresolved | 0 | unresolved |
+| 1,166 x 252 | loop body, base code (residual) | 4 | 3 | rough | 3 | 2 | rough |
+
+The loop clocks are measured; the cells are sample estimates. Moves of
+about 10 us or less are within sampling noise: the strategy's own work is
+the same code in both runs and still moves by 0 to 18 us. The FIFO's drop
+on the three narrower shapes (19 to 25 us) matches LDG-3223's paired
+saving. The pin's arm was not rerun; its cells above are Cut 14's.

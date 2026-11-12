@@ -1,0 +1,1 @@
+Rscript dev/lean_core/parity/loop_shortcuts.R --lib=<pin library d5b3a151> --mode=isolation --base=a40adeee --out=<dir>

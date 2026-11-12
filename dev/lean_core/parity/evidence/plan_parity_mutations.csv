@@ -1,49 +1,49 @@
 "workload","path","table","debug","stage","mutation","lean_calls","rows","identical","first_difference","pinned_s","lean_s"
-"prep_fixture","run","equity_curve",0,"plan","fill_price_ulp",1,47,FALSE,"<rows 47 vs 0>",3.2,1.61
-"prep_fixture","run","ledger_events",0,"plan","fill_price_ulp",1,72,FALSE,"<rows 72 vs 1>",3.2,1.61
-"prep_fixture","run","run_completion",0,"plan","fill_price_ulp",1,1,FALSE,"<rows 1 vs 0>",3.2,1.61
-"prep_fixture","run","run_diagnostic_coverage",0,"plan","fill_price_ulp",1,1,FALSE,"row 1 column logical_count: 507 vs 1",3.2,1.61
-"prep_fixture","run","run_diagnostic_implicit",0,"plan","fill_price_ulp",1,237,FALSE,"<rows 237 vs 0>",3.2,1.61
-"prep_fixture","run","run_diagnostic_summary",0,"plan","fill_price_ulp",1,1,FALSE,"row 1 column decisions: 258 vs 0",3.2,1.61
-"prep_fixture","run","run_diagnostics",0,"plan","fill_price_ulp",1,507,FALSE,"<rows 507 vs 1>",3.2,1.61
-"prep_fixture","run","run_promotion_context",0,"plan","fill_price_ulp",1,0,TRUE,"",3.2,1.61
-"prep_fixture","run","run_provenance",0,"plan","fill_price_ulp",1,1,TRUE,"",3.2,1.61
-"prep_fixture","run","run_tags",0,"plan","fill_price_ulp",1,0,TRUE,"",3.2,1.61
-"prep_fixture","run","run_telemetry",0,"plan","fill_price_ulp",1,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",3.2,1.61
-"prep_fixture","run","runs",0,"plan","fill_price_ulp",1,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",3.2,1.61
-"prep_fixture","run","fills",0,"plan","fill_price_ulp",1,71,FALSE,"<missing>",3.2,1.61
-"prep_fixture","run","trades",0,"plan","fill_price_ulp",1,35,FALSE,"<missing>",3.2,1.61
-"prep_fixture","run","metrics",0,"plan","fill_price_ulp",1,9,FALSE,"<missing>",3.2,1.61
-"prep_fixture","run","run_conditions",0,"plan","fill_price_ulp",1,0,FALSE,"<rows 0 vs 1>",3.2,1.61
-"prep_fixture","run","equity_curve",0,"plan","hold_target_changed",47,47,FALSE,"<rows 47 vs 0>",3.14,2.44
-"prep_fixture","run","ledger_events",0,"plan","hold_target_changed",47,72,FALSE,"<rows 72 vs 1>",3.14,2.44
-"prep_fixture","run","run_completion",0,"plan","hold_target_changed",47,1,FALSE,"<rows 1 vs 0>",3.14,2.44
-"prep_fixture","run","run_diagnostic_coverage",0,"plan","hold_target_changed",47,1,FALSE,"row 1 column logical_count: 507 vs 1",3.14,2.44
-"prep_fixture","run","run_diagnostic_implicit",0,"plan","hold_target_changed",47,237,FALSE,"<rows 237 vs 0>",3.14,2.44
-"prep_fixture","run","run_diagnostic_summary",0,"plan","hold_target_changed",47,1,FALSE,"row 1 column decisions: 258 vs 0",3.14,2.44
-"prep_fixture","run","run_diagnostics",0,"plan","hold_target_changed",47,507,FALSE,"<rows 507 vs 1>",3.14,2.44
-"prep_fixture","run","run_promotion_context",0,"plan","hold_target_changed",47,0,TRUE,"",3.14,2.44
-"prep_fixture","run","run_provenance",0,"plan","hold_target_changed",47,1,TRUE,"",3.14,2.44
-"prep_fixture","run","run_tags",0,"plan","hold_target_changed",47,0,TRUE,"",3.14,2.44
-"prep_fixture","run","run_telemetry",0,"plan","hold_target_changed",47,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",3.14,2.44
-"prep_fixture","run","runs",0,"plan","hold_target_changed",47,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",3.14,2.44
-"prep_fixture","run","fills",0,"plan","hold_target_changed",47,71,FALSE,"<missing>",3.14,2.44
-"prep_fixture","run","trades",0,"plan","hold_target_changed",47,35,FALSE,"<missing>",3.14,2.44
-"prep_fixture","run","metrics",0,"plan","hold_target_changed",47,9,FALSE,"<missing>",3.14,2.44
-"prep_fixture","run","run_conditions",0,"plan","hold_target_changed",47,0,FALSE,"<rows 0 vs 1>",3.14,2.44
-"prep_fixture","run","equity_curve",0,"plan","reason_levels_swapped",47,47,TRUE,"",3.13,3.28
-"prep_fixture","run","ledger_events",0,"plan","reason_levels_swapped",47,72,TRUE,"",3.13,3.28
-"prep_fixture","run","run_completion",0,"plan","reason_levels_swapped",47,1,TRUE,"",3.13,3.28
-"prep_fixture","run","run_diagnostic_coverage",0,"plan","reason_levels_swapped",47,1,TRUE,"",3.13,3.28
-"prep_fixture","run","run_diagnostic_implicit",0,"plan","reason_levels_swapped",47,237,TRUE,"",3.13,3.28
-"prep_fixture","run","run_diagnostic_summary",0,"plan","reason_levels_swapped",47,1,TRUE,"",3.13,3.28
-"prep_fixture","run","run_diagnostics",0,"plan","reason_levels_swapped",47,507,FALSE,"row 444 column reason_code: execution_bar_missing vs insufficient_cash",3.13,3.28
-"prep_fixture","run","run_promotion_context",0,"plan","reason_levels_swapped",47,0,TRUE,"",3.13,3.28
-"prep_fixture","run","run_provenance",0,"plan","reason_levels_swapped",47,1,TRUE,"",3.13,3.28
-"prep_fixture","run","run_tags",0,"plan","reason_levels_swapped",47,0,TRUE,"",3.13,3.28
-"prep_fixture","run","run_telemetry",0,"plan","reason_levels_swapped",47,1,TRUE,"",3.13,3.28
-"prep_fixture","run","runs",0,"plan","reason_levels_swapped",47,1,TRUE,"",3.13,3.28
-"prep_fixture","run","fills",0,"plan","reason_levels_swapped",47,71,TRUE,"",3.13,3.28
-"prep_fixture","run","trades",0,"plan","reason_levels_swapped",47,35,TRUE,"",3.13,3.28
-"prep_fixture","run","metrics",0,"plan","reason_levels_swapped",47,9,TRUE,"",3.13,3.28
-"prep_fixture","run","run_conditions",0,"plan","reason_levels_swapped",47,0,TRUE,"",3.13,3.28
+"prep_fixture","run","equity_curve",0,"plan","fill_price_ulp",1,47,FALSE,"<rows 47 vs 0>",3.54,1.47
+"prep_fixture","run","ledger_events",0,"plan","fill_price_ulp",1,72,FALSE,"<rows 72 vs 1>",3.54,1.47
+"prep_fixture","run","run_completion",0,"plan","fill_price_ulp",1,1,FALSE,"<rows 1 vs 0>",3.54,1.47
+"prep_fixture","run","run_diagnostic_coverage",0,"plan","fill_price_ulp",1,1,FALSE,"row 1 column logical_count: 507 vs 1",3.54,1.47
+"prep_fixture","run","run_diagnostic_implicit",0,"plan","fill_price_ulp",1,237,FALSE,"<rows 237 vs 0>",3.54,1.47
+"prep_fixture","run","run_diagnostic_summary",0,"plan","fill_price_ulp",1,1,FALSE,"row 1 column decisions: 258 vs 0",3.54,1.47
+"prep_fixture","run","run_diagnostics",0,"plan","fill_price_ulp",1,507,FALSE,"<rows 507 vs 1>",3.54,1.47
+"prep_fixture","run","run_promotion_context",0,"plan","fill_price_ulp",1,0,TRUE,"",3.54,1.47
+"prep_fixture","run","run_provenance",0,"plan","fill_price_ulp",1,1,TRUE,"",3.54,1.47
+"prep_fixture","run","run_tags",0,"plan","fill_price_ulp",1,0,TRUE,"",3.54,1.47
+"prep_fixture","run","run_telemetry",0,"plan","fill_price_ulp",1,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",3.54,1.47
+"prep_fixture","run","runs",0,"plan","fill_price_ulp",1,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",3.54,1.47
+"prep_fixture","run","fills",0,"plan","fill_price_ulp",1,71,FALSE,"<missing>",3.54,1.47
+"prep_fixture","run","trades",0,"plan","fill_price_ulp",1,35,FALSE,"<missing>",3.54,1.47
+"prep_fixture","run","metrics",0,"plan","fill_price_ulp",1,9,FALSE,"<missing>",3.54,1.47
+"prep_fixture","run","run_conditions",0,"plan","fill_price_ulp",1,0,FALSE,"<rows 0 vs 1>",3.54,1.47
+"prep_fixture","run","equity_curve",0,"plan","hold_target_changed",47,47,FALSE,"<rows 47 vs 0>",3.49,2.1
+"prep_fixture","run","ledger_events",0,"plan","hold_target_changed",47,72,FALSE,"<rows 72 vs 1>",3.49,2.1
+"prep_fixture","run","run_completion",0,"plan","hold_target_changed",47,1,FALSE,"<rows 1 vs 0>",3.49,2.1
+"prep_fixture","run","run_diagnostic_coverage",0,"plan","hold_target_changed",47,1,FALSE,"row 1 column logical_count: 507 vs 1",3.49,2.1
+"prep_fixture","run","run_diagnostic_implicit",0,"plan","hold_target_changed",47,237,FALSE,"<rows 237 vs 0>",3.49,2.1
+"prep_fixture","run","run_diagnostic_summary",0,"plan","hold_target_changed",47,1,FALSE,"row 1 column decisions: 258 vs 0",3.49,2.1
+"prep_fixture","run","run_diagnostics",0,"plan","hold_target_changed",47,507,FALSE,"<rows 507 vs 1>",3.49,2.1
+"prep_fixture","run","run_promotion_context",0,"plan","hold_target_changed",47,0,TRUE,"",3.49,2.1
+"prep_fixture","run","run_provenance",0,"plan","hold_target_changed",47,1,TRUE,"",3.49,2.1
+"prep_fixture","run","run_tags",0,"plan","hold_target_changed",47,0,TRUE,"",3.49,2.1
+"prep_fixture","run","run_telemetry",0,"plan","hold_target_changed",47,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",3.49,2.1
+"prep_fixture","run","runs",0,"plan","hold_target_changed",47,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",3.49,2.1
+"prep_fixture","run","fills",0,"plan","hold_target_changed",47,71,FALSE,"<missing>",3.49,2.1
+"prep_fixture","run","trades",0,"plan","hold_target_changed",47,35,FALSE,"<missing>",3.49,2.1
+"prep_fixture","run","metrics",0,"plan","hold_target_changed",47,9,FALSE,"<missing>",3.49,2.1
+"prep_fixture","run","run_conditions",0,"plan","hold_target_changed",47,0,FALSE,"<rows 0 vs 1>",3.49,2.1
+"prep_fixture","run","equity_curve",0,"plan","reason_levels_swapped",47,47,TRUE,"",3.48,2.86
+"prep_fixture","run","ledger_events",0,"plan","reason_levels_swapped",47,72,TRUE,"",3.48,2.86
+"prep_fixture","run","run_completion",0,"plan","reason_levels_swapped",47,1,TRUE,"",3.48,2.86
+"prep_fixture","run","run_diagnostic_coverage",0,"plan","reason_levels_swapped",47,1,TRUE,"",3.48,2.86
+"prep_fixture","run","run_diagnostic_implicit",0,"plan","reason_levels_swapped",47,237,TRUE,"",3.48,2.86
+"prep_fixture","run","run_diagnostic_summary",0,"plan","reason_levels_swapped",47,1,TRUE,"",3.48,2.86
+"prep_fixture","run","run_diagnostics",0,"plan","reason_levels_swapped",47,507,FALSE,"row 444 column reason_code: execution_bar_missing vs insufficient_cash",3.48,2.86
+"prep_fixture","run","run_promotion_context",0,"plan","reason_levels_swapped",47,0,TRUE,"",3.48,2.86
+"prep_fixture","run","run_provenance",0,"plan","reason_levels_swapped",47,1,TRUE,"",3.48,2.86
+"prep_fixture","run","run_tags",0,"plan","reason_levels_swapped",47,0,TRUE,"",3.48,2.86
+"prep_fixture","run","run_telemetry",0,"plan","reason_levels_swapped",47,1,TRUE,"",3.48,2.86
+"prep_fixture","run","runs",0,"plan","reason_levels_swapped",47,1,TRUE,"",3.48,2.86
+"prep_fixture","run","fills",0,"plan","reason_levels_swapped",47,71,TRUE,"",3.48,2.86
+"prep_fixture","run","trades",0,"plan","reason_levels_swapped",47,35,TRUE,"",3.48,2.86
+"prep_fixture","run","metrics",0,"plan","reason_levels_swapped",47,9,TRUE,"",3.48,2.86
+"prep_fixture","run","run_conditions",0,"plan","reason_levels_swapped",47,0,TRUE,"",3.48,2.86

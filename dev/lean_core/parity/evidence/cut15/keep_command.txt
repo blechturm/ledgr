@@ -1,0 +1,2 @@
+Rscript dev/lean_core/parity/loop_shortcuts.R --lib=<pin library d5b3a151> --mode=shortcuts --set=cut15 --candidate=a40adeee --rounds=7 --out=<dir>
+High performance plan, P-core affinity; run 2026-11-12 20:28-20:53 WEST

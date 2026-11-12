@@ -1,0 +1,3 @@
+"file","fn","candidate_sees_change","base_sees_change","isolated"
+"plan.R","lean_plan_pulse",TRUE,FALSE,TRUE
+"fifo.R","lean_lot_apply",TRUE,FALSE,TRUE
