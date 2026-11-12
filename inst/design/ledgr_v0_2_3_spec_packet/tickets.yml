@@ -1605,8 +1605,8 @@ cuts:
       shapes and 0.74 on 1,166 x 252, still about 11-27x PMwR. Its loop is
       one 900-line closure in which E and P1-P5 are not separate functions,
       contrary to compact-state point 1 (macro WS16), and the largest bucket
-      of the whole-run profile is unattributed loop time (88 of about 340 us
-      per pulse on 10 x 7,200, "loop: other",
+      of the whole-run profile is unattributed loop time (88 of approximately
+      328 estimated us per pulse on 10 x 7,200, "loop: other",
       dev/bench/v0_2_3_lean_tuning_profile/results). The maintainer chose to
       restructure before tuning and to measure the whole run before scoping
       the tuning cut and the feature-engine RFC (2026-11-12). This cut
@@ -1620,18 +1620,23 @@ cuts:
       fixed-cost profile; LDG-3217 evidence (lean preparation is about 1.0x
       the pin in time, a memory win only).
     measured_input: >-
-      Whole-run profile of the lean loop at a1966cf9 (profile.R, Rprof,
-      three runs, debug off; results/*_phases.csv): on 10 x 7,200 loop
-      other 88, strategy call 65, P3 planner 58, P2 context 46, P4 FIFO 43,
-      P5 state 21 us per pulse; terminal write 0.41 s, setup and commit
-      0.32 s, store and registration 0.17 s, feature projection and
-      features 0.27 s per run. Feature split (results/feature_split.csv):
+      Whole-run profile of the lean loop at a1966cf9 (profile.R, three
+      runs, debug off; results/*_phases.csv), Rprof-derived estimates: on
+      10 x 7,200 loop other 88, strategy call 65, P3 planner 58, P2 context
+      46, P4 FIFO 43, P5 state 21 us per pulse; estimated terminal write
+      0.41 s, setup and commit 0.32 s, store and registration 0.17 s,
+      feature projection and features 0.27 s per run. The strategy call's
+      estimate grows with the universe: 65, 89 and 135 us per pulse on
+      10 x 7,200, 500 x 1,260 and 1,166 x 252 (the last from six samples). Feature split (results/feature_split.csv):
       ledgr's per-instrument machinery is 0.75-0.93 s of 0.83-1.10 s of
-      feature time on wide shapes; bare TTR 0.08-0.17 s. R-floor stage 2:
-      the floor with target validation, rich context, fixed-basket
-      availability and the WS15 trace difference runs at 26, 29 and 103 us
-      per pulse on 10 x 7,200, 20 x 23,400 and 500 x 1,260. Timing record
-      cut13-loop-1/ldg3219-gate-r1: fold 397, 458 and 4,817 us per pulse.
+      feature time on wide shapes; bare TTR 0.08-0.17 s. R-floor stage 2's
+      trace-difference layer is 26, 29 and 103 us per pulse on 10 x 7,200,
+      20 x 23,400 and 500 x 1,260 (dev/spikes/r_floor/evidence/timings_layers.csv).
+      The separate timing record cut13-loop-1/ldg3219-gate-r1/attempt-1/raw.csv
+      measures complete-envelope candidate medians of 397, 458 and 4,817 us
+      per pulse on 10 x 7,200, 20 x 23,400 and 1,166 x 252; it has no
+      500 x 1,260 cell. These envelope clocks include setup and terminal
+      transfer and are not pulse-loop-only clocks.
     decisions: >-
       (1) Restructure first, with no behaviour change: the gate, the 23
       registered variants, batch one and the inert-hooks check pass
@@ -1665,11 +1670,19 @@ cuts:
     review_lifecycle: >-
       An independent clean-context Codex CLI cut review, iterated to PASS
       (maintainer, 2026-11-12). Workstream 31 then receives one independent
-      Type 1 close review of its whole diff and the cost map, wrong answers
-      and false evidence only. Under the maintainer's stop rule (2026-11-11)
-      its findings get one correction pass with no further review round
-      unless a finding is a wrong answer on a covered workload; a third
-      correction round goes to the maintainer.
+      clean-context Type 1 close review of its whole diff, every acceptance
+      item and the cost map. It verifies faithful implementation and
+      contained scope and independently asks whether the inputs are right;
+      a design concern returns NEEDS_TYPE_2. Under the maintainer's
+      2026-11-11 stop rule, findings receive one correction pass, with a
+      further review round only for a wrong answer on a covered workload.
+      That limit does not waive an acceptance item or convert
+      CHANGES_REQUIRED to PASS: correction evidence is recorded, and any
+      unresolved finding keeps the workstream open for maintainer
+      disposition before Cut 15 or slice 2. A third correction round stops
+      for maintainer disposition. Findings, reviewed ranges and
+      consequential rejection reasons are kept under rfc_cycle.md's record
+      rule.
     cut_review: null
 review_gate:
   status: "retired"
@@ -4616,10 +4629,10 @@ tickets:
       function it patches. No behaviour change.
     acceptance:
       - "E, P1, P2, P3, P4, P5 and the terminal transfer are separate named functions in loop.R; the pulse loop body calls them and holds no stage logic of its own; lean_core_interface.md Section 19 names them in one structure paragraph"
-      - "the full gate (loop_parity.R, every workload) is identical to the pin with debug on and off, batch size one and the inert-hooks check pass on their registered workloads, and every registered variant in loop_mutations.sh is caught by its expected signal in its registered modes, on the restructured code"
-      - "each variant names the function it patches and its anchor is unique within that function; the runner refuses a variant whose anchor is missing or repeated"
-      - "a shortcut table reports, per shortcut, loop us per pulse with and without it on 10 x 7,200, 20 x 23,400 and 500 x 1,260 (in-process, debug off, byte-compiled, median of at least five runs); every shortcut saving less than 2 percent of loop time on all three shapes is deleted, and each deletion removes its variant or retargets it"
-      - "loop us per pulse on the same three shapes is no more than 5 percent above 4a3e08b8's (same in-process method), or the miss is reported to the maintainer"
+      - "Before editing, freeze the registered workloads, modes, batch-one and inert workloads, expected lean-fold counts, refusal names and backstop paths from 4a3e08b8. Run the unchanged gate before and after restructuring against the same pin; require identical outputs and the same expected execution paths. Preserve every behavioral obligation in loop_checklist.md. Record where each existing debug check and each hooks call moves; removal of a shortcut may remove only checks specific to that implementation, with its surviving contract witness named. Check that loop.R still reaches the harness only through lean_hooks and contains no harness record or variant branch. Batch one and inert-hooks checks retain their existing workloads and detector demonstrations. Registered variants satisfy the separate variant acceptance."
+      - "Each edit names its lexical function and has exactly one anchor inside that function; missing functions and missing or repeated anchors fail. Freeze the pre-cut variant/workload/mode manifest. For each retained or retargeted variant, record the old defect, new patch and witness, and demonstrate the intended fault: expected differing fields or condition, detector path, or protocol boundary. An unrelated error or an unreached patch cannot count as CAUGHT. Every manifest row must execute and satisfy that expectation; missing rows, NOT RUN, MISSED, load errors and subprocess failures fail the aggregate runner. A deleted shortcut may retire its implementation-specific variant only with a recorded reason; its contract witness, refusal oracle and modes remain. Retarget a contract variant to break the candidate's delegated path when necessary. Record every retirement explicitly rather than shrinking the registry silently."
+      - "Use the same crossover fixtures on 10 x 7,200, 20 x 23,400 and 500 x 1,260. In a short in-process runner, warm both byte-compiled, debug-off arms and alternate at least five pairs with the same hooks, inputs and GC policy; retain raw observations. The shortcut comparison uses the restructured all-shortcuts arm and an otherwise identical arm delegating exactly one shortcut to the pin. Time the complete pulse loop, excluding envelope setup and terminal transfer, by one outer clock rather than per-pulse timers. Report both medians and paired savings, defined as (delegated_time - shortcut_time) / delegated_time. Delete a shortcut only when its median paired saving is below 0.02 on all three shapes and the result is resolved at that precision; report an unresolved threshold result for maintainer disposition. Delegation retains the pin's values, refusal class/message/order and timing; deletion never means deleting validation."
+      - "After all deletions, compare the final arm with 4a3e08b8 loaded in the same process by the same method. Report pulse-loop, complete-envelope and whole-run times on all three shapes. A pulse-loop median regression above five percent, or a regression displaced outside the loop, blocks close until fixed or explicitly accepted by the maintainer. No full timing window or new frozen timing record is required."
       - "loop.R production lines (role count as in LDG-3219) stay within 900 and are reported beside debug and harness lines"
     evidence: []
   - id: "LDG-3221"
@@ -4636,12 +4649,16 @@ tickets:
       loop attributes time to the named stages, and report outside-the-loop
       phases (snapshot open and verification, run registration, strategy
       preflight, bars substrate, feature computation and projection,
-      terminal expansion and write, commit, finalisation). Run
-      features_h1.R on the private H1 store. Measurement only.
+      terminal expansion and write, commit, finalisation). Add
+      features_h1.R in the profile directory and run it on the private H1
+      store by its authorized executor. Measurement only.
     acceptance:
       - "per-stage loop us per pulse (E, P1-P5, strategy call) on 10 x 7,200, 20 x 23,400, 500 x 1,260 and 1,166 x 252, with unattributed loop time below 10 percent of the loop, set beside the R-floor stage-2 layer figures for the three shapes it covers"
       - "outside-the-loop seconds per run, by phase, on the same four shapes for the lean loop and the pin, from one runner"
-      - "H1 feature split from features_h1.R: the pin's feature series time against bare per-instrument TTR and the count of instruments with the simple shape, aggregates only, no instrument identifier or value in any output or commit"
+      - "For both arms on all four shapes use the same fixture, seed, retained output, store-history state, warm-up, repetition method and clock boundaries; byte-compile both and disable debug. Record source identities, environment, commands and raw observations. Require matching result signatures and confirmation that the lean arm executed the lean fold before interpreting any timing. Measure unprofiled whole-run and pulse-loop totals beside separate profiling runs, identifying the hooks used. Define mutually exclusive phase attribution: strategy time is excluded from P2's own time; envelope setup, terminal expansion, writing, commit and finalisation do not overlap the pulse stages. Report measured wall totals separately from every sample-derived second or microsecond estimate, and reconcile the attribution, including residuals, to its stated clock. Publish the residual percentage rather than absorbing it into E to meet the ten-percent item. Instrument snapshot open and verification explicitly, reporting that reusable cost separately from the already-open-snapshot committed-run clock."
+      - "Label the existing R-floor stage-2 layers as historical cumulative lower bounds with their original shape, oracle, method and omitted work. Label PMwR as the historical reference with its shape and lifecycle boundary. Neither is a matched stage comparison or a controlled speed ratio. Any stronger comparison requires matching the relevant input, compilation, timing method and output boundary first."
+      - "The strategy call is split into the strategy function's own body and ledgr's work around it (context reads, the call wrapper and condition handling, result and state-patch checks), each reported per pulse on the four shapes, with its growth per instrument; the strategy body is also timed alone against a plain list carrying the same values."
+      - "features_h1.R uses the pinned production feature-series path and the same declared SMA5/SMA10 inputs as the portable split. It defines and reports an empirical simple-shape classification from the production calculation bounds, expected-session mask, usable input runs, carry and terminal boundaries; this is measurement only, not a production dispatch rule. It reports total, eligible and ineligible instrument counts and aggregate exclusion reasons. It compares bare per-instrument TTR with the pin on exactly the same eligible rows and calculation interval and reports full-H1 pin time separately. Before interpreting the timing difference, it checks both SMA value arrays and their NA placement exactly, and fails on a mismatch. It identifies evidence construction, causality checks and other work omitted by bare TTR and does not claim full feature-surface equivalence. Both arms are warmed and repeated by the same method, with aggregate timings and pass flags retained. Every output, including console/error logs and scratch artifacts, contains aggregates only: no vendor identifiers, values or per-instrument records. No vendor profiling dump is retained. Private input access remains with its authorized executor."
       - "a one-page summary in the profile directory ranks the measured costs by whole-run seconds per shape and names, for each, the owner it would go to (Cut 15, the feature-engine RFC, a store-write RFC or none); it proposes no design and sets no threshold"
       - "every number in the summary reproduces from the runner's CSVs; Rprof shares are labelled estimates and the wall times beside them measured"
     evidence: []
