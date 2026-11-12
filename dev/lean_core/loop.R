@@ -132,14 +132,14 @@ lean_loop_debug_packet <- function(packet, provider, ts, pos, ids, i, substrate,
 }
 
 # --- context reads (maintainer, 2026-11-10) ---------------------------------
-# While the lean loop is installed, `$` on the pulse context and on the
-# strategy-state view take these methods: a stored field, a cached lazy
-# field or a feature column is read directly; everything else (retired and
-# unknown names, NULL fields, dot fields, asset fields) goes to the pin's
-# method, so its values, caching, counts and refusals are the pin's.
+# While the lean loop is installed, `$` on the pulse context takes this
+# method: a stored field, a cached lazy field or a feature column is read
+# directly; everything else (retired and unknown names, NULL fields, dot
+# fields, asset fields) goes to the pin's method, so its values, caching,
+# counts and refusals are the pin's. The strategy-state view keeps the pin's
+# method (LDG-3220: a lean one saved no time).
 
 lean_pin_ctx_dollar <- get("$.ledgr_pulse_context", envir = asNamespace("ledgr"))
-lean_pin_state_dollar <- get("$.ledgr_strategy_state_view", envir = asNamespace("ledgr"))
 lean_pin_envelope <- get("ledgr_fold_envelope", envir = asNamespace("ledgr"))
 # Committed-prefix reads build their scratch handler from the pin's constructor
 # as loaded, so a harness that wraps the constructor never sees it.
@@ -165,11 +165,6 @@ lean_ctx_dollar <- function(x, name) {
     }
   }
   lean_pin_ctx_dollar(x, name)
-}
-
-lean_state_dollar <- function(x, name) {
-  v <- .subset2(x, name)
-  if (is.null(v)) lean_pin_state_dollar(x, name) else v
 }
 
 # flat() is the pin's; hold() returns the aligned finite positions directly.
@@ -455,12 +450,6 @@ lean_fold_envelope <- function(execution, output_handler) {
         if (!identical(caught(lean_ctx_dollar(a, nm)), caught(lean_pin_ctx_dollar(b, nm)))) {
           fail(paste0("field `", paste(format(nm), collapse = ","), "`"))
         }
-      }
-    }
-    sa <- lean_pin_ctx_dollar(a, "state"); sb <- lean_pin_ctx_dollar(b, "state")
-    for (nm in c(names(unclass(sa)), "lean_no_such_state")) {
-      if (!identical(caught(lean_state_dollar(sa, nm)), caught(lean_pin_state_dollar(sb, nm)))) {
-        fail(paste0("state `", nm, "`"))
       }
     }
     if (!identical(ra$flat(), rb$flat()) || !identical(ra$hold(), rb$hold())) fail("flat()/hold()")

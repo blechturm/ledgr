@@ -4,7 +4,7 @@
 #
 #   Rscript dev/bench/v0_2_3_lean_tuning_profile/cost_map.R --lib=<pinned library>
 #     --out=<dir> [--shapes=10x7200,20x23400,500x1260,1166x252] [--reps=5]
-#     [--prof-reps=2] [--selftest=1]
+#     [--prof-reps=10x7200:3,...] [--selftest=1]
 #
 # Both arms, every shape: the crossover fixture (r_floor_fixture, SMA 5/10,
 # seed 20260530), a fresh copy of the sealed snapshot per run (same store
@@ -55,9 +55,15 @@ source(file.path(repo, "dev/spikes/r_floor/fixture.R"))
 out <- arg("out")
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 selftest <- identical(arg("selftest", "0"), "1")
-shapes <- strsplit(arg("shapes", if (selftest) "3x40" else "10x7200,20x23400,500x1260,1166x252"), ",")[[1L]]
+shapes <- strsplit(arg("shapes", if (selftest) "10x300" else "10x7200,20x23400,500x1260,1166x252"), ",")[[1L]]
 reps <- as.integer(arg("reps", if (selftest) "1" else "5"))
-prof_reps <- as.integer(arg("prof-reps", if (selftest) "1" else "2"))
+# Profile runs per shape, so each loop gets enough samples (a short loop
+# gets more runs); shape:runs pairs, or one number for every shape.
+prof_spec <- arg("prof-reps", if (selftest) "2" else "10x7200:3,20x23400:1,500x1260:10,1166x252:40")
+prof_reps <- if (grepl(":", prof_spec)) {
+  kv <- strsplit(strsplit(prof_spec, ",")[[1L]], ":")
+  stats::setNames(as.integer(vapply(kv, `[[`, "", 2L)), vapply(kv, `[[`, "", 1L))
+} else stats::setNames(rep(as.integer(prof_spec), length(shapes)), shapes)
 now <- function() proc.time()[["elapsed"]]
 hr <- function() as.numeric(Sys.time())
 
@@ -187,6 +193,15 @@ stage_cells <- c(
   ledgr_fold_stage_apply = "P4 other", ledgr_fold_stage_commit = "P5")
 loop_cells <- c("strategy: own work", "strategy: ledgr callees", "strategy: call wrapper", unique(stage_cells),
                 "loop: residual")
+is_loop_cell <- function(cell) cell %in% loop_cells | startsWith(cell, "loop: ")
+# Cells every run of an arm has; a required cell without samples is
+# reported as unresolved, never as zero.
+required_cells <- list(
+  lean = c("strategy: own work", "strategy: ledgr callees", "strategy: call wrapper", "P1", "P2 context", "P2 other",
+           "P3", "P4 FIFO", "P4 other", "P5", "E advance", "loop: residual"),
+  pin = c("strategy: own work", "strategy: ledgr callees", "strategy: call wrapper", "P1", "P2 other", "P3", "P4 other",
+          "P5", "loop: residual"))
+base_names <- ls(baseenv(), all.names = TRUE)
 other_cells <- c(
   lean_loop_expand = "transfer: expand", lean_loop_layout = "transfer: expand", lean_loop_keep = "transfer: expand",
   lean_loop_positions_at = "transfer: expand", lean_loop_explicit_block = "transfer: expand",
@@ -218,6 +233,11 @@ cell_of <- function(s) {
     if (f %in% names(stage_cells)) return(stage_cells[[f]])
     if (f %in% names(other_cells)) return(other_cells[[f]])
     if (identical(f, "fn") && j < length(s) && identical(s[[j + 1L]], "withCallingHandlers") && "ledgr_fold_envelope" %in% s) {
+      # the loop body itself: its direct named callee, else base code
+      callee_name <- if (j > 1L) s[[j - 1L]] else ""
+      if (nzchar(callee_name) && !callee_name %in% base_names && !startsWith(callee_name, "<")) {
+        return(paste0("loop: ", callee_name))
+      }
       return("loop: residual")
     }
   }
@@ -235,10 +255,15 @@ check_cells <- function(cells, reconcile) {
   if (anyDuplicated(key)) return("duplicated attribution cell")
   for (i in seq_len(nrow(reconcile))) {
     r <- reconcile[i, ]
+    have <- cells$cell[cells$arm == r$arm & cells$shape == r$shape]
+    if (length(setdiff(required_cells[[r$arm]], have))) return("missing required cell")
+  }
+  for (i in seq_len(nrow(reconcile))) {
+    r <- reconcile[i, ]
     x <- cells[cells$arm == r$arm & cells$shape == r$shape, ]
-    if (abs(sum(x$est_run_s) - r$run_median_s) > 1e-6 * max(1, r$run_median_s)) return("run cells do not sum to the run clock")
-    lx <- x[x$cell %in% loop_cells, ]
-    if (abs(sum(lx$est_loop_s) - r$loop_median_s) > 1e-6 * max(1, r$loop_median_s)) return("loop cells do not sum to the loop clock")
+    if (abs(sum(x$est_run_s, na.rm = TRUE) - r$run_median_s) > 1e-6 * max(1, r$run_median_s)) return("run cells do not sum to the run clock")
+    lx <- x[is_loop_cell(x$cell), ]
+    if (abs(sum(lx$est_loop_s, na.rm = TRUE) - r$loop_median_s) > 1e-6 * max(1, r$loop_median_s)) return("loop cells do not sum to the loop clock")
   }
   "ok"
 }
@@ -262,26 +287,38 @@ utils::write.csv(clock, file.path(out, "clock_raw.csv"), row.names = FALSE)
 med <- stats::aggregate(cbind(snapshot_open_s, run_s, envelope_s, loop_s) ~ arm + shape + pulses + instruments, clock, stats::median)
 
 samples <- list()
-for (r in seq_len(prof_reps)) for (s in shapes) for (a in arms) {
+for (s in shapes) for (r in seq_len(prof_reps[[s]])) for (a in if (r %% 2L) arms else rev(arms)) {
   tab <- attribute(run_arm(a, s, "profile")$prof)
   samples[[length(samples) + 1L]] <- data.frame(arm = a, shape = s, cell = names(tab), samples = as.integer(tab))
 }
 samples <- stats::aggregate(samples ~ arm + shape + cell, do.call(rbind, samples), sum)
+# Required cells with no sample are kept with zero samples.
+for (a in arms) for (s in shapes) {
+  absent <- setdiff(required_cells[[a]], samples$cell[samples$arm == a & samples$shape == s])
+  if (length(absent)) samples <- rbind(samples, data.frame(arm = a, shape = s, cell = absent, samples = 0L))
+}
 cells <- merge(samples, med, by = c("arm", "shape"))
+cells$profile_runs <- prof_reps[cells$shape]
 cells$share_of_run <- cells$samples / stats::ave(cells$samples, cells$arm, cells$shape, FUN = sum)
 cells$est_run_s <- cells$share_of_run * cells$run_s
-in_loop <- cells$cell %in% loop_cells
+in_loop <- is_loop_cell(cells$cell)
 loop_samples <- stats::ave(ifelse(in_loop, cells$samples, 0L), cells$arm, cells$shape, FUN = sum)
 cells$share_of_loop <- ifelse(in_loop, cells$samples / loop_samples, NA_real_)
 cells$est_loop_s <- ifelse(in_loop, cells$share_of_loop * cells$loop_s, NA_real_)
 cells$est_us_per_pulse <- ifelse(in_loop, 1e6 * cells$est_loop_s / cells$pulses, NA_real_)
-cells <- cells[order(cells$arm, cells$shape, -cells$samples), c("arm", "shape", "cell", "samples", "share_of_run",
-  "est_run_s", "share_of_loop", "est_loop_s", "est_us_per_pulse")]
+# Resolution: no sample leaves the cell unresolved (no estimate); fewer than
+# ten samples make it rough.
+cells$resolution <- ifelse(cells$samples == 0L, "unresolved", ifelse(cells$samples < 10L, "rough", "measured"))
+for (col in c("share_of_run", "est_run_s", "share_of_loop", "est_loop_s", "est_us_per_pulse")) {
+  cells[[col]][cells$samples == 0L] <- NA_real_
+}
+cells <- cells[order(cells$arm, cells$shape, -cells$samples), c("arm", "shape", "cell", "samples", "profile_runs",
+  "resolution", "share_of_run", "est_run_s", "share_of_loop", "est_loop_s", "est_us_per_pulse")]
 utils::write.csv(cells, file.path(out, "cells.csv"), row.names = FALSE)
 
 reconcile <- do.call(rbind, lapply(split(cells, paste(cells$arm, cells$shape)), function(x) {
   m <- med[med$arm == x$arm[[1L]] & med$shape == x$shape[[1L]], ]
-  lx <- x[x$cell %in% loop_cells, ]
+  lx <- x[is_loop_cell(x$cell), ]
   data.frame(arm = m$arm, shape = m$shape, run_median_s = m$run_s, loop_median_s = m$loop_s,
     envelope_median_s = m$envelope_s, snapshot_open_median_s = m$snapshot_open_s, samples = sum(x$samples),
     loop_samples = sum(lx$samples),
@@ -289,19 +326,20 @@ reconcile <- do.call(rbind, lapply(split(cells, paste(cells$arm, cells$shape)), 
     loop_estimate_over_clock = (sum(lx$samples) / sum(x$samples)) * m$run_s / m$loop_s,
     loop_residual_share = sum(lx$samples[lx$cell == "loop: residual"]) / max(1L, sum(lx$samples)))
 }))
-cells_for_check <- merge(cells, med[, c("arm", "shape")], by = c("arm", "shape"))
-cells_for_check$est_loop_s[is.na(cells_for_check$est_loop_s)] <- 0
+cells_for_check <- cells
 utils::write.csv(reconcile, file.path(out, "reconcile.csv"), row.names = FALSE)
 status <- check_cells(cells_for_check, reconcile)
 if (!identical(status, "ok")) stop("attribution: ", status, call. = FALSE)
 
 split_rows <- do.call(rbind, lapply(split(cells, paste(cells$arm, cells$shape)), function(x) {
-  get_cell <- function(name) { v <- x$est_us_per_pulse[x$cell == name]; if (length(v)) v else 0 }
+  # an unresolved cell stays NA, never zero
+  get_cell <- function(name) { v <- x$est_us_per_pulse[x$cell == name]; if (length(v) == 1L) v else stop("missing cell ", name) }
   n <- dims(x$shape[[1L]])[[1L]]
   own <- get_cell("strategy: own work"); callees <- get_cell("strategy: ledgr callees"); wrap <- get_cell("strategy: call wrapper")
   data.frame(arm = x$arm[[1L]], shape = x$shape[[1L]], instruments = n,
     body_inclusive_us = own + callees, own_work_us = own, ledgr_callees_us = callees, call_wrapper_us = wrap,
     samples = sum(x$samples[grepl("^strategy", x$cell)]),
+    unresolved = paste(x$cell[grepl("^strategy", x$cell) & x$resolution == "unresolved"], collapse = "; "),
     own_work_us_per_instrument = own / n, ledgr_callees_us_per_instrument = callees / n, call_wrapper_us_per_instrument = wrap / n)
 }))
 utils::write.csv(split_rows, file.path(out, "strategy_split.csv"), row.names = FALSE)
@@ -327,8 +365,10 @@ if (selftest) {
   r1 <- check_replay(replay$same)
   dup <- rbind(cells_for_check, cells_for_check[1L, ])
   r2 <- check_cells(dup, reconcile)
-  st <- data.frame(check = c("replay mismatch", "duplicated attribution cell"), result = c(r1, r2),
-                   rejected = c(r1 != "ok", r2 != "ok"))
+  gone <- cells_for_check[!(cells_for_check$arm == "lean" & cells_for_check$cell == "strategy: call wrapper"), ]
+  r3 <- check_cells(gone, reconcile)
+  st <- data.frame(check = c("replay mismatch", "duplicated attribution cell", "missing required cell"),
+                   result = c(r1, r2, r3), rejected = c(r1 != "ok", r2 != "ok", r3 != "ok"))
   utils::write.csv(st, file.path(out, "selftest.csv"), row.names = FALSE)
   print(st, row.names = FALSE)
   if (!all(st$rejected)) quit(status = 1L)

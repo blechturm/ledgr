@@ -8,8 +8,8 @@
 #   --mode=final      the final arm against 4a3e08b8's loop, loaded in the
 #                     same process by the same method
 #
-# Each round runs every arm once per shape, in an order rotated by round;
-# every run gets a fresh copy of the sealed snapshot and a gc() first,
+# Each comparison of the first arm with another runs in its own pairs, the
+# order reversed on every pair; every run gets a fresh copy of the sealed snapshot and a gc() first,
 # outside the clocks. Clocks: the pulse loop (one outer clock inside the
 # envelope, reported through fold_end), the complete envelope and the whole
 # ledgr_run() call. Every run's fills and equity must equal the first arm's
@@ -49,12 +49,10 @@ source(file.path(repo, "dev/spikes/r_floor/fixture.R"))
 # loop_harness.R.
 e <- lean_edit
 delegations <- list(
+  # (the state-view method was deleted by this rule, LDG-3220)
   ctx_dollar = list(e("loop_harness.R", "lean_loop_install",
-    "               \"$.ledgr_pulse_context\" = lean_ctx_dollar, \"$.ledgr_strategy_state_view\" = lean_state_dollar,",
-    "               \"$.ledgr_pulse_context\" = lean_pin_ctx_dollar, \"$.ledgr_strategy_state_view\" = lean_state_dollar,")),
-  state_dollar = list(e("loop_harness.R", "lean_loop_install",
-    "               \"$.ledgr_pulse_context\" = lean_ctx_dollar, \"$.ledgr_strategy_state_view\" = lean_state_dollar,",
-    "               \"$.ledgr_pulse_context\" = lean_ctx_dollar, \"$.ledgr_strategy_state_view\" = lean_pin_state_dollar,")),
+    "               \"$.ledgr_pulse_context\" = lean_ctx_dollar,",
+    "               \"$.ledgr_pulse_context\" = lean_pin_ctx_dollar,")),
   hold = list(e("loop.R", "lean_ctx_helpers",
     "      if (is.double(p) && identical(attributes(p), list(names = lookup$universe)) && all(is.finite(p))) p",
     "      if (FALSE) p")),
@@ -146,25 +144,29 @@ run_arm <- function(env, shape, label) {
 
 raw <- list()
 for (s in shapes) for (a in names(arms)) run_arm(arms[[a]], s, a)   # warm-up, discarded
-for (r in seq_len(rounds)) {
-  order <- names(arms)[(seq_along(arms) + r - 2L) %% length(arms) + 1L]
-  for (s in shapes) for (a in order) {
-    x <- run_arm(arms[[a]], s, a)
+# Each comparison (the first arm against one other) runs in its own pairs,
+# the two arms' order reversed on every pair (cut review R3).
+ref <- names(arms)[[1L]]
+for (r in seq_len(rounds)) for (s in shapes) for (a in setdiff(names(arms), ref)) {
+  pair <- if (r %% 2L == 1L) c(ref, a) else c(a, ref)
+  for (b in pair) {
+    x <- run_arm(arms[[b]], s, b)
     x$round <- r
+    x$comparison <- a
     raw[[length(raw) + 1L]] <- x
-    cat(sprintf("round %d %-10s %-16s pulses %.3f s  envelope %.3f s  whole %.3f s\n", r, s, a,
+    cat(sprintf("pair %d %-10s %-16s %-16s pulses %.3f s  envelope %.3f s  whole %.3f s\n", r, s, a, b,
                 x$pulses_s, x$envelope_s, x$whole_s))
   }
 }
 raw <- do.call(rbind, raw)
 utils::write.csv(raw, file.path(out, paste0(mode, "_raw.csv")), row.names = FALSE)
-ref <- names(arms)[[1L]]
 bad <- unlist(lapply(split(raw, raw$shape), function(x) x$arm[x$digest != x$digest[x$arm == ref][[1L]]]))
 if (length(bad)) stop("arms with different fills or equity: ", paste(unique(bad), collapse = ", "), call. = FALSE)
 
-# Paired comparison of each other arm against the first, per shape.
+# Paired comparison of each other arm against the first, per shape, within
+# that comparison's own pairs.
 summary <- do.call(rbind, lapply(setdiff(names(arms), ref), function(a) do.call(rbind, lapply(shapes, function(s) {
-  x <- raw[raw$shape == s, ]
+  x <- raw[raw$shape == s & raw$comparison == a, ]
   p <- merge(x[x$arm == ref, c("round", "pulses_s", "envelope_s", "whole_s")],
              x[x$arm == a, c("round", "pulses_s", "envelope_s", "whole_s")], by = "round", suffixes = c("_ref", "_arm"))
   saving <- (p$pulses_s_arm - p$pulses_s_ref) / p$pulses_s_arm

@@ -1,3 +1,4 @@
 "check","result","rejected"
 "replay mismatch","replay output differs on 1 pulse(s)",TRUE
 "duplicated attribution cell","duplicated attribution cell",TRUE
+"missing required cell","missing required cell",TRUE

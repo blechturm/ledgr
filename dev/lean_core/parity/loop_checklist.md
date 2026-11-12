@@ -31,7 +31,7 @@ rounds 1-4 (C:/Users/maxth/ledgr-wt/ws30-close-out*).
 | 1 | Every run-store table, reader, condition, sweep result and the caller's RNG identical to the pin on every covered workload, debug off and on | A1, S19.6 | full gate, both modes | fill_price_ulp, drop_hold, hold_position |
 | 2 | Contracted strategy-output refusals stay in production: targets, intent reason, state patch container and fields, replacement, reset | S19.4, R3-1, AGENTS | witness_state_container (atomic patch, run and asset field), witness_nonfinite, surface | patch_container (debug off; with debug on the per-pulse comparison calls the pin's validator) |
 | 3 | Zero pulses: the pin's full return (telemetry aside) and empty evidence, on the fold's state axis and on a reordered incoming axis | S19.1, R3-5, R4-2 | witness_zero_pulses | zero_pulse_completion (completion built anyway); zero_pulse_align (first-pulse alignment on an empty run) |
-| 4 | Fresh context per pulse; every public read, retained unforced fields, the read methods' values and refusals (any name) | S19.4, S19.1 | surface witnesses; debug comparison per pulse | read_fast_path (debug on only: no production witness discriminates it) |
+| 4 | Fresh context per pulse; every public read, retained unforced fields, the context read method's values and refusals (any name; the state view keeps the pin's method since LDG-3220) | S19.4, S19.1 | surface witnesses; debug comparison per pulse | read_fast_path (debug on only: no production witness discriminates it) |
 
 ## Coverage and backstop
 

@@ -1,2 +1,2 @@
-"instruments","sessions","calc_from","calc_to","simple","simple_share","excluded_several_ranges","excluded_terminal","excluded_carried_input","excluded_no_usable_input","excluded_several_runs","values_identical_on_simple","reps","full_h1_pin_s","simple_pin_path_s","simple_bare_ttr_s","simple_pin_us_per_instrument","simple_bare_us_per_instrument"
-1166,7213,1,7213,582,0.499,0,527,57,0,0,TRUE,5,9.33,4.54,0.17,7801,292
+"instruments","sessions","calc_from","calc_to","simple","simple_share","excluded_several_ranges","excluded_terminal","excluded_carried_input","excluded_no_usable_input","excluded_several_runs","simple_runs_under_5","simple_runs_5_to_9","values_identical_on_simple","reps","full_h1_pin_s","simple_pin_path_s","simple_bare_ttr_s","simple_pin_us_per_instrument","simple_bare_us_per_instrument"
+1166,7213,1,7213,582,0.499,0,527,57,0,0,0,0,TRUE,5,9.27,4.55,0.17,7818,292

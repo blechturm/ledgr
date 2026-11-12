@@ -851,7 +851,10 @@ NULL-valued, dot and asset fields) goes to the pin's method, so values,
 caching, build counts and refusals stay the pin's. `hold()` returns the
 aligned finite positions directly and otherwise calls the pin's helper. In
 debug each pulse compares every public read, twice, and the retired and
-unknown refusals with the pin's methods.
+unknown refusals with the pin's methods. LDG-3220 (Cut 14) removed the
+strategy-state view's lean method: in paired timing it saved under 2
+percent on every shape, so that view keeps the pin's method; the pulse
+context's lean method stays (4.7-5.2 percent).
 
 Telemetry (maintainer, 2026-11-09): the loop keeps the stored run row
 (status, mode, elapsed seconds, pulse, decided and skipped counts) and the

@@ -53,21 +53,25 @@ source(file.path(here, "loop_edits.R"))
 # every new condition message must match (NULL: none may appear); `lost` a
 # pattern one of the pin's messages missing from the lean arm must match
 # (a pin refusal the variant removes); `tables` a pattern one differing
-# table must match ("^$": no table may differ). Each variant names its
+# table must match ("^$": no table may differ); `path` a pattern the
+# detector record (store and sink calls while pulses ran) must match, so a
+# detector variant is caught on its own path. Each variant names its
 # intended fault through these.
 edit <- lean_edit
-variant <- function(expect, edits, error = NULL, lost = NULL, tables = NULL) {
-  list(expect = expect, edits = edits, error = error, lost = lost, tables = tables)
+variant <- function(expect, edits, error = NULL, lost = NULL, tables = NULL, path = NULL) {
+  list(expect = expect, edits = edits, error = error, lost = lost, tables = tables, path = path)
 }
 # One store path per variant, its scratch store prepared before the pulses
-# run, so a detector missing that one path cannot hide behind another.
-store_variant <- function(call, prepare = FALSE) variant("store", list(
+# run (unmarked), the marker inside the branch that runs the fault, and the
+# backend call that path must reach.
+store_variant <- function(call, path, prepare = FALSE, dead = NULL) variant("store", list(
   edit("loop.R", "lean_fold_envelope", "  live$batches <- 0L", c(
     "  scratch <- DBI::dbConnect(duckdb::duckdb())",
     "  DBI::dbExecute(scratch, \"CREATE TABLE probe (value INTEGER)\")",
-    if (prepare) "  stmt <- DBI::dbSendStatement(scratch, \"INSERT INTO probe VALUES (?)\")"), "after"),
+    if (prepare) "  stmt <- DBI::dbSendStatement(scratch, \"INSERT INTO probe VALUES (?)\")"), "after", mark = FALSE),
   edit("loop.R", "lean_p4_apply", "      last_executed <<- max(last_executed, fill$exec_ts, na.rm = TRUE)",
-    paste0("      if (nf == n_fill) ", call), "after")), tables = "^$")
+    paste0("      if (nf == n_fill) { lean_entry$variant_reached <- TRUE; ", if (!is.null(dead)) paste0("if (FALSE) ", dead, "; "),
+           call, " }"), "after", mark = FALSE)), tables = "^$", path = path)
 loop_mutations <- list(
   fill_price_ulp = variant("differ", list(edit("loop.R", "lean_loop_publish", "    src <- fl",
     "    if (nf > 0L) src$price[[1L]] <- src$price[[1L]] * (1 + .Machine$double.eps)", "after")),
@@ -83,17 +87,17 @@ loop_mutations <- list(
     "      last_executed <<- max(last_executed, fill$exec_ts, na.rm = TRUE)",
     c("      if (nf == n_fill) output_handler$write_fill_events(fill = fill, i = seq_len(n_fill),",
       "        instrument_id = ids[fill$pos], event_seq = event_seq - n_fill, use_transaction = FALSE)"), "after")),
-    error = "event_seq values must be integral and strictly increasing"),
-  store_execute = store_variant("DBI::dbExecute(scratch, \"INSERT INTO probe VALUES (1)\")"),
-  store_bind = store_variant("DBI::dbBind(stmt, list(7L))", prepare = TRUE),
-  store_query = store_variant("DBI::dbGetQuery(scratch, \"INSERT INTO probe VALUES (2) RETURNING value\")"),
-  store_append = store_variant("ledgr_store_append(scratch, \"probe\", data.frame(value = 1L))"),
+    error = "event_seq values must be integral and strictly increasing", path = "write_fill_events"),
+  store_execute = store_variant("DBI::dbExecute(scratch, \"INSERT INTO probe VALUES (1)\")", "rapi_execute"),
+  store_bind = store_variant("DBI::dbBind(stmt, list(7L))", "rapi_bind", prepare = TRUE),
+  store_query = store_variant("DBI::dbGetQuery(scratch, \"INSERT INTO probe VALUES (2) RETURNING value\")", "rapi_execute"),
+  store_append = store_variant("ledgr_store_append(scratch, \"probe\", data.frame(value = 1L))", "ledgr::ledgr_store_append"),
   hold_in_loop = variant("hold", list(edit("loop.R", "lean_p5_commit", "    hd_has_recon[[i]] <<- TRUE",
     "    if (i == 1L) lean_loop_expand(1L, 1L, lean_loop_layout(), state0$positions)", "after")), tables = "^$"),
-  batch_fault = variant("rollback", list(edit("loop.R", "lean_loop_publish", "      live$batches <- live$batches + 1L",
+  batch_fault = variant("rollback", list(edit("loop.R", "tick", "      live$batches <- live$batches + 1L",
     "      if (\"ledger_events\" %in% lean_entry$terminal_appends) stop(\"lean witness: batch fault\")", "after")),
     error = "lean witness: batch fault"),
-  fault_before_append = variant("fault_without_append", list(edit("loop.R", "lean_loop_publish",
+  fault_before_append = variant("fault_without_append", list(edit("loop.R", "tick",
     "      live$batches <- live$batches + 1L", "      stop(\"lean witness: early batch fault\")", "after")),
     error = "lean witness: early batch fault"),
   patch_container = variant("differ", list(edit("loop.R", "lean_state_patch",
@@ -133,6 +137,9 @@ loop_mutations <- list(
   control_unrelated = variant("differ", list(edit("loop.R", "lean_p4_apply",
     "      last_executed <<- max(last_executed, fill$exec_ts, na.rm = TRUE)",
     "      stop(\"control: an unrelated error\")", "after"))),
+  # declares the dbBind path, but its bind is dead code and dbExecute writes
+  control_wrong_store_path = store_variant("DBI::dbExecute(scratch, \"INSERT INTO probe VALUES (3)\")", "rapi_bind",
+    prepare = TRUE, dead = "DBI::dbBind(stmt, list(7L))"),
   control_unreached = variant("differ", list(edit("loop.R", "lean_loop_debug_packet",
     "  full <- stats::setNames(pos, ids)", "  stop(\"control: never reached with debug off\")", "before"))),
   workers_guard_off = variant("unrefused", list(edit("loop_harness.R", "lean_sweep_impl",
@@ -328,10 +335,11 @@ for (id in ids) {
     tables_ok <- is.null(v$tables) || (identical(v$tables, "^$") && !length(differing)) ||
       any(grepl(v$tables, differing))
     lost_ok <- is.null(v$lost) || any(grepl(v$lost, lost_errors))
+    path_ok <- is.null(v$path) || any(grepl(v$path, c(rec$store_access, rec$sink_calls)))
     if (needs_lean && rec$lean_folds == 0L && !length(rec$backstop)) "NOT RUN"
     else if (!reached) "UNREACHED"
     else if (length(unrelated)) "UNRELATED"
-    else if (isTRUE(seen[[v$expect]]) && tables_ok && lost_ok) "CAUGHT" else "MISSED"
+    else if (isTRUE(seen[[v$expect]]) && tables_ok && lost_ok && path_ok) "CAUGHT" else "MISSED"
   }
   verdicts[[id]] <- verdict
   # The verdict and every signal that fired, so the CSV shows what caught a variant.

@@ -122,10 +122,13 @@ pin_simple <- function() for (i in simple) {
     ns$ledgr_feature_plane_exceptions(cert, inputs, calculated, bounds$from, keep)
   }
 }
+# The same calculation bare_row() checked: each SMA under its own length guard.
 bare_simple <- function() for (i in simple) {
   x <- as.numeric(substrate$bars$close[i, run_from[[i]]:run_to[[i]]])
-  if (length(x) >= 10L) { TTR::SMA(x, n = 5L); TTR::SMA(x, n = 10L) }
+  if (length(x) >= 5L) TTR::SMA(x, n = 5L)
+  if (length(x) >= 10L) TTR::SMA(x, n = 10L)
 }
+run_length <- run_to[simple] - run_from[simple] + 1L
 pin_simple_s <- timed(pin_simple)
 bare_simple_s <- timed(bare_simple)
 ledgr::ledgr_snapshot_close(snapshot)
@@ -138,6 +141,7 @@ out <- data.frame(
   excluded_several_ranges = tab[["several feature ranges"]], excluded_terminal = tab[["terminal"]],
   excluded_carried_input = tab[["carried input"]], excluded_no_usable_input = tab[["no usable input"]],
   excluded_several_runs = tab[["several input runs"]],
+  simple_runs_under_5 = sum(run_length < 5L), simple_runs_5_to_9 = sum(run_length >= 5L & run_length < 10L),
   values_identical_on_simple = TRUE, reps = reps,
   full_h1_pin_s = round(full_s, 3), simple_pin_path_s = round(pin_simple_s, 3), simple_bare_ttr_s = round(bare_simple_s, 3),
   simple_pin_us_per_instrument = round(1e6 * pin_simple_s / max(1L, length(simple))),

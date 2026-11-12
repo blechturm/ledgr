@@ -38,38 +38,52 @@ rscript <- file.path(R.home("bin"), "Rscript.exe")
 groups <- split(manifest, paste(manifest$mutation, manifest$debug, manifest$batch_rows, sep = "|"))
 results <- list()
 failures <- character()
+# Runs one loop_parity.R subprocess; returns its exit status, last line and
+# result rows (NULL when it wrote none).
+run_parity <- function(m, d, b, workloads, csv) {
+  if (file.exists(csv)) file.remove(csv)
+  log <- suppressWarnings(system2(rscript, c(file.path(here, "loop_parity.R"), paste0("--lib=", lib),
+    paste0("--debug=", d), paste0("--batch-rows=", b), paste0("--mutation=", m),
+    paste0("--workloads=", paste(workloads, collapse = ",")), paste0("--out=", csv)), stdout = TRUE, stderr = TRUE))
+  status <- attr(log, "status") %||% 0L
+  rows <- if (file.exists(csv)) utils::read.csv(csv, stringsAsFactors = FALSE, na.strings = character()) else NULL
+  list(status = as.integer(status), last = utils::tail(log, 1L), rows = rows)
+}
+`%||%` <- function(a, b) if (is.null(a)) b else a
 for (g in groups) {
   m <- g$mutation[[1L]]; d <- g$debug[[1L]]; b <- g$batch_rows[[1L]]
-  csv <- file.path(out, sprintf("variant_%s_debug%d_b%d.csv", m, d, b))
-  if (file.exists(csv)) file.remove(csv)
-  log <- system2(rscript, c(file.path(here, "loop_parity.R"), paste0("--lib=", lib), paste0("--debug=", d),
-    paste0("--batch-rows=", b), paste0("--mutation=", m), paste0("--workloads=", paste(g$workload, collapse = ",")),
-    paste0("--out=", csv)), stdout = TRUE, stderr = TRUE)
-  cat(sprintf("debug %d %s (bound %d): %s\n", d, m, b, utils::tail(log, 1L)))
-  if (!file.exists(csv)) {
-    failures <- c(failures, sprintf("%s debug %d: no result (%s)", m, d, utils::tail(log, 1L)))
+  r <- run_parity(m, d, b, g$workload, file.path(out, sprintf("variant_%s_debug%d_b%d.csv", m, d, b)))
+  cat(sprintf("debug %d %s (bound %d): status %d, %s\n", d, m, b, r$status, r$last))
+  if (r$status != 0L) failures <- c(failures, sprintf("%s debug %d: subprocess status %d (%s)", m, d, r$status, r$last))
+  if (is.null(r$rows)) {
+    failures <- c(failures, sprintf("%s debug %d: no result", m, d))
     next
   }
-  r <- utils::read.csv(csv, stringsAsFactors = FALSE, na.strings = character())
-  results[[length(results) + 1L]] <- r
-  got <- unique(r[, c("workload", "verdict")])
-  for (w in g$workload) {
-    v <- got$verdict[got$workload == w]
-    if (!identical(v, "CAUGHT")) failures <- c(failures, sprintf("%s / %s debug %d: %s", m, w, d,
-                                                               if (length(v)) v else "missing"))
+  results[[length(results) + 1L]] <- r$rows
+  # Every requested manifest row, by its full key and expected signal.
+  got <- unique(r$rows[, c("mutation", "workload", "debug", "batch_rows", "expect", "verdict")])
+  for (i in seq_len(nrow(g))) {
+    hit <- got[got$mutation == g$mutation[[i]] & got$workload == g$workload[[i]] & got$debug == g$debug[[i]] &
+               got$batch_rows == g$batch_rows[[i]] & got$expect == g$expect[[i]], ]
+    v <- if (nrow(hit) == 1L) hit$verdict else if (nrow(hit) == 0L) "missing" else "duplicated"
+    if (!identical(v, "CAUGHT")) failures <- c(failures, sprintf("%s / %s debug %d: %s", m, g$workload[[i]], d, v))
   }
+  extra <- setdiff(got$workload, g$workload)
+  if (length(extra)) failures <- c(failures, sprintf("%s debug %d: unrequested rows %s", m, d, paste(extra, collapse = ",")))
 }
-# Negative controls: an unrelated error and an unreached patch must not be
-# CAUGHT, so the gate is shown to fail closed.
-controls <- c(control_unrelated = "UNRELATED", control_unreached = "UNREACHED")
+# Negative controls: an unrelated error, an unreached patch and a store
+# variant that writes through a path other than the one it declares must not
+# be CAUGHT; each must exit 1 with its declared verdict.
+controls <- c(control_unrelated = "UNRELATED", control_unreached = "UNREACHED", control_wrong_store_path = "MISSED")
 if (!nzchar(only_debug) || identical(only_debug, "0")) for (m in names(controls)) {
-  csv <- file.path(out, sprintf("control_%s.csv", m))
-  if (file.exists(csv)) file.remove(csv)
-  log <- system2(rscript, c(file.path(here, "loop_parity.R"), paste0("--lib=", lib), "--debug=0",
-    paste0("--mutation=", m), "--workloads=crossover_3x40", paste0("--out=", csv)), stdout = TRUE, stderr = TRUE)
-  v <- if (file.exists(csv)) unique(utils::read.csv(csv, stringsAsFactors = FALSE)$verdict) else "missing"
-  cat(sprintf("control %s: %s (expected %s)\n", m, paste(v, collapse = ","), controls[[m]]))
-  if (!identical(v, controls[[m]])) failures <- c(failures, sprintf("control %s: %s, expected %s", m, paste(v, collapse = ","), controls[[m]]))
+  b <- if (identical(m, "control_wrong_store_path")) 8L else 65536L
+  r <- run_parity(m, 0L, b, "crossover_3x40", file.path(out, sprintf("control_%s.csv", m)))
+  v <- if (is.null(r$rows)) "missing" else unique(r$rows$verdict)
+  cat(sprintf("control %s: %s, status %d (expected %s, status 1)\n", m, paste(v, collapse = ","), r$status, controls[[m]]))
+  if (!identical(v, controls[[m]]) || r$status != 1L) {
+    failures <- c(failures, sprintf("control %s: %s status %d, expected %s status 1", m, paste(v, collapse = ","), r$status, controls[[m]]))
+  }
+  if (!is.null(r$rows)) results[[length(results) + 1L]] <- r$rows
 }
 all_rows <- do.call(rbind, results)
 for (d in unique(manifest$debug)) {

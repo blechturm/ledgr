@@ -1,8 +1,8 @@
 # The harness side of the compact-state lean loop (LDG-3219; interface
 # Sections 19.1, 19.2 and 19.6). The fold (loop.R) reaches it only through
 # `lean_hooks`; lean_loop_install() replaces the inert default with
-# lean_harness_hooks() and binds the lean envelope, the two context read
-# methods and two entry recorders over the pin. Only harnesses call these;
+# lean_harness_hooks() and binds the lean envelope, the context read
+# method and the entry recorders over the pin. Only harnesses call these;
 # nothing in R/ does.
 #
 # What the harness adds around a lean fold:
@@ -238,21 +238,21 @@ lean_loop_run <- function(fn) {
   structure(list(value = out), lean = record)
 }
 
-# Binds the lean envelope, the two context read methods and the entry
-# recorders over the pin and installs the harness hooks; returns the
-# function that restores the pin and the inert hooks. With hooks = FALSE
-# only the envelope and the read methods are bound and the hooks stay
-# inert, as the fold would run in production (checklist row 15).
+# Binds the lean envelope, the context read method and the entry recorders
+# over the pin and installs the harness hooks; returns the function that
+# restores the pin and the inert hooks. With hooks = FALSE only the envelope
+# and the read method are bound and the hooks stay inert, as the fold would
+# run in production (checklist row 15).
 lean_loop_install <- function(hooks = TRUE) {
   ns <- asNamespace("ledgr")
   lean <- list(ledgr_fold_envelope = lean_fold_envelope,
-               "$.ledgr_pulse_context" = lean_ctx_dollar, "$.ledgr_strategy_state_view" = lean_state_dollar,
+               "$.ledgr_pulse_context" = lean_ctx_dollar,
                ledgr_run_fold = lean_run_fold, ledgr_walk_forward = lean_walk_forward,
                ledgr_sweep_impl = lean_sweep_impl)
-  if (!hooks) lean <- lean[1:3]
+  if (!hooks) lean <- lean[1:2]
   pinned <- lapply(stats::setNames(names(lean), names(lean)), get, envir = ns)
-  if (!identical(pinned[[2L]], lean_pin_ctx_dollar) || !identical(pinned[[3L]], lean_pin_state_dollar)) {
-    stop("lean_loop_install: the pinned read methods are not bound (already installed?)", call. = FALSE)
+  if (!identical(pinned[[2L]], lean_pin_ctx_dollar)) {
+    stop("lean_loop_install: the pinned read method is not bound (already installed?)", call. = FALSE)
   }
   bind <- function(values) {
     for (name in names(values)) {
@@ -267,7 +267,6 @@ lean_loop_install <- function(hooks = TRUE) {
       lockBinding("ledgr_walk_forward", pkg)
     }
     registerS3method("$", "ledgr_pulse_context", values[[2L]], envir = ns)
-    registerS3method("$", "ledgr_strategy_state_view", values[[3L]], envir = ns)
   }
   bind(lean)
   if (hooks) lean_hooks <<- lean_harness_hooks()

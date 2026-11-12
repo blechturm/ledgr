@@ -36,13 +36,22 @@ for (o in names(owners)) {
   }, "")
   expect <- c(expect, row(owners[[o]], v))
 }
-lc <- cells[cells$arm == "lean" & !is.na(cells$est_us_per_pulse), ]
-us <- function(s, cs) round(sum(lc$est_us_per_pulse[lc$shape == s & lc$cell %in% cs]))
+lc <- cells[cells$arm == "lean", ]
+# a required cell without samples prints "unresolved", never a number
+us <- function(s, cs) {
+  x <- lc[lc$shape == s & lc$cell %in% cs, ]
+  if (!nrow(x)) return("0")
+  if (any(x$resolution == "unresolved")) return("unresolved")
+  as.character(round(sum(x$est_us_per_pulse)))
+}
+named <- unique(lc$cell[startsWith(lc$cell, "loop: ") & lc$cell != "loop: residual"])
 loop_rows <- list("P3 plan" = "P3", "strategy: ledgr callees" = "strategy: ledgr callees", "P2 context build" = "P2 context",
   "P4 FIFO" = "P4 FIFO", "P4 other (fill records, position facts)" = "P4 other", "P5 commit" = "P5",
   "P2 other (output checks)" = "P2 other", "strategy: own work" = "strategy: own work",
-  "strategy: call wrapper" = "strategy: call wrapper", "P1, E, residual" = c("P1", "E advance", "loop: residual"))
-for (n in names(loop_rows)) expect <- c(expect, row(n, vapply(shapes, function(s) us(s, loop_rows[[n]]), 0)))
+  "strategy: call wrapper" = "strategy: call wrapper", "P1 valuation" = "P1", "E advance" = "E advance",
+  "loop body, named callees" = named, "loop body, base code (residual)" = "loop: residual")
+if (!length(named)) loop_rows[["loop body, named callees"]] <- NULL
+for (n in names(loop_rows)) expect <- c(expect, row(n, vapply(shapes, function(s) us(s, loop_rows[[n]]), "")))
 for (s in shapes) {
   x <- rep[rep$arm == "lean" & rep$shape == s, ]
   expect <- c(expect, row(label[[s]], round(x$real_median_us), round(x$plain_median_us), f2(x$context_premium_us_per_instrument)))

@@ -1,9 +1,9 @@
-command: C:\Program Files\R\R-4.6.1\bin\x64\Rterm.exe --no-echo --no-restore --file=dev/bench/v0_2_3_lean_tuning_profile/cost_map.R --args --lib=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151 --out=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/costmap2
-head: 8c233ccad757f5a55e2b4c1b8938ca42a63c305b
-dev/lean_core changes against head: 8
+command: C:\Program Files\R\R-4.6.1\bin\x64\Rterm.exe --no-echo --no-restore --file=dev/bench/v0_2_3_lean_tuning_profile/cost_map.R --args --lib=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151 --out=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/costmap3
+head: 718b49c902cbd11a79b9e510f84fec7a95a16392
+dev/lean_core changes against head: 7
 pin: d5b3a151
 library: C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151
 R: R version 4.6.1 (2026-06-24 ucrt)
 platform: x86_64-w64-mingw32
 power plan: Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (High performance)
-started: 2026-11-12 08:45:21 UTC
+started: 2026-11-12 11:11:36 UTC

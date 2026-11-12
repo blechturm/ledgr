@@ -908,7 +908,13 @@ public behavior except the explicit pulse-plumbing ledger differences.
      functions of point 1, with no behaviour change, and maps the whole
      run's cost against the R-floor stage-2 figures; then Cut 15 tunes the
      loop, scoped from that map, and a feature-engine RFC seed follows the
-     map's feature numbers. Each slice claims only what its workloads need.
+     map's feature numbers. Cut 15's measuring step starts with a
+     skeleton-floor spike (maintainer, 2026-11-12): the lean skeleton (state
+     containers, stage functions and hand-offs, recording, hooks) with each
+     stage's work cut to the R-floor's, timed against the floor, and the
+     suspect mechanisms (`<<-` column writes, list hand-offs, per-pulse hook
+     calls) timed alone, so the skeleton's own cost is known before helpers
+     or later slices build on it. Each slice claims only what its workloads need.
      Close reviews from Cut 14 on get one correction pass, with a further
      round only for a wrong answer on a covered workload (maintainer,
      2026-11-11).
