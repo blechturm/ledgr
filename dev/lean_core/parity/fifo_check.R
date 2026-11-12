@@ -50,7 +50,8 @@ if (file.exists(file.path(scratch, "fifo_mutations.csv"))) {
     if (length(short)) problems <- c(problems, paste("stream", short, col))
   }
   m <- read("fifo_mutations.csv")
-  if (nrow(m) != 8L || !all(m$fails_parity))   # six, plus Cut 15's two simple-path mutations problems <- c(problems, paste("mutation passes parity:", m$mutation[!m$fails_parity]))
+  # Six mutations, plus Cut 15's two for the simple lot path.
+  if (nrow(m) != 8L || !all(m$fails_parity)) problems <- c(problems, paste("mutation passes parity:", m$mutation[!m$fails_parity]))
   k <- read("fifo_calls.csv")
   if (!all(k$allowed)) problems <- c(problems, paste("lean code calls", k$ledgr_function[!k$allowed]))
 }
