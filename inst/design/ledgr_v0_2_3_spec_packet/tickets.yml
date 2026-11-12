@@ -1691,8 +1691,8 @@ cuts:
   - id: 15
     name: "Lean loop tuning (macro WS16, between slices 1 and 2)"
     cut: "2026-11-12"
-    status: "proposed"
-    accepted: null
+    status: "accepted"
+    accepted: "2026-11-12 by the maintainer, after the cut review passed at re-review 2."
     opening: >-
       Cut 14 restructured the slice-1 lean loop into named stages and mapped
       the whole run: narrow long runs spend 67-72 percent of their time in
@@ -2126,8 +2126,8 @@ workstreams:
   - id: 32
     name: "Lean loop tuning"
     cut: 15
-    status: "pending"
-    accepted: null
+    status: "accepted"
+    accepted: "2026-11-12 by the maintainer with Cut 15."
     close_review: null
     depends_on_workstream: 31
     requires_review_acceptance: true
