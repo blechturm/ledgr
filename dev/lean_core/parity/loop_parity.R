@@ -150,20 +150,10 @@ loop_mutations <- list(
     c("    rm(\"positions\", envir = lookup)",
       "    makeActiveBinding(\"positions\", function() { p <- pos; names(p) <- ids; p }, lookup)"), "after")),
     tables = "^run_diagnostic"),
-  # Cut 15 decision 2: the new fast paths, wrong.
+  # Cut 15 decision 2: the shared state view, wrong.
   state_view_fast = variant("differ", list(edit("loop.R", "lean_strategy_view",
     "    class(view) <- c(\"ledgr_strategy_state_view\", \"list\")", "    class(view) <- \"ledgr_strategy_state_view\"")),
     error = "Lean state view differs from the pin's"),
-  feature_table = variant("differ", list(edit("loop.R", "lean_fold_envelope",
-    "    assign(nm, ledgr_resolve_feature_name(nm, name_lookup), envir = resolved_names)",
-    "    assign(nm, rev(def_ids)[[1L]], envir = resolved_names)")),
-    error = "Lean feature-name resolution differs from the pin's|Lean context field .* differs from the pin's"),
-  # Cut 15, LDG-3224: the reconciliation detail's fast path reads the wrong
-  # column for cash_before.
-  recon_detail_column = variant("differ", list(edit("loop.R", "lean_recon_detail",
-    "  frame <- data.frame(actual_gross_exposure = m[, 1L], cash_before = m[, 2L], exposure_basis = \"decision_mark_gross\",",
-    "  frame <- data.frame(actual_gross_exposure = m[, 1L], cash_before = m[, 5L], exposure_basis = \"decision_mark_gross\",")),
-    error = "Lean reconciliation detail differs from the pin's", tables = "diagnostic"),
   # Round 4, finding 3: a sweep with workers not refused at entry.
   # Negative controls (loop_variants.R): each must NOT be caught.
   control_unrelated = variant("differ", list(edit("loop.R", "lean_p4_apply",

@@ -1075,7 +1075,6 @@ Cut 15 tunes the slice-1 loop with no behaviour change (decisions 1-6 of
 Cut 15 in `tickets.yml`). Each fast path below names its dispatch
 predicate, the upstream guarantees it relies on, its canonical comparator
 (checked in debug on every call it serves) and its runtime fallback.
-Dispatch on both sides is shown by `parity/loop_dispatch.R`.
 
 LDG-3222 (the strategy boundary in P2):
 
@@ -1085,23 +1084,20 @@ LDG-3222 (the strategy boundary in P2):
   values but never writes into them, so R's copy-on-modify keeps a retained
   view frozen. Comparator: `ledgr_strategy_state_view()`, whose result it
   equals (`identical()`). Fallback: any other input goes to
-  `ledgr_strategy_state_view()`.
-- Feature-name table. Predicate: the accessor's name is a non-empty,
-  non-missing character scalar found in a table built once per run from the
-  readable names through `ledgr_resolve_feature_name()`. Guarantee: name
-  resolution depends only on the run's prepared lookup. Comparator: the
-  resolver on the same name. Fallback: every other input goes to the
-  resolver, which refuses as the pin does; the debug context comparison
-  also reads `.feature_vector` with names outside the table.
-- Context reads: the feature branch of `lean_ctx_dollar()` inlines
-  `ledgr_pulse_context_cache_set()` and tests readability by the pin's
-  readable environment (each readable name is bound to `TRUE`); the
-  accessor skips its context subset when that subset is the identity. The
-  context is built as a list with its class assigned, not through
+  `ledgr_strategy_state_view()`. Dispatch on both sides:
+  `parity/loop_dispatch.R`. Kept by the maintainer (2026-11-12) at a
+  median loop saving of 1.5, 2.3 and 2.9 percent, unresolved by the rule.
+- The context is built as a list with its class assigned, not through
   `structure()`; the positions snapshot uses `names<-`; the short-exposure
   test is `any(sq < 0 & sq < pos)`, the same set as `sq < pmin(pos, 0)` for
   finite values (targets are finite here). Comparator: the debug context
-  comparison of every raw field and public read.
+  comparison of every raw field and public read, which now also reads
+  `.feature_vector` with names the resolver refuses.
+- Deleted by the maintainer (2026-11-12) after the keep rule found them
+  unresolved below 2 percent on every shape: a per-run feature-name table
+  (median saving 0.5, 0.9 and -1.4 percent) and the inlined cache write of
+  the context read method (2.0, 1.0 and 1.5 percent). The feature read and
+  accessor are Cut 14's again.
 
 The per-pulse `tryCatch()` around the strategy call stays (its cheaper forms
 save under the stop rule's 2 percent; Cut 15 R2).
@@ -1124,23 +1120,16 @@ LDG-3223 (planner and FIFO kernel):
   (`fifo_check.R`, `fifo_simple_cases.R`). Fallback: any other block, and
   any non-finite value, goes to the general lean kernel, which grows,
   compacts, refuses and reports as before. The FIFO calls no new ledgr
-  function.
+  function. Kept by the rule (median loop saving 6.7, 6.0 and 6.8 percent).
 - The planner keeps one path: a prototype fast path for the same common
   case saved about 8 us per call (about 1.8 percent of the loop on
   10 x 7,200), under the stop rule's 2 percent.
 
-LDG-3224 (recording, commit and valuation):
-
-- Reconciliation detail, `lean_recon_detail()` in the terminal expansion.
-  Predicate: every value of the pulses' reconciliation records is finite,
-  and the pin's NDJSON writer returns one line per row. Guarantee:
-  `ledgr_fold_reconciliation_detail()` encodes the same seven fields with
-  the same canonical options (`ledgr_json_write_canonical_v2`), and
-  `ledgr_json_write_canonical_ndjson()` writes one such object per data-frame
-  row in a single call. Comparator: the pin's per-row function on every row,
-  in debug. Fallback: each row through the pin's function, which refuses a
-  non-finite value as before.
-- Not changed, each under the stop rule's 2 percent on 10 x 7,200 (measured
-  on the real objects): skipping the state patch's name checks for repeated
-  names (about 5 us), an inlined field validator (2 to 3 us), gross exposure
-  (4 us for both), P1 and P4's per-pulse record writes.
+LDG-3224 (recording, commit and valuation): no change. Every cell it owns
+falls under the stop rule's 2 percent on 10 x 7,200 (measured on the real
+objects): skipping the state patch's name checks for repeated names (about
+5 us per pulse), an inlined field validator (2 to 3 us), gross exposure
+(4 us for both), P1 and P4's per-pulse record writes. A one-call encoding of
+the terminal reconciliation details through the pin's NDJSON writer was
+built and measured: it saved 0.04 to 0.09 s per run (under 1 percent of
+the envelope) and was deleted by the maintainer (2026-11-12).

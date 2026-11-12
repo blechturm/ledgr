@@ -158,16 +158,10 @@ lean_ctx_dollar <- function(x, name) {
     hit <- get0(name, envir = cache, inherits = FALSE)
     if (!is.null(hit)) return(hit)
     prepared <- lookup$feature_lookup
-    # the pin's readable_env binds every readable name to TRUE
-    if (is.null(lean_ctx_asset[[name]]) && is.list(prepared) && is.environment(readable <- prepared$readable_env) &&
-        !is.null(readable[[name]])) {
-      value <- as.numeric(lookup$feature_vector(name))
-      names(value) <- as.character(lookup$universe %||% character())
-      # ledgr_pulse_context_cache_set(lookup, name, value), inline
-      counts <- lookup$build_counts
-      if (is.environment(counts)) counts[[name]] <- as.integer((counts[[name]] %||% 0L) + 1L)
-      assign(name, value, envir = cache)
-      return(value)
+    if (is.null(lean_ctx_asset[[name]]) && is.list(prepared) && is.environment(prepared$readable_env) &&
+        exists(name, envir = prepared$readable_env, inherits = FALSE)) {
+      value <- stats::setNames(as.numeric(lookup$feature_vector(name)), as.character(lookup$universe %||% character()))
+      return(ledgr_pulse_context_cache_set(lookup, name, value))
     }
   }
   lean_pin_ctx_dollar(x, name)
@@ -188,30 +182,6 @@ lean_strategy_view <- function(values) {
     return(view)
   }
   ledgr_strategy_state_view(values)
-}
-
-# The reconciliation rows' detail_json, as vapply() over
-# ledgr_fold_reconciliation_detail() per pulse would build it. Fast path: when
-# every value is finite, the pin's NDJSON writer encodes all rows in one call
-# (the same canonical options, one object per row). Otherwise, or if the
-# writer does not return one line per row, each row goes to the pin, which
-# refuses a non-finite value as before. Columns of `m` (hd_recon): actual,
-# cash before, intended, post-risk, recorded final cash, virtual final cash.
-lean_recon_detail <- function(m) {
-  pin_rows <- function() vapply(seq_len(nrow(m)), function(j) ledgr_fold_reconciliation_detail(
-    cash_before = m[j, 2L], virtual_final_cash = m[j, 6L], recorded_final_cash = m[j, 5L],
-    intended_gross_exposure = m[j, 3L], post_risk_gross_exposure = m[j, 4L],
-    actual_gross_exposure = m[j, 1L]), character(1L))
-  if (!all(is.finite(m))) return(pin_rows())
-  frame <- data.frame(actual_gross_exposure = m[, 1L], cash_before = m[, 2L], exposure_basis = "decision_mark_gross",
-    intended_gross_exposure = m[, 3L], post_risk_gross_exposure = m[, 4L], recorded_final_cash = m[, 5L],
-    virtual_final_cash = m[, 6L])
-  out <- strsplit(ledgr_json_write_canonical_ndjson(frame), "\n", fixed = TRUE)[[1L]]
-  if (length(out) != nrow(m)) return(pin_rows())
-  if (.lean_debug && !identical(out, pin_rows())) {
-    rlang::abort("Lean reconciliation detail differs from the pin's.", class = "ledgr_internal_error")
-  }
-  out
 }
 
 # flat() is the pin's; hold() returns the aligned finite positions directly.
@@ -408,29 +378,15 @@ lean_fold_envelope <- function(execution, output_handler) {
   counts <- list(build = context_build_counts, prep = context_preparation_counts)
   schedule_fn <- function(i) { force(i); function(schedule) schedule_query(schedule, i) }
   # The pin's projection accessor composed with its context filter.
-  # Fast path: a readable name resolves through a table built once from the
-  # pin's resolver; any other name goes to the resolver.
-  resolved_names <- new.env(parent = emptyenv())
-  for (nm in feature_lookup_state$readable_names) {
-    assign(nm, ledgr_resolve_feature_name(nm, name_lookup), envir = resolved_names)
-  }
   feature_fn <- function(pidx) {
     force(pidx)
     function(feature_name, default = NA_real_) {
-      resolved <- if (is.character(feature_name) && length(feature_name) == 1L && !is.na(feature_name) &&
-                      nzchar(feature_name)) get0(feature_name, envir = resolved_names, inherits = FALSE)
-      if (.lean_debug && !is.null(resolved) &&
-          !identical(resolved, ledgr_resolve_feature_name(feature_name, name_lookup))) {
-        rlang::abort("Lean feature-name resolution differs from the pin's.", class = "ledgr_internal_error")
-      }
-      feature_name <- resolved %||% ledgr_resolve_feature_name(feature_name, name_lookup)
+      feature_name <- ledgr_resolve_feature_name(feature_name, name_lookup)
       mat <- feature_values[[feature_name]]
       if (is.null(mat)) return(rep(as.numeric(default), n_proj)[ctx_pos])
-      v <- as.numeric(mat[, pidx])
-      if (all_pos) v else v[ctx_pos]
+      as.numeric(mat[, pidx])[ctx_pos]
     }
   }
-  all_pos <- identical(ctx_pos, seq_len(n_proj))   # the subset by ctx_pos is the identity
 
   # The pulse context: the pin's class, raw-field order and lookup service,
   # filled directly from the prepared planes.
@@ -462,7 +418,6 @@ lean_fold_envelope <- function(execution, output_handler) {
     class(ctx) <- "ledgr_pulse_context"
     ctx
   }
-
 
   # Debug only: the pin's context builder for the same pulse.
   lean_loop_pin_ctx <- function(i, col, close, pv, positions_snapshot, p2) {
@@ -517,7 +472,7 @@ lean_fold_envelope <- function(execution, output_handler) {
       }
     }
     if (!identical(ra$flat(), rb$flat()) || !identical(ra$hold(), rb$hold())) fail("flat()/hold()")
-    # the resolution table's names, then names outside it (the resolver's side)
+    # the readable names, then names the resolver refuses
     for (nm in c(lapply(feature_lookup_state$readable_names, identity),
                  list("lean_no_such_feature", "", NA_character_, c("a", "b"), 1L, NULL))) {
       if (!identical(caught(ra$.feature_vector(nm)), caught(rb$.feature_vector(nm)))) {
@@ -1043,7 +998,10 @@ lean_fold_envelope <- function(execution, output_handler) {
     }
     rc <- p[hd_has_recon[p]]
     if (length(rc)) {
-      detail <- lean_recon_detail(hd_recon[rc, , drop = FALSE])
+      detail <- vapply(rc, function(j) ledgr_fold_reconciliation_detail(
+        cash_before = hd_recon[j, 2L], virtual_final_cash = hd_recon[j, 6L], recorded_final_cash = hd_recon[j, 5L],
+        intended_gross_exposure = hd_recon[j, 3L], post_risk_gross_exposure = hd_recon[j, 4L],
+        actual_gross_exposure = hd_recon[j, 1L]), character(1L))
       add(lay$fill0[rc] + hd_nfill[rc] + 1L, rc, list(stage = "reconciliation", outcome = "reconciled",
         reason_code = "affordability_reconciled", reasons = "affordability_reconciled", detail_json = detail))
     }

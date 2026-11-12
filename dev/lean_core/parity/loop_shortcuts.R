@@ -75,15 +75,12 @@ delegations <- list(
 )
 
 # Cut 15 decision 4 (--set=cut15): each new lean copy of pin logic, delegated
-# back to the pin in one arm.
+# back to the pin in one arm. (The feature-name table and the inlined cache
+# write were measured here too and deleted by the maintainer, 2026-11-12.)
 delegations15 <- list(
   state_view = list(e("loop.R", "lean_context",
     "      state = lean_strategy_view(strategy_state), .safety_state = \"GREEN\",",
     "      state = ledgr_strategy_state_view(strategy_state), .safety_state = \"GREEN\",")),
-  cache_set = list(e("loop.R", "lean_ctx_dollar", "      counts <- lookup$build_counts",
-    "      return(ledgr_pulse_context_cache_set(lookup, name, value))")),
-  feature_table = list(e("loop.R", "lean_fold_envelope",
-    "    assign(nm, ledgr_resolve_feature_name(nm, name_lookup), envir = resolved_names)", "    NULL")),
   fifo_simple = list(e("fifo.R", "lean_lot_apply", "  simple <- lean_lot_simple(book, input)", "  simple <- NULL"))
 )
 set15 <- identical(arg("set", "cut14"), "cut15")

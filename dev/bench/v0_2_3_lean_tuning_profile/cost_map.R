@@ -281,8 +281,6 @@ stack_witnesses <- list(
   "P4 FIFO" = c("lean_lot_simple", "lean_lot_apply", "lean_lot_fill", "lean_p4_apply", "run_loop"),
   "P4 FIFO" = c("lean_lot_tol", "lean_lot_general", "lean_lot_apply", "lean_lot_fill", "lean_p4_apply"),
   "P2 context" = c("lean_strategy_view", "lean_context", "lean_p2_decide", "run_loop"),
-  "transfer: expand" = c("ledgr_json_write_canonical_ndjson", "lean_recon_detail", "lean_loop_expand", "fn",
-                         "hooks$publish", "run_loop"),
   "strategy: ledgr callees" = c("$.ledgr_pulse_context", "$", "fn", "ledgr_call_strategy_fn", "doTryCatch",
                                 "tryCatchOne", "tryCatchList", "tryCatch", "lean_p2_decide"),
   "strategy: call wrapper" = c("tryCatchList", "tryCatch", "lean_p2_decide", "run_loop")
