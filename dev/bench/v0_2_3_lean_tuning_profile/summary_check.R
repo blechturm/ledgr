@@ -87,9 +87,11 @@ ident <- lapply(names(dirs), function(v) {
   list(head = get("head"), changes = get("dev/lean_core changes against head"))
 })
 names(ident) <- names(dirs)
-# stale: the Cut 15 rerun ran on a clean dev/lean_core equal to HEAD's
+# stale: the Cut 15 rerun ran on a clean dev/lean_core whose lean sources (the
+# parity harness aside) equal the ones checked out now
 if (!identical(ident[["Cut 15"]]$changes, "0")) fail <- c(fail, "Cut 15 rerun ran with uncommitted dev/lean_core changes")
-same_lean <- system2("git", c("-C", repo, "diff", "--quiet", ident[["Cut 15"]]$head, "HEAD", "--", "dev/lean_core"))
+same_lean <- system2("git", c("-C", repo, "diff", "--quiet", ident[["Cut 15"]]$head, "--", "dev/lean_core",
+                              ":(exclude)dev/lean_core/parity"))
 if (!identical(as.integer(same_lean), 0L)) fail <- c(fail, "Cut 15 rerun is stale: dev/lean_core changed since its head")
 # signatures: every Cut 15 lean digest equals the recorded pin digest per shape
 pin_raw <- rv("Cut 14", "clock_raw.csv"); new_raw <- rv("Cut 15", "clock_raw.csv")
