@@ -53,6 +53,10 @@ flat <- function() {
       for (k in seq_len(iters)) { v <- list(col = k, close = 1, pv = 2); g(v) } },
     hook_call = function() { for (k in seq_len(iters)) if (length(hooks$uncovered())) stop("x") },
     try_catch = function() { g <- function() 1; for (k in seq_len(iters)) tryCatch(g(), error = function(e) stop(e)) },
+    try_catch_prebuilt_handler = function() { g <- function() 1; h <- function(e) stop(e); for (k in seq_len(iters)) tryCatch(g(), error = h) },
+    try_catch_no_handler = function() { g <- function() 1; for (k in seq_len(iters)) tryCatch(g()) },
+    calling_handlers = function() { g <- function() 1; h <- function(e) stop(e); for (k in seq_len(iters)) withCallingHandlers(g(), error = h) },
+    try_catch_around_loop = function() { g <- function() 1; h <- function(e) stop(e); tryCatch(for (k in seq_len(iters)) g(), error = h) },
     plain_call0 = function() { g <- function() 1; for (k in seq_len(iters)) g() },
     env_scalar_write = function() { for (k in seq_len(iters)) live$cur_stage <- "valuation" },
     super_scalar = function() { g <- function() n <<- n + 1L; for (k in seq_len(iters)) g() }

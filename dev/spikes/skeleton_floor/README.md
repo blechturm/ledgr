@@ -66,6 +66,15 @@ call 400; `tryCatch` 3,450. A subset write into a vector held in an
 environment, `e$x[[j]] <- v`, copies the vector: 1.4, 18 and 118 us at
 those lengths. The lean loop does not use that form.
 
+`tryCatch` costs its 3.4 us itself, whatever the handler: 3,350 ns with a
+prebuilt handler and 1,100 with none, because it runs as several nested R
+calls. `withCallingHandlers` with the same handler costs 950 ns. One
+`tryCatch` around the whole loop costs about 100 ns per iteration. The
+lean handler aborts in every case, so either cheaper form would keep its
+behaviour. One handler around the loop would also need to know the pulse
+was inside the strategy call and which context to report (`live$cur_stage`
+already records the stage).
+
 ## What was learned
 
 - `<<-` writes do not copy. Each one costs a flat 0.3 to 0.4 us whatever
