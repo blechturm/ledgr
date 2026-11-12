@@ -1595,6 +1595,82 @@ cuts:
       wrong answers only, against Section 19 and the evidence. A third
       correction round goes to the maintainer.
     cut_review: "NEEDS_TYPE_2 in cut_review_13.md (independent clean-context Codex CLI, gpt-6.1-sol/high, at 73e64d3a). R1, R2 and R4-R9 applied to interface Section 19 and LDG-3219 (reconciliation stop, whole-attempt abort with RNG restore, db_live refusal and return-shape/RNG/context witnesses, retained FIFO leg columns and an order-shaped P3 handoff, a constructor-level hold detector, the surviving close obligations with a 900-line budget, fresh context wording, R-floor figures as loop-only). R3 (one logical publication after the loop conflicts with pulse-plumbing R7/R9 and Section 5) routed by the maintainer on 2026-11-10 to a narrow synthesis of the diagnostic-records amendment's D3 (rfc_diagnostic_records_v0_2_3_synthesis_d3.md, Codex; final review PASS, Claude), accepted by the maintainer on 2026-11-10 and installed: per-pulse logical commitment in memory, no store write during the loop, bounded terminal batches; Section 19.1, 19.5 and 19.7 rewritten from it. Slice-1 code may start."
+  - id: 14
+    name: "Lean loop restructure and whole-run cost map (macro WS16, between slices 1 and 2)"
+    cut: "2026-11-12"
+    status: "proposed"
+    opening: >-
+      Slice 1 (LDG-3219, closed 2026-11-12) runs the published crossover
+      workloads at 0.17-0.18 of the pin's whole-run time on narrow long
+      shapes and 0.74 on 1,166 x 252, still about 11-27x PMwR. Its loop is
+      one 900-line closure in which E and P1-P5 are not separate functions,
+      contrary to compact-state point 1 (macro WS16), and the largest bucket
+      of the whole-run profile is unattributed loop time (88 of about 340 us
+      per pulse on 10 x 7,200, "loop: other",
+      dev/bench/v0_2_3_lean_tuning_profile/results). The maintainer chose to
+      restructure before tuning and to measure the whole run before scoping
+      the tuning cut and the feature-engine RFC (2026-11-12). This cut
+      changes no behaviour and adds no coverage.
+    authority: >-
+      macro_plan.md WS16 "Compact-state loop" point 1 (E and P1-P5 are named
+      functions with explicit inputs and outputs) and family method points
+      3-6; lean_core_interface.md Section 19 (slice 1, accepted 2026-11-10)
+      and its round-3/4 amendments; dev/lean_core/parity/loop_checklist.md;
+      dev/spikes/r_floor/README.md stage 2 (the per-guarantee floor) and the
+      fixed-cost profile; LDG-3217 evidence (lean preparation is about 1.0x
+      the pin in time, a memory win only).
+    measured_input: >-
+      Whole-run profile of the lean loop at a1966cf9 (profile.R, Rprof,
+      three runs, debug off; results/*_phases.csv): on 10 x 7,200 loop
+      other 88, strategy call 65, P3 planner 58, P2 context 46, P4 FIFO 43,
+      P5 state 21 us per pulse; terminal write 0.41 s, setup and commit
+      0.32 s, store and registration 0.17 s, feature projection and
+      features 0.27 s per run. Feature split (results/feature_split.csv):
+      ledgr's per-instrument machinery is 0.75-0.93 s of 0.83-1.10 s of
+      feature time on wide shapes; bare TTR 0.08-0.17 s. R-floor stage 2:
+      the floor with target validation, rich context, fixed-basket
+      availability and the WS15 trace difference runs at 26, 29 and 103 us
+      per pulse on 10 x 7,200, 20 x 23,400 and 500 x 1,260. Timing record
+      cut13-loop-1/ldg3219-gate-r1: fold 397, 458 and 4,817 us per pulse.
+    decisions: >-
+      (1) Restructure first, with no behaviour change: the gate, the 23
+      registered variants, batch one and the inert-hooks check pass
+      unchanged before and after. (2) Shortcuts that re-implement part of
+      the pin's validation stay only if they pay: each is timed against
+      delegating to the pin, and one that saves less than 2 percent of the
+      loop's per-pulse time on every timing shape is deleted. (3) The cost
+      map is measurement only: no threshold, no code change, no proposal;
+      it scopes Cut 15 (loop tuning) and the feature-engine RFC seed.
+      (4) Lean preparation is not installed for speed (LDG-3217). (5) No
+      new timing record: loop time is checked in-process against
+      4a3e08b8; the next timing record belongs to Cut 15.
+    identity_and_release_impact: >-
+      None. No file in R/, tests/, DESCRIPTION, NAMESPACE, vignettes or the
+      store format changes, and no dependency is added. Design impact:
+      lean_core_interface.md Section 19 gains a structure paragraph naming
+      the stage functions; the checklist and the variant registry follow
+      the new names.
+    sequencing: >-
+      One workstream, two serial tickets: LDG-3220 (restructure) then
+      LDG-3221 (cost map), because the loop's per-stage costs are measured
+      on the restructured loop. LDG-3221's H1 feature measurement and the
+      outside-the-loop phases do not depend on LDG-3220 and may run first
+      on an idle machine. Slice 2 and Cut 15 wait for this cut.
+    out_of_scope: >-
+      Any behaviour change, tuning or new coverage; any change in R/ or
+      tests/; installing lean preparation; a feature-engine, store-write or
+      guarantee design (RFCs after the cost map); compiled code; the five
+      D3 census cases routed to the switch cut; a new timing record.
+    workstreams: [31]
+    review_lifecycle: >-
+      An independent clean-context Codex CLI cut review, iterated to PASS
+      (maintainer, 2026-11-12). Workstream 31 then receives one independent
+      Type 1 close review of its whole diff and the cost map, wrong answers
+      and false evidence only. Under the maintainer's stop rule (2026-11-11)
+      its findings get one correction pass with no further review round
+      unless a finding is a wrong answer on a covered workload; a third
+      correction round goes to the maintainer.
+    cut_review: null
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -1875,6 +1951,15 @@ workstreams:
     depends_on_workstream: 29
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 30, after LDG-3219", reason: "The compact-state loop runs every slice-1 workload end to end with every run-store table, reader, condition and sweep result identical to the pin, debug on and off; it refuses every gate workload that uses an uncovered feature; its diagnostics are built only as exceptions and hold counts in the loop and rebuilt exactly after it; the registered mutations fail; and the timing run reports the whole-run ratio and the PMwR comparison."}
+  - id: 31
+    name: "Lean loop restructure and whole-run cost map"
+    cut: 14
+    status: "proposed"
+    accepted: null
+    close_review: null
+    depends_on_workstream: 30
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 31, after LDG-3221", reason: "The restructured loop holds E and P1-P5 and the terminal transfer as named functions and is bit-identical to the pin on the full gate with debug on and off; every registered variant is still caught by its expected signal; deleted shortcuts are the ones the timing rule names; and every number in the cost map reproduces from its runner and CSVs."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -4513,3 +4598,50 @@ tickets:
       - "Close review round 2 (same setup, on bb06aac9; ws30-close-out-r2/ws30_close_review_round2.md): round-1 findings confirmed fixed; CHANGES_REQUIRED with five narrower findings, all accepted: (1) a strategy that caught the condition and then failed was wrapped as a strategy error, without a rerun; (2) P5 committed after reconciliation and state validation; (3) the batch-fault witness counted any store call outside the loop, so the rollback evidence still overstated it; (4) dbGetQuery and dbSendQuery could write unseen; (5) NULL and other non-string names changed the direct-method error. Corrected in 5f6bcad7."
       - "Close review round 3 (same setup, on 3571cb5f; ws30-close-out-r3/ws30_close_review_round3.md): round-2 findings confirmed fixed; CHANGES_REQUIRED with five findings, all accepted, to the maintainer under the third-round rule: (1) the state-patch shortcut accepted a classed atomic patch the pin refuses, in production only, a public result difference; (2) a caller's own error handler around the workload prevented the rerun; (3) walk-forward ran lean; (4) a prepared dbBind insert evaded the detector; (5) a validated zero-pulse spec errored at the envelope. The maintainer chose fix and consolidate (2026-11-11): corrected in e4167a62 with the checklist, the hooks seam and the 16 broken variants above. The class pattern the maintainer flagged: each round's fixes addressed the reported case rather than its class; the checklist and the variants are the response."
       - "Close review round 4 (same setup, on 703f663b; ws30-close-out-r4/ws30_close_review_round4.md): the five round-3 findings confirmed fixed; CHANGES_REQUIRED with six findings, all accepted; the maintainer set the stop rule (2026-11-11): one fix pass, no round 5. (1) a rerun restored the seed but not the RNG kind when the caller had no seed, and the backstop witnesses seeded inside the rerun workload, so removing the restore went unseen; (2) a zero-pulse execution aligned the incoming strategy state, which the pin does only at a first pulse; (3) a sweep with workers had no named refusal (it ran whole on the pin); (4) the expansion witness watched the transfer loop, not every expansion, and the bundled store variant hid a missing path; (5) the checklist omitted D3's close census and the measurement duties; (6) the evidence claimed 16 variants caught with debug off, where 15 ran per mode. Corrected in 4a3e08b8, each with a witness and a broken variant (rng_restore_off, zero_pulse_align, workers_guard_off, expand_extra, the four store paths), the census rows and the counts above. rng_restore_off first missed seven of eight witnesses, because ledgr_run() and ledgr_sweep() restore the caller's state themselves; the witnesses now draw from the caller's stream before the run and catch it on all eight."
+  - id: "LDG-3220"
+    title: "Restructure the slice-1 lean loop into named stage functions"
+    workstream: 31
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3219"]
+    scope: >-
+      Split lean_fold_envelope (dev/lean_core/loop.R) into E and named P1-P5
+      functions with explicit inputs and outputs, plus the terminal
+      transfer, writing by index into the run-long state as compact-state
+      point 1 requires. Time each strategy-facing shortcut (the two read
+      methods, the hold() helper, the full-target and state-patch fast
+      paths, gross exposure) against delegating to the pin and delete those
+      the 2 percent rule names. Re-anchor every registered variant to the
+      function it patches. No behaviour change.
+    acceptance:
+      - "E, P1, P2, P3, P4, P5 and the terminal transfer are separate named functions in loop.R; the pulse loop body calls them and holds no stage logic of its own; lean_core_interface.md Section 19 names them in one structure paragraph"
+      - "the full gate (loop_parity.R, every workload) is identical to the pin with debug on and off, batch size one and the inert-hooks check pass on their registered workloads, and every registered variant in loop_mutations.sh is caught by its expected signal in its registered modes, on the restructured code"
+      - "each variant names the function it patches and its anchor is unique within that function; the runner refuses a variant whose anchor is missing or repeated"
+      - "a shortcut table reports, per shortcut, loop us per pulse with and without it on 10 x 7,200, 20 x 23,400 and 500 x 1,260 (in-process, debug off, byte-compiled, median of at least five runs); every shortcut saving less than 2 percent of loop time on all three shapes is deleted, and each deletion removes its variant or retargets it"
+      - "loop us per pulse on the same three shapes is no more than 5 percent above 4a3e08b8's (same in-process method), or the miss is reported to the maintainer"
+      - "loop.R production lines (role count as in LDG-3219) stay within 900 and are reported beside debug and harness lines"
+    evidence: []
+  - id: "LDG-3221"
+    title: "Map whole-run cost of the lean loop against the floor and PMwR"
+    workstream: 31
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3220"]
+    scope: >-
+      Measure where a whole committed run on the restructured lean loop
+      spends its time, to scope Cut 15 (loop tuning) and the feature-engine
+      RFC seed. Extend dev/bench/v0_2_3_lean_tuning_profile/profile.R so the
+      loop attributes time to the named stages, and report outside-the-loop
+      phases (snapshot open and verification, run registration, strategy
+      preflight, bars substrate, feature computation and projection,
+      terminal expansion and write, commit, finalisation). Run
+      features_h1.R on the private H1 store. Measurement only.
+    acceptance:
+      - "per-stage loop us per pulse (E, P1-P5, strategy call) on 10 x 7,200, 20 x 23,400, 500 x 1,260 and 1,166 x 252, with unattributed loop time below 10 percent of the loop, set beside the R-floor stage-2 layer figures for the three shapes it covers"
+      - "outside-the-loop seconds per run, by phase, on the same four shapes for the lean loop and the pin, from one runner"
+      - "H1 feature split from features_h1.R: the pin's feature series time against bare per-instrument TTR and the count of instruments with the simple shape, aggregates only, no instrument identifier or value in any output or commit"
+      - "a one-page summary in the profile directory ranks the measured costs by whole-run seconds per shape and names, for each, the owner it would go to (Cut 15, the feature-engine RFC, a store-write RFC or none); it proposes no design and sets no threshold"
+      - "every number in the summary reproduces from the runner's CSVs; Rprof shares are labelled estimates and the wall times beside them measured"
+    evidence: []

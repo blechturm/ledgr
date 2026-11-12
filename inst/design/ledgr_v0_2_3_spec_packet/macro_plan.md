@@ -902,6 +902,16 @@ public behavior except the explicit pulse-plumbing ledger differences.
   5. Lean preparation (LDG-3216), the FIFO kernel (LDG-3213), lean P3's
      planner logic, the parity and timing harnesses and the recorder carry
      over. Points 3-6 and the "Unchanged" list above stay in force.
+  6. **Between slices 1 and 2 (maintainer, 2026-11-12).** Slice 1 closed
+     at about 0.18 of the pin on narrow long runs and 11-27x PMwR. Before
+     slice 2: Cut 14 restructures the slice-1 loop into the named stage
+     functions of point 1, with no behaviour change, and maps the whole
+     run's cost against the R-floor stage-2 figures; then Cut 15 tunes the
+     loop, scoped from that map, and a feature-engine RFC seed follows the
+     map's feature numbers. Each slice claims only what its workloads need.
+     Close reviews from Cut 14 on get one correction pass, with a further
+     round only for a wrong answer on a covered workload (maintainer,
+     2026-11-11).
 - **Every family close (A2, A4).** For the first checkpoint; families after
   it use the family method above. WS16 uses frozen floor v1 and stage
   isolation under R11: each cut sets cost-above-floor budgets on both
