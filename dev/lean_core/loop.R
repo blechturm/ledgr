@@ -190,6 +190,30 @@ lean_strategy_view <- function(values) {
   ledgr_strategy_state_view(values)
 }
 
+# The reconciliation rows' detail_json, as vapply() over
+# ledgr_fold_reconciliation_detail() per pulse would build it. Fast path: when
+# every value is finite, the pin's NDJSON writer encodes all rows in one call
+# (the same canonical options, one object per row). Otherwise, or if the
+# writer does not return one line per row, each row goes to the pin, which
+# refuses a non-finite value as before. Columns of `m` (hd_recon): actual,
+# cash before, intended, post-risk, recorded final cash, virtual final cash.
+lean_recon_detail <- function(m) {
+  pin_rows <- function() vapply(seq_len(nrow(m)), function(j) ledgr_fold_reconciliation_detail(
+    cash_before = m[j, 2L], virtual_final_cash = m[j, 6L], recorded_final_cash = m[j, 5L],
+    intended_gross_exposure = m[j, 3L], post_risk_gross_exposure = m[j, 4L],
+    actual_gross_exposure = m[j, 1L]), character(1L))
+  if (!all(is.finite(m))) return(pin_rows())
+  frame <- data.frame(actual_gross_exposure = m[, 1L], cash_before = m[, 2L], exposure_basis = "decision_mark_gross",
+    intended_gross_exposure = m[, 3L], post_risk_gross_exposure = m[, 4L], recorded_final_cash = m[, 5L],
+    virtual_final_cash = m[, 6L])
+  out <- strsplit(ledgr_json_write_canonical_ndjson(frame), "\n", fixed = TRUE)[[1L]]
+  if (length(out) != nrow(m)) return(pin_rows())
+  if (.lean_debug && !identical(out, pin_rows())) {
+    rlang::abort("Lean reconciliation detail differs from the pin's.", class = "ledgr_internal_error")
+  }
+  out
+}
+
 # flat() is the pin's; hold() returns the aligned finite positions directly.
 lean_ctx_helpers <- function(lookup) {
   force(lookup)
@@ -1019,10 +1043,7 @@ lean_fold_envelope <- function(execution, output_handler) {
     }
     rc <- p[hd_has_recon[p]]
     if (length(rc)) {
-      detail <- vapply(rc, function(j) ledgr_fold_reconciliation_detail(
-        cash_before = hd_recon[j, 2L], virtual_final_cash = hd_recon[j, 6L], recorded_final_cash = hd_recon[j, 5L],
-        intended_gross_exposure = hd_recon[j, 3L], post_risk_gross_exposure = hd_recon[j, 4L],
-        actual_gross_exposure = hd_recon[j, 1L]), character(1L))
+      detail <- lean_recon_detail(hd_recon[rc, , drop = FALSE])
       add(lay$fill0[rc] + hd_nfill[rc] + 1L, rc, list(stage = "reconciliation", outcome = "reconciled",
         reason_code = "affordability_reconciled", reasons = "affordability_reconciled", detail_json = detail))
     }

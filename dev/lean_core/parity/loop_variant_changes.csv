@@ -11,3 +11,5 @@
 "add","live_positions","witness_retained_context",1,65536,"differ","Cut 15 R3: a retained context's positions follow later writes"
 "add","state_view_fast","crossover_3x40",1,65536,"differ","Cut 15 decision 2: the shared state view fast path, wrong"
 "add","feature_table","crossover_3x40",1,65536,"differ","Cut 15 decision 2: the feature-name resolution table, wrong"
+"add","recon_detail_column","crossover_3x40",0,65536,"differ","Cut 15 LDG-3224: the reconciliation detail fast path, wrong column"
+"add","recon_detail_column","crossover_3x40",1,65536,"differ","Cut 15 LDG-3224: the reconciliation detail fast path, wrong column"

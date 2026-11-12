@@ -111,6 +111,35 @@ for (id in names(direct)) {
     expected = c(expect_fast[[id]], !expect_fast[[id]]),
     matches_pin = identical(got, caught(ns$ledgr_strategy_state_view(direct[[id]]))), stringsAsFactors = FALSE)
 }
+# Direct cases for the reconciliation detail (LDG-3224): the fast side for a
+# finite matrix, the pin's rows for any non-finite value. The pin's per-row
+# function is traced, so its calls count the pin's side.
+pin_detail <- function(m) vapply(seq_len(nrow(m)), function(j) ns$ledgr_fold_reconciliation_detail(
+  cash_before = m[j, 2L], virtual_final_cash = m[j, 6L], recorded_final_cash = m[j, 5L],
+  intended_gross_exposure = m[j, 3L], post_risk_gross_exposure = m[j, 4L], actual_gross_exposure = m[j, 1L]), "")
+set.seed(20261112L)
+special <- c(0, -0, 1, -1, 0.1, 1 / 3, 1e-300, -1e-300, 1e300, 123456789012345678, 2^53, 2^53 + 2, 5e-324, 1e7,
+             9999999.999999998, 0.30000000000000004)
+mixed <- matrix(c(sample(special, 3000L * 3L, TRUE), stats::rnorm(3000L * 3L) * 10^sample(-10:12, 3000L * 3L, TRUE)),
+                3000L, 6L)[sample(3000L), ]
+recon <- list(
+  one_row = matrix(c(2, 1e7, 2, 2, 9999990, 9999990), 1L),
+  special_and_random = mixed,
+  non_finite = rbind(mixed[1:3, ], c(1, 2, NaN, 4, 5, 6)),
+  infinite = matrix(c(Inf, 1, 1, 1, 1, 1), 1L)
+)
+recon_fast <- c(one_row = TRUE, special_and_random = TRUE, non_finite = FALSE, infinite = FALSE)
+seen <- new.env(parent = emptyenv())
+trace("ledgr_fold_reconciliation_detail", where = ns, tracer = quote(seen$pin <- seen$pin + 1L), print = FALSE)
+for (id in names(recon)) {
+  seen$pin <- 0L
+  got <- caught(lean$lean_recon_detail(recon[[id]]))
+  pin_calls <- seen$pin
+  rows[[paste0("recon_", id)]] <- data.frame(case = paste0("recon_", id), branch = c("recon:fast", "recon:pin"),
+    calls = c(as.integer(pin_calls == 0L), pin_calls), expected = c(recon_fast[[id]], !recon_fast[[id]]),
+    matches_pin = identical(got, caught(pin_detail(recon[[id]]))), stringsAsFactors = FALSE)
+}
+untrace("ledgr_fold_reconciliation_detail", where = ns)
 out <- do.call(rbind, rows)
 out$ok <- (out$calls > 0L) == out$expected & out$matches_pin
 utils::write.csv(out, arg("out"), row.names = FALSE)

@@ -1128,3 +1128,19 @@ LDG-3223 (planner and FIFO kernel):
 - The planner keeps one path: a prototype fast path for the same common
   case saved about 8 us per call (about 1.8 percent of the loop on
   10 x 7,200), under the stop rule's 2 percent.
+
+LDG-3224 (recording, commit and valuation):
+
+- Reconciliation detail, `lean_recon_detail()` in the terminal expansion.
+  Predicate: every value of the pulses' reconciliation records is finite,
+  and the pin's NDJSON writer returns one line per row. Guarantee:
+  `ledgr_fold_reconciliation_detail()` encodes the same seven fields with
+  the same canonical options (`ledgr_json_write_canonical_v2`), and
+  `ledgr_json_write_canonical_ndjson()` writes one such object per data-frame
+  row in a single call. Comparator: the pin's per-row function on every row,
+  in debug. Fallback: each row through the pin's function, which refuses a
+  non-finite value as before.
+- Not changed, each under the stop rule's 2 percent on 10 x 7,200 (measured
+  on the real objects): skipping the state patch's name checks for repeated
+  names (about 5 us), an inlined field validator (2 to 3 us), gross exposure
+  (4 us for both), P1 and P4's per-pulse record writes.
