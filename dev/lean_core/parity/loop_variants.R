@@ -68,7 +68,9 @@ for (g in groups) {
     v <- if (nrow(hit) == 1L) hit$verdict else if (nrow(hit) == 0L) "missing" else "duplicated"
     if (!identical(v, "CAUGHT")) failures <- c(failures, sprintf("%s / %s debug %d: %s", m, g$workload[[i]], d, v))
   }
-  extra <- setdiff(got$workload, g$workload)
+  # any result row whose full key was not requested (close review round 2)
+  key <- function(x) paste(x$mutation, x$workload, x$debug, x$batch_rows, x$expect, sep = "|")
+  extra <- setdiff(key(got), key(g))
   if (length(extra)) failures <- c(failures, sprintf("%s debug %d: unrequested rows %s", m, d, paste(extra, collapse = ",")))
 }
 # Negative controls: an unrelated error, an unreached patch and a store
