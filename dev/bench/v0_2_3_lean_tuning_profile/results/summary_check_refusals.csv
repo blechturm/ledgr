@@ -5,7 +5,7 @@ signature_mismatch,1,signature mismatch or missing on 10x7200
 missing_required_cell,1,Cut 15 lacks a required cell on 20x23400
 stale_rank,1,Cut 15 rank.csv is not cost_rank.R's output on its cells 
 stale_rank_compensating,1,Cut 15 rank.csv is not cost_rank.R's output on its cells 
-live_edit_not_stale_for_records,0,
+live_edit_stales_only_final,1,Cut 16 final is stale: dev/lean_core changed since its head 
 stale_recorded_source,1,Cut 15 rerun is stale: its lean sources are not its recorded source 4cdc01da 
 harness_change_not_stale,0,
 cut16_missing_input,1,Cut 16 base input missing: rank.csv 
@@ -14,4 +14,7 @@ cut16_signature_mismatch,1,Cut 16 base signature mismatch or missing on slice2_1
 cut16_missing_required_cell,1,Cut 16 base lacks a required cell on slice2_10x7200
 cut16_stale_recorded_source,1,Cut 16 base is stale: its lean sources are not its recorded source bec26da9 
 cut16_reach_not_established,1,slice2_10x7200 reach not established on the pin 
+cut16_final_missing_input,1,Cut 16 final input missing: cells.csv 
+cut16_final_signature_mismatch,1,Cut 16 final signature mismatch or missing on 10x7200 
+cut16_final_missing_required_cell,1,Cut 16 final lacks a required cell on slice2_10x7200
 clean_again,0,
