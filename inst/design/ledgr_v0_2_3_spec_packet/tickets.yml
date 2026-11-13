@@ -2017,7 +2017,8 @@ cuts:
   - id: 17
     name: "Sizing-helper cost (ledgr_target_rebalance and ledgr_target_adjust)"
     cut: "2026-11-13"
-    status: "proposed"
+    status: "accepted"
+    accepted: "2026-11-13 by the maintainer, after the cut review passed at re-review 1 (cut_review_17_rereview_1.md), as written."
     opening: >-
       Workstream 34's cost map put the sizing helper among the largest
       slice-2 costs. Committed input: the Cut 16 base and final cost maps
@@ -2548,7 +2549,8 @@ workstreams:
   - id: 35
     name: "Sizing-helper cost"
     cut: 17
-    status: "proposed"
+    status: "accepted"
+    accepted: "2026-11-13 by the maintainer with Cut 17."
     close_review: null
     depends_on_workstream: 34
     requires_review_acceptance: true
