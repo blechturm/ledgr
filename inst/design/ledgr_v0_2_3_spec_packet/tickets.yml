@@ -2020,89 +2020,190 @@ cuts:
     status: "proposed"
     opening: >-
       Workstream 34's cost map put the sizing helper among the largest
-      slice-2 costs: on slice2_10x7200 the strategy cell "ledgr callees" is
-      113-123 us per pulse, 84 percent of it ledgr_target_rebalance(). The
-      helper is package code that strategies call; Cut 15 decision 1 keeps
-      it out of the lean loop's reach, so the lean core cannot tune it. The
-      maintainer asked to optimize it next (2026-11-13) and to consider
-      collapse for the name logic.
+      slice-2 costs. Committed input: the Cut 16 base and final cost maps
+      report the slice2_10x7200 strategy-ledgr-callees cell as 123.235 and
+      112.996 us per pulse
+      (dev/bench/v0_2_3_lean_tuning_profile/results/cost_map_cut16_base/strategy_split.csv
+      and results/cost_map_cut16/strategy_split.csv, slice2 rows). A
+      separate drill reports 208 of 247 samples under ledgr_call_strategy_fn
+      below ledgr_target_rebalance(), about 84.2 percent
+      (results/stage_drill_cut16.csv); this is not a share of the exclusive
+      callee cell. The final map reports a 5.91 s whole run (summary.md,
+      Cut 16 final). The descriptor schedules 2,400 helper calls on 7,200
+      pulses. The helper is package code that strategies call; Cut 15
+      decision 1 keeps it out of the lean loop's reach, so the lean core
+      cannot tune it. The maintainer asked to optimize it next (2026-11-13)
+      and to consider collapse for the name logic.
     authority: >-
       The maintainer's decision of 2026-11-13 to take this ahead of the
       macro plan's order (macro WS14's bounded optimization cut owns
       optimization of the surviving core after the switch; this cut touches
       one strategy-helper path, not the fold core, and WS14 measures on top
-      of it). inst/design/contracts.md (strategy outputs, target sizing and
-      sizing evidence, by topic heading) binds behaviour;
+      of it). inst/design/contracts.md (strategy outputs and helper values,
+      target sizing and sizing evidence, by topic heading) binds behaviour;
       inst/design/manual/optimization_coding_style.qmd applies as review
-      criteria (the helper runs inside the pulse).
+      criteria (the helper runs inside the pulse);
+      inst/design/manual/benchmark_methodology.qmd and the shared timing
+      harness dev/bench/timing/ govern the measurement.
     measured_input: >-
-      Pin library d5b3a151 (the helper's code at HEAD 72ed984a is the same:
-      R/strategy-helpers.R and R/strategy-types.R unchanged since the pin).
-      One ledgr_target_rebalance() call timed in situ inside a running
-      strategy on a real pulse context, 400 calls after a warm call, High
-      performance plan, P-core affinity (scratchpad probe, to be
-      reproduced as LDG-3232's committed record): 275 us at 10
-      instruments, 500 us at 500, 900 us at 1,166 (timer resolution about
-      25 us per figure). On slice2_10x7200 that is 2,400 calls, about
-      0.66 s of a 5.9 s lean run. Profile at 1,166 instruments (captured
-      context): setdiff 23 percent, ledgr_target() 20 (its name re-check
-      ledgr_strategy_type_check_names() 18), unique 15,
-      ledgr_target_named_amount() 10, intersect 8, union 6, tryCatch 6.
-      On a plain-list context at 10 instruments (184 us per call) about
-      half is setdiff/union/intersect: since R 4.5 each calls
-      .set_ops_need_as_vector(), which runs two tryCatch() calls. Encoding
-      probe (collapse 2.1.8, the installed Imports floor): fmatch(),
-      %iin% and %!iin% agree with base match() on the same text in latin1
-      and UTF-8 and on NA; any_duplicated() and funique() do not (they
-      treat the two encodings as different strings, so a duplicate name
-      that base refuses would pass).
+      Uncommitted scratch inputs, all to be reproduced or explicitly
+      superseded in LDG-3232: the reported 400-call in-situ warm-context
+      probe under High performance/P-core affinity, about 275/500/900 us at
+      10/500/1,166 instruments and about 25 us per-call timer resolution;
+      the reported 1,166-instrument profile shares (setdiff 23, target 20
+      including check_names 18, unique 15, named_amount 10, intersect 8,
+      union 6, tryCatch 6 percent); and the plain-list 10-instrument 184 us
+      call, about half in set operations, with the R-version-dependent
+      .set_ops_need_as_vector/tryCatch explanation. The product 2,400 times
+      275 us, about 0.66 s, is an illustrative scratch estimate, not a
+      measured component of the 5.91 s run. Record profile denominators and
+      inclusive versus exclusive attribution when reproducing these
+      figures. The reported collapse 2.1.8 encoding probe is also scratch
+      evidence: reproduce match/membership, duplicate and uniqueness
+      semantics on the actual operand classes before selecting primitives.
+      Keep base duplicate/uniqueness operations. Record the semantic
+      oracle's installed marker and loaded path, the accepted immutable
+      measurement base and candidate identities, and the current
+      source-to-pin function comparison; do not assert historical
+      source-file identity without its git evidence. Cut review 17 (R1)
+      found that a character-matrix universe with repeated elements and
+      unique rows passes the helper's entrance and is refused only by
+      ledgr_target()'s name check, and that a skipped price followed by an
+      overflowing quantity writes ctx$.notes before ledgr_target() refuses.
     decisions: >-
       (1) No behaviour change. For every input, ledgr_target_rebalance(),
       ledgr_target_adjust() and every other caller of a changed function
-      return an identical() value (numbers, names, class and the origin,
-      sizing, sizing_evidence and sizing_skipped attributes) and leave the
-      same ctx$.notes side effect; every refusal keeps its condition
-      classes, message and fields (instrument_id) and the same precedence
-      when several checks would fail. No registered test, fixture or oracle
-      changes. (2) Scope: the functions on the two helpers' call path,
-      ledgr_target_size(), ledgr_target_named_amount(), ledgr_target_keep(),
-      ledgr_target_logical(), ledgr_target() and the shared
-      ledgr_strategy_type_check_names(); a shared function's other callers
-      (the strategy types built on it) are covered by the oracle too.
-      Nothing else in R/ changes. (3) Technique: replace setdiff, union,
-      intersect and %in% on instrument names with match-based index logic
-      that keeps base's result order (setdiff and intersect in the first
-      argument's order, union as the first argument then the second's new
-      values) and its de-duplication; collapse::fmatch(), %iin% and %!iin%
-      may replace match() where LDG-3233 measures them faster; duplicate
-      and uniqueness checks stay base (anyDuplicated(), unique()) because
-      collapse's versions differ on encodings. (4) The helper may build its
-      ledgr_target through an internal constructor that skips the name
-      re-check, because the helper constructs the vector over ctx$universe
-      itself; the finiteness check stays (a positive denormal close can
-      overflow a quantity to Inf). The public ledgr_target() keeps every
-      check. (5) Oracle: a differential harness runs the pin's functions
-      (d5b3a151) and the candidate's on one case grid and requires
-      identical values, attributes, side effects and conditions: both verbs;
+      return an identical value (numbers, names, class and the origin,
+      sizing, sizing_evidence and sizing_skipped attributes, as compared
+      under decision (5)) and leave the same ctx$.notes side effect; every
+      refusal keeps its condition classes, message, call and fields
+      (instrument_id) and the same precedence when several checks would
+      fail. No registered test, fixture or oracle changes. (2) Product edits
+      are limited to ledgr_target_size(), ledgr_target_named_amount(),
+      ledgr_target_keep(), ledgr_target_logical(), ledgr_target() and
+      ledgr_strategy_type_check_names(). Public formals are unchanged; no
+      public bypass flag and no private target constructor are added. List
+      every proposed setdiff/union/intersect/setequal/membership/re-check
+      site and its measured disposition before rewriting it. Other callers
+      of changed functions are oracle coverage, not additional rewrite
+      scope. Do not change the helper-context, universe, origin or
+      eligibility validators, ledgr_strategy_result(), risk planning,
+      sizing-evidence validation, fold/run/sweep code, dev/lean_core,
+      DESCRIPTION, NAMESPACE or stored formats. The permitted non-product
+      diff is the helper oracle/measurement tools and records, the new
+      shared timing protocol and its records, additive tests in a new test
+      file if needed, NEWS and ticket evidence. Existing registered tests,
+      fixtures and oracles remain unchanged. Record the optimization
+      manual's seven-shape review at close. (3) Technique: replace
+      setdiff, union, intersect, setequal and %in% on instrument names with
+      match-based index logic that keeps base's result order (setdiff and
+      intersect in the first argument's order, union as the first argument
+      then the second's new values), its de-duplication and its attribute
+      stripping and coercion, and keeps numeric reduction order;
+      collapse::fmatch() may replace match() where LDG-3233 measures it
+      faster against a matched base comparison; collapse's %iin% and %!iin%
+      return integer positions and must not be substituted as logical
+      masks. Duplicate and uniqueness checks stay base (anyDuplicated(),
+      unique()) because collapse's versions differ on encodings. Non-plain
+      operands (dimensioned, classed, factor or non-character) whose base
+      semantics are not proved equal keep their existing operation. (4)
+      ledgr_target() keeps every check at its current point: the helper
+      still builds its result through the public constructor, which still
+      checks names and finiteness after the notes update. The cut may make
+      those checks cheaper only by decision (3). The bypass first proposed
+      here was dropped after cut review 17 (R1): the entrance does not
+      establish unique flattened names for every accepted universe, and the
+      finiteness refusal follows the notes write. (5) Oracle: a differential
+      harness runs the pin's functions (d5b3a151) and the candidate's on one
+      case grid. Compare complete returned values recursively, including
+      nested attributes and their order, with strict numeric identity and
+      explicit Encoding() comparisons on character leaves, names and
+      attribute names; default identical() alone is insufficient. Capture
+      the ordered warning/message signals and terminal error, together with
+      notes even when evaluation refuses. Compare condition class vectors,
+      message, conditionCall(), parent conditions where present and all
+      non-trace payload fields, including instrument_id and field presence.
+      Exclude backtraces and harness stack provenance explicitly; do not
+      compare whole rlang conditions including trace. Use the same
+      invocation expression in each arm. Preserve validation precedence
+      with cases in which multiple checks fail. Pin against pin must pass.
+      Separate deliberate changes to a numeric result, target names/order,
+      nested sizing evidence or intermediate-derived names, attribute order,
+      encoding, notes contents/order, condition class, message,
+      instrument_id, call, precedence and an added warning must each make
+      the oracle exit nonzero with its own signal. An absent required case
+      or comparison surface also fails. Commit a required-case manifest
+      derived from every changed site and its caller/branch map; the
+      checker refuses an omitted case and asserts the pin actually reaches
+      the named success, refusal or side effect. The grid covers both verbs;
       keep as IDs and as a mask; index_leavers NULL/sell/keep with held
-      leavers; capital_base NULL/total/remaining, default and refused;
-      add_value and exit; zero weights, rounding to zero, skipped prices
-      with and without holdings; an empty universe; and every refusal
-      (non-numeric, factor, matrix, NA, negative, duplicate names, unknown
-      names, the same name in two encodings, weights over one, weighted and
-      kept, sized and exited, unbuyable). It first runs pin against pin
-      (identical) and shows it fails on a deliberately changed message and
-      on a changed result order. Real-context cases come from captured
-      pulse contexts at 10, 500 and 1,166 instruments. (6) Measurement:
-      per-call time on real contexts at 10, 500 and 1,166 instruments,
-      base and candidate in alternating processes (7 rounds, High
-      performance, P-core affinity), plus one paired whole-run comparison
-      on slice2_10x7200 through the package path. Report; there is no
-      threshold. A change that makes any size slower by more than 2
-      percent of the call is dropped. (7) Verification: the full package
-      test suite and R CMD check; the lean core is untouched and keeps the
-      pin d5b3a151 as its parity reference (this cut changes no fold
-      behaviour, so it is not an execution-sensitive change under the
+      leavers; add_value and exit; zero weights, rounding to zero, skipped
+      prices with and without holdings; an empty universe; and every
+      refusal (non-numeric, factor, matrix, NA, negative, duplicate names,
+      unknown names, the same name in two encodings, weights over one,
+      weighted and kept, sized and exited, unbuyable); and adds permuted
+      non-lexical axes and request orders, named ID operands, several
+      missing/extra/conflicting/skipped IDs, all/some/no matches, NA/NaN
+      and empty-string names, equivalent cross-encoding names, named and
+      unnamed zero-length payloads, factors/non-character/classed/dimensioned
+      operands and universes (including the duplicate-element/unique-row
+      character-matrix axis), skip-then-overflow cases for both verbs, and
+      multi-invalid cases covering the ordering of affected checks. Cover
+      both verbs wherever the branch applies, including omitted/zero/positive
+      weights, add_value with and without an existing holding, held and flat
+      exits, restricted members, held leavers, unavailable prices with and
+      without permissible marks, guard scaling and all six sizing reason
+      codes. Cover NULL, total_equity and remaining_equity bases with
+      default/supplied/not_required origins. Include every direct
+      check_names caller in value mode and the signal/selection context
+      modes, partial versus full universes, empty-universe attributes,
+      finite-value and origin refusals, eligible attributes, and the
+      signal_return and target_quantity paths. Include genuine captured
+      pulse views at 10, 500 and 1,166 instruments and record their
+      provenance. Before each arm/case restore equivalent independent notes
+      environments, snapshot bindings before and after both success and
+      refusal, and retain the ordered results of repeated helper calls.
+      Include absent, empty, pre-populated and overlapping sizing_skipped
+      state and a late refusal after a skip. Do not compare shared
+      environment references. Record each arm's installed-library identity
+      and ensure all changed callees resolve from that arm; a candidate
+      accidentally using a pinned callee must fail the harness controls.
+      (6) Measurement: there is no minimum speedup target. The per-call
+      regression bound is 1.02, applied to candidate median divided by base
+      median for every declared helper cell. LDG-3232 commits one new
+      protocol folder under dev/bench/timing/protocols/cut17-helper-1/ with
+      matrix.csv, thresholds.csv, workloads.R and protocol.md, using the
+      existing runner, host checks and checker without copying them.
+      Include both rebalance and adjust at 10, 500 and 1,166 instruments,
+      with frozen representative arguments exercising the changed common
+      and adjust-specific paths. Use at least eight alternating
+      fresh-process pairs; freeze repetition counts before comparison so
+      timed batches last about three seconds or more. Record timer
+      resolution, byte-compilation, warm-up, GC, context/notes/cache
+      preparation and clock endpoints; distinguish first-use and
+      cached-context measurements and do not extrapolate the latter as a
+      whole-run decomposition. Record raw timings, sample counts, profile
+      denominators and host conditions under the shared harness's current
+      policy. Each collapse substitution needs a matched base comparison
+      supporting its use. A helper cell above 1.02 fails; an invalid or
+      missing record cannot pass, and pairs are not dropped or retried to
+      obtain a pass. In that protocol also record an eight-pair descriptive
+      whole-run comparison on slice2_10x7200 through ledgr_run(), using
+      separately installed immutable base and candidate commits and the
+      same frozen descriptor/fixture inputs. Both arms use the ordinary
+      package execution path; neither installs the lean core. Verify
+      sizing, binding risk and priced fills on the base before interpreting
+      timings, and require matching result signatures including sizing
+      diagnostics. Report the whole-run ratio without a new speed bound. A
+      thin reporting adapter may ignore only that descriptive cell's ratio
+      verdict, never shared-checker record-validity, work, source or host
+      failures. Demonstrate that the adapter still refuses an over-bound
+      helper cell and invalid/missing record inputs. Commit the protocol,
+      raw record, commands and resolved arm identities; retain d5b3a151
+      separately as the semantic oracle pin. (7) Verification: the full
+      package test suite and R CMD check; the lean core is untouched and
+      keeps the pin d5b3a151 as its parity reference (this cut changes no
+      fold behaviour, so it is not an execution-sensitive change under the
       WS16 rule); a NEWS.md bullet under the development version.
     identity_and_release_impact: >-
       None for results: no stored format, run identity, output table or
@@ -2111,14 +2212,15 @@ cuts:
       is already imported and is called with collapse::). Design impact:
       none beyond this cut's record.
     sequencing: >-
-      One workstream (35), two serial tickets: LDG-3232 (measurement record
-      and the differential oracle, no R/ change), then LDG-3233 (the rewrite,
-      its measurement, tests and check).
+      One workstream (35), two serial tickets: LDG-3232 (measurement record,
+      timing protocol and the differential oracle, no R/ change), then
+      LDG-3233 (the rewrite, its measurement, tests and check).
     out_of_scope: >-
-      Any behaviour change; the risk plan and the sizing-evidence validator
-      (the other slice-2 costs); other strategy helpers and types beyond
-      the shared function's callers; dev/lean_core; compiled code; dropping
-      a validation the public API documents.
+      Any behaviour change; a private or public target-constructor bypass;
+      the risk plan and the sizing-evidence validator (the other slice-2
+      costs); other strategy helpers and types beyond the shared function's
+      callers (covered by the oracle, not rewritten); dev/lean_core;
+      compiled code; dropping or moving a validation.
     workstreams: [35]
     review_lifecycle: >-
       An independent clean-context Codex CLI cut review, iterated to PASS,
@@ -2126,7 +2228,7 @@ cuts:
       independent clean-context Type 1 close review of its whole diff and
       every acceptance item; a design concern returns NEEDS_TYPE_2. A third
       correction round stops for maintainer disposition.
-    cut_review: null
+    cut_review: "CHANGES_REQUIRED in cut_review_17.md (independent clean-context Codex CLI, gpt-6.1-sol/high, at efd39798): R1 (the constructor bypass is unsafe: a character-matrix universe and a skip-then-overflow case; resolved by dropping the bypass rather than fencing it, decision (4)), R2 (explicit comparator and per-surface mutations), R3 (required-case manifest, shared-caller coverage, independent notes state), R4 (shared timing protocol cut17-helper-1, eight pairs, bound 1.02 per helper cell, descriptive whole run), R5 (closed product scope and permitted non-product diff), R6 (committed versus scratch inputs) applied with the review's replacement text, R1 and R5 adjusted for the dropped bypass."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -2450,7 +2552,7 @@ workstreams:
     close_review: null
     depends_on_workstream: 34
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 35, after LDG-3233", reason: "Every helper result, attribute, side effect and refusal is identical to the pin's on the oracle's grid and on real contexts; the oracle demonstrably fails on a changed message and a changed order; the full test suite and R CMD check pass; the measured per-call and whole-run numbers reproduce from committed records; nothing outside the named functions changes."}
+    review: {mode: "Type 1", point: "close of workstream 35, after LDG-3233", reason: "Every helper and shared-caller result, nested attribute, encoding, notes snapshot, signal and refusal (class, message, call, fields, precedence) is identical to the pin's on the oracle's manifest and on real captured contexts; the oracle fails on each listed deliberate change and on an omitted case; the cut17-helper-1 record passes the shared checker with every helper cell at or under 1.02; the full test suite and R CMD check pass; the product diff stays within decision (2) and the non-product diff within its permitted list; the seven-shape review is recorded."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -5424,20 +5526,22 @@ tickets:
       - "Checker (summary_check.R): 'Cut 16 final' added with recorded source 3998dd58 and the live-tree check; 137 Cut 16 rows besides Cut 14's 25, Cut 15's 54 and the close page's 6, none missing, exit 0. Refusals (summary_check_refusals.sh, results/summary_check_refusals.csv): clean and clean_again exit 0; a live lean edit now exits 1 with 'Cut 16 final is stale: dev/lean_core changed since its head' as its first message (so Cut 15 and the Cut 16 base still pass: historical records are not staled by a live edit; case renamed from live_edit_not_stale_for_records); a harness-only edit exits 0; the final rerun's missing input (cells.csv), signature mismatch (10x7200) and missing required cell (P2 sizing on slice2) each exit 1 with their own message; every earlier Cut 15 and Cut 16 base case unchanged."
       - "Host: the Balanced plan was restored after the cost-map rerun (2026-11-13)."
   - id: "LDG-3232"
-    title: "Measure the sizing helper and build its differential oracle"
+    title: "Measure the sizing helper; build its timing protocol and differential oracle"
     workstream: 35
     status: "pending"
     priority: "P1"
-    effort: "S"
+    effort: "M"
     dependencies: ["LDG-3231"]
     scope: >-
-      A committed measurement record of ledgr_target_rebalance() on real
-      pulse contexts, and the differential oracle of Cut 17 decision (5)
-      under dev/bench/v0_2_3_helper/. No change in R/.
+      The committed measurement input of Cut 17 (reproducing or superseding
+      its scratch figures), the shared timing protocol cut17-helper-1 of
+      decision (6), and the differential oracle of decision (5) under
+      dev/bench/v0_2_3_helper/. No change in R/.
     acceptance:
-      - "Per-call time in situ on real pulse contexts at 10, 500 and 1,166 instruments with enough calls that the timer resolution is under 2 percent of the figure, and a per-call profile at each size with enough samples to attribute the set operations, ledgr_target() and the input checks; host plan and affinity recorded"
-      - "The oracle's case grid as listed in decision (5), including captured real contexts; pin against pin identical on every case; demonstrated failures on a changed refusal message and on a changed result order"
-      - "The list of rewrite sites (each set operation, %in% and re-check on the path) with its measured share, reported before LDG-3233 starts"
+      - "Per-call time and profile of both verbs on genuine captured pulse views at 10, 500 and 1,166 instruments, first-use and cached-context measurements kept apart, with timer resolution, profile denominators and inclusive versus exclusive attribution recorded; host plan and affinity recorded; the scratch figures in measured_input reproduced or explicitly superseded; base versus collapse semantics (match/membership, duplicates, uniqueness) reproduced on the actual operand classes"
+      - "Protocol folder dev/bench/timing/protocols/cut17-helper-1/ (matrix.csv, thresholds.csv, workloads.R, protocol.md) as decision (6) states, run on the shared runner and checker; an A/A or base-against-base record shows it is valid; the reporting adapter refuses an over-bound helper cell and invalid or missing record inputs"
+      - "The oracle as decision (5) states: comparator, signal and notes capture, required-case manifest with pin reach asserted, captured real views with provenance, per-arm library identity controls; pin against pin passes; each listed deliberate change and an omitted case make it exit nonzero with its own signal"
+      - "The list of rewrite sites (each setdiff, union, intersect, setequal, membership and re-check on the path) with its measured share and intended disposition, reported to the maintainer before LDG-3233 starts"
     evidence: []
   - id: "LDG-3233"
     title: "Rewrite the sizing helper's name logic"
@@ -5447,11 +5551,11 @@ tickets:
     effort: "M"
     dependencies: ["LDG-3232"]
     scope: >-
-      Apply decisions (2)-(4) to the listed sites; measure; run the full
-      tests and the package check.
+      Apply decisions (2)-(4) to the listed sites; measure with
+      cut17-helper-1; run the full tests and the package check.
     acceptance:
-      - "The oracle reports identical values, attributes, side effects and conditions for every case, pin against candidate"
-      - "Per-call paired measurement at 10, 500 and 1,166 instruments and the paired slice2_10x7200 whole run, base 72ed984a (or the cut's accepted head) against the candidate, raw observations committed; each collapse use justified by its measurement; no size slower by more than 2 percent"
-      - "Full package test suite and R CMD check --no-manual pass; no registered test changed; NEWS.md bullet"
-      - "Diff limited to the functions named in decision (2); nothing in dev/lean_core, DESCRIPTION, NAMESPACE or the store format"
+      - "The oracle passes pin against candidate on every manifest case and captured view, and its harness controls show every changed callee resolved from the candidate"
+      - "cut17-helper-1 record, immutable base (the cut's accepted head) against the candidate: the shared checker passes, every helper cell's ratio of medians at or under 1.02, the descriptive slice2_10x7200 whole-run ratio reported with matching result signatures including sizing diagnostics; raw observations, commands and resolved arm identities committed; each collapse use supported by its matched base comparison"
+      - "Full package test suite and R CMD check --no-manual pass; no existing registered test, fixture or oracle changed; NEWS.md bullet"
+      - "Product diff limited to decision (2)'s functions in R/strategy-helpers.R and R/strategy-types.R, public formals unchanged, no constructor bypass; non-product diff within decision (2)'s permitted list; nothing in dev/lean_core, DESCRIPTION, NAMESPACE or the store format; the optimization manual's seven-shape review recorded"
     evidence: []
