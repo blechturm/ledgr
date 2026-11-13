@@ -1843,7 +1843,8 @@ cuts:
   - id: 16
     name: "Lean loop slice 2 (costs, risk chain, sizing helpers), then tuning (macro WS16)"
     cut: "2026-11-13"
-    status: "accepted"
+    status: "closed"
+    closed: "2026-11-13 after workstream 34 closed on its round-1 PASS (e57150f1)."
     accepted: "2026-11-13 by the maintainer, after the cut review passed at re-review 1 (cut_review_16_rereview_1.md), with decisions (1)-(8) and the defaults stated in them."
     opening: >-
       Cut 15 closed (21e89c27) with the slice-1 loop at 274, 332, 556 and
@@ -2323,9 +2324,9 @@ workstreams:
   - id: 34
     name: "Lean loop tuning after slice 2"
     cut: 16
-    status: "accepted"
-    accepted: "2026-11-13 by the maintainer with Cut 16."
-    close_review: null
+    status: "complete"
+    accepted: "2026-11-13 by the maintainer with Cut 16; closed 2026-11-13 on the round-1 PASS."
+    close_review: "Round 1 (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 1, on e57150f1; dev/lean_core/parity/evidence/ws34_close_review_round1.md): PASS, no finding, no NEEDS_TYPE_2. It reproduced summary_check.R (137 Cut 16 rows, exit 0), all 16 fault cases of summary_check_refusals.sh through scratch inputs, check.R on the cut16-loop-1 record (CHECK PASS, the ratios and work strings), both LDG-3230 comparisons and their classifications (FIFO delete, targets unresolved) from the raw CSVs with per-arm source hashes, the stop-rule bound, loop.R at 925 production and 114 debug lines, the committed gate counts, and a three-workload parity sample (s2_risk_bind, s2_cost_chain, s2_sizing_adjust) with debug off and on. Not reproduced, stated as limits: the affordability microtimings, the FIFO block counts, the affinity of the two replacement pin/base maps (their identity files predate the affinity field). Review count for Cut 16: workstream 33 two rounds, workstream 34 one."
     depends_on_workstream: 33
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 34, after LDG-3231", reason: "Every tuned stage is bit-identical to the pin on the full gate with debug on and off and on the frozen execution paths; every registered variant is caught by its expected signal; each new or materially changed fast path meets Cut 15's decision 2; kept copies are the ones the paired rule keeps; the stop rule was applied as recorded; and every number in the timing record and the rerun cost map reproduces from its committed inputs."}
