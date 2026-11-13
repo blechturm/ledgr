@@ -151,12 +151,6 @@ lean_lot_apply <- function(book, input) {
 # these rows, operation for operation (one consumption step, no remainder,
 # no compaction, no growth); a value that is not finite returns NULL, so
 # the general kernel refuses or reports it.
-#
-# Cut 16 (LDG-3230) adds two row kinds on an instrument whose segment holds
-# live lots and needs no compaction (head - 1 <= live): a partial reduction,
-# one consumption step that leaves the opposing head lot alive above the
-# dust tolerance (no remainder: quantity < |lot|), and a same-side add,
-# appended as a new lot into free capacity (tail < capacity: no growth).
 lean_lot_simple <- function(book, input) {
   pos <- input$pos
   m <- length(pos)
@@ -175,25 +169,16 @@ lean_lot_simple <- function(book, input) {
   old_basis <- book$cost_basis_by_inst[pos]
   live <- tail - head + 1L
   slot <- base + head
-  cap <- book$capacity[pos]
   lot <- rep(NA_real_, m)
-  held <- which(live >= 1L)
+  held <- which(live == 1L)
   lot[held] <- q[slot[held]]
-  opens <- live <= 0L & net == 0 & cap >= 1L
+  opens <- live <= 0L & net == 0 & book$capacity[pos] >= 1L
   closes <- live == 1L & !is.na(lot) & lot * side < 0 & abs(lot) == quantity
-  settled <- live >= 1L & !is.na(lot) & head - 1L <= live
-  rest <- abs(lot) - quantity
-  reduces <- settled & lot * side < 0 & quantity < abs(lot) & rest > lean_lot_tol(quantity, rest)
-  adds <- settled & lot * side > 0 & tail < cap
   opens[is.na(opens)] <- FALSE
   closes[is.na(closes)] <- FALSE
-  reduces[is.na(reduces)] <- FALSE
-  adds[is.na(adds)] <- FALSE
-  if (!all(opens | closes | reduces | adds)) return(NULL)
+  if (!all(opens | closes)) return(NULL)
   o <- which(opens)
   k <- which(closes)
-  r <- which(reduces)
-  a <- which(adds)
   close_qty <- numeric(m)
   realized_close <- numeric(m)
   basis_delta <- numeric(m)
@@ -220,28 +205,6 @@ lean_lot_simple <- function(book, input) {
     q[base[o] + 1L] <- signed
     p[base[o] + 1L] <- price[o]
   }
-  if (length(r) > 0L) {
-    # one consumption step: take = quantity < |lot|; the head lot keeps
-    # -side * (|lot| - take), as the general kernel writes it
-    s <- side[r]
-    take <- quantity[r]
-    old <- lot[r]
-    realized_close[r] <- 0 + ((price[r] - p[slot[r]]) * -s) * take
-    basis_delta[r] <- 0 + s * (take * p[slot[r]])
-    close_qty[r] <- 0 + take
-    left_lot <- -s * (abs(old) - take)
-    net[r] <- (net[r] - old) + left_lot
-    q[slot[r]] <- left_lot
-  }
-  if (length(a) > 0L) {
-    # a same-side add: no opposing lot to consume, the whole quantity appended
-    open_qty[a] <- as.numeric(quantity[a])
-    signed <- side[a] * open_qty[a]
-    basis_delta[a] <- 0 + signed * price[a]
-    net[a] <- net[a] + signed
-    q[base[a] + tail[a] + 1L] <- signed
-    p[base[a] + tail[a] + 1L] <- price[a]
-  }
   realized_delta <- realized_close - fee
   new_basis <- old_basis + basis_delta
   tol <- lean_lot_tol(new_basis, net, quantity, price)
@@ -262,10 +225,9 @@ lean_lot_simple <- function(book, input) {
   }
   if (!is.finite(sum(position_before, net, close_qty, open_qty, realized_close, realized_delta,
                      event_realized, event_cost_basis, new_basis, basis_delta, net_closing, comp))) return(NULL)
-  head[c(o, k)] <- 1L
-  tail[k] <- 0L
+  head[] <- 1L
+  tail[] <- 0L
   tail[o] <- 1L
-  tail[a] <- tail[a] + 1L
   book$head[pos] <- head
   book$tail[pos] <- tail
   book$lot_qty <- q
