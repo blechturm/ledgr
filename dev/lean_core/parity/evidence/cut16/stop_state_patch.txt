@@ -1,0 +1,2 @@
+1 field(s): the name checks 3.60 us per pulse
+2 field(s): the name checks 3.75 us per pulse
