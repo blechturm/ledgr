@@ -1,5 +1,11 @@
 # ledgr (development version)
 
+- `ledgr_target_rebalance()` and `ledgr_target_adjust()` are faster: about
+  twice as fast at 10 instruments and about 1.7 times at 500 to 1,166, per
+  call on a pulse context. Their instrument-ID checks no longer go through base R's
+  set operations, which since R 4.5 cost two `tryCatch()` calls each; large
+  universes use `collapse::fmatch()`. Results, sizing evidence, notes and
+  refusals are unchanged.
 - Nonterminal runs no longer continue from durable pulse checkpoints. A rerun
   verifies the same run and snapshot, atomically replaces the earlier attempt's
   derived ledger, equity, diagnostic, completion and telemetry output, and
