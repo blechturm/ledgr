@@ -1,8 +1,8 @@
 cell,workload,clock,args,pairs
-reb_10,cut17_helper,call,verb=rebalance;n=10;reps=9500,8
-reb_500,cut17_helper,call,verb=rebalance;n=500;reps=4900,8
-reb_1166,cut17_helper,call,verb=rebalance;n=1166;reps=3100,8
-adj_10,cut17_helper,call,verb=adjust;n=10;reps=9300,8
-adj_500,cut17_helper,call,verb=adjust;n=500;reps=4100,8
-adj_1166,cut17_helper,call,verb=adjust;n=1166;reps=2200,8
+reb_10,cut17_helper,call,verb=rebalance;n=10;reps=12600,8
+reb_500,cut17_helper,call,verb=rebalance;n=500;reps=6000,8
+reb_1166,cut17_helper,call,verb=rebalance;n=1166;reps=3800,8
+adj_10,cut17_helper,call,verb=adjust;n=10;reps=12200,8
+adj_500,cut17_helper,call,verb=adjust;n=500;reps=5200,8
+adj_1166,cut17_helper,call,verb=adjust;n=1166;reps=3300,8
 run_slice2_10x7200,cut17_slice2,run,shape=slice2_10x7200,8
