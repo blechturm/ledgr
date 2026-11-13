@@ -1,0 +1,7 @@
+"case","expected_exit","exit","ok","output"
+"clean",0,0,TRUE,"CHECK PASS"
+"helper_over_bound",1,1,TRUE,"reb_10  call 1.02e+00           8      8         3.253842    2.937446 1.1077112    FAIL | CHECK FAIL (1): ratio above bound 1"
+"descriptive_slower",0,0,TRUE,"CHECK PASS"
+"raw_missing",1,1,TRUE,"CHECK FAIL (1): record files 1"
+"helper_work_differs",1,1,TRUE,"CHECK FAIL (1): work differs 1 | work differs: reb_500 work rebalance|500|6000|468763b47ae4425e|c6c8ba17b290629ef7558a08b84f5816|changed / rebalance|500|6000|468763b47ae4425e|c6c8ba17b290629ef7558a08b84f5816"
+"descriptive_work_differs",1,1,TRUE,"CHECK FAIL (1): work differs 1 | work differs: run_slice2_10x7200 work slice2_10x7200|45189|42760819.52365765|ff01831a726d30d1|24001|2c99c847194ae25f|sizing_rows=24001,risk_reductions=45193,priced_fills_with_fees=45189|changed / slice2_10x7200|45189|42760819.52365765|ff01831a726d30d1|24001|2c99c8471"
