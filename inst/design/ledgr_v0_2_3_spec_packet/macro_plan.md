@@ -918,6 +918,11 @@ public behavior except the explicit pulse-plumbing ledger differences.
      Close reviews from Cut 14 on get one correction pass, with a further
      round only for a wrong answer on a covered workload (maintainer,
      2026-11-11).
+  7. **Slice 2, then tuning (maintainer, 2026-11-13).** Cut 16 implements
+     slice 2 (costs, the risk chain, sizing helpers) as one workstream,
+     then tunes the loop as a second, by Cut 15's method: the cost map's
+     lean arm rerun on the slice-2 code scopes the tuning, Cut 15's keep
+     and stop rules apply, and a timing record closes the cut.
 - **Every family close (A2, A4).** For the first checkpoint; families after
   it use the family method above. WS16 uses frozen floor v1 and stage
   isolation under R11: each cut sets cost-above-floor budgets on both

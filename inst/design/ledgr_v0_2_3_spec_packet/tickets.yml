@@ -1834,6 +1834,143 @@ cuts:
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
     cut_review: "CHANGES_REQUIRED in cut_review_15.md (independent clean-context Codex CLI, gpt-6.1-sol/high, at bd767d20): R1-R5 required and R6 advisory, all applied with the review's replacement text: fast-path dispatch predicates, differential cases on both sides and the FIFO's own fallback, with the FIFO and planner suites rerun separately (R1); error-handler equivalence including unwinding, cleanup order and the original condition (R2); a retained-context witness over every value later writes could change, rerun after LDG-3224 (R3); a per-ticket comparison loading real base and candidate sources, planner and FIFO included (R4); terminal expansion and E advance corrected in measured_input (R5); the cost-map and summary-checker extensions in LDG-3225's scope (R6). Focused re-review 1 (cut_review_15_rereview_1.md, same setup, at 258d3861): R1-R6 confirmed applied; CHANGES_REQUIRED with N1 (decision 1's location rule reconciled with the dev/bench measurement scope) and N2 (workstream 32's review reason carries decision 2's FIFO fallback), both applied with the review's text. Focused re-review 2 (cut_review_15_rereview_2.md, same setup, at 6db47487): PASS, N1 and N2 applied, no new finding."
+  - id: 16
+    name: "Lean loop slice 2 (costs, risk chain, sizing helpers), then tuning (macro WS16)"
+    cut: "2026-11-13"
+    status: "proposed"
+    accepted: null
+    opening: >-
+      Cut 15 closed (21e89c27) with the slice-1 loop at 274, 332, 556 and
+      754 us per pulse on 10 x 7,200, 20 x 23,400, 500 x 1,260 and
+      1,166 x 252, 0.16-0.75 of the pin's whole run. Slice 2 adds the
+      features most real strategies use: transaction costs, the risk chain
+      and the sizing helpers. A probe (2026-11-13, Section 19.9) lifted the
+      three refusals, called the pin's risk plan in P2 and recorded sizing
+      evidence roughly: 13 constructed workloads and ten slice-1 workloads
+      matched the pin on every table with debug on and off (364 tables),
+      and costs and a risk step added no visible time on 10 x 7,200. It
+      found one rule (LR-23). The maintainer asked for a tuning phase
+      after the implementation, like Cut 15 (2026-11-13).
+    authority: >-
+      macro_plan.md WS16 compact-state points 2-3 (coverage by slices; slice
+      2 is costs, risk chain and sizing helpers) and point 7 (slice 2, then
+      tuning); lean_core_interface.md Section 19 (19.2 coverage, 19.4 one
+      pulse, 19.5 after the last pulse, 19.8 tuning) and Section 19.9
+      (proposed with this cut); lean_core_rules_ledger.md (LR-16, LR-21,
+      LR-23); Cut 15's decisions 1-8, carried into workstream 34 by
+      reference; inst/design/manual/optimization_coding_style.qmd (fold
+      path); dev/lean_core/parity/loop_checklist.md.
+    measured_input: >-
+      Probe at 21e89c27 (dev/spikes/slice2_probe: probe.patch, README.md and
+      result CSVs a_debug1 to f_gate0): workloads p2_cost_fixed, p2_cost_notional,
+      p2_cost_spread, p2_cost_chain (crossover 10 x 300), p2_risk_max_weight
+      (crossover 10 x 300, max_weight 0.05, not binding), p2_risk_bind
+      (max_weight 1e-5), p2_risk_long_only, p2_risk_chain, p2_hold_trim
+      (three instruments, 20 days, a planned short or a held position
+      trimmed), p2_sizing_rebalance, p2_sizing_adjust (exit and add_value),
+      p2_sizing_risk and p2_combo (sizing with max_weight 0.25, and with the
+      cost chain too; three instruments, 30 days): PASS, identical, debug on
+      and off. With the old implicit-row rule p2_risk_bind differs and
+      p2_combo fails closed (decoded diagnostic coverage disagrees), which
+      is LR-23. Without the sizing record the sizing workloads differ only
+      in the diagnostic tables (rows, coverage, summary, implicit). Whole
+      collect on 10 x 7,200: crossover 11.5 s, with the cost chain 11.5 s,
+      with the chain and max_weight 0.05 11.6 s (pin 29.0-29.8 s; one run
+      each, not a timing gate). Full gate in the probe against the freeze
+      (debug off, 47 workloads, 901 tables, 0 different; f_gate0.csv): two
+      frozen paths move, both identical to the pin: dense_cost from 0 lean
+      folds, refused [costs; sweep workers; compiled FIFO] to 6 lean folds
+      (its one-worker sweep candidates), refused [sweep workers; compiled
+      FIFO]; dense_risk_features from refused [costs; sweep workers] to
+      refused [opening positions and imports; sweep workers]. The sizing
+      helpers move no frozen path.
+    decisions: >-
+      (1) No behaviour change. Slice 2 reproduces the pin's results for
+      costs, the risk chain and the two sizing helpers; every table of every
+      covered workload stays identical with debug on and off. A rule a
+      parity failure surfaces goes into the rules ledger in the ticket that
+      found it. Execution-code changes stay in dev/lean_core; nothing in R/,
+      tests/ or the store format changes. (2) Reuse the pin. The loop calls
+      the pin's ledgr_apply_risk_plan(), ledgr_availability_validate_post_risk(),
+      ledgr_availability_validate_short_exposure() and
+      ledgr_validate_sizing_evidence() and keeps the pin's cost resolver in
+      P3; it copies none of them. The post-risk recheck of numbers, length
+      and finiteness (ledgr_validate_post_risk_quantities()) runs in debug
+      only (LR-16). (3) Scope of coverage: every cost model and chain; risk
+      chains of long_only and max_weight on fresh marks; ledgr_target_rebalance()
+      and ledgr_target_adjust() with their sizing evidence. Still refused
+      by name: stale-mark risk rows and the unavailable risk-mark stop
+      (slice 3) and history reads (slice 3, Section 19.2). A sizing helper
+      skips an instrument only for a missing or non-positive close, which
+      sealing and slice-1 coverage already exclude; the loop checks in
+      debug that no skip occurred, and the skip path arrives with missing
+      bars in slice 3. (4) Workloads: the probe's
+      constructed workloads join loop_workloads.R and the gate; their
+      expected execution path (one lean fold, no refusal) is declared in
+      the ticket and registered in loop_freeze.csv. Existing frozen rows
+      change only as the probe found, for both debug settings: dense_cost
+      (0 to 6 lean folds; refused [costs; sweep workers; compiled FIFO] to
+      [sweep workers; compiled FIFO]) and dense_risk_features (refused
+      [costs; sweep workers] to [opening positions and imports; sweep
+      workers]); each change is listed before and after in LDG-3226's
+      evidence, and any other moved row is a failure. (5) Variants: each change has a
+      registered variant in loop_variant_changes.csv, recorded as an
+      addition, reached and caught by its expected signal: the risk plan not
+      applied; the old implicit-row rule; sizing rows after the decision
+      segment instead of before it; the intent reason dropped from sizing
+      rows; the raw-quantity notice written on a pulse with sizing
+      evidence. (6) Workstream 34 tunes by Cut 15's decisions 1-6 unchanged
+      (no behaviour change; fast paths name predicate, guarantees,
+      comparator and fallback; fresh context; the 0.02 keep rule; real base
+      and candidate sources per arm; the stop rule of under 0.02 of the
+      loop on every shape or one working day), on Cut 15's three comparison
+      shapes plus one slice-2 shape, crossover 10 x 7,200 with the cost
+      chain and max_weight 0.05. Its scope comes from LDG-3229's cost map,
+      in measured cost order. (7) The close records a timing record
+      (protocol folder cut16-loop-1: the pin against the final lean loop on
+      Cut 15's four shapes and the slice-2 shape) and reruns the cost map's
+      lean arm. (8) Lines: loop.R production lines stay within 1,000 (886
+      at 21e89c27; workstream 33 estimated at about 45). The cut adds at
+      most 300 production lines across dev/lean_core. If a change would take
+      loop.R past 1,000, helpers that hold no loop state move to a new lean
+      file instead of the limit rising; an overrun goes to the maintainer.
+      Debug, witness and harness lines are reported beside.
+    identity_and_release_impact: >-
+      None. No file in R/, tests/, DESCRIPTION, NAMESPACE, vignettes or the
+      store format changes, and no dependency is added. Design impact:
+      Section 19.9 (slice 2), Section 19.2's coverage table, Section 19's
+      tuning paragraph for workstream 34, and rules ledger LR-23.
+    sequencing: >-
+      Two serial workstreams. Workstream 33 (slice 2): LDG-3226 (costs and
+      the risk chain), LDG-3227 (sizing helpers), LDG-3228 (slice-2 close).
+      Workstream 34 (tuning) starts after workstream 33's close review:
+      LDG-3229 (cost map on the slice-2 code and tuning scope), LDG-3230
+      (tuning), LDG-3231 (close measurement). Serial so that each paired
+      comparison measures one ticket.
+    out_of_scope: >-
+      Any behaviour change; slices 3-5 (stale marks, sessions, schedules,
+      history reads, membership, corporate actions, imports, workers,
+      compiled FIFO, restart, walk-forward); any change in R/ or tests/,
+      including the cost, risk and sizing functions strategy code or the
+      pin calls; the terminal store write and envelope setup and commit
+      (store-write question); feature computation (feature-engine RFC);
+      compiled code (needs the maintainer's named decision); dropping the
+      named stages or the fresh per-pulse context.
+    workstreams: [33, 34]
+    review_lifecycle: >-
+      An independent clean-context Codex CLI cut review, iterated to PASS.
+      Workstreams 33 and 34 each then receive one independent clean-context
+      Type 1 close review of their whole diff and every acceptance item; it
+      verifies faithful implementation and contained scope and independently
+      asks whether the inputs are right; a design concern returns
+      NEEDS_TYPE_2. Findings receive one correction pass, with a further
+      round only for a wrong answer on a covered workload (maintainer,
+      2026-11-11); that limit waives no acceptance item, and an unresolved
+      finding keeps the workstream open for maintainer disposition. A third
+      correction round stops for maintainer disposition. Findings, reviewed
+      ranges and consequential rejection reasons are kept under
+      rfc_cycle.md's record rule.
+    cut_review: null
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -2132,6 +2269,24 @@ workstreams:
     depends_on_workstream: 31
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 32, after LDG-3225", reason: "Every tuned stage is bit-identical to the pin on the full gate with debug on and off and on the frozen execution paths; every registered variant, old and new, is caught by its expected signal; each new or materially changed fast path meets decision 2, including its named dispatch predicate, canonical debug comparison and runtime fallback (the general lean kernel for a shared FIFO specialization); kept copies are the ones the paired rule keeps; and every number in the timing record and the rerun cost map reproduces from its runner."}
+  - id: 33
+    name: "Lean loop slice 2: costs, risk chain, sizing helpers"
+    cut: 16
+    status: "proposed"
+    accepted: null
+    close_review: null
+    depends_on_workstream: 32
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 33, after LDG-3228", reason: "Every covered slice-2 workload and the whole existing gate are identical to the pin with debug on and off; every frozen path matches, with only the declared refusal-list changes; the loop calls the pin's risk, post-risk and sizing-evidence functions rather than copies, and the post-risk quantity recheck is debug-only (LR-16); LR-23 is in the rules ledger and witnessed; every new variant names and reaches its intended fault; the refusals that stay in slice 3 are named; and the line budget holds."}
+  - id: 34
+    name: "Lean loop tuning after slice 2"
+    cut: 16
+    status: "proposed"
+    accepted: null
+    close_review: null
+    depends_on_workstream: 33
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 34, after LDG-3231", reason: "Every tuned stage is bit-identical to the pin on the full gate with debug on and off and on the frozen execution paths; every registered variant is caught by its expected signal; each new or materially changed fast path meets Cut 15's decision 2; kept copies are the ones the paired rule keeps; the stop rule was applied as recorded; and every number in the timing record and the rerun cost map reproduces from its committed inputs."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -4947,3 +5102,121 @@ tickets:
       - "Close page (dev/bench/v0_2_3_lean_tuning_profile/cut15_close.md, rows checked by summary_check.R): loop us per pulse Cut 14 / Cut 15 / skeleton floor / R-floor stage 2: 299/274/39/26, 367/332/45/29, 603/556/114/103 (Cut 15 4.9-7.4 times the skeleton, 5.4-11.4 times R-floor stage 2); PMwR historical, whole run 0.14, 0.57 and 0.27 s against the lean run 3.22, 11.68 and 2.52 s, not a controlled ratio. No design proposed."
       - "Lines (decision 8; role count as in LDG-3219, code lines non-blank and non-comment, 1a420b31 to 4cdc01da): loop.R production 875 to 886, debug 103 to 109 (995 code lines), within 1,000; fifo.R production 342 to 436, debug 1 to 4; the cut adds 105 production lines across dev/lean_core (loop.R 11, fifo.R 94; plan.R and the other lean sources unchanged), within 300. Beside: debug 9 lines added, no witness branch in either file; parity harness 447 lines added and 5 removed (loop_workloads.R 121, loop_shortcuts.R 115, loop_dispatch.R 103, fifo_simple_cases.R 78, loop_parity.R 22, fifo_parity.R and fifo_check.R 8)."
       - "Close review round 1 corrections (findings 5-7; findings 1-4 are in LDG-3222 and LDG-3223 and the summary item above). (5) The freeze registers batch one and inert at debug 1 only (14 and 6 workloads), and the close had run them at debug 0, where no path is checked: rerun at debug 1 against the freeze: batch one 14 of 14 workloads with a frozen path checked, 216 tables identical, PASS 14; inert 6 of 6, 92 tables, PASS* 6 (evidence/loop_batch1_debug1.csv, loop_inert_debug1.csv; the debug-0 records stay). loop_parity.R now prints, for every run with --freeze, how many workloads had a frozen path and names the rest; known limit: a workload with no frozen row is reported, not failed, because the five witnesses added in this workstream have no frozen path from the unchanged baseline. (6) Decision 5's outside-loop check from the recorded pairs, no new timing (dev/lean_core/parity/outside_loop.R; evidence/cut15/outside_loop.csv): per round, candidate minus base of (envelope - pulse loop) and (whole run - pulse loop). Medians lie between -0.18 and +0.06 s; every positive median has rounds on both sides (500 x 1,260 whole run: +0.02, +0.00, +0.04 and +0.02 s for LDG-3222, 3223, 3224 and the workstream, 4, 4, 5 and 4 of 7 rounds slower, against a base of 3.0 s outside the loop). No code outside the pulse loop changed in this workstream. Unresolved by the rule; maintainer disposition (2026-11-13): noise, accepted; no further timing. (7) loop_shortcuts.R's compare mode wrote its command without the script path; the writer now records it, and the four cmp_*_command.txt records carry the path with a note."
+  - id: "LDG-3226"
+    title: "Cover costs and the risk chain in the lean loop"
+    workstream: 33
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3225"]
+    scope: >-
+      Section 19.9's cost and risk parts: remove the cost and risk-chain
+      coverage refusals; in P2, apply the pin's risk plan on the lean
+      context, then the pin's post-risk admissibility check and the
+      short-exposure refusal on the risked targets, with the post-risk
+      quantity recheck in debug only (LR-16); record the post-risk target
+      in decision rows, rejections, fills and the reconciliation's
+      post-risk gross exposure; make a decision row explicit when the
+      post-risk target differs from the strategy target (LR-23). With no
+      risk step the slice-1 path is unchanged.
+    acceptance:
+      - "Workloads added to loop_workloads.R with public constructors, the pin as oracle: each cost model (fixed fee, notional bps fee, spread bps) and their chain on crossover 10 x 300; max_weight not binding and binding; long_only and a chain of long_only and max_weight on planned shorts; a held position trimmed by max_weight; each identical to the pin on every table with debug off and on, with one lean fold and no refusal, registered in loop_freeze.csv as declared expected paths"
+      - "A risk-plan refusal witness: a max_weight step whose decision-time close or equity makes the pin's risk step refuse, compared with the pin on condition class, message and parent; and a post-risk short-exposure refusal on risked targets"
+      - "Full gate, batch one and inert hooks against the freeze identical with debug off and on; loop_freeze.csv changes only for dense_cost and dense_risk_features as decision 4 states, both debug settings, each listed before and after; any other moved frozen row fails the ticket"
+      - "Variants recorded as additions in loop_variant_changes.csv, each reached and caught by its expected signal: risk_not_applied (the risk plan skipped), implicit_row_old_rule (LR-23's condition dropped)"
+      - "LR-23 in lean_core_rules_ledger.md with its witness; the loop calls ledgr_apply_risk_plan, ledgr_availability_validate_post_risk and ledgr_availability_validate_short_exposure from the pin and copies none of them"
+    evidence: []
+  - id: "LDG-3227"
+    title: "Cover the sizing helpers in the lean loop"
+    workstream: 33
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3226"]
+    scope: >-
+      Section 19.9's sizing part: remove the scan entries for
+      ledgr_target_rebalance() and ledgr_target_adjust() and the
+      sizing-evidence refusal; validate the evidence with the pin's
+      ledgr_validate_sizing_evidence(); keep it in a pulse-ordered sizing
+      record (preallocated, written by index, grown by doubling); count its
+      rows in the pulse's pre-decision rows; rebuild them after the loop as
+      `sizing / recorded` rows between the intent row and the decision
+      segment; write the run-level raw-quantity notice only on a pulse
+      without sizing evidence; check in debug that the pulse's
+      sizing_skipped note is empty (Section 19.9's guarantee).
+    acceptance:
+      - "Workloads added to loop_workloads.R: ledgr_target_rebalance(); ledgr_target_adjust() with exit and with add_value; sizing with max_weight; sizing with max_weight and the cost chain; sizing with an intent reason; each identical to the pin on every table, the diagnostics tables included, with debug off and on, one lean fold and no refusal, registered in loop_freeze.csv"
+      - "The debug check on the sizing_skipped note is reached by a variant that records a skip and caught (debug on); Section 19.9 names the guarantee that makes the skip unreachable in slice 2"
+      - "Full gate, batch one and inert hooks against the freeze identical with debug off and on; no existing frozen row changes"
+      - "Variants recorded as additions, each reached and caught by its expected signal: sizing_rows_after_decisions, sizing_intent_dropped, raw_notice_with_evidence"
+      - "The sizing record follows the optimization coding style: no per-pulse growth by c(); preallocated buffers written by index"
+    evidence: []
+  - id: "LDG-3228"
+    title: "Close slice 2"
+    workstream: 33
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-3227"]
+    scope: >-
+      Slice-2 close: Section 19.2's coverage table updated; the final check
+      set on the final code; the line budget reported. No dev/lean_core
+      change unless a check fails.
+    acceptance:
+      - "Full gate, batch one and inert hooks against the freeze identical with debug off and on, every frozen path matched; the variant driver passes with every manifest row CAUGHT and the three negative controls failing closed; loop_dispatch.R, the FIFO suites and the planner suites pass as before"
+      - "Section 19.2's coverage table moves costs, the risk chain and the sizing helpers to covered and names what stays refused in slice 3"
+      - "Lines (decision 8): loop.R production lines and the cut's production lines across dev/lean_core, by role, against 21e89c27"
+    evidence: []
+  - id: "LDG-3229"
+    title: "Map the slice-2 loop's cost and set the tuning scope"
+    workstream: 34
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-3228"]
+    scope: >-
+      Rerun the cost map's lean arm on workstream 33's final code on Cut
+      15's four shapes and the slice-2 shape (crossover 10 x 7,200 with the
+      cost chain and max_weight 0.05), and extend loop_shortcuts.R's
+      comparison to that shape. From the map, list the cells above 0.02 of
+      the loop in measured cost order with a named candidate change each;
+      that list is LDG-3230's scope and is reported to the maintainer
+      before tuning starts.
+    acceptance:
+      - "Cost map rerun (lean arm, five shapes) with result signatures equal to the pin's, summary_check.R extended to the new result directory and its refusals demonstrated"
+      - "The tuning scope list in the evidence, each cell with its measured cost, share of the loop and named candidate change"
+    evidence: []
+  - id: "LDG-3230"
+    title: "Tune the slice-2 loop"
+    workstream: 34
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3229"]
+    scope: >-
+      Work LDG-3229's list in measured cost order under Cut 15's decisions
+      1-6; stop when the next named change would save under 0.02 of the
+      loop on every shape, or after one working day, and report.
+    acceptance:
+      - "Full gate, batch one and inert hooks against the freeze identical with debug off and on; the variant driver passes"
+      - "Each kept change: its paired comparison (decision 5 of Cut 15) on the four comparison shapes, with identities, command and raw observations; each new or materially changed fast path meets Cut 15's decision 2 in Section 19's tuning paragraph, with differential cases and a reached variant"
+      - "Each new lean copy of pin logic is timed against an arm delegating it to the pin and kept or deleted by the 0.02 rule; unresolved results go to the maintainer"
+    evidence: []
+  - id: "LDG-3231"
+    title: "Record Cut 16's timing and rerun the cost map"
+    workstream: 34
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3230"]
+    scope: >-
+      Close measurement: a timing record under dev/bench/timing/ with
+      protocol folder cut16-loop-1 (cut15-loop-1's method, adding the
+      slice-2 shape), and a rerun of the cost map's lean arm on the final
+      code with the summary and its checker updated. No dev/lean_core
+      change.
+    acceptance:
+      - "The gate and the variant driver pass on the final code as recorded by LDG-3230"
+      - "Timing record cut16-loop-1: eight alternating pairs per cell on Cut 15's four shapes and the slice-2 shape, run and fold clocks, bound 1.0 against the pin; the record's check passes"
+      - "The cost map's lean arm rerun on the final code beside LDG-3229's, with result signatures equal to the pin's; the summary checker rebuilds both and refuses a missing input, a mismatched signature, a missing required cell and a stale rerun"
+    evidence: []

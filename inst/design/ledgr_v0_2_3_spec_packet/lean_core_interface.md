@@ -1141,3 +1141,65 @@ objects): skipping the state patch's name checks for repeated names (about
 the terminal reconciliation details through the pin's NDJSON writer was
 built and measured: it saved 0.04 to 0.09 s per run (under 1 percent of
 the envelope) and was deleted by the maintainer (2026-11-12).
+
+### 19.9 Slice 2: costs, the risk chain and sizing helpers (Cut 16)
+
+- Status: proposed with Cut 16; binding once the maintainer accepts the
+  cut (A1). Slice 2 adds coverage with no behaviour change against the pin
+  and the contracts; it needs no RFC under the family method (macro WS16).
+- Probe (2026-11-13, at 21e89c27; `dev/spikes/slice2_probe/`, its patch
+  and result CSVs): with the three
+  refusals lifted, the pin's risk call in P2 and a rough sizing record,
+  13 constructed workloads (four cost models and a chain; `long_only`,
+  `max_weight` binding and not, a chain of both, a held position trimmed;
+  `ledgr_target_rebalance()`, both `ledgr_target_adjust()` forms, sizing
+  with risk, and all three together) matched the pin on every table with
+  debug on and off, as did ten slice-1 workloads (364 tables). Costs and
+  a risk step added no visible time on 10 x 7,200 (one run each).
+
+Coverage moves in Section 19.2's table from "refused (2)" to covered:
+
+| Covered in slice 2 | Still refused (slice) |
+| --- | --- |
+| every cost model and chain the pin's cost resolver accepts | - |
+| risk chains of `long_only` and `max_weight` on fresh marks | stale-mark risk rows and the unavailable risk-mark stop (3) |
+| `ledgr_target_rebalance()` and `ledgr_target_adjust()` with their sizing evidence | sizing that skips an instrument for an unusable price (3; unreachable in slice 2, see below) |
+
+What changes in the loop:
+
+- **Coverage.** The cost and risk-chain refusals and the scan entries for
+  the two sizing helpers go; the history entries stay (slice 3). The
+  run-entry refusal of a risk plan with a step the pin does not support
+  stays the pin's (`ledgr_risk_validate_compiled_plan()` in E).
+- **Costs.** No loop change. P3 already resolves fills through the pin's
+  cost resolver (Section 18) and P4's FIFO already splits fees (LR-21).
+- **Risk (P2).** After the strategy's targets are validated, the pin's
+  `ledgr_apply_risk_plan(targets, risk_plan, ctx)` runs on the lean
+  context, then the pin's post-risk admissibility check and the
+  short-exposure refusal on the risked targets. The post-risk recheck of
+  numbers, length and finiteness runs in debug only (LR-16). With no risk
+  step the slice-1 path is unchanged.
+- **Explicit decision rows.** A decision row is implicit only when the
+  strategy target equals the holding and the post-risk target equals the
+  strategy target; a risk step that changes the target of an instrument
+  already at its strategy target makes the row explicit (rules ledger
+  LR-23; without it the decoded coverage count disagrees and the run fails
+  closed).
+- **Sizing (P2 and after the loop).** The pin's
+  `ledgr_validate_sizing_evidence()` validates the helper's evidence; its
+  rows go into a pulse-ordered sizing record (preallocated, written by
+  index, grown by doubling like the decision record), and the pulse's
+  pre-decision count grows by their number. After the loop they are
+  rebuilt as `sizing / recorded` rows between the intent row and the
+  decision segment, with the intent reason in `reasons`, as the pin
+  writes them. The run-level raw-quantity notice is written only for a
+  pulse without sizing evidence, as the pin does. A helper skips an
+  instrument (and the pin marks its decision row `sizing_unavailable`)
+  only for a missing or non-positive close; sealing refuses non-positive
+  prices (`R/snapshots-seal.R:367`) and slice-1 coverage refuses missing
+  closes, so no covered workload skips. The loop checks in debug that the
+  pulse's `sizing_skipped` note is empty; the skip path arrives with
+  missing bars in slice 3.
+
+New loop.R production lines, estimated: about 45 (coverage 5, risk 10,
+decision rule 1, sizing record and rebuild about 30).

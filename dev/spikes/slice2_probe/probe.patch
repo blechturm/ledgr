@@ -1,0 +1,200 @@
+diff --git a/dev/lean_core/loop.R b/dev/lean_core/loop.R
+index 72aa3f55..ef06acfa 100644
+--- a/dev/lean_core/loop.R
++++ b/dev/lean_core/loop.R
+@@ -63,8 +63,7 @@ lean_abort_attempt <- function(feature) {
+ # --- coverage ---------------------------------------------------------------
+ 
+ lean_loop_scan_names <- c(
+-  "ledgr_history_matrix", "ledgr_history_frame", "ledgr_history_info",
+-  "ledgr_target_rebalance", "ledgr_target_adjust"
++  "ledgr_history_matrix", "ledgr_history_frame", "ledgr_history_info"
+ )
+ 
+ lean_loop_coverage <- function(execution, entry = NULL) {
+@@ -83,9 +82,6 @@ lean_loop_coverage <- function(execution, entry = NULL) {
+   if (!identical(as.integer(execution$start_idx), 1L)) lean_not_covered("restart")
+   if (!is.null(execution$decision_due)) lean_not_covered("schedules")
+   if (!identical(substrate$clock_kind, "bar_native")) lean_not_covered("declared sessions")
+-  steps <- environment(execution$cost_resolver)$steps
+-  if (!all(vapply(steps, function(s) identical(s$type_id, "zero"), logical(1L)))) lean_not_covered("costs")
+-  if (length(execution$risk_plan$steps) > 0L) lean_not_covered("the risk chain")
+   if (!is.null(execution$corporate_action_plan)) lean_not_covered("corporate actions")
+   if (length(execution$opening_frozen) > 0L || length(execution$position_fact_unknown_basis) > 0L ||
+       any(ledgr_fold_positions_to_vec(execution$state$positions, execution$instrument_ids) != 0) ||
+@@ -224,6 +220,7 @@ lean_fold_envelope <- function(execution, output_handler) {
+   def_ids <- if (length(feature_defs) > 0L) vapply(feature_defs, function(def) def$id, character(1)) else character()
+   active_alias_map <- ledgr_normalize_alias_map(execution$active_alias_map)
+   cost_resolver <- execution$cost_resolver
++  risk_plan <- ledgr_risk_validate_compiled_plan(execution$risk_plan)
+   provider <- execution$availability_provider
+   telemetry <- execution$telemetry
+   seed <- execution$seed
+@@ -323,6 +320,8 @@ lean_fold_envelope <- function(execution, output_handler) {
+   hd_pre <- integer(n_pulse)          # intent + sizing rows before the decision segment
+   hd_intent <- rep(NA_character_, n_pulse)
+   hd_sizing <- logical(n_pulse)
++  szr <- list(pulse = integer(), id = character(), reason = character(), reasons = character(), target = numeric(),
++              quantity = numeric(), price = numeric(), requested = numeric(), before = numeric())
+   hd_nrej <- integer(n_pulse)
+   hd_nfill <- integer(n_pulse)
+   hd_fill_start <- integer(n_pulse)   # fills of pulse i are rows hd_fill_start+1 .. +hd_nfill
+@@ -592,7 +591,6 @@ lean_fold_envelope <- function(execution, output_handler) {
+     }
+     intent_reason <- ledgr_validate_strategy_intent_reason(result$intent_reason)
+     sizing_evidence <- attr(result$targets, "sizing_evidence", exact = TRUE)
+-    if (!is.null(sizing_evidence)) lean_abort_attempt("sizing helpers")
+     raw_targets <- result$targets
+     # Fast path: a full, finite, named numeric vector in context order is
+     # returned by the pin's validator unchanged.
+@@ -608,7 +606,23 @@ lean_fold_envelope <- function(execution, output_handler) {
+     sq <- as.numeric(targets)
+     pre <- 0L
+     if (!is.null(intent_reason)) { hd_intent[[i]] <<- intent_reason; pre <- pre + 1L }
+-    if (!isTRUE(pulse_notes$raw_sizing_notice_written)) {
++    if (length(attr(raw_targets, "sizing_skipped", exact = TRUE)) > 0L) lean_abort_attempt("sizing with unavailable prices")
++    sizing_evidence <- ledgr_validate_sizing_evidence(sizing_evidence, targets = targets, context_ids = ids,
++      position = pos, mark = close)
++    if (!is.null(sizing_evidence) && length(sizing_evidence$instrument_id) > 0L) {
++      m <- length(sizing_evidence$instrument_id)
++      szr$pulse <<- c(szr$pulse, rep(i, m))
++      szr$id <<- c(szr$id, sizing_evidence$instrument_id)
++      szr$reason <<- c(szr$reason, sizing_evidence$reason_code)
++      szr$reasons <<- c(szr$reasons, rep(if (is.null(intent_reason)) "" else intent_reason, m))
++      szr$target <<- c(szr$target, sizing_evidence$pre_floor_quantity)
++      szr$quantity <<- c(szr$quantity, sizing_evidence$rounded_quantity)
++      szr$price <<- c(szr$price, sizing_evidence$price)
++      szr$requested <<- c(szr$requested, sizing_evidence$requested_quantity)
++      szr$before <<- c(szr$before, sizing_evidence$position_before)
++      pre <- pre + m
++    }
++    if (is.null(sizing_evidence) && !isTRUE(pulse_notes$raw_sizing_notice_written)) {
+       hd_sizing[[i]] <<- TRUE
+       pre <- pre + 1L
+       pulse_notes$raw_sizing_notice_written <- TRUE
+@@ -621,7 +635,12 @@ lean_fold_envelope <- function(execution, output_handler) {
+       # Only the short-exposure refusal can fire.
+       if (.lean_debug) ledgr_availability_validate_strategy_targets(targets, positions_snapshot, view)
+       live$cur_stage <- "risk"
+-      if (any(sq < 0 & sq < pos)) ledgr_availability_validate_short_exposure(targets, positions_snapshot)
++      if (length(risk_plan$steps) > 0L) {
++        risked <- ledgr_apply_risk_plan(targets, risk_plan, ctx)
++        tq <- ledgr_validate_post_risk_quantities(risked, n)
++        ledgr_availability_validate_post_risk(risked, targets)
++        ledgr_availability_validate_short_exposure(risked, positions_snapshot)
++      } else if (any(sq < 0 & sq < pos)) ledgr_availability_validate_short_exposure(targets, positions_snapshot)
+     }
+     list(result = result, sq = sq, tq = tq, pos_start = pos_start)
+   }
+@@ -678,7 +697,7 @@ lean_fold_envelope <- function(execution, output_handler) {
+     close <- v1$close
+     sq <- v2$sq
+     tq <- v2$tq
+-    differs <- which(!(is.finite(sq) & sq == pos & is.finite(close)))
++    differs <- which(!(is.finite(sq) & sq == pos & tq == sq & is.finite(close)))
+     n_fill <- if (is.null(batch)) 0L else length(batch$fill$k)
+     n_rej <- if (is.null(batch)) 0L else length(batch$rejection$k)
+     clean_k <- integer()
+@@ -783,7 +802,7 @@ lean_fold_envelope <- function(execution, output_handler) {
+       lean_gross(pos, close),
+       cash - sum(fill_cash),
+       intended,
+-      intended,                       # no risk step: post-risk == strategy targets
++      lean_gross(v2$tq, close),
+       cash,
+       expected)
+     ledgr_fold_reconciliation_check(recon[[2L]], recon[[6L]], recon[[5L]], recon[[3L]], recon[[4L]], recon[[1L]])
+@@ -967,6 +986,15 @@ lean_fold_envelope <- function(execution, output_handler) {
+     sz <- p[hd_sizing[p]]
+     if (length(sz)) add(lay$base[sz] + as.integer(!is.na(hd_intent[sz])) + 1L, sz, list(stage = "sizing",
+       outcome = "unavailable", reason_code = "sizing_intent_unavailable", reasons = "raw_quantity_targets"))
++    sr <- lean_rows_in(szr$pulse, a, b)
++    if (length(sr)) {
++      sp <- szr$pulse[sr]
++      within <- stats::ave(sp, sp, FUN = seq_along)
++      add(lay$base[sp] + as.integer(!is.na(hd_intent[sp])) + within, sp, list(instrument_id = szr$id[sr],
++        stage = "sizing", outcome = "recorded", reason_code = szr$reason[sr], reasons = szr$reasons[sr],
++        target = szr$target[sr], quantity = szr$quantity[sr], price = szr$price[sr],
++        target_before_risk = szr$requested[sr], position_before = szr$before[sr]))
++    }
+     r <- lean_rows_in(dr$pulse[seq_len(nd)], a, b)
+     if (length(r)) {
+       dp <- dr$pulse[r]; dk <- dr$k[r]
+diff --git a/dev/lean_core/parity/loop_workloads.R b/dev/lean_core/parity/loop_workloads.R
+index 4410010d..4cb0ce8d 100644
+--- a/dev/lean_core/parity/loop_workloads.R
++++ b/dev/lean_core/parity/loop_workloads.R
+@@ -680,3 +680,73 @@ loop_expect_refused <- list(
+   witness_checkpoint_null = "a checkpoint_every control",
+   witness_sweep_workers = "sweep workers"
+ )
++
++# --- slice-2 probe workloads (probe worktree only, not committed) -----------
++p2_crossover <- function(name, n_inst, n_days, cost, risk) function() {
++  db <- build(name, function(db) ledgr::ledgr_snapshot_from_df(r_floor_fixture(n_inst, n_days)$bars, db_path = db,
++                                                              snapshot_id = name, price_basis = "split_adjusted"))
++  exp <- function(snapshot) {
++    strategy <- r_floor_transition
++    environment(strategy) <- ns
++    ledgr::ledgr_experiment(snapshot, strategy,
++      features = ledgr::ledgr_feature_map(
++        fast = ledgr::ledgr_ind_ttr("SMA", input = "close", id = "fast", n = 5L),
++        slow = ledgr::ledgr_ind_ttr("SMA", input = "close", id = "slow", n = 10L)),
++      opening = ledgr::ledgr_opening(cash = 1e7), cost_model = cost,
++      risk_chain = risk, asset_state = list(above = FALSE, usable = FALSE))
++  }
++  collect(db, name, paste0("p2-", name), exp, seed = 20260530L)
++}
++p2_schedule <- function(name, plan, cost, risk, cash = 5000) function() {
++  db <- lw_snapshot(name, lw_bars(c(A = 30, B = 45, C = 12), 20L, drift = 0.05))
++  exp <- function(snapshot) ledgr::ledgr_experiment(snapshot, lw_schedule_strategy(plan),
++    opening = ledgr::ledgr_opening(cash = cash), cost_model = cost, risk_chain = risk)
++  collect(db, name, paste0("p2-", name), exp, seed = 11L)
++}
++p2_sizing_strategy <- function(verb) {
++  s <- function(ctx, params) {
++    day <- as.integer(substr(ctx$ts_utc, 9L, 10L))
++    if (day %% 3L == 0L) {
++      if (VERB == "rebalance") ledgr::ledgr_target_rebalance(ctx, weights = c(A = 0.3, B = 0.3, C = 0.2), invest_fraction = 0.9)
++      else if (day %% 2L == 0L) ledgr::ledgr_target_adjust(ctx, exit = c(A = TRUE, B = FALSE, C = FALSE))
++      else ledgr::ledgr_target_adjust(ctx, add_value = c(B = 300, C = 150))
++    } else ctx$hold()
++  }
++  body(s) <- do.call(substitute, list(body(s), list(VERB = verb)))
++  environment(s) <- ns
++  s
++}
++p2_sizing <- function(name, verb, cost = ledgr::ledgr_cost_zero(), risk = ledgr::ledgr_risk_none()) function() {
++  db <- lw_snapshot(name, lw_bars(c(A = 30, B = 45, C = 12), 30L, drift = 0.05))
++  exp <- function(snapshot) ledgr::ledgr_experiment(snapshot, p2_sizing_strategy(verb),
++    opening = ledgr::ledgr_opening(cash = 5000), cost_model = cost, risk_chain = risk)
++  collect(db, name, paste0("p2-", name), exp, seed = 11L)
++}
++p2_days <- lw_days(20L)
++p2_short_plan <- stats::setNames(list(c(A = 3, B = -2), c(B = 4, C = -5), c(A = 0, C = 6), c(A = -1, B = 0)),
++                                 p2_days[c(2L, 5L, 9L, 13L)])
++p2_chain <- ledgr::ledgr_cost_chain(ledgr::ledgr_cost_spread_bps(10), ledgr::ledgr_cost_fixed_fee(1),
++                                    ledgr::ledgr_cost_notional_bps_fee(5))
++loop_constructed <- c(loop_constructed, list(
++  p2_cost_fixed = p2_crossover("p2_cost_fixed", 10L, 300L, ledgr::ledgr_cost_fixed_fee(1), ledgr::ledgr_risk_none()),
++  p2_cost_notional = p2_crossover("p2_cost_notional", 10L, 300L, ledgr::ledgr_cost_notional_bps_fee(5), ledgr::ledgr_risk_none()),
++  p2_cost_spread = p2_crossover("p2_cost_spread", 10L, 300L, ledgr::ledgr_cost_spread_bps(10), ledgr::ledgr_risk_none()),
++  p2_cost_chain = p2_crossover("p2_cost_chain", 10L, 300L, p2_chain, ledgr::ledgr_risk_none()),
++  p2_risk_max_weight = p2_crossover("p2_risk_max_weight", 10L, 300L, ledgr::ledgr_cost_zero(), ledgr::ledgr_risk_max_weight(0.05)),
++  p2_risk_long_only = p2_schedule("p2_risk_long_only", p2_short_plan, ledgr::ledgr_cost_zero(), ledgr::ledgr_risk_long_only()),
++  p2_risk_chain = p2_schedule("p2_risk_chain", p2_short_plan, ledgr::ledgr_cost_fixed_fee(0.5),
++    ledgr::ledgr_risk_chain(ledgr::ledgr_risk_long_only(), ledgr::ledgr_risk_max_weight(0.3))),
++  p2_sizing_rebalance = p2_sizing("p2_sizing_rebalance", "rebalance"),
++  p2_sizing_adjust = p2_sizing("p2_sizing_adjust", "adjust"),
++  p2_combo = p2_sizing("p2_combo", "rebalance", p2_chain, ledgr::ledgr_risk_max_weight(0.25))
++))
++loop_constructed <- c(loop_constructed, list(
++  p2_risk_bind = p2_crossover("p2_risk_bind", 10L, 300L, ledgr::ledgr_cost_zero(), ledgr::ledgr_risk_max_weight(1e-5)),
++  p2_sizing_risk = p2_sizing("p2_sizing_risk", "rebalance", ledgr::ledgr_cost_zero(), ledgr::ledgr_risk_max_weight(0.25)),
++  p2_hold_trim = p2_schedule("p2_hold_trim", stats::setNames(list(c(A = 40, B = 20, C = 100)), p2_days[2L]),
++    ledgr::ledgr_cost_zero(), ledgr::ledgr_risk_max_weight(0.3), cash = 5000)
++))
++loop_constructed <- c(loop_constructed, list(
++  p2_time_cost_risk = p2_crossover("p2_time_cost_risk", 10L, 7200L, p2_chain, ledgr::ledgr_risk_max_weight(0.05)),
++  p2_time_cost = p2_crossover("p2_time_cost", 10L, 7200L, p2_chain, ledgr::ledgr_risk_none())
++))
