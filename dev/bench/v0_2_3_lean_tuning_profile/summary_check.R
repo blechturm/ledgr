@@ -109,14 +109,19 @@ vc <- lapply(names(dirs), function(v) { x <- rv(v, "cells.csv"); x[x$arm == "lea
 vr <- lapply(names(dirs), function(v) { x <- rv(v, "reconcile.csv"); x[x$arm == "lean", ] })
 names(vc) <- names(vr) <- names(dirs)
 for (v in names(dirs)) {
-  # rank.csv must come from these cells: per shape it sums to the cells plus the measured open
-  rk <- rv(v, "rank.csv")
+  # rank.csv must be cost_rank.R's output on these cells and clocks: rebuilt
+  # and compared whole (rows, owners, shares, order; close review round 1,
+  # finding 4).
+  rebuilt <- tempfile(fileext = ".csv")
+  system2(file.path(R.home("bin"), "Rscript"), c(file.path(here, "cost_rank.R"), paste0("--in=", dirs[[v]]),
+                                                 paste0("--out=", rebuilt)), stdout = FALSE)
+  same_rank <- file.exists(rebuilt) &&
+    identical(sub("$", "", readLines(rebuilt, warn = FALSE)), sub("$", "", readLines(file.path(dirs[[v]], "rank.csv"), warn = FALSE)))
   for (s in shapes) {
     if (!all(required %in% vc[[v]]$cell[vc[[v]]$shape == s])) fail <- c(fail, sprintf("%s lacks a required cell on %s", v, s))
-    if (!s %in% vr[[v]]$shape) { fail <- c(fail, sprintf("%s lacks the %s clocks", v, s)); next }
-    want <- sum(vc[[v]]$est_run_s[vc[[v]]$shape == s], na.rm = TRUE) + vr[[v]]$snapshot_open_median_s[vr[[v]]$shape == s]
-    if (abs(sum(rk$est_run_s[rk$shape == s], na.rm = TRUE) - want) > 1e-6) fail <- c(fail, sprintf("%s rank.csv is stale on %s", v, s))
+    if (!s %in% vr[[v]]$shape) fail <- c(fail, sprintf("%s lacks the %s clocks", v, s))
   }
+  if (!same_rank) fail <- c(fail, sprintf("%s rank.csv is not cost_rank.R's output on its cells", v))
 }
 if (length(fail)) { cat(paste0("  ", fail, collapse = "\n"), "\n"); quit(status = 1L) }
 cell_text <- function(v, s, cell) {

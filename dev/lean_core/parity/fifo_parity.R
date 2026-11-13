@@ -171,7 +171,11 @@ utils::write.csv(streams_out, file.path(out, "fifo_streams.csv"), row.names = FA
 
 # 3. Mutations (six, plus two for Cut 15's simple path): one textual change to fifo.R each, sourced into a fresh
 # environment; each must make at least one generated stream or fill-heavy
-# call differ.
+# call differ, with debug off and with debug on. The two simple-path
+# mutations must also be reached: with debug on, the simple path's comparator
+# refuses at least one stream step (its result differs from the general
+# kernel's). The control raises an unrelated error in the simple close and
+# must not count as that signal (close review round 1, finding 3).
 fifo_src <- readLines(file.path(lean_core_home, "fifo.R"))
 mutations <- list(
   ordered_total_by_sum = c("total <- total - old_basis[[k]] + new_basis[[k]]",
@@ -184,22 +188,40 @@ mutations <- list(
   # Cut 15, LDG-3223: the simple lot path admits an over-close, or books the
   # realized close with the wrong sign.
   simple_admits_over = c("lot * side < 0 & abs(lot) == quantity", "lot * side < 0 & abs(lot) <= quantity"),
-  simple_close_sign = c("((price[k] - p[slot[k]]) * -s) * take", "((price[k] - p[slot[k]]) * s) * take")
+  simple_close_sign = c("((price[k] - p[slot[k]]) * -s) * take", "((price[k] - p[slot[k]]) * s) * take"),
+  control_simple_unrelated_error = c("((price[k] - p[slot[k]]) * -s) * take", "stop(\"control: unrelated failure\")")
 )
+simple_signal <- "Lean simple lot path differs from the general kernel."
+mutation_env <- function(text, debug) {
+  env <- new.env(parent = ns)
+  env$.lean_debug <- debug
+  eval(parse(text = text, keep.source = FALSE), envir = env)
+  env
+}
 mutation_rows <- lapply(names(mutations), function(name) {
   mu <- mutations[[name]]
   hit <- grep(mu[[1L]], fifo_src, fixed = TRUE)
   stopifnot(length(hit) == 1L)
   text <- fifo_src
   text[hit] <- sub(mu[[1L]], mu[[2L]], text[hit], fixed = TRUE)
-  env <- new.env(parent = ns)
-  env$.lean_debug <- FALSE
-  eval(parse(text = text, keep.source = FALSE), envir = env)
-  differing <- names(Filter(function(s) fifo_run_stream(s, ns, env)$same < length(s$steps), streams))
-  heavy <- sum(!vapply(fill_heavy, function(k) check_call(env, k$book, k$input, k$expected)[["same"]], logical(1)))
-  data.frame(mutation = name, line = hit, streams_differing = length(differing),
-             fill_heavy_calls_differing = heavy, example_stream = c(differing, "")[[1L]],
-             fails_parity = length(differing) > 0L || heavy > 0L)
+  r <- data.frame(mutation = name, line = hit)
+  for (debug in c(FALSE, TRUE)) {
+    env <- mutation_env(text, debug)
+    runs <- lapply(streams, function(s) fifo_run_stream(s, ns, env))
+    differing <- Filter(function(s) runs[[s]]$same < length(streams[[s]]$steps), names(runs))
+    heavy <- sum(!vapply(fill_heavy, function(k) check_call(env, k$book, k$input, k$expected)[["same"]], logical(1)))
+    tag <- if (debug) "debug_on" else "debug_off"
+    r[[paste0("streams_differing_", tag)]] <- length(differing)
+    r[[paste0("fill_heavy_calls_differing_", tag)]] <- heavy
+    if (!debug) r$example_stream <- c(differing, "")[[1L]]
+    if (debug) r$simple_comparator_refusals_debug_on <- sum(unlist(lapply(runs, `[[`, "messages")) == simple_signal)
+  }
+  r$fails_parity <- (r$streams_differing_debug_off > 0L || r$fill_heavy_calls_differing_debug_off > 0L) &&
+    (r$streams_differing_debug_on > 0L || r$fill_heavy_calls_differing_debug_on > 0L)
+  r$reached <- if (startsWith(name, "simple_") || startsWith(name, "control_simple_")) {
+    r$simple_comparator_refusals_debug_on > 0L
+  } else NA
+  r
 })
 mutations_out <- do.call(rbind, mutation_rows)
 utils::write.csv(mutations_out, file.path(out, "fifo_mutations.csv"), row.names = FALSE)

@@ -1,1 +1,2 @@
-C:/PROGRA~1/R/R-46~1.1/bin/x64/Rscript --lib=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151 --mode=compare --base=1a420b31 --candidate=43d8f0f9 --rounds=7 --out=C:/Users/maxth/ledgr-wt/ws32-timing/cmp_3222
+C:/PROGRA~1/R/R-46~1.1/bin/x64/Rscript dev/lean_core/parity/loop_shortcuts.R --lib=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151 --mode=compare --base=1a420b31 --candidate=43d8f0f9 --rounds=7 --out=C:/Users/maxth/ledgr-wt/ws32-timing/cmp_3222
+(script path added at close review round 1: the writer had recorded only the arguments)

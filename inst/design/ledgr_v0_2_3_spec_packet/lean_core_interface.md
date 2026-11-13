@@ -1080,12 +1080,20 @@ LDG-3222 (the strategy boundary in P2):
 
 - State view, `lean_strategy_view()`. Predicate: the declared state is a list
   whose only attribute is its names. Guarantee: the fold's declared state is
-  such a list, empty when nothing is declared, and the loop replaces state
+  such a list, empty when nothing is declared, built as an ordinary list (not
+  a pairlist) by `ledgr_strategy_state_defaults()`, and every field is an
+  unclassed atomic vector: defaults are cast scalars, and every update,
+  patch and reset passes `ledgr_strategy_state_validate_value()`, which
+  refuses a classed field or any attribute but names; on such a field the
+  comparator's `x[]` returns the field unchanged. The loop replaces state
   values but never writes into them, so R's copy-on-modify keeps a retained
   view frozen. Comparator: `ledgr_strategy_state_view()`, whose result it
-  equals (`identical()`). Fallback: any other input goes to
-  `ledgr_strategy_state_view()`. Dispatch on both sides:
-  `parity/loop_dispatch.R`. Kept by the maintainer (2026-11-12) at a
+  equals (`identical()`) on every input inside the guarantee. Fallback: any
+  other input goes to `ledgr_strategy_state_view()`. Dispatch on both sides:
+  `parity/loop_dispatch.R`, which also shows that two direct inputs outside
+  the guarantee (a pairlist, a list holding a classed field) pass the outer
+  test and are refused by the debug comparator (close review round 1,
+  finding 2). Kept by the maintainer (2026-11-12) at a
   median loop saving of 1.5, 2.3 and 2.9 percent, unresolved by the rule.
 - The context is built as a list with its class assigned, not through
   `structure()`; the positions snapshot uses `names<-`; the short-exposure

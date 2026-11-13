@@ -7,6 +7,7 @@
 fifo_run_stream <- function(stream, ns, env) {
   pin_book <- lean_book <- stream$book
   same <- rows <- refusals <- 0L
+  messages <- character()
   for (s in stream$steps) {
     args <- if (is.function(s$args)) s$args(pin_book) else s$args
     if (identical(s$op, "input")) {
@@ -25,10 +26,11 @@ fifo_run_stream <- function(stream, ns, env) {
     same <- same + ok
     rows <- rows + length(args$pos %||% args$input$pos)
     refusals <- refusals + refused(pin)
+    if (refused(got)) messages <- c(messages, got$message)
     if (!refused(pin) && !identical(s$op, "input")) pin_book <- pin$book
     if (!refused(got) && !identical(s$op, "input")) lean_book <- got$book
   }
-  list(same = same, rows = rows, refusals = refusals)
+  list(same = same, rows = rows, refusals = refusals, messages = messages)
 }
 
 # A book holding the given lots per instrument (a list of list(qty, price)),

@@ -381,6 +381,15 @@ for (id in ids) {
 full_run_requested <- !any(grepl("^--workloads=", commandArgs(TRUE)))
 missing_frozen <- if (!is.null(frozen) && full_run_requested) setdiff(frozen$workload, ids) else character()
 if (length(missing_frozen)) cat("frozen workloads not run:", paste(missing_frozen, collapse = ", "), "\n")
+# A workload with no frozen row for this mode and debug setting had no path
+# check; name them so a record never implies one (close review round 1,
+# finding 5).
+if (!is.null(frozen)) {
+  unfrozen <- setdiff(ids, frozen$workload)
+  cat(sprintf("frozen paths (%s, debug %d): %d of %d workloads checked%s\n", mode, as.integer(debug),
+              length(ids) - length(unfrozen), length(ids),
+              if (length(unfrozen)) paste0("; no frozen row: ", paste(unfrozen, collapse = ", ")) else ""))
+}
 res <- do.call(rbind, rows)
 dir.create(dirname(out), recursive = TRUE, showWarnings = FALSE)
 utils::write.csv(res, out, row.names = FALSE)

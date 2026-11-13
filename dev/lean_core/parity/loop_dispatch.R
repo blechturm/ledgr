@@ -10,7 +10,8 @@
 # Workloads run on the lean loop with debug off (production dispatch) and on
 # the pin; their fills must match. Direct cases compare lean_strategy_view()
 # with ledgr_strategy_state_view() on inputs on both sides of its predicate
-# and at its boundaries.
+# and at its boundaries, and two inputs outside its upstream guarantee that
+# the debug comparator must refuse.
 #
 #   Rscript dev/lean_core/parity/loop_dispatch.R --lib=<pinned library> --out=<csv>
 
@@ -96,8 +97,27 @@ for (id in names(direct)) {
     expected = c(expect_fast[[id]], !expect_fast[[id]]),
     matches_pin = identical(got, caught(ns$ledgr_strategy_state_view(direct[[id]]))), stringsAsFactors = FALSE)
 }
-out <- do.call(rbind, rows)
-out$ok <- (out$calls > 0L) == out$expected & out$matches_pin
+# Outside the upstream guarantee (Section 19.8): the fold's declared state is
+# an ordinary list of unclassed atomic fields, so these never reach the view
+# from the loop. They pass the outer test and differ from the pin; the debug
+# comparator must refuse each (close review round 1, finding 2).
+`[.ldgr_review_atomic` <- function(x, ...) 99
+outside <- list(pairlist = pairlist(a = 1), classed_field = list(a = structure(1, class = "ldgr_review_atomic")))
+for (id in names(outside)) {
+  lean$lean_entry$dispatch <- character()
+  got <- caught(lean$lean_strategy_view(outside[[id]]))
+  calls <- tally()
+  lean$.lean_debug <- TRUE
+  refused <- caught(lean$lean_strategy_view(outside[[id]]))
+  lean$.lean_debug <- FALSE
+  rows[[paste0("outside_", id)]] <- data.frame(case = paste0("outside_guarantee_", id), branch = branches,
+    calls = calls, expected = c(TRUE, FALSE),
+    matches_pin = identical(got, caught(ns$ledgr_strategy_state_view(outside[[id]]))), stringsAsFactors = FALSE,
+    debug_refused = identical(refused[[2L]], "Lean state view differs from the pin's."))
+}
+out <- do.call(rbind, lapply(rows, function(r) { if (is.null(r$debug_refused)) r$debug_refused <- NA; r }))
+inside <- !startsWith(out$case, "outside_guarantee_")
+out$ok <- (out$calls > 0L) == out$expected & ifelse(inside, out$matches_pin, !out$matches_pin & out$debug_refused)
 utils::write.csv(out, arg("out"), row.names = FALSE)
 print(out, row.names = FALSE)
 if (!all(out$ok)) quit(status = 1L)

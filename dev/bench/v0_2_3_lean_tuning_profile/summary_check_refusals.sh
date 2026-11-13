@@ -21,6 +21,7 @@ mv $D/rank.csv $SC/rank.csv; check missing_input; mv $SC/rank.csv $D/rank.csv
 sed -i '2s/"8edacba437a2e8a13e5ab54bf39c34e8"/"00000000000000000000000000000000"/' $D/clock_raw.csv; check signature_mismatch; git checkout -q -- $D/clock_raw.csv
 sed -i '/"lean","20x23400","E advance"/d' $D/cells.csv; check missing_required_cell; git checkout -q -- $D/cells.csv
 sed -i '2s/,\([0-9.]*\),"/,99,"/' $D/rank.csv; check stale_rank; git checkout -q -- $D/rank.csv
+sed -i -e '2s/,0.4025,/,0.5025,/' -e '3s/,0.365427631578947,/,0.265427631578947,/' $D/rank.csv; check stale_rank_compensating; git checkout -q -- $D/rank.csv
 echo "# stale probe" >> dev/lean_core/loop.R; check stale_lean_source; git checkout -q -- dev/lean_core/loop.R
 echo "# harness only" >> dev/lean_core/parity/loop_parity.R; check harness_change_not_stale; git checkout -q -- dev/lean_core/parity/loop_parity.R
 check clean_again

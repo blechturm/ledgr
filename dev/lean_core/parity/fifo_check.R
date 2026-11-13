@@ -1,7 +1,8 @@
 # LDG-3213 checker: reruns the FIFO parity runner into a scratch directory,
 # diffs its CSVs against the committed evidence, requires every compared
 # call and stream step to be identical in both debug settings, every
-# mutation to fail parity and every static call to be allowed, and guards
+# mutation to fail parity with debug off and on (the simple-path ones reached,
+# the control not), every static call to be allowed, and guards
 # package scope.
 #
 #   Rscript dev/lean_core/parity/fifo_check.R --lib=<pinned library>
@@ -24,6 +25,11 @@ status <- system2(file.path(R.home("bin"), "Rscript"),
                   c(file.path(here, "fifo_parity.R"), paste0("--lib=", arg("lib")), paste0("--captures=", arg("captures")),
                     paste0("--tests=", arg("tests")), paste0("--out=", scratch)))
 if (!identical(status, 0L)) problems <- c(problems, paste("fifo_parity.R exited with status", status))
+# Cut 15's simple-path differential cases write their own committed CSV.
+status <- system2(file.path(R.home("bin"), "Rscript"),
+                  c(file.path(here, "fifo_simple_cases.R"), paste0("--lib=", arg("lib")),
+                    paste0("--out=", file.path(scratch, "fifo_simple_cases.csv"))))
+if (!identical(status, 0L)) problems <- c(problems, paste("fifo_simple_cases.R exited with status", status))
 
 evidence <- file.path(here, "evidence")
 for (f in list.files(evidence, pattern = "^fifo_.*[.]csv$")) {
@@ -50,8 +56,15 @@ if (file.exists(file.path(scratch, "fifo_mutations.csv"))) {
     if (length(short)) problems <- c(problems, paste("stream", short, col))
   }
   m <- read("fifo_mutations.csv")
-  # Six mutations, plus Cut 15's two for the simple lot path.
-  if (nrow(m) != 8L || !all(m$fails_parity)) problems <- c(problems, paste("mutation passes parity:", m$mutation[!m$fails_parity]))
+  # Six mutations, plus Cut 15's two for the simple lot path, each failing
+  # parity with debug off and on; the two simple ones reached (the debug
+  # comparator refuses), the unrelated-error control not counted as reached.
+  control <- startsWith(m$mutation, "control_")
+  if (nrow(m) != 9L || sum(control) != 1L) problems <- c(problems, "expected eight mutations and one control")
+  if (!all(m$fails_parity[!control])) problems <- c(problems, paste("mutation passes parity:", m$mutation[!control & !m$fails_parity]))
+  simple <- startsWith(m$mutation, "simple_")
+  if (sum(simple) != 2L || !all(m$reached[simple] %in% TRUE)) problems <- c(problems, "a simple-path mutation is not reached")
+  if (!all(m$reached[control] %in% FALSE)) problems <- c(problems, "the unrelated-error control counts as reached")
   k <- read("fifo_calls.csv")
   if (!all(k$allowed)) problems <- c(problems, paste("lean code calls", k$ledgr_function[!k$allowed]))
 }

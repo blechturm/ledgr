@@ -201,7 +201,8 @@ arms <- if (mode == "shortcuts" && set15) {
   base_src <- lean_sources(arg("base"))
   utils::write.csv(rbind(identity_rows("candidate", cand_src), identity_rows("base", base_src)),
                    file.path(out, "compare_identity.csv"), row.names = FALSE)
-  writeLines(paste(c(file.path(R.home("bin"), "Rscript"), commandArgs(TRUE)), collapse = " "),
+  writeLines(paste(c(file.path(R.home("bin"), "Rscript"), sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]),
+                     commandArgs(TRUE)), collapse = " "),
              file.path(out, "compare_command.txt"))
   list(candidate = make_arm_full(cand_src), base = make_arm_full(base_src))
 } else stop("--mode must be shortcuts, final, compare or isolation", call. = FALSE)
