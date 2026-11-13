@@ -1380,7 +1380,8 @@ cuts:
   - id: 12
     name: "Lean core first checkpoint"
     cut: "2026-11-06"
-    status: "accepted"
+    status: "closed"
+    closed: "2026-11-13 after workstream 28 closed on its round-2 close-review PASS; workstreams 26 and 27 had closed earlier."
     accepted: >-
       2026-11-06 by the maintainer after the independent cut review
       (CHANGES_REQUIRED, R1-R5 applied) and its focused PASS re-review,
@@ -2268,9 +2269,9 @@ workstreams:
   - id: 28
     name: "Memory-bounded preparation (macro WS16 first checkpoint)"
     cut: 12
-    status: "pending"
-    accepted: null
-    close_review: null
+    status: "complete"
+    accepted: "2026-11-13 by the maintainer, closing on the round-2 PASS of its owed Type 1 close review, with the 2026-11-13 disposition of the measurements it found missing (LDG-3217 evidence)."
+    close_review: "Round 1 (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 1, at 390641f1; close_review_28.md): CHANGES_REQUIRED, four findings, no wrong answer: (1) the preparation peak stopped at fold entry, before the reader and valuation state; (2) the memory component report dropped output and final-state categories and did not measure retained reads or a preparation tree peak; (3) the floor-v1 probe timed call sites inside a full run rather than an isolated stage; (4) a withdrawn commit had published the private A/A record. Corrected at 6284e90c: the peak taken at the last preparation step (equal to the fold-entry figures in every cell), every worker and repeat's categories published, the unmeasured parts and the non-isolated probe disposed by the maintainer (2026-11-13), the A/A record kept private. Round 2 (same setup, focused, at 6284e90c; close_review_28_rereview_1.md): PASS, all four fixed or truthfully disposed, no new finding."
     depends_on_workstream: 27
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 28, after LDG-3217", reason: "One claim joins LDG-3215 through LDG-3217 (as amended by the whole-planes amendment, 2026-11-08): whole-plane preparation with chunked hydration reproduces the pinned fold-reader packets, feature series and evidence, and every registered public history read exactly, on the portable fixture at two chunk widths with chunk edges placed at column-order change, entry, exit, re-entry, carry expiry and late knowledge, on the three portable shapes and on private H1; it holds no whole-history long bar frame and its preparation peak is at most the pinned arm's, with every other resident component and every peak reported; every registered mutation fails; and after the subtraction review it meets its budgets or has an explicit maintainer acceptance."}
