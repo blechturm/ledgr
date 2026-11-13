@@ -32,6 +32,11 @@
 # savings lie below 0.02 on every shape; it is kept when, on some shape, at
 # least rounds - 1 lie at or above 0.02; anything else is unresolved and goes
 # to the maintainer.
+#
+# Cut 16 (LDG-3229): shapes are the workload descriptors of
+# dev/bench/v0_2_3_lean_tuning_profile/descriptors.R, shared with the cost map
+# and the cut16-loop-1 timing protocol; --shapes=10x7200,20x23400,500x1260,
+# slice2_10x7200 gives Cut 16's four comparison shapes.
 
 here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/"))
 arg <- function(name, default = NULL) {
@@ -51,6 +56,7 @@ source(file.path(here, "..", "load.R"))
 lean <- lean_core_load(lib, debug = FALSE)
 ns <- asNamespace("ledgr")
 source(file.path(repo, "dev/spikes/r_floor/fixture.R"))
+source(file.path(repo, "dev/bench/v0_2_3_lean_tuning_profile/descriptors.R"))
 
 # The delegation arms: one edit set each, against the tracked loop.R and
 # loop_harness.R.
@@ -210,23 +216,14 @@ arms <- if (mode == "shortcuts" && set15) {
 work <- file.path(tempdir(), "loop_shortcuts")
 dir.create(work, showWarnings = FALSE)
 sealed <- list()
+desc <- lapply(stats::setNames(shapes, shapes), bench_descriptor)
 for (s in shapes) {
-  d <- as.integer(strsplit(s, "x")[[1L]])
   path <- file.path(work, paste0(s, ".duckdb"))
-  ledgr::ledgr_snapshot_close(ledgr::ledgr_snapshot_from_df(r_floor_fixture(d[[1L]], d[[2L]])$bars, db_path = path,
+  ledgr::ledgr_snapshot_close(ledgr::ledgr_snapshot_from_df(desc[[s]]$bars(), db_path = path,
     snapshot_id = paste0("sc_", s), price_basis = "split_adjusted"))
   sealed[[s]] <- path
 }
-experiment <- function(snapshot) {
-  strategy <- r_floor_transition
-  environment(strategy) <- ns
-  ledgr::ledgr_experiment(snapshot, strategy,
-    features = ledgr::ledgr_feature_map(
-      fast = ledgr::ledgr_ind_ttr("SMA", input = "close", id = "fast", n = 5L),
-      slow = ledgr::ledgr_ind_ttr("SMA", input = "close", id = "slow", n = 10L)),
-    opening = ledgr::ledgr_opening(cash = 1e7), cost_model = ledgr::ledgr_cost_zero(),
-    risk_chain = ledgr::ledgr_risk_none(), asset_state = list(above = FALSE, usable = FALSE))
-}
+experiment <- function(snapshot, shape) desc[[shape]]$experiment(snapshot)
 now <- function() proc.time()[["elapsed"]]
 run_arm <- function(env, shape, label) {
   db <- file.path(work, paste0("run_", label, ".duckdb"))
@@ -234,7 +231,7 @@ run_arm <- function(env, shape, label) {
   file.copy(sealed[[shape]], db)
   snapshot <- ledgr::ledgr_snapshot_open(db, paste0("sc_", shape), verify = TRUE)
   on.exit(ledgr::ledgr_snapshot_close(snapshot))
-  exp <- experiment(snapshot)
+  exp <- experiment(snapshot, shape)
   clock <- new.env(parent = emptyenv())
   restore <- env$lean_loop_install(hooks = FALSE)
   on.exit(restore(), add = TRUE)

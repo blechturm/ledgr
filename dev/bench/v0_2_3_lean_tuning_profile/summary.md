@@ -180,3 +180,104 @@ about 10 us or less are within sampling noise: the strategy's own work is
 the same code in both runs and still moves by 0 to 18 us. The FIFO's drop
 on the three narrower shapes (19 to 25 us) matches LDG-3223's paired
 saving. The pin's arm was not rerun; its cells above are Cut 14's.
+
+## Cut 16 (LDG-3229): the slice-2 loop's cost map
+
+The lean arm alone on workstream 33's final code, five workload descriptors
+(`descriptors.R`, shared with `loop_shortcuts.R` and the cut16-loop-1
+protocol): Cut 15's four crossover shapes, unchanged, and `slice2_10x7200`, a
+different workload on the same 10 x 7,200 bars (cash 1e7; spread_bps(10),
+fixed_fee(1), notional_bps_fee(5); max_weight(0.05); ledgr_target_rebalance()
+at weight 0.08 per instrument and invest_fraction 0.9 on the first and every
+third pulse, hold otherwise, a declared pulse counter). Same method as above:
+5 clock reps, profile runs 3, 1, 10, 40 and 3. Every shape reproduces the
+pin's signatures: Cut 14's pin rows for the crossover shapes and an
+independent pin capture for slice2_10x7200 (`results/cost_map_cut16_pin`, 3
+clock reps, `--arms=pin --clock-only=1`), whose reach on the pin was
+asserted before any clock. P2 risk holds the pin's risk plan and its
+post-risk checks; P2 sizing the pin's sizing-evidence validator and the lean
+sizing record. Sources:
+
+- Cut 16 base: `dev/bench/v0_2_3_lean_tuning_profile/results/cost_map_cut16_base`, head 2d81f6a4, dev/lean_core changes against head 0, lean sources of bec26da9
+
+| run | shape | run | loop | us/pulse | loop samples |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Cut 16 base | 10 x 7,200 | 3.38 | 2.05 | 285 | 400 |
+| Cut 16 base | 20 x 23,400 | 12.19 | 8.16 | 349 | 525 |
+| Cut 16 base | 500 x 1,260 | 3.91 | 0.74 | 587 | 478 |
+| Cut 16 base | 1,166 x 252 | 2.62 | 0.20 | 794 | 542 |
+| Cut 16 base | slice2 10 x 7,200 | 5.90 | 4.43 | 615 | 872 |
+
+The pin on slice2_10x7200 (medians of 3 reps, seconds, with the reach counts):
+
+| workload | pin run | pin loop | pin us/pulse | reach on the pin |
+| --- | ---: | ---: | ---: | --- |
+| slice2 10 x 7,200, pin | 26.89 | 26.23 | 3643 | sizing_rows 24001, risk_reductions 45193, priced_fills_with_fees 45189 |
+
+Loop cells, estimated us per pulse, share of the loop in percent, samples
+and resolution:
+
+| run | shape | cell | us | share of loop | samples | resolution |
+| --- | --- | --- | ---: | ---: | ---: | --- |
+| Cut 16 base | 10 x 7,200 | P3 plan | 58 | 20.2 | 81 | measured |
+| Cut 16 base | 10 x 7,200 | strategy: ledgr callees | 37 | 13.0 | 52 | measured |
+| Cut 16 base | 10 x 7,200 | P2 context build | 26 | 9.0 | 36 | measured |
+| Cut 16 base | 10 x 7,200 | P4 FIFO | 31 | 11.0 | 44 | measured |
+| Cut 16 base | 10 x 7,200 | P4 other (fill records, position facts) | 34 | 12.0 | 48 | measured |
+| Cut 16 base | 10 x 7,200 | P5 commit | 37 | 13.0 | 52 | measured |
+| Cut 16 base | 10 x 7,200 | P2 other (output checks) | 22 | 7.8 | 31 | measured |
+| Cut 16 base | 10 x 7,200 | strategy: own work | 12 | 4.2 | 17 | measured |
+| Cut 16 base | 10 x 7,200 | strategy: call wrapper | 10 | 3.5 | 14 | measured |
+| Cut 16 base | 10 x 7,200 | P1 valuation | 14 | 4.8 | 19 | measured |
+| Cut 16 base | 10 x 7,200 | E advance | 3 | 1.0 | 4 | rough |
+| Cut 16 base | 10 x 7,200 | loop body, base code (residual) | 1 | 0.5 | 2 | rough |
+| Cut 16 base | 20 x 23,400 | P3 plan | 91 | 26.1 | 137 | measured |
+| Cut 16 base | 20 x 23,400 | strategy: ledgr callees | 35 | 10.1 | 53 | measured |
+| Cut 16 base | 20 x 23,400 | P2 context build | 40 | 11.4 | 60 | measured |
+| Cut 16 base | 20 x 23,400 | P4 FIFO | 45 | 12.8 | 67 | measured |
+| Cut 16 base | 20 x 23,400 | P4 other (fill records, position facts) | 43 | 12.2 | 64 | measured |
+| Cut 16 base | 20 x 23,400 | P5 commit | 37 | 10.7 | 56 | measured |
+| Cut 16 base | 20 x 23,400 | P2 other (output checks) | 26 | 7.4 | 39 | measured |
+| Cut 16 base | 20 x 23,400 | strategy: own work | 12 | 3.4 | 18 | measured |
+| Cut 16 base | 20 x 23,400 | strategy: call wrapper | 9 | 2.7 | 14 | measured |
+| Cut 16 base | 20 x 23,400 | P1 valuation | 6 | 1.7 | 9 | rough |
+| Cut 16 base | 20 x 23,400 | E advance | 1 | 0.2 | 1 | rough |
+| Cut 16 base | 20 x 23,400 | loop body, base code (residual) | 5 | 1.3 | 7 | rough |
+| Cut 16 base | 500 x 1,260 | P3 plan | 149 | 25.3 | 121 | measured |
+| Cut 16 base | 500 x 1,260 | strategy: ledgr callees | 66 | 11.3 | 54 | measured |
+| Cut 16 base | 500 x 1,260 | P2 context build | 39 | 6.7 | 32 | measured |
+| Cut 16 base | 500 x 1,260 | P4 FIFO | 92 | 15.7 | 75 | measured |
+| Cut 16 base | 500 x 1,260 | P4 other (fill records, position facts) | 93 | 15.9 | 76 | measured |
+| Cut 16 base | 500 x 1,260 | P5 commit | 53 | 9.0 | 43 | measured |
+| Cut 16 base | 500 x 1,260 | P2 other (output checks) | 33 | 5.6 | 27 | measured |
+| Cut 16 base | 500 x 1,260 | strategy: own work | 23 | 4.0 | 19 | measured |
+| Cut 16 base | 500 x 1,260 | strategy: call wrapper | 15 | 2.5 | 12 | measured |
+| Cut 16 base | 500 x 1,260 | P1 valuation | 18 | 3.1 | 15 | measured |
+| Cut 16 base | 500 x 1,260 | E advance | 2 | 0.4 | 2 | rough |
+| Cut 16 base | 500 x 1,260 | loop body, base code (residual) | 2 | 0.4 | 2 | rough |
+| Cut 16 base | 1,166 x 252 | P3 plan | 152 | 19.2 | 104 | measured |
+| Cut 16 base | 1,166 x 252 | strategy: ledgr callees | 63 | 7.9 | 43 | measured |
+| Cut 16 base | 1,166 x 252 | P2 context build | 40 | 5.0 | 27 | measured |
+| Cut 16 base | 1,166 x 252 | P4 FIFO | 185 | 23.2 | 126 | measured |
+| Cut 16 base | 1,166 x 252 | P4 other (fill records, position facts) | 133 | 16.8 | 91 | measured |
+| Cut 16 base | 1,166 x 252 | P5 commit | 92 | 11.6 | 63 | measured |
+| Cut 16 base | 1,166 x 252 | P2 other (output checks) | 42 | 5.4 | 29 | measured |
+| Cut 16 base | 1,166 x 252 | strategy: own work | 56 | 7.0 | 38 | measured |
+| Cut 16 base | 1,166 x 252 | strategy: call wrapper | 6 | 0.7 | 4 | rough |
+| Cut 16 base | 1,166 x 252 | P1 valuation | 21 | 2.6 | 14 | measured |
+| Cut 16 base | 1,166 x 252 | E advance | 1 | 0.2 | 1 | rough |
+| Cut 16 base | 1,166 x 252 | loop body, base code (residual) | 3 | 0.4 | 2 | rough |
+| Cut 16 base | slice2 10 x 7,200 | P3 plan | 117 | 19.0 | 166 | measured |
+| Cut 16 base | slice2 10 x 7,200 | strategy: ledgr callees | 132 | 21.4 | 187 | measured |
+| Cut 16 base | slice2 10 x 7,200 | P2 context build | 32 | 5.2 | 45 | measured |
+| Cut 16 base | slice2 10 x 7,200 | P4 FIFO | 131 | 21.2 | 185 | measured |
+| Cut 16 base | slice2 10 x 7,200 | P4 other (fill records, position facts) | 56 | 9.2 | 80 | measured |
+| Cut 16 base | slice2 10 x 7,200 | P5 commit | 28 | 4.6 | 40 | measured |
+| Cut 16 base | slice2 10 x 7,200 | P2 other (output checks) | 35 | 5.7 | 50 | measured |
+| Cut 16 base | slice2 10 x 7,200 | strategy: own work | 4 | 0.6 | 5 | rough |
+| Cut 16 base | slice2 10 x 7,200 | strategy: call wrapper | 8 | 1.4 | 12 | measured |
+| Cut 16 base | slice2 10 x 7,200 | P1 valuation | 11 | 1.7 | 15 | measured |
+| Cut 16 base | slice2 10 x 7,200 | E advance | 1 | 0.2 | 2 | rough |
+| Cut 16 base | slice2 10 x 7,200 | loop body, base code (residual) | 4 | 0.6 | 5 | rough |
+| Cut 16 base | slice2 10 x 7,200 | P2 risk | 38 | 6.2 | 54 | measured |
+| Cut 16 base | slice2 10 x 7,200 | P2 sizing | 18 | 3.0 | 26 | measured |

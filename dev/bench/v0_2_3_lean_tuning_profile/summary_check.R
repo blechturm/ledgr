@@ -87,12 +87,21 @@ ident <- lapply(names(dirs), function(v) {
   list(head = get("head"), changes = get("dev/lean_core changes against head"))
 })
 names(ident) <- names(dirs)
-# stale: the Cut 15 rerun ran on a clean dev/lean_core whose lean sources (the
-# parity harness aside) equal the ones checked out now
+# Lean sources (dev/lean_core without the parity harness) of two commits, or
+# of a commit and the checked-out tree, compared.
+lean_same <- function(a, b = NULL) {
+  identical(as.integer(system2("git", c("-C", repo, "diff", "--quiet", a, b, "--", "dev/lean_core",
+                                        ":(exclude)dev/lean_core/parity"))), 0L)
+}
+# A historical record is verified against its recorded source (Cut 16,
+# LDG-3229): the Cut 15 rerun ran on a clean dev/lean_core whose lean
+# sources are those of workstream 32's final code, 4cdc01da (LDG-3225's
+# evidence). Only the final Cut 16 rerun is checked against the checked-out
+# tree (below).
 if (!identical(ident[["Cut 15"]]$changes, "0")) fail <- c(fail, "Cut 15 rerun ran with uncommitted dev/lean_core changes")
-same_lean <- system2("git", c("-C", repo, "diff", "--quiet", ident[["Cut 15"]]$head, "--", "dev/lean_core",
-                              ":(exclude)dev/lean_core/parity"))
-if (!identical(as.integer(same_lean), 0L)) fail <- c(fail, "Cut 15 rerun is stale: dev/lean_core changed since its head")
+if (!lean_same(ident[["Cut 15"]]$head, "4cdc01da")) {
+  fail <- c(fail, "Cut 15 rerun is stale: its lean sources are not its recorded source 4cdc01da")
+}
 # signatures: every Cut 15 lean digest equals the recorded pin digest per shape
 pin_raw <- rv("Cut 14", "clock_raw.csv"); new_raw <- rv("Cut 15", "clock_raw.csv")
 for (s in shapes) {
@@ -160,3 +169,90 @@ cat(sprintf("Cut 15 section: %d rows checked, %d missing; close page: %d rows ch
 if (length(missing15)) cat(paste0("  ", missing15, collapse = "\n"), "\n")
 if (length(missing_page)) cat(paste0("  ", missing_page, collapse = "\n"), "\n")
 if (length(missing) || !h1_ok || length(missing15) || length(missing_page) || !rfloor_ok) quit(status = 1L)
+
+# --- Cut 16 (LDG-3229, LDG-3231): five workload descriptors ---------------------
+# The LDG-3229 baseline is verified against its own recorded source
+# (workstream 33's final lean code, bec26da9); the final rerun (LDG-3231)
+# is also checked against the checked-out tree. Both must reproduce the
+# pin's signatures: Cut 14's pin rows for the crossover shapes and the pin
+# capture of results/cost_map_cut16_pin for slice2_10x7200, whose reach
+# counts must all be positive.
+shapes16 <- c(shapes, "slice2_10x7200")
+label16 <- c(label, slice2_10x7200 = "slice2 10 x 7,200")
+pulses16 <- c(pulses, slice2_10x7200 = 7200)
+cut16 <- list("Cut 16 base" = list(dir = "cost_map_cut16_base", source = "bec26da9", live = FALSE))
+pin_dir <- file.path(here, "results", "cost_map_cut16_pin")
+fail16 <- character()
+for (v in names(cut16)) {
+  gone <- need[!file.exists(file.path(here, "results", cut16[[v]]$dir, need))]
+  if (length(gone)) fail16 <- c(fail16, sprintf("%s input missing: %s", v, paste(gone, collapse = ", ")))
+}
+gone <- c("clock_raw.csv", "identity.txt", "reach.csv")[!file.exists(file.path(pin_dir, c("clock_raw.csv", "identity.txt", "reach.csv")))]
+if (length(gone)) fail16 <- c(fail16, sprintf("pin capture input missing: %s", paste(gone, collapse = ", ")))
+if (length(fail16)) { cat(paste0("  ", fail16, collapse = "\n"), "\n"); quit(status = 1L) }
+rd16 <- function(v, f) utils::read.csv(file.path(here, "results", cut16[[v]]$dir, f), stringsAsFactors = FALSE)
+id16 <- function(dir) {
+  x <- readLines(file.path(dir, "identity.txt"))
+  get <- function(k) { h <- grep(paste0("^", k, ": "), x, value = TRUE); if (length(h)) sub(paste0("^", k, ": "), "", h[[1L]]) else NA_character_ }
+  list(head = get("head"), changes = get("dev/lean_core changes against head"))
+}
+pin_cap <- utils::read.csv(file.path(pin_dir, "clock_raw.csv"), stringsAsFactors = FALSE)
+pin_digest <- c(vapply(shapes, function(s) paste(unique(pin_raw$digest[pin_raw$arm == "pin" & pin_raw$shape == s]), collapse = "+"), ""),
+                slice2_10x7200 = paste(unique(pin_cap$digest[pin_cap$arm == "pin" & pin_cap$shape == "slice2_10x7200"]), collapse = "+"))
+reach <- utils::read.csv(file.path(pin_dir, "reach.csv"), stringsAsFactors = FALSE)
+if (!nrow(reach) || !all(reach$count > 0)) fail16 <- c(fail16, "slice2_10x7200 reach not established on the pin")
+required16 <- function(s) c(required, if (s == "slice2_10x7200") c("P2 risk" = "P2 risk", "P2 sizing" = "P2 sizing"))
+for (v in names(cut16)) {
+  dir <- file.path(here, "results", cut16[[v]]$dir)
+  ii <- id16(dir)
+  if (!identical(ii$changes, "0")) fail16 <- c(fail16, sprintf("%s ran with uncommitted dev/lean_core changes", v))
+  if (is.na(ii$head) || !lean_same(ii$head, cut16[[v]]$source)) {
+    fail16 <- c(fail16, sprintf("%s is stale: its lean sources are not its recorded source %s", v, cut16[[v]]$source))
+  }
+  if (isTRUE(cut16[[v]]$live) && !lean_same(ii$head)) fail16 <- c(fail16, sprintf("%s is stale: dev/lean_core changed since its head", v))
+  raw <- rd16(v, "clock_raw.csv")
+  for (s in shapes16) {
+    l <- unique(raw$digest[raw$arm == "lean" & raw$shape == s])
+    if (length(l) != 1L || !identical(l, pin_digest[[s]])) fail16 <- c(fail16, sprintf("%s signature mismatch or missing on %s", v, s))
+  }
+  x <- rd16(v, "cells.csv"); x <- x[x$arm == "lean", ]
+  r <- rd16(v, "reconcile.csv"); r <- r[r$arm == "lean", ]
+  for (s in shapes16) {
+    if (!all(required16(s) %in% x$cell[x$shape == s])) fail16 <- c(fail16, sprintf("%s lacks a required cell on %s", v, s))
+    if (!s %in% r$shape) fail16 <- c(fail16, sprintf("%s lacks the %s clocks", v, s))
+  }
+  rebuilt <- tempfile(fileext = ".csv")
+  system2(file.path(R.home("bin"), "Rscript"), c(file.path(here, "cost_rank.R"), paste0("--in=", dir), paste0("--out=", rebuilt)),
+          stdout = FALSE)
+  if (!file.exists(rebuilt) || !identical(readLines(rebuilt, warn = FALSE), readLines(file.path(dir, "rank.csv"), warn = FALSE))) {
+    fail16 <- c(fail16, sprintf("%s rank.csv is not cost_rank.R's output on its cells", v))
+  }
+}
+if (length(fail16)) { cat(paste0("  ", fail16, collapse = "\n"), "\n"); quit(status = 1L) }
+pct <- function(x) if (is.na(x)) "unresolved" else sprintf("%.1f", 100 * x)
+expect16 <- character()
+for (v in names(cut16)) {
+  dir <- file.path(here, "results", cut16[[v]]$dir)
+  ii <- id16(dir)
+  expect16 <- c(expect16, sprintf("- %s: `%s`, head %s, dev/lean_core changes against head %s, lean sources of %s", v,
+    sub(paste0("^", repo, "/"), "", dir), substr(ii$head, 1L, 8L), ii$changes, cut16[[v]]$source))
+  x <- rd16(v, "cells.csv"); x <- x[x$arm == "lean", ]
+  r <- rd16(v, "reconcile.csv"); r <- r[r$arm == "lean", ]
+  for (s in shapes16) {
+    rr <- r[r$shape == s, ]
+    expect16 <- c(expect16, row(v, label16[[s]], f2(rr$run_median_s), f2(rr$loop_median_s),
+                                round(1e6 * rr$loop_median_s / pulses16[[s]]), rr$loop_samples))
+    for (n in names(required16(s))) {
+      cx <- x[x$shape == s & x$cell == required16(s)[[n]], ]
+      expect16 <- c(expect16, row(v, label16[[s]], n,
+        if (cx$resolution == "unresolved") "unresolved" else as.character(round(cx$est_us_per_pulse)),
+        pct(cx$share_of_loop), cx$samples, cx$resolution))
+    }
+  }
+}
+pc <- stats::aggregate(cbind(run_s, loop_s) ~ shape, pin_cap[pin_cap$arm == "pin", ], stats::median)
+expect16 <- c(expect16, row("slice2 10 x 7,200, pin", f2(pc$run_s), f2(pc$loop_s), round(1e6 * pc$loop_s / 7200),
+                            paste(sprintf("%s %d", reach$check, as.integer(reach$count)), collapse = ", ")))
+missing16 <- expect16[!expect16 %in% md]
+cat(sprintf("Cut 16 section: %d rows checked, %d missing\n", length(expect16), length(missing16)))
+if (length(missing16)) { cat(paste0("  ", missing16, collapse = "\n"), "\n"); quit(status = 1L) }
