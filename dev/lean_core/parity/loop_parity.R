@@ -14,7 +14,7 @@
 #
 #   Rscript dev/lean_core/parity/loop_parity.R --lib=<pinned library>
 #     --debug=0|1 --out=<csv> [--workloads=<id,...>] [--batch-rows=<n>]
-#     [--mutation=<name>] [--inert=1] [--freeze=<loop_freeze.csv>]
+#     [--mutation=<name>] [--inert=1] [--freeze=<loop_freeze.csv>] [--dump=<dir>]
 #
 # --freeze checks each lean arm's execution path (lean folds, refusals,
 # backstop marks) against the 4a3e08b8 freeze for this mode (gate, batch1
@@ -49,6 +49,7 @@ batch_rows <- as.integer(arg("batch-rows", "65536"))
 mutation <- arg("mutation", "")
 inert <- identical(arg("inert", "0"), "1")   # bind the fold without the harness hooks (row 15)
 freeze_file <- arg("freeze", "")
+dump_dir <- arg("dump", "")                  # saves each workload's pin tables (slice2_reach_cross.R)
 source(file.path(here, "loop_edits.R"))
 
 # Variants. `expect` names the signal that must fire; `error` is a pattern
@@ -350,6 +351,7 @@ for (id in ids) {
   entry_rng()
   pinned <- tryCatch(run_tables(id), error = escaped)
   t1 <- proc.time()[["elapsed"]]
+  if (nzchar(dump_dir)) saveRDS(pinned, file.path(dump_dir, paste0(id, ".rds")))
   # The branch the workload is named for, on the pin's own tables (Cut 16
   # decision 4): NA without a predicate; a predicate error counts as not reached.
   branch <- if (is.null(loop_reach[[id]])) NA else tryCatch(isTRUE(loop_reach[[id]](pinned)), error = function(e) {

@@ -866,7 +866,7 @@ pin's stage samples are mostly zero (every stage median 0 in
 `ledgr_backtest_bench()` reports after the switch is a decision of the
 diagnostic-records amendment (seed D7).
 
-### 19.2 Coverage (slice 1)
+### 19.2 Coverage (slices 1 and 2)
 
 The loop runs a fold only when all of these hold, and otherwise refuses with
 one classed condition naming the first uncovered feature, before the first
@@ -876,7 +876,7 @@ pulse; the harness then runs the workload on the pin:
 | --- | --- |
 | fixed universe, no status or lifetime facts | membership universes, restrictions, terminals (4) |
 | bar-native pulses, every pulse decided, complete bars in the window | declared sessions, schedules, missing bars and stale or frozen marks (3) |
-| zero cost, no risk steps, raw full targets or `ledgr_strategy_result()` with declared state | costs, risk chain, sizing helpers (2) |
+| every cost model and chain; risk chains of `long_only` and `max_weight` on fresh marks; raw full targets, `ledgr_target_rebalance()` and `ledgr_target_adjust()` with their sizing evidence, or `ledgr_strategy_result()` with declared state (slice 2, Section 19.9) | stale-mark risk rows, the unavailable risk-mark stop and sizing that skips an instrument for an unusable price (3) |
 | cash opening, no corporate actions | opening positions and imports, corporate actions (4) |
 | strategy reading `ctx` fields, `hold()`, state and the pulse seed | history reads (`ledgr_history_*`), detected statically by preflight (3) |
 | committed run and a one-worker sweep candidate | workers, compiled FIFO, restart, walk-forward (5) |
@@ -1144,9 +1144,10 @@ the envelope) and was deleted by the maintainer (2026-11-12).
 
 ### 19.9 Slice 2: costs, the risk chain and sizing helpers (Cut 16)
 
-- Status: proposed with Cut 16; binding once the maintainer accepts the
-  cut (A1). Slice 2 adds coverage with no behaviour change against the pin
-  and the contracts; it needs no RFC under the family method (macro WS16).
+- Status: accepted by the maintainer with Cut 16 on 2026-11-13 (A1);
+  implemented in workstream 33 (LDG-3226, LDG-3227). Slice 2 adds coverage
+  with no behaviour change against the pin and the contracts; it needs no
+  RFC under the family method (macro WS16).
 - Probe (2026-11-13, at 21e89c27; `dev/spikes/slice2_probe/`, its patch
   and result CSVs): with the three refusals lifted, the pin's risk call in
   P2 and a rough sizing record, the final probe patch matched the pin on
