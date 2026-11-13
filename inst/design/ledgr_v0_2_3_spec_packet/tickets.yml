@@ -554,7 +554,8 @@ cuts:
   - id: 6
     name: "One execution path (macro WS4b)"
     cut: "2026-11-01"
-    status: "accepted"
+    status: "closed"
+    closed: "2026-11-01 after workstream 14 closed (Type 1 close-review chain PASS at 2bd5baa7). Status recorded in housekeeping on 2026-11-13."
     accepted: "2026-11-01 by the maintainer, revision 4, after the independent clean-context cut review (cut_review_6.md: NEEDS_TYPE_2), the maintainer's Option B decision, the focused re-review (cut_review_6_rereview_1.md: PASS_AFTER_PATCHES) and the reuse-first evidence reconciliation. Decisions (1)-(9) are accepted with the cut. Implementation starts with LDG-3170 in workstream 14."
     revision: "4, applying cut_review_6.md RP1-RP10 and S1-S12 under the maintainer's 2026-11-01 Option B decision, cut_review_6_rereview_1.md P1-P12, and the maintainer's reuse-first disposition of P9"
     opening: >-
@@ -791,7 +792,8 @@ cuts:
   - id: 7
     name: "Strategy authoring API (macro WS5)"
     cut: "2026-11-01"
-    status: "accepted"
+    status: "closed"
+    closed: "2026-11-02 after workstreams 15-18 closed (implementation_close). Status recorded in housekeeping on 2026-11-13."
     implementation_close: >-
       Complete on 2026-11-02 through 34a06c6d. Workstreams 15-18 and
       LDG-3179 through LDG-3190 are complete. The independent close-review
@@ -1526,7 +1528,8 @@ cuts:
   - id: 13
     name: "Compact-state lean loop, slice 1 (macro WS16)"
     cut: "2026-11-09"
-    status: "accepted"
+    status: "closed"
+    closed: "2026-11-12 after workstream 29 closed as reference code (2026-11-09) and workstream 30 closed on its round-4 corrections (2026-11-12). Status recorded in housekeeping on 2026-11-13."
     accepted: "2026-11-10 by the maintainer, with interface Section 19; implementation waits for the Codex cut review (macro WS16, one family per cut)."
     opening: >-
       The first family after the first checkpoint (lean P3 swapped into the
@@ -1598,7 +1601,8 @@ cuts:
   - id: 14
     name: "Lean loop restructure and whole-run cost map (macro WS16, between slices 1 and 2)"
     cut: "2026-11-12"
-    status: "accepted"
+    status: "closed"
+    closed: "2026-11-12 after workstream 31 closed. Status recorded in housekeeping on 2026-11-13."
     accepted: "2026-11-12 by the maintainer, after the cut review passed at re-review 2."
     opening: >-
       Slice 1 (LDG-3219, closed 2026-11-12) runs the published crossover
@@ -1691,7 +1695,8 @@ cuts:
   - id: 15
     name: "Lean loop tuning (macro WS16, between slices 1 and 2)"
     cut: "2026-11-12"
-    status: "accepted"
+    status: "closed"
+    closed: "2026-11-13 after workstream 32 closed on its round-2 PASS (21e89c27)."
     accepted: "2026-11-12 by the maintainer, after the cut review passed at re-review 2."
     opening: >-
       Cut 14 restructured the slice-1 lean loop into named stages and mapped
@@ -1837,8 +1842,8 @@ cuts:
   - id: 16
     name: "Lean loop slice 2 (costs, risk chain, sizing helpers), then tuning (macro WS16)"
     cut: "2026-11-13"
-    status: "proposed"
-    accepted: null
+    status: "accepted"
+    accepted: "2026-11-13 by the maintainer, after the cut review passed at re-review 1 (cut_review_16_rereview_1.md), with decisions (1)-(8) and the defaults stated in them."
     opening: >-
       Cut 15 closed (21e89c27) with the slice-1 loop at 274, 332, 556 and
       754 us per pulse on 10 x 7,200, 20 x 23,400, 500 x 1,260 and
@@ -2308,8 +2313,8 @@ workstreams:
   - id: 33
     name: "Lean loop slice 2: costs, risk chain, sizing helpers"
     cut: 16
-    status: "proposed"
-    accepted: null
+    status: "accepted"
+    accepted: "2026-11-13 by the maintainer with Cut 16."
     close_review: null
     depends_on_workstream: 32
     requires_review_acceptance: true
@@ -2317,8 +2322,8 @@ workstreams:
   - id: 34
     name: "Lean loop tuning after slice 2"
     cut: 16
-    status: "proposed"
-    accepted: null
+    status: "accepted"
+    accepted: "2026-11-13 by the maintainer with Cut 16."
     close_review: null
     depends_on_workstream: 33
     requires_review_acceptance: true
