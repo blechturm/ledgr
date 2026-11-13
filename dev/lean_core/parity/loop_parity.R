@@ -18,9 +18,11 @@
 #
 # --freeze checks each lean arm's execution path (lean folds, refusals,
 # backstop marks) against the 4a3e08b8 freeze for this mode (gate, batch1
-# at --batch-rows=1, inert) and debug setting; a different path fails the
-# workload, and a full run (no --workloads) fails if a frozen workload is
-# missing.
+# at --batch-rows=1, inert) and debug setting; a different path, or no
+# frozen row for the workload (Cut 16 R4), fails the workload, and a full
+# run (no --workloads) fails if a frozen workload is missing. A workload with
+# a branch predicate (loop_reach, loop_workloads_slice2.R) fails as BRANCH
+# when the pin's tables do not show the branch it is named for.
 #
 # --mutation loads loop.R or loop_harness.R with one registered variant
 # (loop_mutations below; loop_edits.R applies it, the tracked code holds no
@@ -154,6 +156,22 @@ loop_mutations <- list(
   state_view_fast = variant("differ", list(edit("loop.R", "lean_strategy_view",
     "    class(view) <- c(\"ledgr_strategy_state_view\", \"list\")", "    class(view) <- \"ledgr_strategy_state_view\"")),
     error = "Lean state view differs from the pin's"),
+  # Cut 16, LDG-3226: the risk plan skipped, the implicit-row rule without
+  # LR-23's post-risk equality, and the planner ignoring the resolved price
+  # or the resolved fee.
+  risk_not_applied = variant("differ", list(edit("loop.R", "lean_p2_decide",
+    "        risked <- ledgr_apply_risk_plan(targets, risk_plan, ctx)", "        risked <- targets")),
+    tables = "^fills$|^ledger_events$|^run_diagnostic"),
+  implicit_row_old_rule = variant("differ", list(edit("loop.R", "lean_p4_apply",
+    "    differs <- which(!(is.finite(sq) & sq == pos & tq == sq & is.finite(close)))      # LR-23",
+    "    differs <- which(!(is.finite(sq) & sq == pos & is.finite(close)))")),
+    error = "Diagnostic codec coverage is corrupt", tables = "^run_diagnostic"),
+  resolved_price_ignored = variant("differ", list(edit("plan.R", "lean_plan_pulse",
+    "  price[passed] <- resolved$price", "  price[passed] <- open[passed]")),
+    tables = "^fills$|^ledger_events$"),
+  resolved_fees_ignored = variant("differ", list(edit("plan.R", "lean_plan_pulse",
+    "  fee[passed] <- resolved$fee", "  fee[passed] <- 0 * resolved$fee")),
+    tables = "^fills$|^ledger_events$"),
   # Round 4, finding 3: a sweep with workers not refused at entry.
   # Negative controls (loop_variants.R): each must NOT be caught.
   control_unrelated = variant("differ", list(edit("loop.R", "lean_p4_apply",
@@ -224,6 +242,7 @@ crossover <- function(n_inst, n_days) function() {
   collect(db, name, "lp-crossover", crossover_exp, seed = 20260530L)
 }
 source(file.path(here, "loop_workloads.R"))
+source(file.path(here, "loop_workloads_slice2.R"))
 extra <- c(list(
   crossover_3x40 = crossover(3L, 40L),
   crossover_10x300 = crossover(10L, 300L),
@@ -248,7 +267,7 @@ extra <- c(list(
     collect_open(fx$snapshot, db, "lp-prep-fixture", fx$exp, seed = 1L,
                  params = utils::modifyList(lc_prep_fixture_params, list(trade = TRUE, lookback = 10L, n = 3L)))
   }
-), loop_constructed, loop_witnesses)
+), loop_constructed, loop_witnesses, loop_slice2)
 all_ids <- c(names(a0_workloads), names(extra))
 ids <- strsplit(arg("workloads", paste(all_ids, collapse = ",")), ",")[[1L]]
 if (length(bad <- setdiff(ids, all_ids))) stop("unknown workload(s): ", paste(bad, collapse = ", "), call. = FALSE)
@@ -281,6 +300,22 @@ cond_messages <- function(tables) {
 }
 freeze <- if (nzchar(freeze_file)) utils::read.csv(freeze_file, stringsAsFactors = FALSE, na.strings = character(),
   colClasses = c(refused = "character", backstop = "character")) else NULL
+# The recorded changes to the freeze (loop_freeze_changes.csv, written by
+# loop_freeze_changes.R): an update names an existing row, an add a new one.
+if (!is.null(freeze)) {
+  changes <- utils::read.csv(file.path(here, "loop_freeze_changes.csv"), stringsAsFactors = FALSE,
+                             na.strings = character(), colClasses = c(refused = "character", backstop = "character"))
+  fkey <- function(x) paste(x$mode, x$workload, x$debug, sep = "|")
+  for (i in seq_len(nrow(changes))) {
+    ch <- changes[i, ]
+    hit <- which(fkey(freeze) == fkey(ch))
+    if (ch$action == "update" && length(hit) == 1L) {
+      freeze[hit, c("lean_folds", "refused", "backstop")] <- ch[, c("lean_folds", "refused", "backstop")]
+    } else if (ch$action == "add" && length(hit) == 0L) {
+      freeze <- rbind(freeze, ch[, names(freeze)])
+    } else stop("freeze change ", i, " (", ch$action, " ", fkey(ch), ") does not apply", call. = FALSE)
+  }
+}
 mode <- if (inert) "inert" else if (batch_rows == 1L) "batch1" else "gate"
 frozen <- if (is.null(freeze)) NULL else freeze[freeze$mode == mode & freeze$debug == as.integer(debug), ]
 rows <- list()
@@ -293,6 +328,12 @@ for (id in ids) {
   entry_rng()
   pinned <- tryCatch(run_tables(id), error = escaped)
   t1 <- proc.time()[["elapsed"]]
+  # The branch the workload is named for, on the pin's own tables (Cut 16
+  # decision 4): NA without a predicate; a predicate error counts as not reached.
+  branch <- if (is.null(loop_reach[[id]])) NA else tryCatch(isTRUE(loop_reach[[id]](pinned)), error = function(e) {
+    cat(sprintf("%s: branch predicate error: %s
+", id, conditionMessage(e))); FALSE
+  })
   entry_rng()
   lean$lean_entry$variant_reached <- FALSE
   attempt <- if (inert) {
@@ -338,15 +379,18 @@ for (id in ids) {
     # a fault with no completed events append before it: not a rollback witness
     fault_without_append = !all(res$identical) && !"ledger_events" %in% rec$terminal_appends)
   # The execution path against the freeze (R1).
+  # With --freeze, a workload without a frozen row for this mode and debug
+  # setting fails the path check (Cut 16 R4).
   fz <- if (is.null(frozen)) NULL else frozen[frozen$workload == id, ]
-  path_ok <- is.null(fz) || nrow(fz) == 0L ||
-    (fz$lean_folds[[1L]] == rec$lean_folds && fz$refused[[1L]] == show(rec$refused) && fz$backstop[[1L]] == show(rec$backstop))
+  path_ok <- is.null(fz) || (nrow(fz) == 1L &&
+    fz$lean_folds[[1L]] == rec$lean_folds && fz$refused[[1L]] == show(rec$refused) && fz$backstop[[1L]] == show(rec$backstop))
   new_errors <- setdiff(cond_messages(candidate), cond_messages(pinned))
   lost_errors <- setdiff(cond_messages(pinned), cond_messages(candidate))
   # read live: the harness entry copies its record before deciding a rerun
   reached <- isTRUE(lean$lean_entry$variant_reached)
   verdict <- if (!nzchar(mutation)) {
     if (seen$differ || seen$sink || seen$store || seen$hold || seen$unrefused || seen$unbounded) "FAIL"
+    else if (identical(branch, FALSE)) "BRANCH"
     else if (!path_ok) "PATH"
     else if (rec$lean_folds == 0L && !length(rec$refused)) "PASS*" else "PASS"
   } else {
@@ -368,6 +412,7 @@ for (id in ids) {
   res$expect <- if (nzchar(mutation)) loop_mutations[[mutation]]$expect else ""
   res$signals <- paste(names(seen)[vapply(seen, isTRUE, logical(1L))], collapse = ";")
   res$reached <- reached
+  res$branch_reached <- branch
   res$lost_errors <- paste(lost_errors, collapse = " | ")
   res$new_errors <- paste(new_errors, collapse = " | ")
   res$verdict <- verdict
@@ -395,5 +440,5 @@ dir.create(dirname(out), recursive = TRUE, showWarnings = FALSE)
 utils::write.csv(res, out, row.names = FALSE)
 cat(sprintf("%d tables, %d different; verdicts: %s\n", nrow(res), sum(!res$identical),
             paste(names(table(verdicts)), table(verdicts), sep = " ", collapse = ", ")))
-bad <- if (nzchar(mutation)) verdicts != "CAUGHT" else verdicts %in% c("FAIL", "PATH")
+bad <- if (nzchar(mutation)) verdicts != "CAUGHT" else verdicts %in% c("FAIL", "PATH", "BRANCH")
 if (any(bad) || length(missing_frozen)) quit(status = 1L)

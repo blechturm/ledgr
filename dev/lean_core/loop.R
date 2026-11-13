@@ -1,5 +1,5 @@
-# Compact-state lean loop, slice 1 (macro WS16 "Compact-state loop";
-# interface Section 19; LDG-3219).
+# Compact-state lean loop, slices 1-2 (macro WS16 "Compact-state loop";
+# interface Sections 19 and 19.9; LDG-3219, LDG-3226, LDG-3227).
 #
 # lean_fold_envelope(execution, output_handler) takes the seat of the pinned
 # ledgr_fold_envelope (R/fold-engine.R:1670, pin d5b3a151) through
@@ -12,7 +12,7 @@
 # hands them to the pin's handler and diagnostic writer in bounded batches
 # (diagnostic-records D3 synthesis, accepted 2026-11-10).
 #
-# Coverage (Section 19.2): anything outside slice 1 is refused before the
+# Coverage (Sections 19.2 and 19.9): anything outside slices 1-2 is refused before the
 # first pulse with `ledgr_lean_not_covered`; the harness then runs the pin.
 
 # The pin's marked gross exposure (ledgr_availability_marked_gross) without
@@ -83,9 +83,6 @@ lean_loop_coverage <- function(execution, entry = NULL) {
   if (!identical(as.integer(execution$start_idx), 1L)) lean_not_covered("restart")
   if (!is.null(execution$decision_due)) lean_not_covered("schedules")
   if (!identical(substrate$clock_kind, "bar_native")) lean_not_covered("declared sessions")
-  steps <- environment(execution$cost_resolver)$steps
-  if (!all(vapply(steps, function(s) identical(s$type_id, "zero"), logical(1L)))) lean_not_covered("costs")
-  if (length(execution$risk_plan$steps) > 0L) lean_not_covered("the risk chain")
   if (!is.null(execution$corporate_action_plan)) lean_not_covered("corporate actions")
   if (length(execution$opening_frozen) > 0L || length(execution$position_fact_unknown_basis) > 0L ||
       any(ledgr_fold_positions_to_vec(execution$state$positions, execution$instrument_ids) != 0) ||
@@ -224,6 +221,10 @@ lean_fold_envelope <- function(execution, output_handler) {
   def_ids <- if (length(feature_defs) > 0L) vapply(feature_defs, function(def) def$id, character(1)) else character()
   active_alias_map <- ledgr_normalize_alias_map(execution$active_alias_map)
   cost_resolver <- execution$cost_resolver
+  # The pin's compiled risk plan, validated once in E as the pin does
+  # (slice 2, Section 19.9).
+  risk_plan <- ledgr_risk_validate_compiled_plan(execution$risk_plan)
+  has_risk <- length(risk_plan$steps) > 0L
   provider <- execution$availability_provider
   telemetry <- execution$telemetry
   seed <- execution$seed
@@ -540,7 +541,7 @@ lean_fold_envelope <- function(execution, output_handler) {
   }
 
   # P2: a fresh context (Section 19.4), the strategy call, the checks on its
-  # output and the short-exposure refusal (slice 1 has no risk step).
+  # output, the pin's risk plan (slice 2) and the short-exposure refusal.
   lean_p2_decide <- function(i, v1) {
     col <- v1$col
     close <- v1$close
@@ -616,12 +617,20 @@ lean_fold_envelope <- function(execution, output_handler) {
     hd_pre[[i]] <<- pre
     tq <- sq
     if (n > 0L) {
-      # A fixed basket has no restricted or nonmember instrument, and slice 1
-      # has no risk step: the post-risk targets are the strategy targets.
-      # Only the short-exposure refusal can fire.
+      # A fixed basket has no restricted or nonmember instrument. The pin's
+      # risk plan transforms the targets on the lean context; its post-risk
+      # quantity recheck runs in debug only (LR-16), its admissibility and
+      # the short-exposure refusal in production. Without a risk step the
+      # post-risk targets are the strategy targets.
       if (.lean_debug) ledgr_availability_validate_strategy_targets(targets, positions_snapshot, view)
       live$cur_stage <- "risk"
-      if (any(sq < 0 & sq < pos)) ledgr_availability_validate_short_exposure(targets, positions_snapshot)
+      if (has_risk) {
+        risked <- ledgr_apply_risk_plan(targets, risk_plan, ctx)
+        if (.lean_debug) ledgr_validate_post_risk_quantities(risked, n)
+        tq <- as.numeric(risked)
+        ledgr_availability_validate_post_risk(risked, targets)
+        if (any(tq < 0 & tq < pos)) ledgr_availability_validate_short_exposure(risked, positions_snapshot)
+      } else if (any(sq < 0 & sq < pos)) ledgr_availability_validate_short_exposure(targets, positions_snapshot)
     }
     list(result = result, sq = sq, tq = tq, pos_start = pos_start)
   }
@@ -678,7 +687,7 @@ lean_fold_envelope <- function(execution, output_handler) {
     close <- v1$close
     sq <- v2$sq
     tq <- v2$tq
-    differs <- which(!(is.finite(sq) & sq == pos & is.finite(close)))
+    differs <- which(!(is.finite(sq) & sq == pos & tq == sq & is.finite(close)))      # LR-23
     n_fill <- if (is.null(batch)) 0L else length(batch$fill$k)
     n_rej <- if (is.null(batch)) 0L else length(batch$rejection$k)
     clean_k <- integer()
@@ -689,7 +698,7 @@ lean_fold_envelope <- function(execution, output_handler) {
       clean <- if (can_encode) {
         is.finite(sq[k]) & is.finite(close[k]) & is.finite(fill$position_before) &
           pos[k] == fill$position_before & is.finite(fill$planned_position_after) &
-          sq[k] == fill$planned_position_after & !nzchar(fr$reason) & !nzchar(fr$reasons)
+          sq[k] == fill$planned_position_after & tq[k] == sq[k] & !nzchar(fr$reason) & !nzchar(fr$reasons)
       } else rep(FALSE, n_fill)
       clean[is.na(clean)] <- FALSE
       clean_k <- k[clean]
@@ -778,12 +787,11 @@ lean_fold_envelope <- function(execution, output_handler) {
     }
     expected <- if (is.null(batch)) cash else batch$expected_final_cash
     fill_cash <- if (n_fill > 0L) batch$fill$cash_delta else numeric()
-    intended <- lean_gross(sq, close)
     recon <- c(
       lean_gross(pos, close),
       cash - sum(fill_cash),
-      intended,
-      intended,                       # no risk step: post-risk == strategy targets
+      lean_gross(sq, close),
+      if (has_risk) lean_gross(tq, close) else lean_gross(sq, close),
       cash,
       expected)
     ledgr_fold_reconciliation_check(recon[[2L]], recon[[6L]], recon[[5L]], recon[[3L]], recon[[4L]], recon[[1L]])
