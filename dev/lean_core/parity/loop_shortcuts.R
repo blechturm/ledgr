@@ -210,6 +210,12 @@ arms <- if (mode == "shortcuts" && set15) {
   writeLines(paste(c(file.path(R.home("bin"), "Rscript"), sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]),
                      commandArgs(TRUE)), collapse = " "),
              file.path(out, "compare_command.txt"))
+  # The host policy (Cut 16, LDG-3230): High performance plan, P-core
+  # affinity 0xFFFF (65535), set by the caller (dev/bench/v0_2_3_lean_tuning_profile/pcore.ps1).
+  writeLines(c(paste("power plan:", paste(system2("powercfg", "/getactivescheme", stdout = TRUE), collapse = " ")),
+    paste("process affinity:", paste(system2("powershell", c("-NoProfile", "-Command",
+      sprintf("(Get-Process -Id %d).ProcessorAffinity", Sys.getpid())), stdout = TRUE), collapse = " "))),
+    file.path(out, "compare_host.txt"))
   list(candidate = make_arm_full(cand_src), base = make_arm_full(base_src))
 } else stop("--mode must be shortcuts, final, compare or isolation", call. = FALSE)
 

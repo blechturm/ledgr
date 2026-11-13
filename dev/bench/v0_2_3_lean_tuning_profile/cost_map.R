@@ -93,6 +93,10 @@ writeLines(c(
   paste("pin:", lean$.lean_pin), paste("library:", lean$.lean_lib), paste("R:", R.version.string),
   paste("platform:", R.version$platform), paste("power plan:", paste(tryCatch(system2("powercfg", "/getactivescheme", stdout = TRUE),
     error = function(e) "unknown"), collapse = " ")),
+  # Cut 16 (LDG-3230): the host policy's P-core affinity (0xFFFF = 65535)
+  paste("process affinity:", paste(tryCatch(system2("powershell", c("-NoProfile", "-Command",
+    sprintf("(Get-Process -Id %d).ProcessorAffinity", Sys.getpid())), stdout = TRUE), error = function(e) "unknown"),
+    collapse = " ")),
   paste("started:", format(Sys.time(), tz = "UTC", usetz = TRUE))), file.path(out, "identity.txt"))
 
 work <- file.path(tempdir(), "cost_map")
