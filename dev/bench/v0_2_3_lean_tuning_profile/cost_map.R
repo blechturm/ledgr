@@ -41,6 +41,18 @@
 #
 # Outputs in <out>: identity.txt, clock_raw.csv, cells.csv, reconcile.csv,
 # strategy_split.csv, replay.csv (and selftest.csv).
+#
+# Cut 16 (LDG-3229): shapes are workload descriptors (descriptors.R), whose
+# identity is separate from their dimensions; the four crossover ids keep
+# their names and fixture, slice2_10x7200 adds costs, max_weight and
+# rebalance sizing on the 10 x 7,200 bars. A descriptor with a reach check
+# runs once on the pin first and the map stops unless every count is
+# positive (reach.csv). --clock-only=1 runs the clocks alone (no profile, no
+# replay) and admits --arms=pin, to capture pin signatures for a new
+# descriptor. --pin-signatures takes a comma list of clock_raw.csv files.
+# The strategy replay applies to the crossover descriptors only (a sizing
+# helper needs the real context). Risk and sizing calls have their own loop
+# cells, P2 risk and P2 sizing, required on slice2_10x7200.
 
 here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/"))
 arg <- function(name, default = NULL) {
@@ -58,6 +70,7 @@ for (f in ls(lean, all.names = TRUE)) {
 ns <- asNamespace("ledgr")
 pin_call_strategy_fn <- get("ledgr_call_strategy_fn", envir = ns)
 source(file.path(repo, "dev/spikes/r_floor/fixture.R"))
+source(file.path(here, "descriptors.R"))
 out <- arg("out")
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 selftest <- identical(arg("selftest", "0"), "1")
@@ -84,23 +97,15 @@ writeLines(c(
 
 work <- file.path(tempdir(), "cost_map")
 dir.create(work, showWarnings = FALSE)
-dims <- function(s) as.integer(strsplit(s, "x")[[1L]])
+desc <- lapply(stats::setNames(shapes, shapes), bench_descriptor)
+dims <- function(s) c(desc[[s]]$instruments, desc[[s]]$pulses)
 sealed <- list()
 for (s in shapes) {
   sealed[[s]] <- file.path(work, paste0(s, ".duckdb"))
-  ledgr::ledgr_snapshot_close(ledgr::ledgr_snapshot_from_df(r_floor_fixture(dims(s)[[1L]], dims(s)[[2L]])$bars,
+  ledgr::ledgr_snapshot_close(ledgr::ledgr_snapshot_from_df(desc[[s]]$bars(),
     db_path = sealed[[s]], snapshot_id = paste0("cm_", s), price_basis = "split_adjusted"))
 }
-experiment <- function(snapshot) {
-  strategy <- r_floor_transition
-  environment(strategy) <- ns
-  ledgr::ledgr_experiment(snapshot, strategy,
-    features = ledgr::ledgr_feature_map(
-      fast = ledgr::ledgr_ind_ttr("SMA", input = "close", id = "fast", n = 5L),
-      slow = ledgr::ledgr_ind_ttr("SMA", input = "close", id = "slow", n = 10L)),
-    opening = ledgr::ledgr_opening(cash = 1e7), cost_model = ledgr::ledgr_cost_zero(),
-    risk_chain = ledgr::ledgr_risk_none(), asset_state = list(above = FALSE, usable = FALSE))
-}
+experiment <- function(snapshot, shape) desc[[shape]]$experiment(snapshot)
 rebind <- function(name, value) {
   old <- get(name, envir = ns)
   unlockBinding(name, ns); assign(name, value, envir = ns); lockBinding(name, ns)
@@ -144,7 +149,7 @@ run_arm <- function(arm, shape, mode = "clock", perturb_at = NULL) {
   snapshot <- ledgr::ledgr_snapshot_open(db, paste0("cm_", shape), verify = TRUE)
   open_s <- now() - t0
   on.exit(ledgr::ledgr_snapshot_close(snapshot))
-  exp <- experiment(snapshot)
+  exp <- experiment(snapshot, shape)
   clock <- new.env(parent = emptyenv())
   # Every run starts from the pin's bindings; the restores below run in
   # reverse order of installation (after = FALSE), so the pin's come back last.
@@ -196,17 +201,27 @@ stage_cells <- c(
   lean_context = "P2 context", lean_p1_value = "P1", lean_p2_decide = "P2 other", lean_p3_plan = "P3",
   lean_lot_fill = "P4 FIFO", lean_p4_apply = "P4 other", lean_p5_commit = "P5", lean_e_advance = "E advance",
   ledgr_fold_stage_observe_settle = "P1", ledgr_fold_stage_decide = "P2 other", ledgr_fold_stage_plan = "P3",
-  ledgr_fold_stage_apply = "P4 other", ledgr_fold_stage_commit = "P5")
+  ledgr_fold_stage_apply = "P4 other", ledgr_fold_stage_commit = "P5",
+  # Cut 16 (LDG-3229): the pin's risk and sizing-evidence calls in P2, and
+  # the lean sizing record, own cells (a strategy's own helper calls stay
+  # in the strategy cells, which are decided first)
+  ledgr_apply_risk_plan = "P2 risk", ledgr_availability_validate_post_risk = "P2 risk",
+  ledgr_availability_validate_short_exposure = "P2 risk", ledgr_validate_post_risk_quantities = "P2 risk",
+  ledgr_validate_sizing_evidence = "P2 sizing", lean_loop_add_sizing = "P2 sizing")
 loop_cells <- c("strategy: own work", "strategy: ledgr callees", "strategy: call wrapper", unique(stage_cells),
                 "loop: residual")
 is_loop_cell <- function(cell) cell %in% loop_cells | startsWith(cell, "loop: ")
 # Cells every run of an arm has; a required cell without samples is
-# reported as unresolved, never as zero.
-required_cells <- list(
+# reported as unresolved, never as zero. A descriptor with risk and sizing
+# (slice2_10x7200) also requires P2 risk and P2 sizing.
+required_cells_base <- list(
   lean = c("strategy: own work", "strategy: ledgr callees", "strategy: call wrapper", "P1", "P2 context", "P2 other",
            "P3", "P4 FIFO", "P4 other", "P5", "E advance", "loop: residual"),
   pin = c("strategy: own work", "strategy: ledgr callees", "strategy: call wrapper", "P1", "P2 other", "P3", "P4 other",
           "P5", "loop: residual"))
+required_cells <- function(arm, shape) {
+  c(required_cells_base[[arm]], if (identical(bench_descriptor(shape)$family, "slice2")) c("P2 risk", "P2 sizing"))
+}
 base_names <- ls(baseenv(), all.names = TRUE)
 other_cells <- c(
   lean_loop_expand = "transfer: expand", lean_loop_layout = "transfer: expand", lean_loop_keep = "transfer: expand",
@@ -262,7 +277,7 @@ check_cells <- function(cells, reconcile) {
   for (i in seq_len(nrow(reconcile))) {
     r <- reconcile[i, ]
     have <- cells$cell[cells$arm == r$arm & cells$shape == r$shape]
-    if (length(setdiff(required_cells[[r$arm]], have))) return("missing required cell")
+    if (length(setdiff(required_cells(r$arm, r$shape), have))) return("missing required cell")
   }
   for (i in seq_len(nrow(reconcile))) {
     r <- reconcile[i, ]
@@ -283,7 +298,17 @@ stack_witnesses <- list(
   "P2 context" = c("lean_strategy_view", "lean_context", "lean_p2_decide", "run_loop"),
   "strategy: ledgr callees" = c("$.ledgr_pulse_context", "$", "fn", "ledgr_call_strategy_fn", "doTryCatch",
                                 "tryCatchOne", "tryCatchList", "tryCatch", "lean_p2_decide"),
-  "strategy: call wrapper" = c("tryCatchList", "tryCatch", "lean_p2_decide", "run_loop")
+  "strategy: call wrapper" = c("tryCatchList", "tryCatch", "lean_p2_decide", "run_loop"),
+  # Cut 16 (LDG-3229): the risk, sizing-validation and sizing-expansion calls
+  "P2 risk" = c("vapply", "ledgr_apply_risk_plan", "lean_p2_decide", "run_loop"),
+  "P2 risk" = c("ledgr_availability_validate_post_risk", "lean_p2_decide", "run_loop"),
+  "P2 risk" = c("ledgr_availability_validate_short_exposure", "lean_p2_decide", "run_loop"),
+  "P2 sizing" = c("is.finite", "ledgr_validate_sizing_evidence", "lean_p2_decide", "run_loop"),
+  "P2 sizing" = c("lean_loop_add_sizing", "lean_p2_decide", "run_loop"),
+  "transfer: expand" = c("lean_rows_in", "lean_loop_expand", "fn", "lean_loop_publish"),
+  "strategy: ledgr callees" = c("ledgr_validate_sizing_evidence", "ledgr_target_rebalance", "fn",
+                                "ledgr_call_strategy_fn", "doTryCatch", "tryCatchOne", "tryCatchList", "tryCatch",
+                                "lean_p2_decide")
 )
 stack_fail <- names(stack_witnesses)[vapply(seq_along(stack_witnesses), function(i)
   !identical(cell_of(stack_witnesses[[i]]), names(stack_witnesses)[[i]]), logical(1L))]
@@ -293,13 +318,34 @@ if (length(stack_fail)) stop("attribution: synthetic stacks misattributed for ",
 # --arms=lean (LDG-3225): the lean arm alone; its results must equal the pin's
 # recorded signatures (--pin-signatures=<a clock_raw.csv with pin rows>).
 arms <- strsplit(arg("arms", "lean,pin"), ",")[[1L]]
-if (!all(arms %in% c("lean", "pin")) || !"lean" %in% arms) stop("--arms must name lean, optionally pin", call. = FALSE)
+clock_only <- identical(arg("clock-only", "0"), "1")
+if (!all(arms %in% c("lean", "pin")) || !("lean" %in% arms || (clock_only && identical(arms, "pin")))) {
+  stop("--arms must name lean, optionally pin (pin alone with --clock-only=1)", call. = FALSE)
+}
 pin_signatures <- if (!"pin" %in% arms) {
-  ps <- utils::read.csv(arg("pin-signatures"), stringsAsFactors = FALSE)
+  ps <- do.call(rbind, lapply(strsplit(arg("pin-signatures"), ",")[[1L]], function(p)
+    utils::read.csv(p, stringsAsFactors = FALSE)[, c("arm", "shape", "digest")]))
   ps <- ps[ps$arm == "pin", ]
   if (!all(shapes %in% ps$shape)) stop("--pin-signatures lacks a shape", call. = FALSE)
   tapply(ps$digest, ps$shape, function(d) if (length(unique(d)) == 1L) d[[1L]] else NA_character_)
 }
+# Reach (Cut 16 decision 6): a descriptor with a reach check runs once on the
+# pin, before any clock or profile; every count must be positive.
+reach_rows <- list()
+for (s in shapes) if (!is.null(desc[[s]]$reach)) {
+  db <- file.path(work, "reach.duckdb")
+  if (file.exists(db)) unlink(db)
+  file.copy(sealed[[s]], db)
+  snapshot <- ledgr::ledgr_snapshot_open(db, paste0("cm_", s), verify = TRUE)
+  bt <- ledgr::ledgr_run(experiment(snapshot, s), run_id = "cm-reach", seed = 20260530L)
+  counts <- desc[[s]]$reach(bt)
+  close(bt); ledgr::ledgr_snapshot_close(snapshot)
+  reach_rows[[s]] <- data.frame(shape = s, check = names(counts), count = as.numeric(counts), arm = "pin")
+  cat(sprintf("reach %s (pin): %s
+", s, paste(names(counts), counts, collapse = ", ")))
+  if (!bench_reach_ok(counts)) stop("reach: ", s, " does not reach its branches on the pin", call. = FALSE)
+}
+if (length(reach_rows)) utils::write.csv(do.call(rbind, reach_rows), file.path(out, "reach.csv"), row.names = FALSE)
 for (s in shapes) for (a in arms) run_arm(a, s)   # warm-up
 clock <- list()
 for (r in seq_len(reps)) for (s in shapes) for (a in if (r %% 2L) arms else rev(arms)) {
@@ -319,6 +365,10 @@ if (!is.null(pin_signatures)) {
 }
 utils::write.csv(clock, file.path(out, "clock_raw.csv"), row.names = FALSE)
 med <- stats::aggregate(cbind(snapshot_open_s, run_s, envelope_s, loop_s) ~ arm + shape + pulses + instruments, clock, stats::median)
+if (clock_only) {
+  print(med, row.names = FALSE)
+  quit(status = 0L)
+}
 
 samples <- list()
 for (s in shapes) for (r in seq_len(prof_reps[[s]])) for (a in if (r %% 2L) arms else rev(arms)) {
@@ -328,7 +378,7 @@ for (s in shapes) for (r in seq_len(prof_reps[[s]])) for (a in if (r %% 2L) arms
 samples <- stats::aggregate(samples ~ arm + shape + cell, do.call(rbind, samples), sum)
 # Required cells with no sample are kept with zero samples.
 for (a in arms) for (s in shapes) {
-  absent <- setdiff(required_cells[[a]], samples$cell[samples$arm == a & samples$shape == s])
+  absent <- setdiff(required_cells(a, s), samples$cell[samples$arm == a & samples$shape == s])
   if (length(absent)) samples <- rbind(samples, data.frame(arm = a, shape = s, cell = absent, samples = 0L))
 }
 cells <- merge(samples, med, by = c("arm", "shape"))
@@ -379,7 +429,9 @@ split_rows <- do.call(rbind, lapply(split(cells, paste(cells$arm, cells$shape)),
 utils::write.csv(split_rows, file.path(out, "strategy_split.csv"), row.names = FALSE)
 
 replay_rows <- list()
-for (s in shapes) for (a in arms) {
+# the replay materializes the context as a plain list; a sizing helper needs
+# the real context, so it runs on the crossover descriptors only
+for (s in shapes[vapply(shapes, function(s) identical(desc[[s]]$family, "crossover"), TRUE)]) for (a in arms) {
   run_arm(a, s, "replay")
   keep <- seq_along(replay$real) > min(20L, length(replay$real) %/% 4L)   # warm-up pulses dropped
   status <- check_replay(replay$same)
@@ -391,7 +443,7 @@ for (s in shapes) for (a in arms) {
     plain_mean_us = 1e6 * mean(replay$plain[keep]),
     context_premium_us_per_instrument = 1e6 * (stats::median(replay$real[keep]) - stats::median(replay$plain[keep])) / n)
 }
-replay_rows <- do.call(rbind, replay_rows)
+replay_rows <- if (length(replay_rows)) do.call(rbind, replay_rows) else data.frame()
 utils::write.csv(replay_rows, file.path(out, "replay.csv"), row.names = FALSE)
 
 if (selftest) {
