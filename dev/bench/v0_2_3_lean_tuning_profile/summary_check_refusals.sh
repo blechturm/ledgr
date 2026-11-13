@@ -26,7 +26,7 @@ sed -i -e '2s/,0.4025,/,0.5025,/' -e '3s/,0.365427631578947,/,0.265427631578947,
 # source, so a live lean edit no longer stales them (exit 0 expected); a
 # recorded head whose lean sources differ does.
 echo "# live edit" >> dev/lean_core/loop.R; check live_edit_not_stale_for_records; git checkout -q -- dev/lean_core/loop.R
-sed -i 's/^head: .*/head: 21e89c279a2dedfe8fef33bc79abd698091ad683/' $D/identity.txt; check stale_recorded_source; git checkout -q -- $D/identity.txt
+sed -i 's/^head: .*/head: 1a420b31abcdd7c3107fa1d381720f79d8c25ba8/' $D/identity.txt; check stale_recorded_source; git checkout -q -- $D/identity.txt
 echo "# harness only" >> dev/lean_core/parity/loop_parity.R; check harness_change_not_stale; git checkout -q -- dev/lean_core/parity/loop_parity.R
 # Cut 16 (LDG-3229): the baseline and the slice2_10x7200 pin capture
 B=$P/results/cost_map_cut16_base
