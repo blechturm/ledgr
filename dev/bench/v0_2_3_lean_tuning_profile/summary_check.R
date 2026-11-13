@@ -180,7 +180,8 @@ if (length(missing) || !h1_ok || length(missing15) || length(missing_page) || !r
 shapes16 <- c(shapes, "slice2_10x7200")
 label16 <- c(label, slice2_10x7200 = "slice2 10 x 7,200")
 pulses16 <- c(pulses, slice2_10x7200 = 7200)
-cut16 <- list("Cut 16 base" = list(dir = "cost_map_cut16_base", source = "bec26da9", live = FALSE))
+cut16 <- list("Cut 16 base" = list(dir = "cost_map_cut16_base", source = "bec26da9", live = FALSE),
+              "Cut 16 final" = list(dir = "cost_map_cut16", source = "3998dd58", live = TRUE))
 pin_dir <- file.path(here, "results", "cost_map_cut16_pin")
 fail16 <- character()
 for (v in names(cut16)) {

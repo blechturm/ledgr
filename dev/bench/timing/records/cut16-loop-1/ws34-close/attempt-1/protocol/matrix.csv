@@ -1,0 +1,11 @@
+cell,workload,clock,args,pairs
+run_10x7200,cut16_loop,run,shape=10x7200,8
+fold_10x7200,cut16_loop,fold,shape=10x7200,8
+run_20x23400,cut16_loop,run,shape=20x23400,8
+fold_20x23400,cut16_loop,fold,shape=20x23400,8
+run_500x1260,cut16_loop,run,shape=500x1260,8
+fold_500x1260,cut16_loop,fold,shape=500x1260,8
+run_1166x252,cut16_loop,run,shape=1166x252,8
+fold_1166x252,cut16_loop,fold,shape=1166x252,8
+run_slice2_10x7200,cut16_loop,run,shape=slice2_10x7200,8
+fold_slice2_10x7200,cut16_loop,fold,shape=slice2_10x7200,8

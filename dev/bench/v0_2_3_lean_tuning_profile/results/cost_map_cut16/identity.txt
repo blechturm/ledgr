@@ -1,0 +1,10 @@
+command: C:\Program Files\R\R-4.6.1\bin\x64\Rterm.exe --no-echo --no-restore --file=C:/Users/maxth/Documents/GitHub/ledgr/dev/bench/v0_2_3_lean_tuning_profile/cost_map.R --args --lib=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151 --arms=lean --shapes=10x7200,20x23400,500x1260,1166x252,slice2_10x7200 --prof-reps=10x7200:3,20x23400:1,500x1260:10,1166x252:40,slice2_10x7200:3 --pin-signatures=C:/Users/maxth/Documents/GitHub/ledgr/dev/bench/v0_2_3_lean_tuning_profile/results/cost_map/clock_raw.csv,C:/Users/maxth/Documents/GitHub/ledgr/dev/bench/v0_2_3_lean_tuning_profile/results/cost_map_cut16_pin/clock_raw.csv --out=C:/Users/maxth/Documents/GitHub/ledgr/dev/bench/v0_2_3_lean_tuning_profile/results/cost_map_cut16
+head: 09bebb7385ae07eb7208ab76073d5e3d2a166516
+dev/lean_core changes against head: 0
+pin: d5b3a151
+library: C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151
+R: R version 4.6.1 (2026-06-24 ucrt)
+platform: x86_64-w64-mingw32
+power plan: Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (High performance)
+process affinity: 65535
+started: 2026-11-13 19:00:11 UTC
