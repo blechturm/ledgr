@@ -52,6 +52,22 @@ for (w in slice2) {
            reason = "Cut 16 slice-2 workload, declared path"))
 }
 
+sizing <- c("s2_sizing_rebalance", "s2_sizing_adjust", "s2_sizing_risk", "s2_sizing_combo", "s2_sizing_reasons",
+            "s2_sizing_notice", "s2_sizing_stale", "s2_sizing_malformed", "s2_sizing_malformed_target",
+            "s2_sizing_batch", "s2_sizing_growth", "s2_sizing_prefix")
+for (w in sizing) {
+  add(both(action = "add", mode = "gate", workload = w, lean_folds = 1L, refused = "", backstop = "",
+           reason = "Cut 16 slice-2 workload, declared path"))
+}
+add(both(action = "add", mode = "gate", workload = "s2_sizing_sweep", lean_folds = 2L, refused = "", backstop = "",
+         reason = "Cut 16 slice-2 one-worker sweep: two lean candidate folds, declared path"))
+# R4: sizing across terminal batches (batch one) and with inert hooks, whose
+# lean-fold count is 0 as for every inert row.
+add(both(action = "add", mode = "batch1", workload = "s2_sizing_batch", lean_folds = 1L, refused = "", backstop = "",
+         reason = "Cut 16 R4: sizing, intent, risk and costs across terminal batches, declared path"))
+add(both(action = "add", mode = "inert", workload = "s2_sizing_rebalance", lean_folds = 0L, refused = "", backstop = "",
+         reason = "Cut 16 R4: sizing with inert hooks, inert-mode count"))
+
 out <- do.call(rbind, rows)
 utils::write.csv(out, file.path(here, "loop_freeze_changes.csv"), row.names = FALSE)
 cat(nrow(out), "changes:", paste(names(table(out$action)), table(out$action), collapse = ", "), "\n")

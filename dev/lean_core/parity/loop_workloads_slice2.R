@@ -169,3 +169,171 @@ loop_reach <- list(
     d <- s2_diag(t); any(d$stage == "execution" & d$reason_code == "execution_bar_missing", na.rm = TRUE)
   }
 )
+
+# --- LDG-3227: the sizing helpers ---------------------------------------------
+
+# A strategy acting on a per-pulse plan (pulse index -> a function of ctx and
+# params returning the strategy's result); other pulses hold. Pulses are
+# counted in declared portfolio state.
+s2_pulse_strategy <- function(plan) {
+  force(plan)
+  s <- function(ctx, params) {
+    k <- ctx$state$k + 1L
+    act <- plan[[as.character(k)]]
+    out <- if (is.null(act)) ctx$hold() else act(ctx, params)
+    if (is.list(out) && !is.null(out$targets)) {
+      ledgr::ledgr_strategy_result(out$targets, k = k, intent_reason = out$intent_reason)
+    } else {
+      ledgr::ledgr_strategy_result(out, k = k)
+    }
+  }
+  environment(s) <- list2env(list(plan = plan), parent = ns)
+  s
+}
+s2_rebal <- function(weights, intent = NULL, fraction = 0.9) function(ctx, params) {
+  f <- if (is.null(params$fraction)) fraction else params$fraction
+  t <- ledgr::ledgr_target_rebalance(ctx, weights = weights, invest_fraction = f)
+  if (is.null(intent)) t else list(targets = t, intent_reason = intent)
+}
+s2_sizing_exp <- function(plan, cost = ledgr::ledgr_cost_zero(), risk = ledgr::ledgr_risk_none(), cash = 5000,
+                          max_pulses = NULL) function(snapshot) {
+  e <- ledgr::ledgr_experiment(snapshot, s2_pulse_strategy(plan), opening = ledgr::ledgr_opening(cash = cash),
+    cost_model = cost, risk_chain = risk, portfolio_state = list(k = 0L))
+  if (!is.null(max_pulses)) e$control <- list(max_pulses = max_pulses)
+  e
+}
+s2_sizing <- function(name, plan, bars = NULL, ...) function() {
+  if (is.null(bars)) bars <- lw_bars(c(A = 30, B = 45, C = 12), 30L, drift = 0.05)
+  db <- lw_snapshot(name, bars)
+  collect(db, name, paste0("s2-", name), s2_sizing_exp(plan, ...), seed = 11L)
+}
+s2_every <- function(pulses, act) stats::setNames(rep(list(act), length(pulses)), as.character(pulses))
+s2_w3 <- c(A = 0.3, B = 0.3, C = 0.2)
+s2_sizing_rows <- function(t, reason = NULL) {
+  d <- s2_diag(t)
+  keep <- !is.na(d$stage) & d$stage == "sizing"
+  if (!is.null(reason)) keep <- keep & d$reason_code %in% reason
+  d[keep, ]
+}
+s2_notices <- function(t) s2_sizing_rows(t, "sizing_intent_unavailable")
+s2_sized_codes <- c("sizing_rounded", "sizing_zero_target", "sizing_liquidation",
+                    "sizing_rounded_to_zero_addition", "sizing_rounded_to_zero_liquidation")
+
+loop_slice2 <- c(loop_slice2, list(
+  # ledgr_target_rebalance() every third pulse.
+  s2_sizing_rebalance = s2_sizing("s2_sizing_rebalance", s2_every(seq(3L, 30L, by = 3L), s2_rebal(s2_w3))),
+  # ledgr_target_adjust(): buy, then exit a held instrument, then add value.
+  s2_sizing_adjust = s2_sizing("s2_sizing_adjust", list(
+    "3" = s2_rebal(s2_w3),
+    "6" = function(ctx, params) ledgr::ledgr_target_adjust(ctx, exit = c(A = TRUE, B = FALSE, C = FALSE)),
+    "9" = function(ctx, params) ledgr::ledgr_target_adjust(ctx, add_value = c(B = 300, C = 150)))),
+  # Sizing under a binding cap, then with the cost chain too.
+  s2_sizing_risk = s2_sizing("s2_sizing_risk", s2_every(seq(3L, 30L, by = 3L), s2_rebal(s2_w3)),
+                             risk = ledgr::ledgr_risk_max_weight(0.25)),
+  s2_sizing_combo = s2_sizing("s2_sizing_combo", s2_every(seq(3L, 30L, by = 3L), s2_rebal(s2_w3)),
+                              cost = s2_chain(), risk = ledgr::ledgr_risk_max_weight(0.25)),
+  # Every sizing reason code: rounded and zero target on pulse 1; on pulse 3
+  # a tiny weight on a held instrument (rounded to zero, liquidation), weight
+  # 0 on a held one (liquidation), a tiny weight on a flat one (rounded to
+  # zero, addition).
+  s2_sizing_reasons = s2_sizing("s2_sizing_reasons", list(
+    "1" = s2_rebal(c(A = 0.3, B = 0.3, C = 0)),
+    "3" = s2_rebal(c(A = 0.001, B = 0, C = 0.0001)))),
+  # The raw-quantity notice: helper evidence with an intent reason on pulse 1
+  # and without one on pulse 2, an empty helper on pulse 3, raw targets after.
+  s2_sizing_notice = s2_sizing("s2_sizing_notice", list(
+    "1" = s2_rebal(c(A = 0.3), intent = "first rebalance"),
+    "2" = s2_rebal(c(B = 0.3)),
+    "3" = function(ctx, params) ledgr::ledgr_target_adjust(ctx))),
+  # A helper target changed by ordinary assignment on pulse 1: the evidence is
+  # stale, so pulse 1 takes the raw path and carries the run's notice.
+  s2_sizing_stale = s2_sizing("s2_sizing_stale", list(
+    "1" = function(ctx, params) {
+      t <- ledgr::ledgr_target_rebalance(ctx, weights = s2_w3, invest_fraction = 0.9)
+      t[["A"]] <- t[["A"]] + 1
+      t
+    })),
+  # Malformed evidence on valid targets, and beside an invalid target.
+  s2_sizing_malformed = s2_sizing("s2_sizing_malformed", list(
+    "2" = function(ctx, params) {
+      t <- ctx$hold()
+      attr(t, "sizing_evidence") <- structure(list(instrument_id = "A"), class = "ledgr_sizing_evidence")
+      t
+    })),
+  s2_sizing_malformed_target = s2_sizing("s2_sizing_malformed_target", list(
+    "2" = function(ctx, params) {
+      t <- ctx$hold()[c("A", "B")]
+      attr(t, "sizing_evidence") <- structure(list(instrument_id = "A"), class = "ledgr_sizing_evidence")
+      t
+    })),
+  # Sizing, intent, a binding cap and costs on one pulse's rows; run at
+  # batch_rows = 1 so they span terminal batches (batch one, R4).
+  s2_sizing_batch = s2_sizing("s2_sizing_batch", s2_every(seq(2L, 30L, by = 4L),
+    s2_rebal(s2_w3, intent = "periodic rebalance")), cost = s2_chain(), risk = ledgr::ledgr_risk_max_weight(0.25)),
+  # More sizing rows than the record's first allocation (64): growth.
+  s2_sizing_growth = s2_sizing("s2_sizing_growth", s2_every(seq_len(60L),
+    s2_rebal(stats::setNames(rep(0.08, 10L), sprintf("P%02d", 1:10)))), bars = r_floor_fixture(10L, 60L)$bars,
+    cash = 1e5),
+  # A max_pulses prefix ending after sizing pulses.
+  s2_sizing_prefix = s2_sizing("s2_sizing_prefix", s2_every(seq(2L, 30L, by = 3L), s2_rebal(s2_w3)), max_pulses = 9L),
+  # A one-worker sweep over the invest fraction: the memory sink omits sizing rows.
+  s2_sizing_sweep = function() {
+    db <- lw_snapshot("s2_sizing_sweep", lw_bars(c(A = 30, B = 45, C = 12), 30L, drift = 0.05))
+    snapshot <- ledgr::ledgr_snapshot_open(db, "s2_sizing_sweep", verify = TRUE)
+    on.exit(ledgr::ledgr_snapshot_close(snapshot))
+    exp <- s2_sizing_exp(s2_every(seq(3L, 30L, by = 3L), s2_rebal(s2_w3)))(snapshot)
+    grid <- ledgr::ledgr_grid_named(a = list(strategy = list(fraction = 0.9)), b = list(strategy = list(fraction = 0.5)))
+    set.seed(8L)
+    obs <- a0_observe_memory(ledgr::ledgr_sweep(exp, grid, seed = 17L, retain = a0_retain()))
+    list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value)))
+  }
+))
+
+loop_reach <- c(loop_reach, list(
+  s2_sizing_rebalance = function(t) nrow(s2_sizing_rows(t, "sizing_rounded")) > 0L,
+  s2_sizing_adjust = function(t) {
+    l <- s2_sizing_rows(t, "sizing_liquidation")
+    any(l$instrument_id == "A" & l$position_before != 0)
+  },
+  s2_sizing_risk = function(t) {
+    d <- s2_decisions(t)
+    nrow(s2_sizing_rows(t, "sizing_rounded")) > 0L && any(d$target_after_risk < d$target_before_risk)
+  },
+  s2_sizing_combo = function(t) {
+    d <- s2_decisions(t)
+    f <- s2_fills(t)
+    nrow(s2_sizing_rows(t, "sizing_rounded")) > 0L && any(d$target_after_risk < d$target_before_risk) &&
+      nrow(f) > 0L && all(f$fee > 1)
+  },
+  s2_sizing_reasons = function(t) all(s2_sized_codes %in% s2_sizing_rows(t)$reason_code),
+  # Helper pulses 1-3 carry no notice; exactly one notice, on pulse 4 (the
+  # first raw pulse); the intent reason rides on pulse 1's sizing rows.
+  s2_sizing_notice = function(t) {
+    pulses <- sort(unique(s2_time(s2_diag(t)$ts_utc)))
+    sized <- s2_sizing_rows(t, s2_sized_codes)
+    n <- s2_notices(t)
+    on <- function(p) s2_time(sized$ts_utc) == pulses[[p]]
+    nrow(n) == 1L && s2_time(n$ts_utc) == pulses[[4L]] && any(on(1L)) && any(on(2L)) &&
+      all(sized$reasons[on(1L)] == "first rebalance") &&
+      all(is.na(sized$reasons[on(2L)]) | sized$reasons[on(2L)] == "")   # "" is stored as NA by the A0 extraction
+  },
+  # Stale on pulse 1: no sizing row, and the run's one notice on that pulse.
+  s2_sizing_stale = function(t) {
+    pulses <- sort(unique(s2_time(s2_diag(t)$ts_utc)))
+    n <- s2_notices(t)
+    nrow(s2_sizing_rows(t, s2_sized_codes)) == 0L && nrow(n) == 1L && s2_time(n$ts_utc) == pulses[[1L]]
+  },
+  s2_sizing_malformed = function(t) any(grepl("sizing evidence has an invalid shape", s2_messages(t), fixed = TRUE)),
+  # Target validation precedes the evidence: the target refusal, not the evidence's.
+  s2_sizing_malformed_target = function(t) {
+    m <- s2_messages(t)
+    length(m) > 0L && !any(grepl("sizing evidence", m, fixed = TRUE))
+  },
+  s2_sizing_batch = function(t) {
+    s <- s2_sizing_rows(t, "sizing_rounded")
+    d <- s2_decisions(t)
+    nrow(s) > 0L && all(s$reasons == "periodic rebalance") && any(d$target_after_risk < d$target_before_risk)
+  },
+  s2_sizing_growth = function(t) nrow(s2_sizing_rows(t, s2_sized_codes)) > 64L,
+  s2_sizing_prefix = function(t) nrow(s2_sizing_rows(t, "sizing_rounded")) > 0L
+))

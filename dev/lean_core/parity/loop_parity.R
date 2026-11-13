@@ -172,6 +172,28 @@ loop_mutations <- list(
   resolved_fees_ignored = variant("differ", list(edit("plan.R", "lean_plan_pulse",
     "  fee[passed] <- resolved$fee", "  fee[passed] <- 0 * resolved$fee")),
     tables = "^fills$|^ledger_events$"),
+  # Cut 16, LDG-3227: sizing rows after the decision segment, the intent
+  # reason dropped from them, the raw notice written on an evidenced pulse,
+  # and a recorded sizing skip reaching the debug check. A misplaced or extra
+  # row collides with another row's diagnostic sequence, and the store
+  # aborts the run's transaction.
+  sizing_rows_after_decisions = variant("differ", list(edit("loop.R", "lean_loop_expand",
+    "      add(lay$base[sp] + as.integer(!is.na(hd_intent[sp])) + within, sp, list(instrument_id = szr$id[sr],",
+    "      add(lay$dec0[sp] + n + within, sp, list(instrument_id = szr$id[sr],")),
+    error = "Current transaction is aborted", tables = "^run_diagnostic"),
+  sizing_intent_dropped = variant("differ", list(edit("loop.R", "lean_loop_add_sizing",
+    "    szr$reasons[rows] <<- if (is.null(intent)) \"\" else intent", "    szr$reasons[rows] <<- \"\"")),
+    tables = "^run_diagnostics$"),
+  raw_notice_with_evidence = variant("differ", list(edit("loop.R", "lean_p2_decide",
+    "      lean_loop_add_sizing(sizing_evidence, intent_reason, i, m)",
+    c("      if (!isTRUE(pulse_notes$raw_sizing_notice_written)) {",
+      "        hd_sizing[[i]] <<- TRUE; pre <- pre + 1L; pulse_notes$raw_sizing_notice_written <- TRUE",
+      "      }"), "before")),
+    error = "Current transaction is aborted", tables = "^run_diagnostic"),
+  sizing_skip_recorded = variant("differ", list(edit("loop.R", "lean_p2_decide",
+    "    if (.lean_debug && length(pulse_notes$sizing_skipped) > 0L) {",
+    "    pulse_notes$sizing_skipped <- ids[[1L]]", "before")),
+    error = "Lean sizing skipped an instrument"),
   # Round 4, finding 3: a sweep with workers not refused at entry.
   # Negative controls (loop_variants.R): each must NOT be caught.
   control_unrelated = variant("differ", list(edit("loop.R", "lean_p4_apply",
@@ -336,6 +358,7 @@ for (id in ids) {
   })
   entry_rng()
   lean$lean_entry$variant_reached <- FALSE
+  if (exists("capacity", envir = lean$lean_loop_last_times, inherits = FALSE)) rm("capacity", envir = lean$lean_loop_last_times)
   attempt <- if (inert) {
     restore <- lean$lean_loop_install(hooks = FALSE)
     value <- tryCatch(run_tables(id), error = escaped, finally = restore())
@@ -413,6 +436,10 @@ for (id in ids) {
   res$signals <- paste(names(seen)[vapply(seen, isTRUE, logical(1L))], collapse = ";")
   res$reached <- reached
   res$branch_reached <- branch
+  # The last lean fold's sizing record, used and allocated rows (R4).
+  cap <- lean$lean_loop_last_times$capacity
+  res$sizing_used <- if (is.null(cap) || is.na(cap["sizing_used"])) NA_integer_ else as.integer(cap[["sizing_used"]])
+  res$sizing_allocated <- if (is.null(cap) || is.na(cap["sizing_allocated"])) NA_integer_ else as.integer(cap[["sizing_allocated"]])
   res$lost_errors <- paste(lost_errors, collapse = " | ")
   res$new_errors <- paste(new_errors, collapse = " | ")
   res$verdict <- verdict

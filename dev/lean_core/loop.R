@@ -63,8 +63,7 @@ lean_abort_attempt <- function(feature) {
 # --- coverage ---------------------------------------------------------------
 
 lean_loop_scan_names <- c(
-  "ledgr_history_matrix", "ledgr_history_frame", "ledgr_history_info",
-  "ledgr_target_rebalance", "ledgr_target_adjust"
+  "ledgr_history_matrix", "ledgr_history_frame", "ledgr_history_info"
 )
 
 lean_loop_coverage <- function(execution, entry = NULL) {
@@ -312,6 +311,12 @@ lean_fold_envelope <- function(execution, output_handler) {
              net_after = numeric(fcap))
   nf <- 0L
   # explicit decision residuals: (pulse, k, strategy target, target, position)
+  # Sizing evidence rows (slice 2, Section 19.9), pulse-ordered.
+  scap <- 64L
+  szr <- list(pulse = integer(scap), id = character(scap), reason = character(scap), reasons = character(scap),
+             target = numeric(scap), quantity = numeric(scap), price = numeric(scap), requested = numeric(scap),
+             before = numeric(scap))
+  nsz <- 0L
   dcap <- 1024L
   dr <- list(pulse = integer(dcap), k = integer(dcap), target = numeric(dcap), target_after = numeric(dcap),
              position = numeric(dcap))
@@ -593,7 +598,6 @@ lean_fold_envelope <- function(execution, output_handler) {
     }
     intent_reason <- ledgr_validate_strategy_intent_reason(result$intent_reason)
     sizing_evidence <- attr(result$targets, "sizing_evidence", exact = TRUE)
-    if (!is.null(sizing_evidence)) lean_abort_attempt("sizing helpers")
     raw_targets <- result$targets
     # Fast path: a full, finite, named numeric vector in context order is
     # returned by the pin's validator unchanged.
@@ -609,7 +613,19 @@ lean_fold_envelope <- function(execution, output_handler) {
     sq <- as.numeric(targets)
     pre <- 0L
     if (!is.null(intent_reason)) { hd_intent[[i]] <<- intent_reason; pre <- pre + 1L }
-    if (!isTRUE(pulse_notes$raw_sizing_notice_written)) {
+    # Sizing evidence (Section 19.9): the pin's validator's returned value;
+    # NULL (none, or stale) takes the raw path, zero rows write nothing.
+    sizing_evidence <- ledgr_validate_sizing_evidence(sizing_evidence, targets = targets, context_ids = ids,
+      position = pos, mark = close)
+    if (.lean_debug && length(pulse_notes$sizing_skipped) > 0L) {
+      rlang::abort(sprintf("Lean sizing skipped an instrument at pulse %d, unreachable in slice 2.", i),
+                   class = "ledgr_internal_error")
+    }
+    m <- length(sizing_evidence$instrument_id)
+    if (m > 0L) {
+      lean_loop_add_sizing(sizing_evidence, intent_reason, i, m)
+      pre <- pre + m
+    } else if (is.null(sizing_evidence) && !isTRUE(pulse_notes$raw_sizing_notice_written)) {
       hd_sizing[[i]] <<- TRUE
       pre <- pre + 1L
       pulse_notes$raw_sizing_notice_written <- TRUE
@@ -850,6 +866,24 @@ lean_fold_envelope <- function(execution, output_handler) {
     invisible(NULL)
   }
 
+  lean_loop_add_sizing <- function(e, intent, i, m) {
+    rows <- nsz + seq_len(m)
+    if (nsz + m > scap) {
+      while (nsz + m > scap) scap <<- scap * 2L
+      szr <<- grow(szr, scap)
+    }
+    szr$pulse[rows] <<- i
+    szr$id[rows] <<- e$instrument_id
+    szr$reason[rows] <<- e$reason_code
+    szr$reasons[rows] <<- if (is.null(intent)) "" else intent
+    szr$target[rows] <<- e$pre_floor_quantity
+    szr$quantity[rows] <<- e$rounded_quantity
+    szr$price[rows] <<- e$price
+    szr$requested[rows] <<- e$requested_quantity
+    szr$before[rows] <<- e$position_before
+    nsz <<- nsz + m
+  }
+
   lean_loop_add_decisions <- function(k, i, sq, tq, position) {
     m <- length(k)
     rows <- nd + seq_len(m)
@@ -975,6 +1009,15 @@ lean_fold_envelope <- function(execution, output_handler) {
     sz <- p[hd_sizing[p]]
     if (length(sz)) add(lay$base[sz] + as.integer(!is.na(hd_intent[sz])) + 1L, sz, list(stage = "sizing",
       outcome = "unavailable", reason_code = "sizing_intent_unavailable", reasons = "raw_quantity_targets"))
+    sr <- lean_rows_in(szr$pulse[seq_len(nsz)], a, b)
+    if (length(sr)) {
+      sp <- szr$pulse[sr]
+      within <- seq_along(sr) - match(sp, sp) + 1L
+      add(lay$base[sp] + as.integer(!is.na(hd_intent[sp])) + within, sp, list(instrument_id = szr$id[sr],
+        stage = "sizing", outcome = "recorded", reason_code = szr$reason[sr], reasons = szr$reasons[sr],
+        target = szr$target[sr], quantity = szr$quantity[sr], price = szr$price[sr],
+        target_before_risk = szr$requested[sr], position_before = szr$before[sr]))
+    }
     r <- lean_rows_in(dr$pulse[seq_len(nd)], a, b)
     if (length(r)) {
       dp <- dr$pulse[r]; dk <- dr$k[r]
@@ -1159,6 +1202,7 @@ lean_fold_envelope <- function(execution, output_handler) {
   telemetry$t_loop <- ledgr_time_elapsed(loop_start, ledgr_time_now())
   hooks$fold_end(list(pulses = live$t_pulses, publish = live$t_publish,
     capacity = c(fills_used = nf, fills_allocated = fcap, decisions_used = nd, decisions_allocated = dcap,
+      sizing_used = nsz, sizing_allocated = scap,
       rejections = length(rj$k), pulse_headers = n_pulse, batches = live$batches, ranges = live$ranges,
       max_range_pulses = live$max_range_pulses)))
   telemetry$telemetry_samples <- as.integer(telemetry$telemetry_samples %||% 0L)
