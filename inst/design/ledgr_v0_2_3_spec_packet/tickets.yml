@@ -2314,9 +2314,9 @@ workstreams:
   - id: 33
     name: "Lean loop slice 2: costs, risk chain, sizing helpers"
     cut: 16
-    status: "accepted"
-    accepted: "2026-11-13 by the maintainer with Cut 16."
-    close_review: "Round 1 (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 1, on 85944ebf; dev/lean_core/parity/evidence/ws33_close_review_round1.md): CHANGES_REQUIRED, two findings, no wrong answer on a covered workload, no NEEDS_TYPE_2: (1) the s2_cost_chain predicate compared fees with the rounded fill price within a tolerance and could not reject the rounded-price basis (now an exact comparison on the rebuilt unrounded price, with a basis control in slice2_reach_cross.R); (2) LDG-3227's evidence said every table differs for the two rollback variants; 13 of 16 do (wording corrected). Both accepted and corrected in one pass."
+    status: "complete"
+    accepted: "2026-11-13 by the maintainer with Cut 16; closed 2026-11-13 on the round-2 PASS."
+    close_review: "Round 1 (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 1, on 85944ebf; dev/lean_core/parity/evidence/ws33_close_review_round1.md): CHANGES_REQUIRED, two findings, no wrong answer on a covered workload, no NEEDS_TYPE_2: (1) the s2_cost_chain predicate compared fees with the rounded fill price within a tolerance and could not reject the rounded-price basis (now an exact comparison on the rebuilt unrounded price, with a basis control in slice2_reach_cross.R); (2) LDG-3227's evidence said every table differs for the two rollback variants; 13 of 16 do (wording corrected). Both accepted and corrected in one pass at 97848c96. Round 2 (same setup, focused confirmation on 97848c96; dev/lean_core/parity/evidence/ws33_close_review_round2.md): PASS, both fixed, no new finding; it reran s2_cost_chain at debug 1 and the basis control, and audited the debug-off parity and rollback variants from the committed evidence."
     depends_on_workstream: 32
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 33, after LDG-3228", reason: "Every covered slice-2 workload and the whole existing gate are identical to the pin with debug on and off; every frozen path matches, with only the declared refusal-list changes; the loop calls the pin's risk, post-risk and sizing-evidence functions rather than copies, and the post-risk quantity recheck is debug-only (LR-16); LR-23 is in the rules ledger and witnessed; every new variant names and reaches its intended fault; the refusals that stay in slice 3 are named; and the line budget holds."}
