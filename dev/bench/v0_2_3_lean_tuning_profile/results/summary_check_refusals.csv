@@ -3,7 +3,8 @@ clean,0,
 missing_input,1,Cut 15 input missing: rank.csv 
 signature_mismatch,1,signature mismatch or missing on 10x7200 
 missing_required_cell,1,Cut 15 lacks a required cell on 20x23400
-stale_rank,1,Cut 15 rank.csv is stale on 10x7200 
+stale_rank,1,Cut 15 rank.csv is not cost_rank.R's output on its cells 
+stale_rank_compensating,1,Cut 15 rank.csv is not cost_rank.R's output on its cells 
 stale_lean_source,1,Cut 15 rerun is stale: dev/lean_core changed since its head 
 harness_change_not_stale,0,
 clean_again,0,
