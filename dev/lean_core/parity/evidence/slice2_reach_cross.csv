@@ -1,0 +1,26 @@
+"predicate","own","fails_elsewhere","holds_elsewhere","holds_on","ok"
+"s2_cost_fixed",TRUE,24,1,"s2_cost_insufficient",TRUE
+"s2_cost_notional",TRUE,18,7,"s2_cost_fixed s2_cost_chain s2_risk_chain s2_cost_insufficient s2_cost_sale_consumes s2_sizing_combo s2_sizing_batch",TRUE
+"s2_cost_spread",TRUE,14,11,"s2_risk_nonbinding s2_risk_bind s2_risk_long_only s2_cost_nonpositive_price s2_sizing_rebalance s2_sizing_adjust s2_sizing_risk s2_sizing_reasons s2_sizing_notice s2_sizing_stale s2_sizing_growth",TRUE
+"s2_cost_chain",TRUE,25,0,"",TRUE
+"s2_risk_nonbinding",TRUE,11,14,"s2_cost_fixed s2_cost_notional s2_cost_spread s2_cost_chain s2_cost_insufficient s2_cost_sale_consumes s2_cost_nonpositive_price s2_sizing_rebalance s2_sizing_adjust s2_sizing_reasons s2_sizing_notice s2_sizing_stale s2_sizing_growth s2_sizing_prefix",TRUE
+"s2_risk_bind",TRUE,22,3,"s2_sizing_risk s2_sizing_combo s2_sizing_batch",TRUE
+"s2_risk_long_only",TRUE,24,1,"s2_risk_chain",TRUE
+"s2_risk_chain",TRUE,25,0,"",TRUE
+"s2_risk_equity_refusal",TRUE,25,0,"",TRUE
+"s2_risk_short_refusal",TRUE,25,0,"",TRUE
+"s2_cost_insufficient",TRUE,25,0,"",TRUE
+"s2_cost_sale_consumes",TRUE,25,0,"",TRUE
+"s2_cost_nonpositive_price",TRUE,25,0,"",TRUE
+"s2_sizing_rebalance",TRUE,17,8,"s2_sizing_adjust s2_sizing_risk s2_sizing_combo s2_sizing_reasons s2_sizing_notice s2_sizing_batch s2_sizing_growth s2_sizing_prefix",TRUE
+"s2_sizing_adjust",TRUE,24,1,"s2_sizing_notice",TRUE
+"s2_sizing_risk",TRUE,23,2,"s2_sizing_combo s2_sizing_batch",TRUE
+"s2_sizing_combo",TRUE,24,1,"s2_sizing_batch",TRUE
+"s2_sizing_reasons",TRUE,25,0,"",TRUE
+"s2_sizing_notice",TRUE,25,0,"",TRUE
+"s2_sizing_stale",TRUE,14,11,"s2_cost_fixed s2_cost_notional s2_cost_spread s2_cost_chain s2_risk_nonbinding s2_risk_bind s2_risk_long_only s2_risk_chain s2_cost_insufficient s2_cost_sale_consumes s2_cost_nonpositive_price",TRUE
+"s2_sizing_malformed",TRUE,25,0,"",TRUE
+"s2_sizing_malformed_target",TRUE,1,24,"s2_cost_fixed s2_cost_notional s2_cost_spread s2_cost_chain s2_risk_nonbinding s2_risk_bind s2_risk_long_only s2_risk_chain s2_risk_equity_refusal s2_risk_short_refusal s2_cost_insufficient s2_cost_sale_consumes s2_cost_nonpositive_price s2_sizing_rebalance s2_sizing_adjust s2_sizing_risk s2_sizing_combo s2_sizing_reasons s2_sizing_notice s2_sizing_stale s2_sizing_batch s2_sizing_growth s2_sizing_prefix s2_sizing_sweep",TRUE
+"s2_sizing_batch",TRUE,25,0,"",TRUE
+"s2_sizing_growth",TRUE,25,0,"",TRUE
+"s2_sizing_prefix",TRUE,17,8,"s2_sizing_rebalance s2_sizing_adjust s2_sizing_risk s2_sizing_combo s2_sizing_reasons s2_sizing_notice s2_sizing_batch s2_sizing_growth",TRUE
