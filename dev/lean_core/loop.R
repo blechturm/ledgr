@@ -604,11 +604,6 @@ lean_fold_envelope <- function(execution, output_handler) {
     targets <- if (is.numeric(raw_targets) && identical(attributes(raw_targets), ids_attr) &&
                    all(is.finite(raw_targets))) {
       raw_targets
-    } else if (identical(oldClass(raw_targets), "ledgr_target") && is.numeric(raw_targets) &&
-               identical(names(raw_targets), ids) && all(is.finite(raw_targets))) {
-      # A sizing helper's ledgr_target in context order (Cut 16, LDG-3230):
-      # the pin's validator returns its unclassed values with names only.
-      `attributes<-`(unclass(raw_targets), ids_attr)
     } else {
       ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE)
     }
