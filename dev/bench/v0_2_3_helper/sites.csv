@@ -1,0 +1,18 @@
+site,function,operation,branch
+S01,ledgr_target_size,"requested_ids <- union(weighted_ids, addition_ids); buyable[match(requested_ids, universe)]",every call (unbuyable refusal)
+S02,ledgr_target_size,"intersect(weighted_ids, addition_ids)",adjust: weighted and added refusal
+S03,ledgr_target_size,"undecided <- setdiff(held_leavers, explicit_keep); match(undecided, universe)",rebalance: held index leavers
+S04,ledgr_target_size,"replaceable <- buyable & !logical_keep & !universe %in% explicit_keep",rebalance: replaceable set
+S05,ledgr_target_size,"keep_ids <- union(explicit_keep, universe[logical_keep & (member | !identical(index_leavers, ""sell""))]); match(keep_ids, universe)",rebalance: kept positions
+S06,ledgr_target_size,"intersect(weighted_ids, keep_ids)",rebalance: weighted and kept refusal
+S07,ledgr_target_size,"union(intersect(weighted_ids, universe[exits]), intersect(addition_ids, universe[exits]))",adjust: sized and exited refusal
+S08,ledgr_target_size,"preserved_ids <- universe[preserve & position != 0 & !universe %in% weighted_ids]; match(preserved_ids, universe)",both verbs: preserved exposure
+S09,ledgr_target_size,"skipped <- union(skipped, skipped_weight); match(skipped_weight, universe)",weights with unusable prices
+S10,ledgr_target_size,"skipped <- union(skipped, skipped_ids); match(skipped_ids, universe)",adjust: additions with unusable prices
+S11,ledgr_target_size,"notes$sizing_skipped <- union(notes$sizing_skipped %||% character(), skipped)",skips with a notes environment
+S12,ledgr_target_named_amount,"anyDuplicated(x_names); unknown <- setdiff(x_names, universe)",weights and add_value checks
+S13,ledgr_target_keep,"anyDuplicated(keep); unknown <- setdiff(keep, universe)",rebalance: keep as IDs
+S14,ledgr_target_logical,"anyDuplicated(x_names) || !setequal(x_names, universe); match(universe, x_names)",keep mask and exit mask
+S15,ledgr_strategy_type_check_names,"missing <- setdiff(universe, x_names)",all four strategy-type constructors
+S16,ledgr_strategy_type_check_names,"extra <- setdiff(x_names, universe)",all four strategy-type constructors
+S17,ledgr_target,"check_names(full_universe), finiteness, structure(setNames(as.numeric(x), names(x)))",target construction (helpers and public)

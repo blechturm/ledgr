@@ -1,0 +1,9 @@
+mode: sites
+library: C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/helper/lib_head
+installed from: 176be4a750084ae1a9a5caad55d27d7eb3595182
+R: R version 4.6.1 (2026-06-24 ucrt)
+collapse: 2.1.8
+power plan: Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (High performance)
+process affinity: 65535
+timer resolution s: 2.02655792236328e-06
+finished: 2026-11-13 20:29:22 UTC

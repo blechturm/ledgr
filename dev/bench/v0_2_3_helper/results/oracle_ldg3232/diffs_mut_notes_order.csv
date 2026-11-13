@@ -1,0 +1,7 @@
+"case","signal","path","detail"
+"reb_multi_skip_notes_overlap","notes","notes_after","notes bindings differ"
+"reb_multi_skip_notes_overlap","character","notes_after[[1]]","strings differ"
+"adj_add_skipped","notes","notes_after","notes bindings differ"
+"adj_add_skipped","character","notes_after[[1]]","strings differ"
+"adj_weight_and_add_skips","notes","notes_after","notes bindings differ"
+"adj_weight_and_add_skips","character","notes_after[[1]]","strings differ"

@@ -1,0 +1,106 @@
+"instruments","verb","site","part","expression","executed","site_us","call_us","share_of_call"
+10,"rebalance","S01","S01a","union(weighted_ids, addition_ids)",TRUE,16.2852036597606,275.058963082053,0.0592062279203115
+10,"rebalance","S01","S01b","buyable[match(requested_ids, universe)]",TRUE,1.91702248570256,275.058963082053,0.00696949651893617
+10,"rebalance","S02","S02","intersect(weighted_ids, addition_ids)",TRUE,15.7340284417437,275.058963082053,0.0572023840468345
+10,"rebalance","S03","S03a","setdiff(held_leavers, explicit_keep)",TRUE,15.7630474861525,275.058963082053,0.0573078852240501
+10,"rebalance","S04","S04","buyable & !logical_keep & !universe %in% explicit_keep",TRUE,2.30156511102639,275.058963082053,0.00836753358348045
+10,"rebalance","S05","S05a","union(explicit_keep, universe[logical_keep & (member | !identical(index_leavers, ""sell""))])",TRUE,18.6623697695525,275.058963082053,0.0678486152948423
+10,"rebalance","S05","S05b","match(keep_ids, universe)",TRUE,1.53317400309037,275.058963082053,0.00557398306861574
+10,"rebalance","S06","S06","intersect(weighted_ids, keep_ids)",TRUE,16.2759899770018,275.058963082053,0.0591727308015282
+10,"rebalance","S07","S07","union(intersect(weighted_ids, universe[exits]), intersect(addition_ids, universe[exits]))",FALSE,46.2264647850623,275.058963082053,0.168060201591295
+10,"rebalance","S08","S08a","universe[preserve & position != 0 & !universe %in% weighted_ids]",TRUE,2.84207363923391,275.058963082053,0.0103325978088054
+10,"rebalance","S08","S08b","match(preserved_ids, universe)",TRUE,1.52936769187997,275.058963082053,0.00556014490399916
+10,"rebalance","S09","S09","union(skipped, skipped_weight)",TRUE,22.5612095424107,275.058963082053,0.0820231752843496
+10,"rebalance","S11","S11","union(character(), skipped)",FALSE,16.8702595745289,275.058963082053,0.0613332479170884
+10,"rebalance","S12","S12a","ledgr_target_named_amount(raw_w, ""weights"", universe, allow_null = TRUE)",TRUE,21.680924866604,275.058963082053,0.0788228262902902
+10,"rebalance","S12","S12b","ledgr_target_named_amount(raw_a, ""add_value"", universe, allow_null = TRUE)",TRUE,2.71447154527765,275.058963082053,0.00986868966152501
+10,"rebalance","S13","S13","ledgr_target_keep(raw_keep, universe)",TRUE,24.0826416015625,275.058963082053,0.0875544695279694
+10,"rebalance","S14","S14","ledgr_target_logical(raw_exit, universe, ""exit"")",FALSE,2.50758758111325,275.058963082053,0.00911654560540608
+10,"rebalance","S15_16","S15_16","ledgr_strategy_type_check_names(target, ""x"", universe = universe, full_universe = TRUE)",TRUE,39.4712398254793,275.058963082053,0.1435010129581
+10,"rebalance","S17","S17","ledgr_target(target, universe = universe, origin = ""ledgr_target_rebalance"")",TRUE,48.1484985351562,275.058963082053,0.175047916983505
+10,"adjust","S01","S01a","union(weighted_ids, addition_ids)",TRUE,16.4867626441704,287.45901016962,0.0573534384413351
+10,"adjust","S01","S01b","buyable[match(requested_ids, universe)]",TRUE,1.81806119995672,287.45901016962,0.00632459284850367
+10,"adjust","S02","S02","intersect(weighted_ids, addition_ids)",TRUE,15.5660649037732,287.45901016962,0.0541505548724605
+10,"adjust","S04","S04","buyable & !logical_keep & !universe %in% explicit_keep",FALSE,1.99451953469717,287.45901016962,0.00693844848877853
+10,"adjust","S05","S05a","union(explicit_keep, universe[logical_keep & (member | !identical(index_leavers, ""sell""))])",FALSE,18.8135428114745,287.45901016962,0.0654477408809459
+10,"adjust","S07","S07","union(intersect(weighted_ids, universe[exits]), intersect(addition_ids, universe[exits]))",TRUE,46.2910945598896,287.45901016962,0.161035462177981
+10,"adjust","S08","S08a","universe[preserve & position != 0 & !universe %in% weighted_ids]",TRUE,2.74922724333696,287.45901016962,0.00956389309806201
+10,"adjust","S08","S08b","match(preserved_ids, universe)",TRUE,1.6257007798345,287.45901016962,0.00565541771981762
+10,"adjust","S09","S09","union(skipped, skipped_weight)",TRUE,16.1617161125265,287.45901016962,0.0562226805936264
+10,"adjust","S11","S11","union(character(), skipped)",FALSE,16.0500965016411,287.45901016962,0.0558343831079446
+10,"adjust","S12","S12a","ledgr_target_named_amount(raw_w, ""weights"", universe, allow_null = TRUE)",TRUE,21.0635034661544,287.45901016962,0.0732748069149948
+10,"adjust","S12","S12b","ledgr_target_named_amount(raw_a, ""add_value"", universe, allow_null = TRUE)",TRUE,19.9595955123141,287.45901016962,0.0694345795615752
+10,"adjust","S13","S13","ledgr_target_keep(raw_keep, universe)",FALSE,3.3116340637207,287.45901016962,0.0115203696755465
+10,"adjust","S14","S14","ledgr_target_logical(raw_exit, universe, ""exit"")",TRUE,16.2607544482885,287.45901016962,0.0565672108823223
+10,"adjust","S15_16","S15_16","ledgr_strategy_type_check_names(target, ""x"", universe = universe, full_universe = TRUE)",TRUE,38.527433688824,287.45901016962,0.134027573761178
+10,"adjust","S17","S17","ledgr_target(target, universe = universe, origin = ""ledgr_target_rebalance"")",TRUE,46.1468805793588,287.45901016962,0.160533776805706
+500,"rebalance","S01","S01a","union(weighted_ids, addition_ids)",TRUE,19.9895047666227,545.226732889811,0.0366627378314234
+500,"rebalance","S01","S01b","buyable[match(requested_ids, universe)]",TRUE,9.23270445603591,545.226732889811,0.0169336973025895
+500,"rebalance","S02","S02","intersect(weighted_ids, addition_ids)",TRUE,19.7809934616089,545.226732889811,0.0362803073810516
+500,"rebalance","S03","S03a","setdiff(held_leavers, explicit_keep)",TRUE,15.3276020166825,545.226732889811,0.0281123449971779
+500,"rebalance","S04","S04","buyable & !logical_keep & !universe %in% explicit_keep",TRUE,8.82817717159496,545.226732889811,0.016191754070465
+500,"rebalance","S05","S05a","union(explicit_keep, universe[logical_keep & (member | !identical(index_leavers, ""sell""))])",TRUE,21.4123131965827,545.226732889811,0.039272309857393
+500,"rebalance","S05","S05b","match(keep_ids, universe)",TRUE,3.38614625710252,545.226732889811,0.00621052867154049
+500,"rebalance","S06","S06","intersect(weighted_ids, keep_ids)",TRUE,21.5090987502888,545.226732889811,0.0394498241791745
+500,"rebalance","S07","S07","union(intersect(weighted_ids, universe[exits]), intersect(addition_ids, universe[exits]))",FALSE,51.524414975419,545.226732889811,0.0945008963561439
+500,"rebalance","S08","S08a","universe[preserve & position != 0 & !universe %in% weighted_ids]",TRUE,13.1339108657002,545.226732889811,0.0240888974685593
+500,"rebalance","S08","S08b","match(preserved_ids, universe)",TRUE,3.38696195632556,545.226732889811,0.00621202474496065
+500,"rebalance","S09","S09","union(skipped, skipped_weight)",TRUE,16.5765804364333,545.226732889811,0.0304030955132631
+500,"rebalance","S11","S11","union(character(), skipped)",FALSE,16.4075887919775,545.226732889811,0.0300931480468942
+500,"rebalance","S12","S12a","ledgr_target_named_amount(raw_w, ""weights"", universe, allow_null = TRUE)",TRUE,41.1433063141287,545.226732889811,0.0754609116395686
+500,"rebalance","S12","S12b","ledgr_target_named_amount(raw_a, ""add_value"", universe, allow_null = TRUE)",TRUE,2.62130863961303,545.226732889811,0.00480774048939157
+500,"rebalance","S13","S13","ledgr_target_keep(raw_keep, universe)",TRUE,29.1741704477847,545.226732889811,0.0535083272479245
+500,"rebalance","S14","S14","ledgr_target_logical(raw_exit, universe, ""exit"")",FALSE,2.9406764821525,545.226732889811,0.00539349284391526
+500,"rebalance","S15_16","S15_16","ledgr_strategy_type_check_names(target, ""x"", universe = universe, full_universe = TRUE)",TRUE,88.6426455732705,545.226732889811,0.16257941921418
+500,"rebalance","S17","S17","ledgr_target(target, universe = universe, origin = ""ledgr_target_rebalance"")",TRUE,143.61994607108,545.226732889811,0.26341325068539
+500,"adjust","S01","S01a","union(weighted_ids, addition_ids)",TRUE,23.5473782408471,704.110993279351,0.0334427078480578
+500,"adjust","S01","S01b","buyable[match(requested_ids, universe)]",TRUE,8.96313653063418,704.110993279351,0.012729721047088
+500,"adjust","S02","S02","intersect(weighted_ids, addition_ids)",TRUE,22.1419070479615,704.110993279351,0.0314466146094907
+500,"adjust","S04","S04","buyable & !logical_keep & !universe %in% explicit_keep",FALSE,4.61700146014874,704.110993279351,0.00655720689524439
+500,"adjust","S05","S05a","union(explicit_keep, universe[logical_keep & (member | !identical(index_leavers, ""sell""))])",FALSE,19.4521012043876,704.110993279351,0.0276264699600708
+500,"adjust","S07","S07","union(intersect(weighted_ids, universe[exits]), intersect(addition_ids, universe[exits]))",TRUE,60.3228092193604,704.110993279351,0.0856723013773877
+500,"adjust","S08","S08a","universe[preserve & position != 0 & !universe %in% weighted_ids]",TRUE,13.0732023118628,704.110993279351,0.0185669623633842
+500,"adjust","S08","S08b","match(preserved_ids, universe)",TRUE,7.80871382615346,704.110993279351,0.0110901745615203
+500,"adjust","S09","S09","union(skipped, skipped_weight)",TRUE,16.0107167561849,704.110993279351,0.0227389103550507
+500,"adjust","S11","S11","union(character(), skipped)",FALSE,16.7067713207669,704.110993279351,0.0237274683682415
+500,"adjust","S12","S12a","ledgr_target_named_amount(raw_w, ""weights"", universe, allow_null = TRUE)",TRUE,39.3373825970818,704.110993279351,0.0558681556921452
+500,"adjust","S12","S12b","ledgr_target_named_amount(raw_a, ""add_value"", universe, allow_null = TRUE)",TRUE,37.3242360464534,704.110993279351,0.053009023297049
+500,"adjust","S13","S13","ledgr_target_keep(raw_keep, universe)",FALSE,4.04497362532706,704.110993279351,0.00574479544267283
+500,"adjust","S14","S14","ledgr_target_logical(raw_exit, universe, ""exit"")",TRUE,48.6738835611651,704.110993279351,0.0691281403439956
+500,"adjust","S15_16","S15_16","ledgr_strategy_type_check_names(target, ""x"", universe = universe, full_universe = TRUE)",TRUE,89.2785016228171,704.110993279351,0.12679606265911
+500,"adjust","S17","S17","ledgr_target(target, universe = universe, origin = ""ledgr_target_rebalance"")",TRUE,96.3167917160761,704.110993279351,0.13679205783663
+1166,"rebalance","S01","S01a","union(weighted_ids, addition_ids)",TRUE,24.4512984423133,902.188846043178,0.0271021954544793
+1166,"rebalance","S01","S01b","buyable[match(requested_ids, universe)]",TRUE,19.0208236501796,902.188846043178,0.0210829736297463
+1166,"rebalance","S02","S02","intersect(weighted_ids, addition_ids)",TRUE,21.9131386193046,902.188846043178,0.0242888600489923
+1166,"rebalance","S03","S03a","setdiff(held_leavers, explicit_keep)",TRUE,15.7009403637122,902.188846043178,0.0174031639080591
+1166,"rebalance","S04","S04","buyable & !logical_keep & !universe %in% explicit_keep",TRUE,16.9334680261746,902.188846043178,0.018769316535492
+1166,"rebalance","S05","S05a","union(explicit_keep, universe[logical_keep & (member | !identical(index_leavers, ""sell""))])",TRUE,21.7563173045283,902.188846043178,0.0241150368904994
+1166,"rebalance","S05","S05b","match(keep_ids, universe)",TRUE,5.31471968753027,902.188846043178,0.00589091708552991
+1166,"rebalance","S06","S06","intersect(weighted_ids, keep_ids)",TRUE,27.050628318443,902.188846043178,0.0299833326881414
+1166,"rebalance","S07","S07","union(intersect(weighted_ids, universe[exits]), intersect(addition_ids, universe[exits]))",FALSE,55.7928173630326,902.188846043178,0.0618416173151872
+1166,"rebalance","S08","S08a","universe[preserve & position != 0 & !universe %in% weighted_ids]",TRUE,23.2321875435965,902.188846043178,0.0257509141744418
+1166,"rebalance","S08","S08b","match(preserved_ids, universe)",TRUE,5.3025092337241,902.188846043178,0.00587738283063447
+1166,"rebalance","S09","S09","union(skipped, skipped_weight)",TRUE,17.5962559988072,902.188846043178,0.0195039609234596
+1166,"rebalance","S11","S11","union(character(), skipped)",FALSE,16.5217656355638,902.188846043178,0.0183129792703878
+1166,"rebalance","S12","S12a","ledgr_target_named_amount(raw_w, ""weights"", universe, allow_null = TRUE)",TRUE,70.9997625911937,902.188846043178,0.0786972294133148
+1166,"rebalance","S12","S12b","ledgr_target_named_amount(raw_a, ""add_value"", universe, allow_null = TRUE)",TRUE,2.58822644666743,902.188846043178,0.0028688300215846
+1166,"rebalance","S13","S13","ledgr_target_keep(raw_keep, universe)",TRUE,41.5681312824118,902.188846043178,0.0460747563713754
+1166,"rebalance","S14","S14","ledgr_target_logical(raw_exit, universe, ""exit"")",FALSE,3.25243259833111,902.188846043178,0.00360504634101346
+1166,"rebalance","S15_16","S15_16","ledgr_strategy_type_check_names(target, ""x"", universe = universe, full_universe = TRUE)",TRUE,207.168012857437,902.188846043178,0.229628213390173
+1166,"rebalance","S17","S17","ledgr_target(target, universe = universe, origin = ""ledgr_target_rebalance"")",TRUE,181.034733267391,902.188846043178,0.200661684148916
+1166,"adjust","S01","S01a","union(weighted_ids, addition_ids)",TRUE,32.5278978090029,1146.43653233846,0.0283730471696097
+1166,"adjust","S01","S01b","buyable[match(requested_ids, universe)]",TRUE,19.4282130516077,1146.43653233846,0.0169466102165976
+1166,"adjust","S02","S02","intersect(weighted_ids, addition_ids)",TRUE,29.3179488763577,1146.43653233846,0.0255731111573669
+1166,"adjust","S04","S04","buyable & !logical_keep & !universe %in% explicit_keep",FALSE,8.95741431578684,1146.43653233846,0.00781326664243316
+1166,"adjust","S05","S05a","union(explicit_keep, universe[logical_keep & (member | !identical(index_leavers, ""sell""))])",FALSE,22.5872921764402,1146.43653233846,0.0197021741189349
+1166,"adjust","S07","S07","union(intersect(weighted_ids, universe[exits]), intersect(addition_ids, universe[exits]))",TRUE,83.9730766084459,1146.43653233846,0.0732470348246498
+1166,"adjust","S08","S08a","universe[preserve & position != 0 & !universe %in% weighted_ids]",TRUE,26.6915427313911,1146.43653233846,0.0232821808957419
+1166,"adjust","S08","S08b","match(preserved_ids, universe)",TRUE,23.9717247951553,1146.43653233846,0.0209097705097191
+1166,"adjust","S09","S09","union(skipped, skipped_weight)",TRUE,17.9247215612611,1146.43653233846,0.0156351625717116
+1166,"adjust","S11","S11","union(character(), skipped)",FALSE,17.4175621806711,1146.43653233846,0.0151927836294116
+1166,"adjust","S12","S12a","ledgr_target_named_amount(raw_w, ""weights"", universe, allow_null = TRUE)",TRUE,63.5235937018143,1146.43653233846,0.055409603506128
+1166,"adjust","S12","S12b","ledgr_target_named_amount(raw_a, ""add_value"", universe, allow_null = TRUE)",TRUE,59.4705166202961,1146.43653233846,0.0518742337170556
+1166,"adjust","S13","S13","ledgr_target_keep(raw_keep, universe)",FALSE,4.6448921640591,1146.43653233846,0.00405159119849802
+1166,"adjust","S14","S14","ledgr_target_logical(raw_exit, universe, ""exit"")",TRUE,104.902777178534,1146.43653233846,0.091503344685429
+1166,"adjust","S15_16","S15_16","ledgr_strategy_type_check_names(target, ""x"", universe = universe, full_universe = TRUE)",TRUE,154.716418339656,1146.43653233846,0.134954194127145
+1166,"adjust","S17","S17","ledgr_target(target, universe = universe, origin = ""ledgr_target_rebalance"")",TRUE,180.382868822883,1146.43653233846,0.157342219769414
