@@ -394,6 +394,10 @@ ledgr_target_size <- function(ctx,
                               invest_fraction = 1,
                               capital_base = NULL) {
   universe <- ledgr_validate_strategy_helper_ctx(ctx, paste0("ledgr_target_", verb))
+  # ID lookups use collapse::fmatch() from 32 universe IDs, where it beats
+  # match() (dev/bench/v0_2_3_helper/results/fmatch_compare.csv); both give
+  # identical results (results/collapse_semantics.csv).
+  id_match <- if (length(universe) >= 32L) collapse::fmatch else match
   equity <- ledgr_strategy_helper_context_equity(ctx)
   invest_fraction <- ledgr_strategy_helper_validate_invest_fraction(invest_fraction)
   weights <- ledgr_target_named_amount(weights, "weights", universe, allow_null = TRUE)
@@ -438,15 +442,15 @@ ledgr_target_size <- function(ctx,
   # Operands that may carry attributes keep the base operation.
   weighted_ids <- names(weights)
   addition_ids <- names(add_value)
-  requested_ids <- c(weighted_ids, addition_ids[collapse::fmatch(addition_ids, weighted_ids, 0L) == 0L])
-  ineligible <- requested_ids[!buyable[collapse::fmatch(requested_ids, universe)]]
+  requested_ids <- c(weighted_ids, addition_ids[id_match(addition_ids, weighted_ids, 0L) == 0L])
+  ineligible <- requested_ids[!buyable[id_match(requested_ids, universe)]]
   if (length(ineligible) > 0L) {
     rlang::abort(
       sprintf("Sizing requests name instruments that are not buyable: %s.", paste(ineligible, collapse = ", ")),
       class = "ledgr_invalid_strategy_helper"
     )
   }
-  if (any(collapse::fmatch(weighted_ids, addition_ids, 0L) > 0L)) {
+  if (any(id_match(weighted_ids, addition_ids, 0L) > 0L)) {
     rlang::abort("An instrument cannot be both weighted and added.", class = "ledgr_invalid_strategy_result")
   }
 
@@ -470,7 +474,7 @@ ledgr_target_size <- function(ctx,
     }
     held_leavers <- universe[position != 0 & !member]
     undecided <- if (is.null(attributes(held_leavers)) && is.null(attributes(explicit_keep))) {
-      held_leavers[collapse::fmatch(held_leavers, explicit_keep, 0L) == 0L]
+      held_leavers[id_match(held_leavers, explicit_keep, 0L) == 0L]
     } else {
       setdiff(held_leavers, explicit_keep)
     }
@@ -486,7 +490,7 @@ ledgr_target_size <- function(ctx,
     }
     if (identical(index_leavers, "sell") && length(undecided) > 0L) {
       target[undecided] <- 0
-      leaver_pos <- collapse::fmatch(undecided, universe)
+      leaver_pos <- id_match(undecided, universe)
       preserve[leaver_pos] <- FALSE
       sizing_used[leaver_pos] <- TRUE
       sizing_requested[leaver_pos] <- 0
@@ -505,13 +509,13 @@ ledgr_target_size <- function(ctx,
     sizing_reason[liquidated] <- "sizing_liquidation"
     kept_mask_ids <- universe[logical_keep & (member | !identical(index_leavers, "sell"))]
     keep_ids <- if (is.null(attributes(explicit_keep)) && is.null(attributes(kept_mask_ids))) {
-      c(explicit_keep, kept_mask_ids[collapse::fmatch(kept_mask_ids, explicit_keep, 0L) == 0L])
+      c(explicit_keep, kept_mask_ids[id_match(kept_mask_ids, explicit_keep, 0L) == 0L])
     } else {
       union(explicit_keep, kept_mask_ids)
     }
     target[keep_ids] <- position[keep_ids]
-    preserve[collapse::fmatch(keep_ids, universe)] <- TRUE
-    overlap <- weighted_ids[collapse::fmatch(weighted_ids, keep_ids, 0L) > 0L]
+    preserve[id_match(keep_ids, universe)] <- TRUE
+    overlap <- weighted_ids[id_match(weighted_ids, keep_ids, 0L) > 0L]
     if (length(overlap) > 0L) {
       rlang::abort(
         sprintf("Instruments cannot be both weighted and kept: %s.", paste(overlap, collapse = ", ")),
@@ -525,9 +529,9 @@ ledgr_target_size <- function(ctx,
     exits <- ledgr_target_logical(exit, universe, "exit")
     exit_ids <- universe[exits]
     conflict <- if (is.null(attributes(exit_ids))) {
-      weighted_exits <- weighted_ids[collapse::fmatch(weighted_ids, exit_ids, 0L) > 0L]
-      added_exits <- addition_ids[collapse::fmatch(addition_ids, exit_ids, 0L) > 0L]
-      c(weighted_exits, added_exits[collapse::fmatch(added_exits, weighted_exits, 0L) == 0L])
+      weighted_exits <- weighted_ids[id_match(weighted_ids, exit_ids, 0L) > 0L]
+      added_exits <- addition_ids[id_match(addition_ids, exit_ids, 0L) > 0L]
+      c(weighted_exits, added_exits[id_match(added_exits, weighted_exits, 0L) == 0L])
     } else {
       union(intersect(weighted_ids, exit_ids), intersect(addition_ids, exit_ids))
     }
@@ -547,10 +551,10 @@ ledgr_target_size <- function(ctx,
     sizing_reason[held_exits] <- "sizing_liquidation"
   }
 
-  preserved_ids <- universe[preserve & position != 0 & collapse::fmatch(universe, weighted_ids, 0L) == 0L]
+  preserved_ids <- universe[preserve & position != 0 & id_match(universe, weighted_ids, 0L) == 0L]
   # Existing quantities in addition IDs are preserved and therefore reserve
   # their marked exposure; the requested additions themselves enter A once.
-  preserved_values <- holding_value[collapse::fmatch(preserved_ids, universe)]
+  preserved_values <- holding_value[id_match(preserved_ids, universe)]
   if (any(!is.finite(preserved_values))) {
     bad <- preserved_ids[which(!is.finite(preserved_values))[[1L]]]
     ledgr_target_sizing_abort(sprintf("Cannot preserve `%s` without a permissible valuation mark.", bad), bad)
@@ -600,7 +604,7 @@ ledgr_target_size <- function(ctx,
     zero <- weights == 0
     if (any(zero)) {
       zero_ids <- weighted_ids[zero]
-      zero_pos <- collapse::fmatch(zero_ids, universe)
+      zero_pos <- id_match(zero_ids, universe)
       target[zero_ids] <- 0
       sizing_used[zero_pos] <- TRUE
       sizing_requested[zero_pos] <- 0
@@ -619,8 +623,8 @@ ledgr_target_size <- function(ctx,
       skipped_weight <- positive_ids[!valid]
       if (length(skipped_weight) > 0L) {
         target[skipped_weight] <- position[skipped_weight]
-        skipped <- c(skipped, skipped_weight[collapse::fmatch(skipped_weight, skipped, 0L) == 0L])
-        skipped_pos <- collapse::fmatch(skipped_weight, universe)
+        skipped <- c(skipped, skipped_weight[id_match(skipped_weight, skipped, 0L) == 0L])
+        skipped_pos <- id_match(skipped_weight, universe)
         sizing_used[skipped_pos] <- TRUE
         sizing_requested[skipped_pos] <- NA_real_
         sizing_pre_floor[skipped_pos] <- NA_real_
@@ -648,7 +652,7 @@ ledgr_target_size <- function(ctx,
       }
       if (length(requested_value) > 0L) {
         valid_ids <- positive_ids[valid]
-        valid_pos <- collapse::fmatch(valid_ids, universe)
+        valid_pos <- id_match(valid_ids, universe)
         requested_quantity <- requested_value / price[valid]
         pre_floor_quantity <- requested_value * scale / price[valid]
         target[valid_ids] <- floor(pre_floor_quantity)
@@ -674,7 +678,7 @@ ledgr_target_size <- function(ctx,
     valid <- is.finite(price) & price > 0
     if (any(valid)) {
       valid_ids <- addition_ids[valid]
-      valid_pos <- collapse::fmatch(valid_ids, universe)
+      valid_pos <- id_match(valid_ids, universe)
       requested_quantity <- position[valid_ids] + add_value[valid] / price[valid]
       target[valid_ids] <- position[valid_ids] + floor(add_value[valid] / price[valid])
       sizing_used[valid_pos] <- TRUE
@@ -694,7 +698,7 @@ ledgr_target_size <- function(ctx,
     }
     if (any(!valid)) {
       skipped_ids <- addition_ids[!valid]
-      skipped_pos <- collapse::fmatch(skipped_ids, universe)
+      skipped_pos <- id_match(skipped_ids, universe)
       target[skipped_ids] <- position[skipped_ids]
       skipped <- union(skipped, skipped_ids)
       sizing_used[skipped_pos] <- TRUE
@@ -740,6 +744,7 @@ ledgr_target_size <- function(ctx,
 }
 
 ledgr_target_named_amount <- function(x, label, universe, allow_null = FALSE) {
+  id_match <- if (length(universe) >= 32L) collapse::fmatch else match
   if (is.null(x) && allow_null) return(stats::setNames(numeric(), character()))
   if (!is.numeric(x) || is.factor(x) || !is.null(dim(x))) {
     rlang::abort(sprintf("`%s` must be a named numeric vector.", label), class = "ledgr_invalid_strategy_type")
@@ -753,7 +758,7 @@ ledgr_target_named_amount <- function(x, label, universe, allow_null = FALSE) {
     )
   }
   # x_names is unique and attribute-free here, so match() gives setdiff().
-  unknown <- if (is.null(attributes(universe))) x_names[collapse::fmatch(x_names, universe, 0L) == 0L] else setdiff(x_names, universe)
+  unknown <- if (is.null(attributes(universe))) x_names[id_match(x_names, universe, 0L) == 0L] else setdiff(x_names, universe)
   if (length(unknown) > 0L) {
     rlang::abort(
       sprintf("`%s` names instruments outside the decision axis: %s.", label, paste(unknown, collapse = ", ")),
@@ -764,6 +769,7 @@ ledgr_target_named_amount <- function(x, label, universe, allow_null = FALSE) {
 }
 
 ledgr_target_logical <- function(x, universe, label) {
+  id_match <- if (length(universe) >= 32L) collapse::fmatch else match
   if (is.null(x)) return(stats::setNames(rep(FALSE, length(universe)), universe))
   if (!is.logical(x) || is.factor(x) || anyNA(x)) {
     rlang::abort(sprintf("`%s` must be a non-missing logical vector.", label), class = "ledgr_invalid_strategy_type")
@@ -777,21 +783,22 @@ ledgr_target_logical <- function(x, universe, label) {
   }
   if (length(x_names) != length(x) || anyNA(x_names) || any(!nzchar(x_names)) ||
       anyDuplicated(x_names) ||
-      !(if (is.null(attributes(universe))) !(anyNA(collapse::fmatch(x_names, universe)) || anyNA(collapse::fmatch(universe, x_names)))
+      !(if (is.null(attributes(universe))) !(anyNA(id_match(x_names, universe)) || anyNA(id_match(universe, x_names)))
         else setequal(x_names, universe))) {
     rlang::abort(sprintf("Named `%s` must cover the decision axis exactly once.", label), class = "ledgr_invalid_strategy_type")
   }
-  stats::setNames(as.logical(x[collapse::fmatch(universe, x_names)]), universe)
+  stats::setNames(as.logical(x[id_match(universe, x_names)]), universe)
 }
 
 ledgr_target_keep <- function(keep, universe) {
+  id_match <- if (length(universe) >= 32L) collapse::fmatch else match
   if (is.null(keep)) return(list(ids = character(), mask = rep(FALSE, length(universe))))
   if (is.character(keep) && !is.factor(keep)) {
     if (anyNA(keep) || any(!nzchar(keep)) || anyDuplicated(keep)) {
       rlang::abort("Character `keep` must contain unique instrument IDs.", class = "ledgr_invalid_strategy_type")
     }
     unknown <- if (is.null(attributes(keep)) && is.null(attributes(universe))) {
-      keep[collapse::fmatch(keep, universe, 0L) == 0L]
+      keep[id_match(keep, universe, 0L) == 0L]
     } else {
       setdiff(keep, universe)
     }
