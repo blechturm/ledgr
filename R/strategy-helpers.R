@@ -432,9 +432,13 @@ ledgr_target_size <- function(ctx,
   sizing_reason <- rep("", length(universe))
   sizing_used <- rep(FALSE, length(universe))
 
+  # The ID vectors below are unique and attribute-free (names of validated
+  # amounts, or subsets of the unique universe), so match() gives base
+  # union()/intersect()/setdiff() exactly, without their per-call dispatch.
+  # Operands that may carry attributes keep the base operation.
   weighted_ids <- names(weights)
   addition_ids <- names(add_value)
-  requested_ids <- union(weighted_ids, addition_ids)
+  requested_ids <- c(weighted_ids, addition_ids[match(addition_ids, weighted_ids, 0L) == 0L])
   ineligible <- requested_ids[!buyable[match(requested_ids, universe)]]
   if (length(ineligible) > 0L) {
     rlang::abort(
@@ -442,7 +446,7 @@ ledgr_target_size <- function(ctx,
       class = "ledgr_invalid_strategy_helper"
     )
   }
-  if (length(intersect(weighted_ids, addition_ids)) > 0L) {
+  if (any(match(weighted_ids, addition_ids, 0L) > 0L)) {
     rlang::abort("An instrument cannot be both weighted and added.", class = "ledgr_invalid_strategy_result")
   }
 
@@ -465,7 +469,11 @@ ledgr_target_size <- function(ctx,
       )
     }
     held_leavers <- universe[position != 0 & !member]
-    undecided <- setdiff(held_leavers, explicit_keep)
+    undecided <- if (is.null(attributes(held_leavers)) && is.null(attributes(explicit_keep))) {
+      held_leavers[match(held_leavers, explicit_keep, 0L) == 0L]
+    } else {
+      setdiff(held_leavers, explicit_keep)
+    }
     if (length(undecided) > 0L && is.null(index_leavers)) {
       rlang::abort(
         sprintf(
@@ -495,10 +503,15 @@ ledgr_target_size <- function(ctx,
     sizing_pre_floor[liquidated] <- 0
     sizing_price[liquidated] <- close[liquidated]
     sizing_reason[liquidated] <- "sizing_liquidation"
-    keep_ids <- union(explicit_keep, universe[logical_keep & (member | !identical(index_leavers, "sell"))])
+    kept_mask_ids <- universe[logical_keep & (member | !identical(index_leavers, "sell"))]
+    keep_ids <- if (is.null(attributes(explicit_keep)) && is.null(attributes(kept_mask_ids))) {
+      c(explicit_keep, kept_mask_ids[match(kept_mask_ids, explicit_keep, 0L) == 0L])
+    } else {
+      union(explicit_keep, kept_mask_ids)
+    }
     target[keep_ids] <- position[keep_ids]
     preserve[match(keep_ids, universe)] <- TRUE
-    overlap <- intersect(weighted_ids, keep_ids)
+    overlap <- weighted_ids[match(weighted_ids, keep_ids, 0L) > 0L]
     if (length(overlap) > 0L) {
       rlang::abort(
         sprintf("Instruments cannot be both weighted and kept: %s.", paste(overlap, collapse = ", ")),
@@ -510,7 +523,14 @@ ledgr_target_size <- function(ctx,
       rlang::abort("`keep` and `index_leavers` belong to `ledgr_target_rebalance()`.", class = "ledgr_invalid_strategy_helper")
     }
     exits <- ledgr_target_logical(exit, universe, "exit")
-    conflict <- union(intersect(weighted_ids, universe[exits]), intersect(addition_ids, universe[exits]))
+    exit_ids <- universe[exits]
+    conflict <- if (is.null(attributes(exit_ids))) {
+      weighted_exits <- weighted_ids[match(weighted_ids, exit_ids, 0L) > 0L]
+      added_exits <- addition_ids[match(addition_ids, exit_ids, 0L) > 0L]
+      c(weighted_exits, added_exits[match(added_exits, weighted_exits, 0L) == 0L])
+    } else {
+      union(intersect(weighted_ids, exit_ids), intersect(addition_ids, exit_ids))
+    }
     if (length(conflict) > 0L) {
       rlang::abort(
         sprintf("Instruments cannot be both sized and exited: %s.", paste(conflict, collapse = ", ")),
@@ -527,7 +547,7 @@ ledgr_target_size <- function(ctx,
     sizing_reason[held_exits] <- "sizing_liquidation"
   }
 
-  preserved_ids <- universe[preserve & position != 0 & !universe %in% weighted_ids]
+  preserved_ids <- universe[preserve & position != 0 & match(universe, weighted_ids, 0L) == 0L]
   # Existing quantities in addition IDs are preserved and therefore reserve
   # their marked exposure; the requested additions themselves enter A once.
   preserved_values <- holding_value[match(preserved_ids, universe)]
@@ -599,7 +619,7 @@ ledgr_target_size <- function(ctx,
       skipped_weight <- positive_ids[!valid]
       if (length(skipped_weight) > 0L) {
         target[skipped_weight] <- position[skipped_weight]
-        skipped <- union(skipped, skipped_weight)
+        skipped <- c(skipped, skipped_weight[match(skipped_weight, skipped, 0L) == 0L])
         skipped_pos <- match(skipped_weight, universe)
         sizing_used[skipped_pos] <- TRUE
         sizing_requested[skipped_pos] <- NA_real_
@@ -732,7 +752,8 @@ ledgr_target_named_amount <- function(x, label, universe, allow_null = FALSE) {
       class = "ledgr_invalid_strategy_type"
     )
   }
-  unknown <- setdiff(x_names, universe)
+  # x_names is unique and attribute-free here, so match() gives setdiff().
+  unknown <- if (is.null(attributes(universe))) x_names[match(x_names, universe, 0L) == 0L] else setdiff(x_names, universe)
   if (length(unknown) > 0L) {
     rlang::abort(
       sprintf("`%s` names instruments outside the decision axis: %s.", label, paste(unknown, collapse = ", ")),
@@ -755,7 +776,9 @@ ledgr_target_logical <- function(x, universe, label) {
     return(stats::setNames(x, universe))
   }
   if (length(x_names) != length(x) || anyNA(x_names) || any(!nzchar(x_names)) ||
-      anyDuplicated(x_names) || !setequal(x_names, universe)) {
+      anyDuplicated(x_names) ||
+      !(if (is.null(attributes(universe))) !(anyNA(match(x_names, universe)) || anyNA(match(universe, x_names)))
+        else setequal(x_names, universe))) {
     rlang::abort(sprintf("Named `%s` must cover the decision axis exactly once.", label), class = "ledgr_invalid_strategy_type")
   }
   stats::setNames(as.logical(x[match(universe, x_names)]), universe)
@@ -767,7 +790,11 @@ ledgr_target_keep <- function(keep, universe) {
     if (anyNA(keep) || any(!nzchar(keep)) || anyDuplicated(keep)) {
       rlang::abort("Character `keep` must contain unique instrument IDs.", class = "ledgr_invalid_strategy_type")
     }
-    unknown <- setdiff(keep, universe)
+    unknown <- if (is.null(attributes(keep)) && is.null(attributes(universe))) {
+      keep[match(keep, universe, 0L) == 0L]
+    } else {
+      setdiff(keep, universe)
+    }
     if (length(unknown) > 0L) {
       rlang::abort(sprintf("`keep` names instruments outside the decision axis: %s.", paste(unknown, collapse = ", ")), class = "ledgr_invalid_strategy_type")
     }

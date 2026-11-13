@@ -32,8 +32,15 @@ ledgr_strategy_type_check_names <- function(x, label, universe = NULL, full_univ
 
   universe <- ledgr_strategy_type_check_universe(universe)
   if (!is.null(universe)) {
-    missing <- setdiff(universe, x_names)
-    extra <- setdiff(x_names, universe)
+    # x_names and a validated universe are unique; when the universe carries
+    # no attributes, match() gives base setdiff() exactly.
+    if (is.null(attributes(universe))) {
+      missing <- universe[match(universe, x_names, 0L) == 0L]
+      extra <- x_names[match(x_names, universe, 0L) == 0L]
+    } else {
+      missing <- setdiff(universe, x_names)
+      extra <- setdiff(x_names, universe)
+    }
     if (length(extra) > 0L || (isTRUE(full_universe) && length(missing) > 0L)) {
       details <- c(
         if (length(missing) > 0L) sprintf("missing instruments: %s", paste(missing, collapse = ", ")),
