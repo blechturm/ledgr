@@ -35,8 +35,8 @@ ledgr_strategy_type_check_names <- function(x, label, universe = NULL, full_univ
     # x_names and a validated universe are unique; when the universe carries
     # no attributes, match() gives base setdiff() exactly.
     if (is.null(attributes(universe))) {
-      missing <- universe[match(universe, x_names, 0L) == 0L]
-      extra <- x_names[match(x_names, universe, 0L) == 0L]
+      missing <- universe[collapse::fmatch(universe, x_names, 0L) == 0L]
+      extra <- x_names[collapse::fmatch(x_names, universe, 0L) == 0L]
     } else {
       missing <- setdiff(universe, x_names)
       extra <- setdiff(x_names, universe)
