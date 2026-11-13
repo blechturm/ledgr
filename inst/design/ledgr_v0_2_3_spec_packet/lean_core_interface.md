@@ -1148,14 +1148,13 @@ the envelope) and was deleted by the maintainer (2026-11-12).
   cut (A1). Slice 2 adds coverage with no behaviour change against the pin
   and the contracts; it needs no RFC under the family method (macro WS16).
 - Probe (2026-11-13, at 21e89c27; `dev/spikes/slice2_probe/`, its patch
-  and result CSVs): with the three
-  refusals lifted, the pin's risk call in P2 and a rough sizing record,
-  13 constructed workloads (four cost models and a chain; `long_only`,
-  `max_weight` binding and not, a chain of both, a held position trimmed;
-  `ledgr_target_rebalance()`, both `ledgr_target_adjust()` forms, sizing
-  with risk, and all three together) matched the pin on every table with
-  debug on and off, as did ten slice-1 workloads (364 tables). Costs and
-  a risk step added no visible time on 10 x 7,200 (one run each).
+  and result CSVs): with the three refusals lifted, the pin's risk call in
+  P2 and a rough sizing record, the final probe patch matched the pin on
+  23 workloads and 364 tables with debug off (13 short p2 workloads, eight
+  existing workloads and two 10 x 7,200 p2 workloads; cost cases fixed
+  fee, notional bps fee, spread bps and their chain). Debug-on records
+  belong to intermediate versions; there is no final-patch debug-on
+  record. These are inputs, not evidence: Cut 16 produces its own.
 
 Coverage moves in Section 19.2's table from "refused (2)" to covered:
 
@@ -1179,15 +1178,24 @@ What changes in the loop:
   short-exposure refusal on the risked targets. The post-risk recheck of
   numbers, length and finiteness runs in debug only (LR-16). With no risk
   step the slice-1 path is unchanged.
-- **Explicit decision rows.** A decision row is implicit only when the
-  strategy target equals the holding and the post-risk target equals the
-  strategy target; a risk step that changes the target of an instrument
-  already at its strategy target makes the row explicit (rules ledger
-  LR-23; without it the decoded coverage count disagrees and the run fails
-  closed).
+- **Explicit decision rows.** A decoded decision preserves the strategy
+  target in `target` and `target_before_risk`, and the transformed target
+  in `target_after_risk`, even when the strategy requested its current
+  holding. A risk-changed decision cannot be certified as a clean hold or
+  clean decision/fill pair. In slice 2, add post-risk target equality to
+  the existing hold-omission condition; retain the pin's clean-fill
+  certification. The full certification predicates, including reasons,
+  marks and exclusions, remain those of `ledgr_diagnostic_clean_hold()`
+  and `ledgr_diagnostic_clean_fill()` (LR-23; without it the decoded
+  coverage count disagrees and the run fails closed).
 - **Sizing (P2 and after the loop).** The pin's
-  `ledgr_validate_sizing_evidence()` validates the helper's evidence; its
-  rows go into a pulse-ordered sizing record (preallocated, written by
+  `ledgr_validate_sizing_evidence()` validates the helper's evidence, and
+  the loop uses its returned value: NULL evidence follows the raw-target
+  path; valid zero-row evidence emits neither sizing rows nor a raw
+  notice; a helper target changed by ordinary R assignment discards stale
+  evidence and follows the raw path; malformed evidence keeps the pin's
+  condition classes, message, parent and precedence after intent and
+  target validation and before risk application. Its rows go into a pulse-ordered sizing record (preallocated, written by
   index, grown by doubling like the decision record), and the pulse's
   pre-decision count grows by their number. After the loop they are
   rebuilt as `sizing / recorded` rows between the intent row and the
