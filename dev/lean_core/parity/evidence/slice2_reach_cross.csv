@@ -24,3 +24,4 @@
 "s2_sizing_batch",TRUE,25,0,"",TRUE
 "s2_sizing_growth",TRUE,25,0,"",TRUE
 "s2_sizing_prefix",TRUE,17,8,"s2_sizing_rebalance s2_sizing_adjust s2_sizing_risk s2_sizing_combo s2_sizing_reasons s2_sizing_notice s2_sizing_batch s2_sizing_growth",TRUE
+"s2_cost_chain on rounded-price fees",TRUE,312,0,"312 of 313 fees changed",TRUE

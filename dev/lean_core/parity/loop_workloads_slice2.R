@@ -114,16 +114,19 @@ loop_reach <- list(
   s2_cost_notional = function(t) { f <- s2_fills(t); nrow(f) > 0L && all(f$fee > 0) },
   s2_cost_spread = function(t) { f <- s2_fills(t); nrow(f) > 0L && all(f$fee == 0) },
   # Both price transforms and both fee adders: buys above and sells below
-  # the execution bar's open, every fee the fixed 1 plus 5 bps of the
-  # transformed (unrounded) notional.
+  # the execution bar's open, and every fee exactly the fixed 1 plus 5 bps
+  # of the transformed, unrounded notional, in the pin's arithmetic order
+  # (R/cost-model.R); the rounded fill price gives different fees, so an
+  # exact comparison separates the two bases (close review round 1).
   s2_cost_chain = function(t) {
     f <- s2_fills(t)
     bars <- r_floor_fixture(10L, 300L)$bars
     open <- bars$open[match(paste(f$instrument_id, s2_time(f$ts_utc)),
                             paste(bars$instrument_id, s2_time(bars$ts_utc)))]
     buy <- f$side == "BUY"; sell <- f$side == "SELL"
+    unrounded <- open * ifelse(buy, 1 + 10 / 20000, 1 - 10 / 20000)
     any(buy) && any(sell) && !anyNA(open) && all(f$price[buy] > open[buy]) && all(f$price[sell] < open[sell]) &&
-      all(abs(f$fee - (1 + 5e-4 * f$qty * f$price)) <= 1e-9 * (1 + f$fee))
+      identical(f$fee, (0 + 1) + abs(f$qty * unrounded) * 5 / 10000)
   },
   s2_risk_nonbinding = function(t) {
     d <- s2_decisions(t)
