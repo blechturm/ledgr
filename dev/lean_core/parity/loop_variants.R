@@ -31,6 +31,12 @@ unknown <- setdiff(key(retire), key(manifest))
 if (length(unknown)) stop("retirements not in the manifest: ", paste(unknown, collapse = ", "), call. = FALSE)
 manifest <- manifest[!key(manifest) %in% key(retire), ]
 add <- changes[changes$action == "add", names(manifest)]
+# Cut 18: a re-anchored variant keeps its manifest row; its change row must
+# name one, and an unknown action refuses.
+reanchor <- changes[changes$action == "reanchor", ]
+unknown <- setdiff(key(reanchor), c(key(manifest), key(add)))
+if (length(unknown)) stop("re-anchors not in the manifest: ", paste(unknown, collapse = ", "), call. = FALSE)
+if (length(bad <- setdiff(changes$action, c("add", "retire", "reanchor")))) stop("unknown change action: ", bad[[1L]], call. = FALSE)
 manifest <- rbind(manifest, add)
 if (nzchar(only_debug)) manifest <- manifest[manifest$debug == as.integer(only_debug), ]
 

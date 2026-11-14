@@ -488,31 +488,15 @@ lean_fold_envelope <- function(execution, output_handler) {
     invisible(TRUE)
   }
 
-  # Declared-state patch: the pin's apply_values with the field records
-  # looked up once; anything unusual goes to the pin.
+  # Declared-state patch (checks.R, lean_state_apply): the field records
+  # looked up once, the state's own names checked once (they change only by
+  # reset or replacement, which the patch path re-checks each pulse).
   if (is.null(state_defaults)) state_defaults <- ledgr_strategy_state_default_scalars(state_declaration)
   state_fields <- state_declaration$fields %||% list()
   names(state_fields) <- vapply(state_fields, function(f) f$name, character(1L))
-  lean_state_patch <- function(update) {
-    if (!is.list(update) || is.data.frame(update)) {
-      return(ledgr_strategy_state_apply_values(strategy_state, update, state_declaration, ids,
-        patch = TRUE, default_scalars = state_defaults))
-    }
-    nm <- names(update)
-    if (length(update) == 0L || is.null(nm) || anyNA(nm) || !all(nzchar(nm)) || anyDuplicated(nm) ||
-        !all(nm %in% names(strategy_state)) || !all(nm %in% names(state_fields))) {
-      return(ledgr_strategy_state_apply_values(strategy_state, update, state_declaration, ids,
-        patch = TRUE, default_scalars = state_defaults))
-    }
-    out <- strategy_state
-    for (name in nm) {
-      value <- ledgr_strategy_state_validate_value(update[[name]], state_fields[[name]], ids)
-      reset <- is.na(value)
-      if (any(reset)) value[reset] <- state_defaults[[name]]
-      out[[name]] <- value
-    }
-    out
-  }
+  state_names <- names(strategy_state)
+  state_names_ok <- length(state_names) > 0L && !anyNA(state_names) && all(nzchar(state_names)) &&
+    !anyDuplicated(state_names) && all(state_names %in% names(state_fields))
 
   # A stub reached during the callback outranks how the callback ended.
   check_uncovered <- function() {
@@ -821,12 +805,15 @@ lean_fold_envelope <- function(execution, output_handler) {
     if (inherits(state_update, "ledgr_strategy_state_reset")) {
       strategy_state <<- ledgr_strategy_state_defaults(state_declaration, ids, default_scalars = state_defaults)
     } else if (inherits(state_update, "ledgr_strategy_state_patch")) {
-      patched <- lean_state_patch(unclass(state_update))
-      if (.lean_debug && !identical(patched, ledgr_strategy_state_apply_values(strategy_state,
-          unclass(state_update), state_declaration, ids, patch = TRUE, default_scalars = state_defaults))) {
-        rlang::abort(sprintf("Lean state patch differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
+      update <- unclass(state_update)
+      strategy_state <<- if (.lean_debug) {
+        lean_debug_same(function() lean_state_apply(update, strategy_state, state_fields, state_defaults, state_declaration,
+          ids, ids_attr, state_names, state_names_ok), function() ledgr_strategy_state_apply_values(strategy_state, update,
+          state_declaration, ids, patch = TRUE, default_scalars = state_defaults), "state patch", i)
+      } else {
+        lean_state_apply(update, strategy_state, state_fields, state_defaults, state_declaration, ids, ids_attr,
+          state_names, state_names_ok)
       }
-      strategy_state <<- patched
     } else if (!is.null(state_update)) {
       strategy_state <<- ledgr_strategy_state_apply_values(strategy_state, state_update,
         state_declaration, ids, patch = FALSE, default_scalars = state_defaults)

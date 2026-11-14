@@ -103,8 +103,8 @@ loop_mutations <- list(
   fault_before_append = variant("fault_without_append", list(edit("loop.R", "tick",
     "      live$batches <- live$batches + 1L", "      stop(\"lean witness: early batch fault\")", "after")),
     error = "lean witness: early batch fault"),
-  patch_container = variant("differ", list(edit("loop.R", "lean_state_patch",
-    "    if (!is.list(update) || is.data.frame(update)) {", "    if (FALSE) {")),
+  patch_container = variant("differ", list(edit("checks.R", "lean_state_apply",   # Cut 18 R5 re-anchor
+    "  if (!is.list(update) || is.data.frame(update)) {", "  if (FALSE) {")),
     lost = "Strategy state update must be a uniquely named list"),
   zero_pulse_completion = variant("differ", list(edit("loop.R", "lean_loop_publish", "    if (n_pulse == 0L) {", "    if (FALSE) {")),
     tables = "^zero_pulses_aligned$"),

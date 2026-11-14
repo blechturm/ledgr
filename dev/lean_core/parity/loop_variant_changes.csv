@@ -23,3 +23,4 @@
 "add","raw_notice_with_evidence","s2_sizing_notice",0,65536,"differ","Cut 16 LDG-3227 (R3): the raw notice on the first evidenced pulse"
 "add","raw_notice_with_evidence","s2_sizing_notice",1,65536,"differ","Cut 16 LDG-3227 (R3): the raw notice on the first evidenced pulse"
 "add","sizing_skip_recorded","s2_sizing_rebalance",1,65536,"differ","Cut 16 LDG-3227: a recorded sizing skip reaches the debug check"
+"reanchor","patch_container","witness_state_container",0,65536,"differ","Cut 18 R5: anchor moved from loop.R lean_state_patch (closure, deleted) to checks.R lean_state_apply, the same line; same injected fault (the patch container check skipped, so a non-list update reaches the name checks), same expected consequence (the pin refusal Strategy state update must be a uniquely named list is lost)"
