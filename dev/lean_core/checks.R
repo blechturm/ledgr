@@ -173,6 +173,43 @@ lean_targets_axis_ok <- function(ids) {
   is.character(ids) && !anyNA(ids) && all(nzchar(ids)) && !anyDuplicated(ids)
 }
 
+# R4: the sizing evidence a strategy returned, the pin's
+# ledgr_validate_sizing_evidence(x, targets, ids, position, mark). The plain
+# path takes evidence that passes every one of the pin's refusal tests with
+# no `sizing_unavailable` row (whose typed tests then reduce to all-finite
+# quantities, priced rows that need a price, and no price on an unpriced
+# row), evaluated directly rather than through vapply() and repeated
+# subsets; it returns the evidence, or NULL when it is stale by the pin's
+# four identical(as.numeric(...)) comparisons. Anything else goes to the pin.
+lean_sizing_fields <- c("instrument_id", "requested_quantity", "pre_floor_quantity", "rounded_quantity", "price",
+                        "position_before", "reason_code")
+lean_sizing_priced_codes <- c("sizing_rounded", "sizing_rounded_to_zero_addition", "sizing_rounded_to_zero_liquidation")
+lean_sizing_evidence <- function(x, targets, ids, position, mark) {
+  if (is.null(x)) return(NULL)
+  id <- x$instrument_id
+  rc <- x$reason_code
+  ok <- inherits(x, "ledgr_sizing_evidence") && is.list(x) && identical(names(x), lean_sizing_fields) &&
+    is.character(id) && is.character(rc) && all(lengths(x) == length(id)) && !anyNA(id) && all(nzchar(id)) &&
+    !anyDuplicated(id) && is.numeric(x$requested_quantity) && is.numeric(x$pre_floor_quantity) &&
+    is.numeric(x$rounded_quantity) && is.numeric(x$price) && is.numeric(x$position_before) && !anyNA(rc) &&
+    all(rc %in% .ledgr_sizing_reason_codes) && !any(rc == "sizing_unavailable")
+  k <- if (ok) match(id, ids)
+  if (ok && !anyNA(k)) {
+    priced <- is.finite(x$price) & x$price > 0
+    if (all(is.finite(x$rounded_quantity)) && all(is.finite(x$position_before)) && all(is.finite(x$requested_quantity)) &&
+        all(is.finite(x$pre_floor_quantity)) && all(priced[rc %in% lean_sizing_priced_codes]) && all(is.na(x$price[!priced]))) {
+      free <- rep(TRUE, length(ids))
+      free[k] <- FALSE
+      stale <- !identical(as.numeric(x$rounded_quantity), as.numeric(targets[k])) ||
+        !identical(as.numeric(x$position_before), as.numeric(position[k])) ||
+        !identical(as.numeric(x$price[priced]), as.numeric(mark[k[priced]])) ||
+        !identical(as.numeric(targets[free]), as.numeric(position[free]))
+      return(if (stale) NULL else x)
+    }
+  }
+  ledgr_validate_sizing_evidence(x, targets = targets, context_ids = ids, position = position, mark = mark)
+}
+
 # R5: one declared-state field value. Accepts, unchanged, a value the pin's
 # ledgr_strategy_state_validate_value() returns unchanged: an attribute-free
 # scalar of the declared type for a portfolio field, or a vector of the

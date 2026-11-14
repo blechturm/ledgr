@@ -595,10 +595,14 @@ lean_fold_envelope <- function(execution, output_handler) {
     sq <- as.numeric(targets)
     pre <- 0L
     if (!is.null(intent_reason)) { hd_intent[[i]] <<- intent_reason; pre <- pre + 1L }
-    # Sizing evidence (Section 19.9): the pin's validator's returned value;
-    # NULL (none, or stale) takes the raw path, zero rows write nothing.
-    sizing_evidence <- ledgr_validate_sizing_evidence(sizing_evidence, targets = targets, context_ids = ids,
-      position = pos, mark = close)
+    # Sizing evidence (Section 19.9; checks.R, lean_sizing_evidence): the
+    # validated evidence, or NULL (none, or stale) for the raw path; zero
+    # rows write nothing.
+    sizing_evidence <- if (.lean_debug) {
+      lean_debug_same(function() lean_sizing_evidence(sizing_evidence, targets, ids, pos, close),
+        function() ledgr_validate_sizing_evidence(sizing_evidence, targets = targets, context_ids = ids, position = pos,
+          mark = close), "sizing evidence", i)
+    } else lean_sizing_evidence(sizing_evidence, targets, ids, pos, close)
     if (.lean_debug && length(pulse_notes$sizing_skipped) > 0L) {
       rlang::abort(sprintf("Lean sizing skipped an instrument at pulse %d, unreachable in slice 2.", i),
                    class = "ledgr_internal_error")

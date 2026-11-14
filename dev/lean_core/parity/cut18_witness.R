@@ -64,6 +64,13 @@ cut18_witness_mutations$targets_helper_attributes_kept <- lean_edit("checks.R", 
   "    if (is.numeric(u) && identical(names(u), ids) && all(is.finite(u))) return(u)")
 cut18_witness_mutations$targets_axis_check_skipped <- lean_edit("checks.R", "lean_targets",
   "  if (ids_ok && identical(class(raw), c(\"ledgr_target\", \"numeric\"))) {", "  if (identical(class(raw), c(\"ledgr_target\", \"numeric\"))) {")
+cut18_witness_mutations$sizing_stale_not_detected <- lean_edit("checks.R", "lean_sizing_evidence",
+  "      return(if (stale) NULL else x)", "      return(x)")
+cut18_witness_mutations$sizing_unavailable_on_plain_path <- lean_edit("checks.R", "lean_sizing_evidence",
+  "    all(rc %in% .ledgr_sizing_reason_codes) && !any(rc == \"sizing_unavailable\")", "    all(rc %in% .ledgr_sizing_reason_codes)")
+cut18_witness_mutations$sizing_requested_unchecked <- lean_edit("checks.R", "lean_sizing_evidence",
+  "    if (all(is.finite(x$rounded_quantity)) && all(is.finite(x$position_before)) && all(is.finite(x$requested_quantity)) &&",
+  "    if (all(is.finite(x$rounded_quantity)) && all(is.finite(x$position_before)) &&")
 mutation <- opt("mutation", "")
 if (nzchar(mutation)) {
   m <- cut18_witness_mutations[[mutation]]
@@ -281,6 +288,42 @@ tgt_case("list_targets", as.list(nmd(c(1, 2, 3))))
 tgt_case("empty_axis_empty_targets", stats::setNames(numeric(), character()), axis = character())
 tgt_case("axis_invalid_duplicates", stats::setNames(c(1, 2), c("A", "A")), axis = c("A", "A"))
 tgt_case("helper_axis_invalid", stats::setNames(structure(c(1, 2), class = c("ledgr_target", "numeric")), c("A", "A")), axis = c("A", "A"))
+
+## R4: the sizing evidence --------------------------------------------------------
+# Pin side: ledgr_validate_sizing_evidence(x, targets, ids, position, mark).
+ev0 <- attr(helper, "sizing_evidence")
+tg0 <- ns$ledgr_validate_strategy_targets(helper, ids, allow_empty = TRUE)
+pos0 <- as.numeric(hctx$position); mk0 <- as.numeric(hctx$close)
+ev_case <- function(id, x, targets = tg0, position = pos0, mark = mk0) {
+  case("R4", id, function() lean$lean_sizing_evidence(x, targets, ids, position, mark),
+       function() ns$ledgr_validate_sizing_evidence(x, targets = targets, context_ids = ids, position = position, mark = mark))
+}
+ev_mod <- function(f) { y <- ev0; f(y) }
+ev_case("valid", ev0)
+ev_case("null", NULL)
+ev_case("stale_rounded", ev0, targets = local({ t <- tg0; t[[1L]] <- t[[1L]] + 1; t }))
+ev_case("stale_position", ev0, position = pos0 + c(1, 0, 0))
+ev_case("stale_price", ev0, mark = mk0 * 1.01)
+ev_case("stale_unevidenced", ev_mod(function(y) { for (f in names(y)) y[[f]] <- y[[f]][1:2]; y }))
+ev_case("zero_rows", ev_mod(function(y) { for (f in names(y)) y[[f]] <- y[[f]][0]; y }), targets = stats::setNames(pos0, ids))
+ev_case("wrong_class", ev_mod(function(y) { class(y) <- "list"; y }))
+ev_case("fields_reordered", ev_mod(function(y) y[rev(names(y))]))
+ev_case("length_mismatch", ev_mod(function(y) { y$price <- y$price[1:2]; y }))
+ev_case("id_na", ev_mod(function(y) { y$instrument_id[[2L]] <- NA_character_; y }))
+ev_case("id_empty", ev_mod(function(y) { y$instrument_id[[2L]] <- ""; y }))
+ev_case("id_duplicated", ev_mod(function(y) { y$instrument_id[[2L]] <- y$instrument_id[[1L]]; y }))
+ev_case("id_outside_axis", ev_mod(function(y) { y$instrument_id[[2L]] <- "ZZZ"; y }))
+ev_case("field_not_numeric", ev_mod(function(y) { y$price <- as.character(y$price); y }))
+ev_case("reason_na", ev_mod(function(y) { y$reason_code[[1L]] <- NA_character_; y }))
+ev_case("reason_unknown", ev_mod(function(y) { y$reason_code[[1L]] <- "made_up"; y }))
+ev_case("requested_nan", ev_mod(function(y) { y$requested_quantity[[1L]] <- NaN; y }))
+ev_case("rounded_infinite", ev_mod(function(y) { y$rounded_quantity[[1L]] <- Inf; y }))
+ev_case("priced_row_without_price", ev_mod(function(y) { y$price[[1L]] <- 0; y }))
+ev_case("unavailable_row_valid", ev_mod(function(y) { y$reason_code[[3L]] <- "sizing_unavailable"; y$requested_quantity[[3L]] <- NA;
+  y$pre_floor_quantity[[3L]] <- NA; y$price[[3L]] <- NA; y }))
+ev_case("unavailable_row_with_price", ev_mod(function(y) { y$reason_code[[3L]] <- "sizing_unavailable"; y$requested_quantity[[3L]] <- NA;
+  y$pre_floor_quantity[[3L]] <- NA; y }))
+ev_case("unavailable_row_with_quantities", ev_mod(function(y) { y$reason_code[[3L]] <- "sizing_unavailable"; y$price[[3L]] <- NA; y }))
 
 ## run ---------------------------------------------------------------------------
 manifest <- utils::read.csv(file.path(here, "cut18_witness_cases.csv"), stringsAsFactors = FALSE)
