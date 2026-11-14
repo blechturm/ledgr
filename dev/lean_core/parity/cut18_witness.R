@@ -43,7 +43,7 @@ cut18_witness_mutations <- list(
     "    if (any(nz & !(is.finite(close) & close > 0))) return(NULL)", "    NULL"),
   afford_generators_last = lean_edit("plan.R", "lean_plan_affordability", "    c(o[generator[o]], o[!generator[o]])",
     "    c(o[!generator[o]], o[generator[o]])"),
-  afford_axis_order = lean_edit("plan.R", "lean_plan_affordability", "    o <- slot[id_perm]", "    o <- slot"),
+  afford_axis_order = lean_edit("plan.R", "lean_plan_affordability", "    o <- match(id_perm, axis_pos, 0L)   # each ID-ordered axis position's candidate, or 0", "    o <- match(seq_along(id_perm), axis_pos, 0L)"),
   risk_short_check_skipped = lean_edit("checks.R", "lean_risk_targets",
     "  if (any(tq < 0 & tq < pos)) ledgr_availability_validate_short_exposure(stats::setNames(tq, ids), held)", "  NULL"))
   # Pre-summing the fixed fees (A1's order-sensitive case): all fixed amounts

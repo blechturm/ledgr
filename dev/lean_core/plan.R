@@ -108,9 +108,7 @@ lean_plan_affordability <- function(cash_delta, blocked, generator, stable_id, c
     # Cut 18 W4: generators first, then the rest, each in the radix order of
     # the run's IDs (distinct IDs, so no ties): the run-long permutation
     # walked by the candidates' axis positions, without a sort per pulse.
-    slot <- integer(length(id_perm))
-    slot[axis_pos] <- seq_len(n)
-    o <- slot[id_perm]
+    o <- match(id_perm, axis_pos, 0L)   # each ID-ordered axis position's candidate, or 0
     o <- o[o > 0L]
     c(o[generator[o]], o[!generator[o]])
   }
@@ -146,8 +144,7 @@ lean_plan_id_perm <- function(ids) {
 # The plan from its groups (Cut 18 F1: one function, not a closure built on
 # every lean_plan_pulse() call); with debug on the pin checks its carrier.
 lean_plan_result <- function(groups, kinds, final_cash, context_pos, actionable_k, n_ids) {
-  x <- list(expected_final_cash = as.numeric(final_cash), economic_event_kinds = kinds,
-            fill = groups$fill, rejection = groups$rejection)
+  x <- list(expected_final_cash = as.numeric(final_cash), economic_event_kinds = kinds, fill = groups$fill, rejection = groups$rejection)
   if (.lean_debug) ledgr_carrier_plan(x, context_pos, actionable_k, n_ids) else x
 }
 
