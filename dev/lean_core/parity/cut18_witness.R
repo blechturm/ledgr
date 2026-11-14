@@ -41,6 +41,9 @@ cut18_witness_mutations <- list(
   risk_steps_reversed = lean_edit("checks.R", "lean_risk_apply", "  for (s in steps) {", "  for (s in rev(steps)) {"),
   risk_price_refusal_skipped = lean_edit("checks.R", "lean_risk_apply",
     "    if (any(nz & !(is.finite(close) & close > 0))) return(NULL)", "    NULL"),
+  afford_generators_last = lean_edit("plan.R", "lean_plan_affordability", "    c(o[generator[o]], o[!generator[o]])",
+    "    c(o[!generator[o]], o[generator[o]])"),
+  afford_axis_order = lean_edit("plan.R", "lean_plan_affordability", "    o <- slot[id_perm]", "    o <- slot"),
   risk_short_check_skipped = lean_edit("checks.R", "lean_risk_targets",
     "  if (any(tq < 0 & tq < pos)) ledgr_availability_validate_short_exposure(stats::setNames(tq, ids), held)", "  NULL"))
 mutation <- opt("mutation", "")
@@ -179,6 +182,26 @@ case("R1", "steps_unsupported_type", function() lean$lean_risk_steps(list(steps 
 case("R1", "steps_param_reference",
      function() lean$lean_risk_steps(list(steps = list(list(type_id = "max_weight", args = list(max_weight = ledgr::ledgr_param("w")))))),
      function() NULL)
+
+## W4: the affordability scan's priority without a sort ----------------------
+# Pin side: ledgr_plan_affordability(), on the candidates' stable IDs.
+afford_case <- function(id, axis, cand_pos, cash_delta, blocked, generator, cash) {
+  case("W4", id, function() lean$lean_plan_affordability(cash_delta, blocked, generator, axis[cand_pos], cash,
+                                                          order(enc2utf8(axis), method = "radix"), cand_pos),
+       function() ns$ledgr_plan_affordability(cash_delta, blocked, generator, axis[cand_pos], cash))
+}
+ax <- c("ZETA", "alpha", "Beta", "B10", "B9", "café", "CAFE", "a")
+afford_case("mixed_generators", ax, c(1L, 3L, 5L, 6L), c(500, -300, 200, -900), c(FALSE, FALSE, FALSE, FALSE), c(TRUE, FALSE, TRUE, FALSE), 400)
+afford_case("insufficient_cash", ax, c(2L, 4L, 7L), c(-300, -200, -150), c(FALSE, FALSE, FALSE), c(FALSE, FALSE, FALSE), 400)
+afford_case("blocked_generator", ax, c(8L, 2L, 6L), c(300, -500, -100), c(TRUE, FALSE, FALSE), c(TRUE, FALSE, FALSE), 200)
+afford_case("all_generators", ax, c(6L, 1L, 4L), c(10, 20, 30), c(FALSE, FALSE, FALSE), c(TRUE, TRUE, TRUE), 0)
+afford_case("no_generators", ax, 8:1, c(-10, -20, -30, -40, -50, -60, -70, -80), rep(FALSE, 8), rep(FALSE, 8), 250)
+afford_case("tolerance_edge", ax, c(3L, 5L), c(-100, -1e-9), c(FALSE, FALSE), c(FALSE, FALSE), 100)
+afford_case("one_candidate", ax, 7L, -50, FALSE, FALSE, 10)
+afford_case("no_candidate", ax, integer(), numeric(), logical(), logical(), 10)
+afford_case("missing_generator_flag", ax, c(1L, 2L, 3L), c(10, NA, -5), c(FALSE, FALSE, FALSE), c(TRUE, NA, FALSE), 100)
+afford_case("large_axis_few_candidates", sprintf("I%04d", 1200:1), c(17L, 900L, 3L), c(-5, 7, -2), c(FALSE, FALSE, FALSE),
+            c(FALSE, TRUE, FALSE), 6)
 
 ## run ---------------------------------------------------------------------------
 manifest <- utils::read.csv(file.path(here, "cut18_witness_cases.csv"), stringsAsFactors = FALSE)

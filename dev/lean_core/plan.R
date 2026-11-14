@@ -91,11 +91,12 @@ lean_plan_groups <- function(k, pos, side, qty, price, fee, exec_ts, before, seg
 # The affordability scan (pinned: ledgr_plan_affordability,
 # R/availability-economics.R:332), a justified sequential loop. The pin
 # orders generators first, then stable ID; candidates are distinct
-# instruments, so the stable IDs have no ties and one radix order over
-# (!generator, ID) is the pin's permutation. Zero or one candidate needs no
-# sort. A missing generator flag (an undefined cash effect) keeps the pin's
+# instruments, so the stable IDs have no ties: generators, then the rest,
+# each in the run's radix ID order (id_perm, walked by the candidates'
+# axis positions) is the pin's permutation. Zero or one candidate needs no
+# order. A missing generator flag (an undefined cash effect) keeps the pin's
 # formula, which leaves that row out of the scan.
-lean_plan_affordability <- function(cash_delta, blocked, generator, stable_id, cash, id_rank,
+lean_plan_affordability <- function(cash_delta, blocked, generator, stable_id, cash, id_perm, axis_pos,
                                     tolerance = ledgr_availability_cash_tolerance) {
   n <- length(cash_delta)
   priority <- if (anyNA(generator)) {
@@ -104,9 +105,14 @@ lean_plan_affordability <- function(cash_delta, blocked, generator, stable_id, c
   } else if (n <= 1L) {
     seq_len(n)
   } else {
-    # id_rank: each candidate's rank in the radix order of the run's IDs,
-    # which preserves the order of any subset of distinct IDs.
-    order(!generator, id_rank, method = "radix")
+    # Cut 18 W4: generators first, then the rest, each in the radix order of
+    # the run's IDs (distinct IDs, so no ties): the run-long permutation
+    # walked by the candidates' axis positions, without a sort per pulse.
+    slot <- integer(length(id_perm))
+    slot[axis_pos] <- seq_len(n)
+    o <- slot[id_perm]
+    o <- o[o > 0L]
+    c(o[generator[o]], o[!generator[o]])
   }
   accepted <- logical(n)
   insufficient <- logical(n)
@@ -124,17 +130,15 @@ lean_plan_affordability <- function(cash_delta, blocked, generator, stable_id, c
   list(accepted = accepted, insufficient = insufficient, final_cash = virtual_cash)
 }
 
-# Rank of each run-axis instrument in the radix order of the stable IDs
-# (UTF-8 bytes), computed once per instrument axis.
+# The run-axis positions in the radix order of the stable IDs (UTF-8 bytes),
+# computed once per instrument axis.
 lean_plan_rank_cache <- new.env(parent = emptyenv())
-lean_plan_id_rank <- function(ids) {
+lean_plan_id_perm <- function(ids) {
   if (!identical(lean_plan_rank_cache$ids, ids)) {
-    rank <- integer(length(ids))
-    rank[order(enc2utf8(ids), method = "radix")] <- seq_along(ids)
     lean_plan_rank_cache$ids <- ids
-    lean_plan_rank_cache$rank <- rank
+    lean_plan_rank_cache$perm <- order(enc2utf8(ids), method = "radix")
   }
-  lean_plan_rank_cache$rank
+  lean_plan_rank_cache$perm
 }
 
 # The availability planner (pinned: ledgr_fold_build_availability_pulse_plan,
@@ -203,7 +207,7 @@ lean_plan_pulse <- function(context_pos, target_qty, position, actionable_k, mem
   generator <- side[candidates] == -1L & before[candidates] > 0 & delta[candidates] < 0 &
     effects$cash_delta >= 0 & !blocked
   scan <- lean_plan_affordability(effects$cash_delta, blocked, generator,
-    instrument_ids[pos[candidates]], cash, lean_plan_id_rank(instrument_ids)[pos[candidates]])
+    instrument_ids[pos[candidates]], cash, lean_plan_id_perm(instrument_ids), pos[candidates])
   if (.lean_debug && !identical(scan, ledgr_plan_affordability(effects$cash_delta, blocked, generator,
                                                                instrument_ids[pos[candidates]], cash))) {
     rlang::abort("Lean P3 affordability scan differs from the pin's.", class = "ledgr_internal_error")
