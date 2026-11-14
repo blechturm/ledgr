@@ -1,0 +1,261 @@
+"replacement","case","debug","outcome","identical"
+"R5","value_asset_logical_named",0,"value",TRUE
+"R5","value_asset_logical_na",0,"value",TRUE
+"R5","value_asset_double_named",0,"value",TRUE
+"R5","value_asset_double_na",0,"value",TRUE
+"R5","value_asset_double_nan",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_asset_double_inf",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_asset_character",0,"value",TRUE
+"R5","value_asset_broadcast_scalar",0,"value",TRUE
+"R5","value_asset_reordered_names",0,"value",TRUE
+"R5","value_asset_unnamed_full",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_asset_partial_names",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_asset_wrong_type",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_asset_classed",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_asset_extra_attribute",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_asset_integer_for_double",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_portfolio_integer",0,"value",TRUE
+"R5","value_portfolio_integer_na",0,"value",TRUE
+"R5","value_portfolio_double",0,"value",TRUE
+"R5","value_portfolio_double_nan",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_portfolio_logical",0,"value",TRUE
+"R5","value_portfolio_named_scalar",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_portfolio_length_two",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_portfolio_double_for_integer",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_portfolio_attribute",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_axis_one_named",0,"value",TRUE
+"R5","value_axis_empty",0,"value",TRUE
+"R5","patch_full_in_order",0,"value",TRUE
+"R5","patch_full_with_reset",0,"value",TRUE
+"R5","patch_subset",0,"value",TRUE
+"R5","patch_reordered",0,"value",TRUE
+"R5","patch_broadcast",0,"value",TRUE
+"R5","patch_unknown_field",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_duplicated_names",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_empty",0,"value",TRUE
+"R5","patch_unnamed",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_na_name",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_empty_name",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_data_frame",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_not_a_list",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_bad_value_type",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_bad_value_late",0,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_state_renamed",0,"value",TRUE
+"R1","max_weight_binding",0,"value",TRUE
+"R1","max_weight_nonbinding",0,"value",TRUE
+"R1","max_weight_bits",0,"value",TRUE
+"R1","max_weight_negative_reducing_short",0,"value",TRUE
+"R1","max_weight_tiny_targets",0,"refusal: ledgr_short_exposure_unsupported",TRUE
+"R1","max_weight_all_zero",0,"value",TRUE
+"R1","max_weight_equity_zero",0,"value",TRUE
+"R1","max_weight_equity_negative",0,"refusal: ledgr_invalid_risk_context",TRUE
+"R1","max_weight_equity_na",0,"refusal: ledgr_invalid_risk_context",TRUE
+"R1","max_weight_price_zero_on_target",0,"refusal: ledgr_invalid_risk_context",TRUE
+"R1","max_weight_price_na_on_zero_target",0,"value",TRUE
+"R1","long_only_clips",0,"value",TRUE
+"R1","long_only_then_max_weight",0,"value",TRUE
+"R1","max_weight_then_long_only",0,"value",TRUE
+"R1","order_long_only_first_bad_price",0,"value",TRUE
+"R1","order_max_weight_first_bad_price",0,"refusal: ledgr_invalid_risk_context",TRUE
+"R1","short_refused_after_risk",0,"refusal: ledgr_short_exposure_unsupported",TRUE
+"R1","short_refused_two_ids",0,"refusal: ledgr_short_exposure_unsupported",TRUE
+"R1","reordered_axis",0,"value",TRUE
+"R1","one_instrument",0,"value",TRUE
+"R1","steps_unsupported_type",0,"value",TRUE
+"R1","steps_param_reference",0,"value",TRUE
+"W4","mixed_generators",0,"value",TRUE
+"W4","insufficient_cash",0,"value",TRUE
+"W4","blocked_generator",0,"value",TRUE
+"W4","all_generators",0,"value",TRUE
+"W4","no_generators",0,"value",TRUE
+"W4","tolerance_edge",0,"value",TRUE
+"W4","one_candidate",0,"value",TRUE
+"W4","no_candidate",0,"value",TRUE
+"W4","missing_generator_flag",0,"value",TRUE
+"W4","large_axis_few_candidates",0,"value",TRUE
+"R2","zero",0,"value",TRUE
+"R2","spread",0,"value",TRUE
+"R2","fixed",0,"value",TRUE
+"R2","notional",0,"value",TRUE
+"R2","chain_slice2",0,"value",TRUE
+"R2","notional_before_fixed",0,"value",TRUE
+"R2","repeated_spread",0,"value",TRUE
+"R2","repeated_fixed_order_sensitive",0,"value",TRUE
+"R2","empty_batch",0,"value",TRUE
+"R2","rounding_boundary",0,"value",TRUE
+"R2","overflow_quantity",0,"value",TRUE
+"R2","negative_price_spread",0,"value",TRUE
+"R2","steps_foreign_resolver",0,"value",TRUE
+"R3","plain_in_order",0,"value",TRUE
+"R3","plain_integer_in_order",0,"value",TRUE
+"R3","plain_reordered",0,"value",TRUE
+"R3","plain_unnamed",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","plain_nan",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","plain_extra_attribute",0,"value",TRUE
+"R3","helper_in_order",0,"value",TRUE
+"R3","helper_reordered",0,"value",TRUE
+"R3","helper_nan",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","helper_extra_class",0,"value",TRUE
+"R3","helper_missing_instrument",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","helper_integer_payload",0,"value",TRUE
+"R3","signal_intermediate",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","extra_instrument",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","duplicate_names",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","character_targets",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","list_targets",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","empty_axis_empty_targets",0,"value",TRUE
+"R3","axis_invalid_duplicates",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","helper_axis_invalid",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","valid",0,"value",TRUE
+"R4","null",0,"value",TRUE
+"R4","stale_rounded",0,"value",TRUE
+"R4","stale_position",0,"value",TRUE
+"R4","stale_price",0,"value",TRUE
+"R4","stale_unevidenced",0,"value",TRUE
+"R4","zero_rows",0,"value",TRUE
+"R4","wrong_class",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","fields_reordered",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","length_mismatch",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","id_na",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","id_empty",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","id_duplicated",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","id_outside_axis",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","field_not_numeric",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","reason_na",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","reason_unknown",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","requested_nan",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","rounded_infinite",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","priced_row_without_price",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","unavailable_row_valid",0,"value",TRUE
+"R4","unavailable_row_with_price",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","unavailable_row_with_quantities",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R5","value_asset_logical_named",1,"value",TRUE
+"R5","value_asset_logical_na",1,"value",TRUE
+"R5","value_asset_double_named",1,"value",TRUE
+"R5","value_asset_double_na",1,"value",TRUE
+"R5","value_asset_double_nan",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_asset_double_inf",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_asset_character",1,"value",TRUE
+"R5","value_asset_broadcast_scalar",1,"value",TRUE
+"R5","value_asset_reordered_names",1,"value",TRUE
+"R5","value_asset_unnamed_full",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_asset_partial_names",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_asset_wrong_type",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_asset_classed",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_asset_extra_attribute",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_asset_integer_for_double",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_portfolio_integer",1,"value",TRUE
+"R5","value_portfolio_integer_na",1,"value",TRUE
+"R5","value_portfolio_double",1,"value",TRUE
+"R5","value_portfolio_double_nan",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_portfolio_logical",1,"value",TRUE
+"R5","value_portfolio_named_scalar",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_portfolio_length_two",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_portfolio_double_for_integer",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_portfolio_attribute",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","value_axis_one_named",1,"value",TRUE
+"R5","value_axis_empty",1,"value",TRUE
+"R5","patch_full_in_order",1,"value",TRUE
+"R5","patch_full_with_reset",1,"value",TRUE
+"R5","patch_subset",1,"value",TRUE
+"R5","patch_reordered",1,"value",TRUE
+"R5","patch_broadcast",1,"value",TRUE
+"R5","patch_unknown_field",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_duplicated_names",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_empty",1,"value",TRUE
+"R5","patch_unnamed",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_na_name",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_empty_name",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_data_frame",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_not_a_list",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_bad_value_type",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_bad_value_late",1,"refusal: ledgr_invalid_strategy_state",TRUE
+"R5","patch_state_renamed",1,"value",TRUE
+"R1","max_weight_binding",1,"value",TRUE
+"R1","max_weight_nonbinding",1,"value",TRUE
+"R1","max_weight_bits",1,"value",TRUE
+"R1","max_weight_negative_reducing_short",1,"value",TRUE
+"R1","max_weight_tiny_targets",1,"refusal: ledgr_short_exposure_unsupported",TRUE
+"R1","max_weight_all_zero",1,"value",TRUE
+"R1","max_weight_equity_zero",1,"value",TRUE
+"R1","max_weight_equity_negative",1,"refusal: ledgr_invalid_risk_context",TRUE
+"R1","max_weight_equity_na",1,"refusal: ledgr_invalid_risk_context",TRUE
+"R1","max_weight_price_zero_on_target",1,"refusal: ledgr_invalid_risk_context",TRUE
+"R1","max_weight_price_na_on_zero_target",1,"value",TRUE
+"R1","long_only_clips",1,"value",TRUE
+"R1","long_only_then_max_weight",1,"value",TRUE
+"R1","max_weight_then_long_only",1,"value",TRUE
+"R1","order_long_only_first_bad_price",1,"value",TRUE
+"R1","order_max_weight_first_bad_price",1,"refusal: ledgr_invalid_risk_context",TRUE
+"R1","short_refused_after_risk",1,"refusal: ledgr_short_exposure_unsupported",TRUE
+"R1","short_refused_two_ids",1,"refusal: ledgr_short_exposure_unsupported",TRUE
+"R1","reordered_axis",1,"value",TRUE
+"R1","one_instrument",1,"value",TRUE
+"R1","steps_unsupported_type",1,"value",TRUE
+"R1","steps_param_reference",1,"value",TRUE
+"W4","mixed_generators",1,"value",TRUE
+"W4","insufficient_cash",1,"value",TRUE
+"W4","blocked_generator",1,"value",TRUE
+"W4","all_generators",1,"value",TRUE
+"W4","no_generators",1,"value",TRUE
+"W4","tolerance_edge",1,"value",TRUE
+"W4","one_candidate",1,"value",TRUE
+"W4","no_candidate",1,"value",TRUE
+"W4","missing_generator_flag",1,"value",TRUE
+"W4","large_axis_few_candidates",1,"value",TRUE
+"R2","zero",1,"value",TRUE
+"R2","spread",1,"value",TRUE
+"R2","fixed",1,"value",TRUE
+"R2","notional",1,"value",TRUE
+"R2","chain_slice2",1,"value",TRUE
+"R2","notional_before_fixed",1,"value",TRUE
+"R2","repeated_spread",1,"value",TRUE
+"R2","repeated_fixed_order_sensitive",1,"value",TRUE
+"R2","empty_batch",1,"value",TRUE
+"R2","rounding_boundary",1,"value",TRUE
+"R2","overflow_quantity",1,"value",TRUE
+"R2","negative_price_spread",1,"value",TRUE
+"R2","steps_foreign_resolver",1,"value",TRUE
+"R3","plain_in_order",1,"value",TRUE
+"R3","plain_integer_in_order",1,"value",TRUE
+"R3","plain_reordered",1,"value",TRUE
+"R3","plain_unnamed",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","plain_nan",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","plain_extra_attribute",1,"value",TRUE
+"R3","helper_in_order",1,"value",TRUE
+"R3","helper_reordered",1,"value",TRUE
+"R3","helper_nan",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","helper_extra_class",1,"value",TRUE
+"R3","helper_missing_instrument",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","helper_integer_payload",1,"value",TRUE
+"R3","signal_intermediate",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","extra_instrument",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","duplicate_names",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","character_targets",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","list_targets",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","empty_axis_empty_targets",1,"value",TRUE
+"R3","axis_invalid_duplicates",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","helper_axis_invalid",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","valid",1,"value",TRUE
+"R4","null",1,"value",TRUE
+"R4","stale_rounded",1,"value",TRUE
+"R4","stale_position",1,"value",TRUE
+"R4","stale_price",1,"value",TRUE
+"R4","stale_unevidenced",1,"value",TRUE
+"R4","zero_rows",1,"value",TRUE
+"R4","wrong_class",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","fields_reordered",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","length_mismatch",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","id_na",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","id_empty",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","id_duplicated",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","id_outside_axis",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","field_not_numeric",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","reason_na",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","reason_unknown",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","requested_nan",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","rounded_infinite",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","priced_row_without_price",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","unavailable_row_valid",1,"value",TRUE
+"R4","unavailable_row_with_price",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","unavailable_row_with_quantities",1,"refusal: ledgr_invalid_strategy_result",TRUE
