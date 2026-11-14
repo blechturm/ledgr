@@ -445,7 +445,8 @@ ledgr_target_size <- function(ctx,
   # mtfrm() for classed objects.
   weighted_ids <- names(weights)
   addition_ids <- names(add_value)
-  fast <- is.null(attributes(universe)) && is.null(attributes(weighted_ids)) && is.null(attributes(addition_ids)) &&
+  fast <- is.character(universe) && is.null(attributes(universe)) && is.character(weighted_ids) &&
+    is.null(attributes(weighted_ids)) && is.character(addition_ids) && is.null(attributes(addition_ids)) &&
     !anyDuplicated(weighted_ids) && !anyDuplicated(addition_ids)
   id_match <- if (fast && length(universe) >= 32L) collapse::fmatch else match
   requested_ids <- if (fast) {
@@ -460,7 +461,7 @@ ledgr_target_size <- function(ctx,
       class = "ledgr_invalid_strategy_helper"
     )
   }
-  if (any(id_match(weighted_ids, addition_ids, 0L) > 0L)) {
+  if (if (fast) any(id_match(weighted_ids, addition_ids, 0L) > 0L) else length(intersect(weighted_ids, addition_ids)) > 0L) {
     rlang::abort("An instrument cannot be both weighted and added.", class = "ledgr_invalid_strategy_result")
   }
 
@@ -483,7 +484,7 @@ ledgr_target_size <- function(ctx,
       )
     }
     held_leavers <- universe[position != 0 & !member]
-    fast_keep <- fast && is.null(attributes(explicit_keep))
+    fast_keep <- fast && is.character(explicit_keep) && is.null(attributes(explicit_keep))
     keep_match <- if (fast_keep) id_match else match
     undecided <- if (fast_keep) {
       held_leavers[id_match(held_leavers, explicit_keep, 0L) == 0L]
@@ -770,7 +771,8 @@ ledgr_target_named_amount <- function(x, label, universe, allow_null = FALSE) {
   }
   # Plain x_names passed anyDuplicated() above, so it is unique; with a
   # plain universe, match() gives setdiff() exactly (fmatch from 32 IDs).
-  plain <- is.null(attributes(universe)) && is.null(attributes(x_names))
+  # Plain means a character vector without attributes.
+  plain <- is.character(universe) && is.null(attributes(universe)) && is.character(x_names) && is.null(attributes(x_names))
   id_match <- if (plain && length(universe) >= 32L) collapse::fmatch else match
   unknown <- if (plain) x_names[id_match(x_names, universe, 0L) == 0L] else setdiff(x_names, universe)
   if (length(unknown) > 0L) {
@@ -794,8 +796,9 @@ ledgr_target_logical <- function(x, universe, label) {
     }
     return(stats::setNames(x, universe))
   }
-  # With plain operands, base setequal() is exactly these two matches.
-  plain <- is.null(attributes(universe)) && is.null(attributes(x_names))
+  # With plain operands (character vectors without attributes), base
+  # setequal() is exactly these two matches.
+  plain <- is.character(universe) && is.null(attributes(universe)) && is.character(x_names) && is.null(attributes(x_names))
   id_match <- if (plain && length(universe) >= 32L) collapse::fmatch else match
   if (length(x_names) != length(x) || anyNA(x_names) || any(!nzchar(x_names)) ||
       anyDuplicated(x_names) ||
@@ -813,7 +816,7 @@ ledgr_target_keep <- function(keep, universe) {
       rlang::abort("Character `keep` must contain unique instrument IDs.", class = "ledgr_invalid_strategy_type")
     }
     # Plain keep passed anyDuplicated() above, so it is unique.
-    plain <- is.null(attributes(keep)) && is.null(attributes(universe))
+    plain <- is.character(keep) && is.null(attributes(keep)) && is.character(universe) && is.null(attributes(universe))
     id_match <- if (plain && length(universe) >= 32L) collapse::fmatch else match
     unknown <- if (plain) {
       keep[id_match(keep, universe, 0L) == 0L]
