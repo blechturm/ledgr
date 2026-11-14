@@ -164,11 +164,16 @@ loop_mutations <- list(
   # equal the strategy targets); with debug on the per-pulse comparison with
   # the pin reports it.
   risk_not_applied = variant("differ", list(edit("checks.R", "lean_risk_apply", "  for (s in steps) {", "  for (s in list()) {")),
-    tables = "^fills$|^ledger_events$|^run_diagnostic", error = "^Lean risk plan differs from the pin's at pulse [0-9]+[.]$"),
+    tables = "^fills$|^ledger_events$|^run_diagnostic", error = "Lean risk plan differs from the pin's"),
   implicit_row_old_rule = variant("differ", list(edit("loop.R", "lean_p4_apply",
     "    differs <- which(!(is.finite(sq) & sq == pos & tq == sq & is.finite(close)))      # LR-23",
     "    differs <- which(!(is.finite(sq) & sq == pos & is.finite(close)))")),
     error = "Diagnostic codec coverage is corrupt", tables = "^run_diagnostic"),
+  # Cut 18 R2: the resolver's output-shape check runs in debug only; a lean
+  # cost column of the wrong length must raise its original refusal there.
+  cost_columns_short = variant("differ", list(edit("checks.R", "lean_cost_resolve",
+    "  list(price = round(price, digits = cost$digits), fee = fee)", "  list(price = round(price, digits = cost$digits), fee = fee[-1L])")),
+    error = "The cost resolver must return one price and one fee per fill"),
   resolved_price_ignored = variant("differ", list(edit("plan.R", "lean_plan_pulse",
     "  price[passed] <- resolved$price", "  price[passed] <- open[passed]")),
     tables = "^fills$|^ledger_events$"),

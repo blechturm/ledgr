@@ -175,8 +175,14 @@ lean_plan_pulse <- function(context_pos, target_qty, position, actionable_k, mem
   resolved <- if (is.null(cost_steps)) {
     ledgr_plan_resolve(cost_resolver, side[passed], qty[passed], open[passed])
   } else if (.lean_debug) {
-    lean_debug_same(function() lean_cost_resolve(cost_steps, side[passed], qty[passed], open[passed]),
-      function() ledgr_plan_resolve(cost_resolver, side[passed], qty[passed], open[passed]), "cost resolution", NA_integer_)
+    # Debug: the lean columns through the pin's output-shape assertion (its
+    # original class), then compared with the pin's resolver.
+    lean_cols <- ledgr_plan_resolve(function(side, qty, open) lean_cost_resolve(cost_steps, side, qty, open),
+      side[passed], qty[passed], open[passed])
+    if (!identical(lean_cols, ledgr_plan_resolve(cost_resolver, side[passed], qty[passed], open[passed]))) {
+      rlang::abort("Lean cost resolution differs from the pin's.", class = "ledgr_internal_error")
+    }
+    lean_cols
   } else lean_cost_resolve(cost_steps, side[passed], qty[passed], open[passed])
   price <- rep(NA_real_, n)
   fee <- rep(NA_real_, n)
