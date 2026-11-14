@@ -1,0 +1,7 @@
+"id","kind","sites","change","us_10x7200","us_slice2","share_10x7200","share_slice2","share_20x23400","share_500x1260","worked"
+"W4","rewrite","plan.R lean_plan_affordability, statement 2","the same priority without order(): a run-long radix permutation walked by masks",7.23702594385216,22.1189416438332,0.0249313812419787,0.0353903066301331,0.0190615835777126,0.0115586690017513,TRUE
+"W5","rewrite","loop.R lean_state_patch, statement 3","accept names identical to the declared field names before the full predicate",8.76537358365286,10.6151765520232,0.0301965022977515,0.0169842824832371,0.0102639296187683,0.00577933450087566,TRUE
+"W6","rewrite","loop.R lean_p4_apply line 712","decode only fills that carry a reason code",2.42713705496327,3.62624719938873,0.00836142908886867,0.00580199551902197,0.00498533724340176,0.00297723292469352,FALSE
+"F3","forwarder","loop.R lean_p5_commit line 810","reuse the strategy targets' gross when no risk step runs",1.5,1.5,0.00516746411483253,0.0024,0.00439882697947214,0.00770577933450088,TRUE
+"F2","forwarder","loop.R lean_p3_plan lines 668-669 and 677-678","pass exec_ts and the open column directly; pass the run's ctx_pos and a run-long membership vector",0.958750683238779,1.92810046079256,0.00330287316713837,0.0030849607372681,0.000586510263929619,0.000350262697022767,TRUE
+"F1","forwarder","plan.R lean_plan_pulse, statement 9","define the plan assembly once, outside lean_plan_pulse()",0.348445127683223,-0.0813023169852218,0.00120038512886086,-0.000130083707176355,0,0,TRUE

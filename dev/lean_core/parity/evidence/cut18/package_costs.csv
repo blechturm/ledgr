@@ -1,0 +1,8 @@
+"site","statement","routing","us_10x7200","us_slice2"
+"target validator on helper returns (P2)","loop.R|lean_p2_decide|21","WS14a or a focused package cut",1.22684580587508,20.284829329801
+"sizing-evidence validator (P2)","loop.R|lean_p2_decide|26","WS14a or a focused package cut",1.60676247254175,18.505079329801
+"risk plan and post-risk checks (P2)","loop.R|lean_p2_decide|32","WS14a or a focused package cut",2.38497080587508,41.0125237742454
+"cost resolver (P3)","plan.R|lean_plan_pulse|18","WS14a or a focused package cut",5.6744703882966,21.5124138660554
+"declared-state field validator (P5)","loop.R|lean_state_patch|5","WS14a or a focused package cut",9.36076247254175,5.14385710757875
+"FIFO kernel (P4, lean fifo.R)","loop.R|lean_p4_apply|8@8","a later FIFO cut (compiled FIFO: WS14)",36.4341926105188,124.096622199389
+"position facts (P4)","loop.R|lean_p4_apply|8@11","WS14a or a focused package cut",4.74656761051883,5.60460831049984

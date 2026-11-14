@@ -1,0 +1,5 @@
+"shape","arm","loop_s","us_per_pulse"
+"10x7200","clocked",3.9,541.666666666667
+"slice2_10x7200","clocked",7.11,987.5
+"10x7200","plain",2.09,290.277777777778
+"slice2_10x7200","plain",4.5,625

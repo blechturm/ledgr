@@ -1,0 +1,15 @@
+"item","instruments","us","note","share_10x7200","share_20x23400","share_500x1260","share_slice2_10x7200"
+"W4 affordability priority: order(!generator, id_rank)",10,6.5,"the candidates' priority order (m = 10 candidates)",0.0228070175438597,0.0190615835777126,0.0113835376532399,0.010655737704918
+"W5 state patch name predicate",10,3.5,"two asset fields (crossover) or one portfolio field (slice2)",0.012280701754386,0.0102639296187683,0.00612959719789842,0.00573770491803279
+"F3 second gross of the strategy targets when no risk step runs",10,1.5,"lean_gross(sq, close) computed twice",0.00526315789473684,0.00439882697947214,0.00262697022767075,0.00245901639344262
+"W6 decode of empty fill reason segments",10,1.7,"ledgr_carrier_segment_text() on m = 10 fills without codes",0.00596491228070175,0.00498533724340176,0.00297723292469352,0.00278688524590164
+"F1 plan() closure built per lean_plan_pulse call",10,0,"closure creation only",0,0,0,0
+"F2 execution packet list",10,0.2,"list of three",0.000701754385964912,0.000586510263929619,0.000350262697022767,0.000327868852459016
+"F2 run constants rebuilt: seq_len(n), rep(TRUE, n)",10,0.2,"",0.000701754385964912,0.000586510263929619,0.000350262697022767,0.000327868852459016
+"W4 affordability priority: order(!generator, id_rank)",500,6.6,"the candidates' priority order (m = 10 candidates)",0.0231578947368421,0.0193548387096774,0.0115586690017513,0.0108196721311475
+"W5 state patch name predicate",500,3.3,"two asset fields (crossover) or one portfolio field (slice2)",0.0115789473684211,0.00967741935483871,0.00577933450087566,0.00540983606557377
+"F3 second gross of the strategy targets when no risk step runs",500,4.4,"lean_gross(sq, close) computed twice",0.0154385964912281,0.0129032258064516,0.00770577933450088,0.00721311475409836
+"W6 decode of empty fill reason segments",500,1.7,"ledgr_carrier_segment_text() on m = 10 fills without codes",0.00596491228070175,0.00498533724340176,0.00297723292469352,0.00278688524590164
+"F1 plan() closure built per lean_plan_pulse call",500,0,"closure creation only",0,0,0,0
+"F2 execution packet list",500,0.2,"list of three",0.000701754385964912,0.000586510263929619,0.000350262697022767,0.000327868852459016
+"F2 run constants rebuilt: seq_len(n), rep(TRUE, n)",500,0.6,"",0.00210526315789474,0.00175953079178886,0.0010507880910683,0.000983606557377049
