@@ -99,6 +99,26 @@ parity, and a one-page closeout with the implementation overhead ratio per
 workload and clock. Timings run under the host policy (High performance,
 P-core affinity) with alternating arms.
 
+## Amendment (maintainer, 2026-11-14, after the ephemeral-lane spike)
+
+- **Three-way attribution.** The closeout separates, per workload: the cost
+  of each guarantee implemented minimally (the reference's standalone and
+  accumulated prices); the cost of the existing package implementation of
+  that guarantee (the lean loop's matching cell); and the cost of hand-offs
+  between stages (temporary objects, conversions, dispatch), measured with
+  clocks at each lean stage boundary in the matched runs (Rprof cannot
+  resolve it on this host).
+- **Hypothesis, not target:** a complete guarantee-preserving R loop on the
+  crossover may run at about 100-150 us per pulse. The closeout states
+  whether the measurement supports it.
+- **Two performance targets stay separate.** This spike measures single-
+  candidate latency. Large-sweep throughput (shared preparation, worker
+  reuse, memory pressure) is out of scope and needs its own measurement.
+- **Baselines.** The ephemeral-lane measurement
+  (`dev/spikes/ephemeral_lane`, its runner, 7 alternating rounds, both
+  workloads) is kept as a baseline to rerun against; so is the four-arm
+  compiled-kernel record (`dev/spikes/lean_plan_cpp/results`).
+
 ## Not in scope
 
 Changing `dev/lean_core/` or `R/`; any performance claim outside the
