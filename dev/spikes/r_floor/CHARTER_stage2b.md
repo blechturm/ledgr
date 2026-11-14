@@ -87,8 +87,10 @@ required wherever the contract requires it.
   function the lean loop also calls (validators, the risk plan, the cost
   resolver) counts as reuse, not as a reference implementation of that
   guarantee, and is reported as such.
-- Protocol budgets: harness at most 1,500 lines of R in total across stages
-  2-3-2b; a correction diff over 500 lines is a stop-and-talk.
+- Protocol budgets: stage 2b's own harness at most 1,500 lines of new R
+  (maintainer, 2026-11-14: stages 2-3 already use 1,366 of the shared
+  budget first written here); a correction diff over 500 lines is a
+  stop-and-talk.
 
 ## Deliverables (protocol section 6)
 

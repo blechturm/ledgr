@@ -248,3 +248,8 @@ Reproduce: `Rscript dev/spikes/r_floor/run.R <lib> <out dir>
 dir> 10x7200,20x23400,500x1260`, `Rscript dev/spikes/r_floor/fixed_cost.R
 <lib> <out dir> 20`, then `Rscript dev/spikes/r_floor/check.R <lib> <scratch
 dir>`.
+
+## Stage 2b: the full guarantee-preserving reference
+
+Charter `CHARTER_stage2b.md`; harness, evidence and closeout in `stage2b/`
+(`stage2b/README.md`).
