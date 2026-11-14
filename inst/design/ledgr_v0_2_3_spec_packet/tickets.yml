@@ -2237,9 +2237,14 @@ cuts:
     status: "proposed"
     opening: >-
       R-floor stage 2b (dev/spikes/r_floor/stage2b, committed 5c3f9c4a)
-      built a plain-R loop that keeps every guarantee the lean loop keeps on
-      the two reference workloads and reproduces its records exactly
-      (economic, observable, and six contract fixtures). The lean loop takes
+      built a plain-R reference whose compared compact records match the
+      lean loop for two fixed strategies; six fixtures additionally compare
+      accepted records or refusal class membership. It is an attribution
+      input, not a full context-service, external-return-validation or
+      refusal-precedence oracle. Its plain-list context omits the lean
+      lookup service and does not preserve a retained hold() closure across
+      pulses. Cut 18 retains those guarantees and uses the pin and existing
+      witnesses as its behavioral oracle. The lean loop takes
       286 and 611 us per pulse (crossover 10x7200, slice2_10x7200) against
       the reference's 108 and 345: an implementation overhead ratio of 2.6
       and 1.8. The extra time sits in the order planner (lean_plan_pulse()
@@ -2279,10 +2284,11 @@ cuts:
       affordability 12.3 / 11.6, risk 5.4 / 64.3 (slice2's carries a
       changed trade path; standalone 38.4), sizing evidence 1.3 / 14.0,
       FIFO 32.9 / 131.9, state 2.4 / 2.2. probe_findings.md records the
-      package calls per run. LDG-3230's stop evidence puts the state
-      patch's name check at 3.6 to 3.75 us per pulse, so most of the
-      state-update cell is the pin's ledgr_strategy_state_validate_value().
-      These are cell-level figures; LDG-3234 measures the sites inside
+      package calls per run. LDG-3230's stop evidence measures the state
+      patch's name predicate at 3.60 and 3.75 us per pulse. It does not
+      separately measure ledgr_strategy_state_validate_value() or establish
+      ownership of the rest of the state-update cell; LDG-3234 measures that
+      remainder before routing it. These are cell-level figures; LDG-3234 measures the sites inside
       them.
     decisions: >-
       (1) No behaviour change. Every table of every gate workload, batch
@@ -2296,7 +2302,21 @@ cuts:
       and their parity harness. fifo.R and prepare.R change only where a
       call site in loop.R changes what it hands them; their internals are
       out of scope. Nothing in R/, tests/, DESCRIPTION, NAMESPACE, vignettes
-      or the store format changes. (3) The test for each per-pulse wrapper,
+      or the store format changes. This execution-file restriction does not
+      exclude the following measurement and design work: the inventory and
+      parity tools/evidence under dev/lean_core/parity; the cut18-loop-1
+      protocol, necessary shared timing adapters and records under
+      dev/bench/timing; maintenance of stage2b/lean_clocks.R and its
+      runner/checker needed for the unchanged measurement definitions and
+      the new evidence destination; lean_core_interface.md Section 19; the
+      rules ledger for a surfaced rule; and tickets.yml. Preserve stage 2b's
+      historical reference, fixtures and original evidence. Commit stage-2b
+      measurement maintenance separately under dev/spikes/r_floor so its
+      existing historical scope guard remains meaningful. No
+      benchmark-harness copy or package execution change is authorized. Any
+      fifo.R or prepare.R interface adaptation must retain its internals and
+      run the affected module's parity/property checks. (3) The test for
+      each per-pulse wrapper,
       closure, list, environment, copy, conversion, hook call, check or
       intermediate representation (macro point 8b): does it own an
       invariant, isolate a contract, or only forward data? Forwarders are
@@ -2329,12 +2349,28 @@ cuts:
       reached variant. A variant whose anchor disappears with removed code
       is re-anchored to the same intended fault and listed in
       loop_variant_changes.csv, never dropped. (6) Stop: no numeric target
-      gates the cut. LDG-3235 stops when the next inventory item is neither
-      a forwarder removal nor a change measured at 0.02 of the loop on some
-      shape, or after two working days of simplification, and reports to
-      the maintainer. Expected, not a gate: the stage 2b reference (108 and
-      345 us per pulse) is the ceiling; the state validator's own cost and
-      the shared FIFO and helper costs stay. (7) Close: the gate, batch one,
+      gates the cut. LDG-3234 derives an actionable worklist from the
+      complete inventory; keep and out-of-scope rows are excluded from that
+      worklist. Classify a forwarder removal before timing: it removes only
+      forwarding work, preserving evaluation count/order, error unwinding,
+      ownership and the invariant/contract owner; a new computation or
+      dispatch specialization uses the other-change rule. Work in measured
+      cost order, skipping a non-forwarder whose supported upper bound is
+      below 0.02 on every comparison shape, while continuing to eligible
+      forwarding removals. Stop when no eligible forwarder remains and every
+      remaining proposed non-forwarder has a supported bound below 0.02 on
+      every shape, or after the two working days. Record the evidence for
+      each skipped item, the remaining actionable list, and the working-day
+      dates and active intervals. An unresolved estimate or exhausted list
+      is reported to the maintainer and does not certify that all remaining
+      work is below threshold. Preserve decision (5)'s separate keep/delete
+      and regression rules; report any inherited paired classifier's
+      unresolved result rather than turning a noisy median into a keep. The
+      reference's 108 and 345 us per pulse are descriptive results for its
+      measured surface, not an attainable endpoint asserted for this cut.
+      Preserved context guarantees and pin-owned costs constrain the
+      available simplification; LDG-3234 determines the actionable portion.
+      (7) Close: the gate, batch one,
       inert hooks and the variant driver on the final code with debug off
       and on; a timing record cut18-loop-1 (cut16-loop-1's method: the pin
       against the final lean loop on Cut 16's five descriptors, eight
@@ -2381,6 +2417,7 @@ cuts:
       acceptance item. A third correction round stops for maintainer
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
+    cut_review: "CHANGES_REQUIRED in cut_review_18.md (independent clean-context Codex CLI, gpt-6.1-sol/high, at 6ece42c8): R1-R7 required, all applied with the review's replacement text: stage 2b qualified as an attribution input, not a guarantee oracle, and the state-cell remainder left to LDG-3234 (R1); an exhaustive source census with a bijection checker (R2); the proof for a check moved to debug under pulse-plumbing R1-R3 (R3); semantic hand-off mapping and re-anchored variants tied to their fault (R4); measurement and design files in scope (R5); the clocked rerun proven to measure the plain computation (R6); a decidable stop rule over an actionable worklist (R7)."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -5745,10 +5782,10 @@ tickets:
       classified by decision (3), measured, and given a disposition. No
       execution change in dev/lean_core.
     acceptance:
-      - "An inventory script parses loop.R's stage functions (lean_p1_value to lean_p5_commit and lean_e_advance), lean_context(), the P2 strategy-call path and lean_plan_pulse() and lists every call and allocation site with file and line; dev/lean_core/parity/evidence/cut18/inventory.csv gives each site its stage cell, kind (owns an invariant, isolates a contract, forwards data, or package call), the owner of a kept invariant or contract, and a disposition (remove, keep, move a lean-internal hand-off check to debug, or out of scope with its routing); the script refuses a parsed site without a row and a row whose site no longer parses"
+      - "Freeze a source census at LDG-3234's closing commit. Its roots are run_loop(), E/P1-P5, context construction and the strategy/context read boundary, and lean_plan_pulse(). Recursively include every lean-owned helper and closure executed during a pulse, including context methods/helpers, state patching, record writers and planner helpers. Record package and user-code calls as boundaries; explicitly list and review dynamically resolved edges. Enumerate lexical call sites, including operators and replacement calls, and syntactic allocation/copy candidates under a committed rule list; do not claim to enumerate every runtime allocation. Each site has a stable file/function/parse-location identity and source line, stage cell, kind, owner/guarantee, disposition and routing in dev/lean_core/parity/evidence/cut18/inventory.csv. The checker requires a bijection between this census and the CSV, rejects duplicate identities, and demonstrates rejection of an omitted helper site and an extra stale row. Keep the frozen census after simplification and cross-reference removed, changed and newly introduced sites rather than requiring deliberately removed sites to parse in the final source"
       - "Each site or named group of sites measured on 10x7200 and slice2_10x7200 under the host policy (High performance, P-core affinity), with the clock's own cost recorded; sites under the clock's resolution are reported as unresolved, not as zero; the figures reconcile with the stage 2b cells they sit in"
       - "Decisions (3) and (4) applied in the CSV: each forwarder named; each kept site's invariant or contract and its owner; each proposed debug move names its producer and the guarantee that makes the check redundant in production; package-owned costs (state validator, cost resolver, risk plan, sizing-evidence validator, helpers) listed with measured cost and proposed routing"
-      - "The ordered list with expected savings reported to the maintainer before LDG-3235 starts"
+      - "The actionable worklist of decision (6), in measured cost order with each item's forwarder classification and supported upper bound, reported to the maintainer before LDG-3235 starts"
     evidence: []
   - id: "LDG-3235"
     title: "Simplify the lean orchestration"
@@ -5761,11 +5798,11 @@ tickets:
       Work LDG-3234's list in measured cost order under decisions (1) to
       (6), one commit per kept change; stop by decision (6) and report.
     acceptance:
-      - "Record LDG-3234's closing commit as the immutable base. After each kept change: the full gate, batch one and inert hooks identical to the pin with debug off and on, on the frozen execution paths; the variant driver passes with re-anchored variants listed in loop_variant_changes.csv and the negative controls failing closed"
+      - "Record LDG-3234's closing commit as the immutable base. After each kept change: the full gate, batch one and inert hooks identical to the pin with debug off and on, on the frozen execution paths; the variant driver passes with re-anchored variants listed in loop_variant_changes.csv and the negative controls failing closed. Before editing, map each changed semantic hand-off to its invariant or contract, its existing detecting witness and a reached fault that breaks that property. Add a focused witness and variant wherever the existing ones do not discriminate the proposed failure: dropped side effects, stale pulse data, changed callback/unwinding order, or moved refusal/precedence. Pure forwarding deletions may reuse an existing detecting pair; no duplicate witness is needed. For each re-anchored variant record the old and new file/function/anchor, injected operation and expected observable consequence. Preserve its workload, debug settings, batch bound and fault-specific expectations. Demonstrate that the translated injection produces the same faulty intermediate property and is caught for that consequence; a reached marker and an unrelated table difference are insufficient. Do not widen allowed errors or table patterns to obtain CAUGHT. Preserve the existing manifest and negative controls; a fault that cannot be translated remains an unresolved obligation"
       - "Each change: its paired comparison (decision 5) on 10x7200, 20x23400, 500x1260 and slice2_10x7200 with per-arm source identities, command and raw observations, and its keep or delete classification; a deleted change is reverted with its witnesses"
-      - "Each check moved to debug: its producer and guarantee as LDG-3234 named them, the check still running with debug on, and a gate workload or variant showing it fires with debug on when its guarantee is broken"
+      - "For each check moved to debug, record its precise predicate, original assertion class, producer, input origin, guarantee, and classification under pulse-plumbing R1-R3 and Section 4. Merely carrying a user-returned value through a lean list or stage does not make it trusted. Name the retained external-entry/user-return and R3 guards, including their acceptance point and precedence. Run focused producer-property tests in debug for the changed guarantee, covering its applicable empty, missing, boundary and overflow cases; identify existing tests reused and add missing cases under dev/lean_core/parity. A reached corruption must trigger the retained assertion with its original class in debug. Applicable external/economic negative cases must still produce the pin's class, message, stage, pulse and accepted prefix with debug off and on; use simultaneous faults where a changed boundary could alter precedence. Debug must change assertions only, with no arithmetic, ownership, callback-count or publication change. No production detector for an otherwise trusted module defect is required"
       - "Every row of loop_checklist.md keeps a witness; lean_core_interface.md Section 19.4 and Section 19's tuning paragraph describe the simplified hand-offs and the moved checks"
-      - "The stop condition of decision (6) recorded: the next inventory item and its measured bound, or the start and end of the two working days"
+      - "Decision (6)'s stop rule applied to LDG-3234's actionable worklist: each forwarder classified before timing; the evidence for each skipped item, the remaining actionable list, and the working-day dates and active intervals recorded; an unresolved estimate or exhausted list reported to the maintainer, not certified as below threshold; an inherited paired classifier's unresolved result reported, not turned into a keep"
       - "Lines per decision (8): loop.R production lines at or below 925, the cut's net production lines across dev/lean_core zero or fewer, debug, witness and harness lines reported beside"
     evidence: []
   - id: "LDG-3236"
@@ -5781,6 +5818,6 @@ tickets:
       - "The gate and the variant driver pass on the final code as recorded by LDG-3235"
       - "Timing record cut18-loop-1 under dev/bench/timing/ (protocol folder committed before the run): eight alternating pairs per cell on Cut 16's five descriptors, run and fold clocks, bound 1.0 against the pin; the overlay loads every lean execution source; the record's check passes"
       - "A paired comparison of LDG-3234's closing commit against the final code on the four comparison shapes, Cut 15's regression rule applied to the cut as a whole"
-      - "Stage 2b's runner rerun on the final code into a new evidence folder, with lean_clocks.R's anchors moved only where the simplified loop moved them and its checker passing; the lean loop, reference and overhead ratio per workload and the attribution cells reported before and after"
+      - "Rerun stage 2b on both original descriptors into a new evidence folder, preserving its reference, fixtures and original evidence. Record the resolved final lean commit and hashes of every loaded execution source, the pinned library identity, R/dependency versions, exact command, active power plan and child-process affinity. Load every execution source used by the final fold, retaining pin preparation. Maintain a crosswalk from each original semantic clock cell to its final anchors and measured operations, with exact-once anchors and untimed reach checks; report a removed or merged cell explicitly. Save and compare plain and clocked arms' compact records, fold outcome/state and public result records on both workloads, and make a mismatch fail the checker. Retain the reference parity, contract and gutted-path checks. Exercise a clocked-output corruption and a missing/misassigned cell to demonstrate failure. Report unclocked overhead ratios and gross clocked cell measurements separately, with the aggregate clocked-arm slowdown and unresolved small cells; do not subtract that aggregate from individual cells. Retain raw observations and reproduction commands for both before and after records. These are measurement checks, not a new performance target"
       - "The Balanced plan restored after timing"
     evidence: []
