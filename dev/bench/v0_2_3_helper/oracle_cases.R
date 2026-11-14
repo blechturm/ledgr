@@ -42,6 +42,12 @@ registerS3method("names", "oracle_lnames", function(x) as.list(attr(x, "names"))
 registerS3method("names", "oracle_lmask", function(x) as.list(attr(x, "names")), envir = globalenv())
 oracle_lnames <- function(...) { v <- c(...); structure(unname(v), names = names(v), class = "oracle_lnames") }
 oracle_lmask <- function(v) structure(unname(v), names = names(v), class = "oracle_lmask")
+# A string marked "bytes" (WS35 final check): plain character, attribute-free,
+# but collapse::fmatch() refuses to translate it where base match() accepts it.
+# Only caller-supplied names carry it: ledgr builds the universe from DuckDB,
+# which never returns "bytes" (maintainer decision 2026-11-14), so a byte-marked
+# universe is outside the contract and has no case here.
+oracle_bytes <- function() { b <- rawToChar(as.raw(c(0x63, 0x61, 0x66, 0xe9))); Encoding(b) <- "bytes"; b }
 
 oracle_ctx <- function(ids = c("CCC", "AAA", "BBB", "DDD"), close = NULL, position = NULL, holding_value = NULL,
                        member = NULL, buyable = NULL, equity = 1e6) {
@@ -191,6 +197,28 @@ oracle_cases <- function() {
   add(oracle_case("reb_plain_value_40", "S01;S04;S05;S08;S18", "value",
     ledgr::ledgr_target_rebalance(ctx, weights = c(P07 = 0.2, P03 = 0.1, P31 = 0.3), keep = "P12", capital_base = "total_equity"),
     function() list(ctx = oracle_ctx(ids = oracle_ids40, position = rep(c(4, 0), 20)))))
+  # WS35 final check: a caller-supplied name marked "bytes"; it can never
+  # match a ledgr universe ID; the pin fails building the refusal message
+  # (sprintf() cannot translate it), except the exit-mask coverage refusal
+  add(oracle_case("reb_bytes_weight_40", "S12", "error:error",
+    ledgr::ledgr_target_rebalance(ctx, weights = w),
+    function() list(ctx = oracle_ctx(ids = oracle_ids40), w = stats::setNames(c(0.2, 0.1), c("P07", oracle_bytes())))))
+  add(oracle_case("reb_bytes_keep_40", "S13", "error:error",
+    ledgr::ledgr_target_rebalance(ctx, weights = c(P07 = 0.2), keep = k),
+    function() list(ctx = oracle_ctx(ids = oracle_ids40), k = c("P12", oracle_bytes()))))
+  add(oracle_case("adj_bytes_exit_40", "S14", "error:ledgr_invalid_strategy_type",
+    ledgr::ledgr_target_adjust(ctx, weights = c(P07 = 0.2), exit = ex),
+    function() list(ctx = oracle_ctx(ids = oracle_ids40),
+                    ex = stats::setNames(rep(FALSE, 40), c(oracle_ids40[-40], oracle_bytes())))))
+  add(oracle_case("sig_bytes_name_40", "S15;S16", "error:error",
+    ledgr::ledgr_signal(x, universe = u),
+    function() list(u = oracle_ids40, x = stats::setNames(c(1, 1), c("P07", oracle_bytes())))))
+  add(oracle_case("sig_bytes_name_4", "S15;S16", "error:error",
+    ledgr::ledgr_signal(x, universe = u),
+    function() list(u = c("AAA", "BBB", "CCC", "DDD"), x = stats::setNames(c(1, 1), c("AAA", oracle_bytes())))))
+  add(oracle_case("tgt_bytes_name_40", "S15;S16;S17", "error:error",
+    ledgr::ledgr_target(x, universe = u),
+    function() list(u = oracle_ids40, x = stats::setNames(rep(1, 40), c(oracle_ids40[-40], oracle_bytes())))))
   # close review round 3, finding 1: names() returning an unclassed list
   add(oracle_case("reb_list_names_kept", "S01;S06;S12", "error:ledgr_invalid_strategy_result",
     ledgr::ledgr_target_rebalance(ctx, weights = oracle_lnames(BBB = 0.2, CCC = 0.1), keep = c("BBB", "CCC"),

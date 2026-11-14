@@ -437,9 +437,13 @@ ledgr_target_size <- function(ctx,
   # subset of it are unique; the amounts' IDs are checked here for
   # attributes (an amount class may keep a names() method through
   # normalisation) and duplicates; a keep vector is checked in its branch.
-  # No operand string may be marked "bytes": fmatch() refuses to translate
+  # No caller-supplied ID may be marked "bytes": fmatch() refuses to translate
   # them where match() accepts them, and without them match() on character
   # vectors cannot fail, so no fast path raises a condition the base would not.
+  # The universe is not scanned: ledgr builds it from the snapshot, read back
+  # from DuckDB as UTF-8 or unknown, never "bytes" (maintainer decision
+  # 2026-11-14: trust internal inputs; a hand-built byte-marked universe is
+  # outside the contract).
   # There match() gives base union()/intersect()/setdiff() exactly, without
   # their per-call dispatch, and collapse::fmatch() replaces match() from 32
   # IDs, where it is faster (dev/bench/v0_2_3_helper/results/fmatch_compare.csv)
@@ -451,7 +455,7 @@ ledgr_target_size <- function(ctx,
   fast <- is.character(universe) && is.null(attributes(universe)) && is.character(weighted_ids) &&
     is.null(attributes(weighted_ids)) && is.character(addition_ids) && is.null(attributes(addition_ids)) &&
     !anyDuplicated(weighted_ids) && !anyDuplicated(addition_ids) &&
-    !("bytes" %in% Encoding(universe)) && !("bytes" %in% Encoding(weighted_ids)) && !("bytes" %in% Encoding(addition_ids))
+    !("bytes" %in% Encoding(weighted_ids)) && !("bytes" %in% Encoding(addition_ids))
   id_match <- if (fast && length(universe) >= 32L) collapse::fmatch else match
   requested_ids <- if (fast) {
     c(weighted_ids, addition_ids[id_match(addition_ids, weighted_ids, 0L) == 0L])
@@ -776,9 +780,10 @@ ledgr_target_named_amount <- function(x, label, universe, allow_null = FALSE) {
   }
   # Plain x_names passed anyDuplicated() above, so it is unique; with a
   # plain universe, match() gives setdiff() exactly (fmatch from 32 IDs).
-  # Plain means a character vector without attributes.
+  # Plain means a character vector without attributes; only the caller's
+  # names are scanned for "bytes" marks (see ledgr_target_size()).
   plain <- is.character(universe) && is.null(attributes(universe)) && is.character(x_names) && is.null(attributes(x_names)) &&
-    !("bytes" %in% Encoding(universe)) && !("bytes" %in% Encoding(x_names))
+    !("bytes" %in% Encoding(x_names))
   id_match <- if (plain && length(universe) >= 32L) collapse::fmatch else match
   unknown <- if (plain) x_names[id_match(x_names, universe, 0L) == 0L] else setdiff(x_names, universe)
   if (length(unknown) > 0L) {
@@ -805,7 +810,7 @@ ledgr_target_logical <- function(x, universe, label) {
   # With plain operands (character vectors without attributes), base
   # setequal() is exactly these two matches.
   plain <- is.character(universe) && is.null(attributes(universe)) && is.character(x_names) && is.null(attributes(x_names)) &&
-    !("bytes" %in% Encoding(universe)) && !("bytes" %in% Encoding(x_names))
+    !("bytes" %in% Encoding(x_names))
   id_match <- if (plain && length(universe) >= 32L) collapse::fmatch else match
   if (length(x_names) != length(x) || anyNA(x_names) || any(!nzchar(x_names)) ||
       anyDuplicated(x_names) ||
@@ -824,7 +829,7 @@ ledgr_target_keep <- function(keep, universe) {
     }
     # Plain keep passed anyDuplicated() above, so it is unique.
     plain <- is.character(keep) && is.null(attributes(keep)) && is.character(universe) && is.null(attributes(universe)) &&
-      !("bytes" %in% Encoding(keep)) && !("bytes" %in% Encoding(universe))
+      !("bytes" %in% Encoding(keep))
     id_match <- if (plain && length(universe) >= 32L) collapse::fmatch else match
     unknown <- if (plain) {
       keep[id_match(keep, universe, 0L) == 0L]

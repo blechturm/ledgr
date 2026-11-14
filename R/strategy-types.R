@@ -33,9 +33,11 @@ ledgr_strategy_type_check_names <- function(x, label, universe = NULL, full_univ
   universe <- ledgr_strategy_type_check_universe(universe)
   if (!is.null(universe)) {
     # Plain x_names and a plain validated universe passed anyDuplicated(), so
-    # both are unique and match() gives base setdiff() exactly.
+    # both are unique and match() gives base setdiff() exactly. Only the
+    # caller's names are scanned for "bytes" marks; the universe is ledgr's
+    # own (see ledgr_target_size()).
     if (is.character(universe) && is.null(attributes(universe)) && is.character(x_names) && is.null(attributes(x_names)) &&
-        !("bytes" %in% Encoding(universe)) && !("bytes" %in% Encoding(x_names))) {
+        !("bytes" %in% Encoding(x_names))) {
       id_match <- if (length(universe) >= 32L) collapse::fmatch else match
       missing <- universe[id_match(universe, x_names, 0L) == 0L]
       extra <- x_names[id_match(x_names, universe, 0L) == 0L]
