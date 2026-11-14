@@ -61,6 +61,10 @@ Revision 15 records the maintainer's 2026-11-14 decision (Cut 18,
 loop calls per pulse may be reimplemented in the lean core before the
 switch, and the switch cut's resulting obligations are listed under WS14a,
 "Lean core switch".
+Revision 16 corrects that entry (maintainer, 2026-11-14, after workstream
+36's close review round 1): the replaced package functions remain the
+lean checks' fallback and differential oracle; a deletion-readiness audit
+classifies each fallback dependency before the switch.
 Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
@@ -1050,22 +1054,31 @@ execution-sensitive economics cuts are held to rule 17 instead.
   remapped individually under synthesis Q3, each approved by the
   maintainer. The test cut follows as below.
 - **Switch obligations from lean-owned replacements (maintainer,
-  2026-11-14; Cut 18 `amendment_lean_owned`).** Before the switch, the lean
-  core may own its own implementation of fold-only package functions it
-  called on the pin: the strategy-target check at the lean strategy
-  boundary, the sizing-evidence check, the risk plan with its post-risk and
-  short-exposure checks, the cost-resolver call, and the state patch path.
-  The switch cut must:
-  1. delete each replaced package function that no surviving caller needs,
-     with no shim, so each guarantee keeps one implementation;
-  2. consolidate `ledgr_validate_strategy_targets()` into one
-     implementation: `ledgr_signal_strategy()` and the strategy contracts
-     still call it, so the package version and the lean boundary check must
-     not both survive;
-  3. take the list of replacements actually kept from Cut 18's close
-     (`lean_core_interface.md` Section 19 records each pin function, its
-     lean replacement and its obligation) and treat an unlisted surviving
-     duplicate as a switch blocker.
+  2026-11-14; Cut 18 `amendment_lean_owned`; corrected after workstream 36's
+  close review round 1).** Before the switch, the lean core owns fast paths
+  for fold-only package functions it called on the pin: the strategy-target
+  check at the lean strategy boundary, the sizing-evidence check, the risk
+  plan with its post-risk and short-exposure checks, the cost-resolver call,
+  and the state patch path. The package functions they replaced stay: each
+  is the fallback for every input outside the fast path and for every
+  refusal and error, and the differential oracle with debug on
+  (`lean_core_interface.md` Section 19.10 lists each with its fallback
+  calls). Cut 18 deletes and merges none of them. The intended post-switch
+  architecture is one authoritative implementation per semantic rule, with
+  optimised common paths and complete fallback behaviour. Before the
+  switch:
+  1. a deletion-readiness audit classifies every fallback dependency in
+     Section 19.10, refusal and error paths included, not only successful
+     execution, as one of: retain as an independent semantic owner; merge
+     fast path and fallback into one implementation; replace with a
+     lean-owned implementation after full parity proof; or delete because
+     it is genuinely obsolete;
+  2. the switch cut applies that classification; no function is deleted
+     while a fallback, a refusal path or another caller still needs it
+     (`ledgr_validate_strategy_targets()` also serves
+     `ledgr_signal_strategy()` and the strategy contracts);
+  3. a rule implemented twice without a classification in the audit is a
+     switch blocker.
 - **Old-code citations (maintainer, 2026-11-04).** Before the switch cut
   deletes the current fold, it tags the last commit with the old core as
   `pre-lean-core` and adds one sentence to `inst/design/README.md`: code
