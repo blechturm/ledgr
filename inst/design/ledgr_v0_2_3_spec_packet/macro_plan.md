@@ -56,6 +56,11 @@ simplification cut on `dev/lean_core/`, then slices 3-5 and the switch;
 package simplification stays in WS14a after the switch, and the standing
 instruction to remove work and abstractions before adding compiled kernels,
 caches or fast paths.
+Revision 15 records the maintainer's 2026-11-14 decision (Cut 18,
+`amendment_lean_owned`): fold-only package checks and computations the lean
+loop calls per pulse may be reimplemented in the lean core before the
+switch, and the switch cut's resulting obligations are listed under WS14a,
+"Lean core switch".
 Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
@@ -1044,6 +1049,23 @@ execution-sensitive economics cuts are held to rule 17 instead.
   reference. Structural tests that only detect old helper shapes may be
   remapped individually under synthesis Q3, each approved by the
   maintainer. The test cut follows as below.
+- **Switch obligations from lean-owned replacements (maintainer,
+  2026-11-14; Cut 18 `amendment_lean_owned`).** Before the switch, the lean
+  core may own its own implementation of fold-only package functions it
+  called on the pin: the strategy-target check at the lean strategy
+  boundary, the sizing-evidence check, the risk plan with its post-risk and
+  short-exposure checks, the cost-resolver call, and the state patch path.
+  The switch cut must:
+  1. delete each replaced package function that no surviving caller needs,
+     with no shim, so each guarantee keeps one implementation;
+  2. consolidate `ledgr_validate_strategy_targets()` into one
+     implementation: `ledgr_signal_strategy()` and the strategy contracts
+     still call it, so the package version and the lean boundary check must
+     not both survive;
+  3. take the list of replacements actually kept from Cut 18's close
+     (`lean_core_interface.md` Section 19 records each pin function, its
+     lean replacement and its obligation) and treat an unlisted surviving
+     duplicate as a switch blocker.
 - **Old-code citations (maintainer, 2026-11-04).** Before the switch cut
   deletes the current fold, it tags the last commit with the old core as
   `pre-lean-core` and adds one sentence to `inst/design/README.md`: code
