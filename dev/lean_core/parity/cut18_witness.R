@@ -190,7 +190,7 @@ afford_case <- function(id, axis, cand_pos, cash_delta, blocked, generator, cash
                                                           order(enc2utf8(axis), method = "radix"), cand_pos),
        function() ns$ledgr_plan_affordability(cash_delta, blocked, generator, axis[cand_pos], cash))
 }
-ax <- c("ZETA", "alpha", "Beta", "B10", "B9", "café", "CAFE", "a")
+ax <- c("ZETA", "alpha", "Beta", "B10", "B9", "caf\u00e9", "CAFE", "a")
 afford_case("mixed_generators", ax, c(1L, 3L, 5L, 6L), c(500, -300, 200, -900), c(FALSE, FALSE, FALSE, FALSE), c(TRUE, FALSE, TRUE, FALSE), 400)
 afford_case("insufficient_cash", ax, c(2L, 4L, 7L), c(-300, -200, -150), c(FALSE, FALSE, FALSE), c(FALSE, FALSE, FALSE), 400)
 afford_case("blocked_generator", ax, c(8L, 2L, 6L), c(300, -500, -100), c(TRUE, FALSE, FALSE), c(TRUE, FALSE, FALSE), 200)
