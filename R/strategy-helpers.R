@@ -437,6 +437,9 @@ ledgr_target_size <- function(ctx,
   # subset of it are unique; the amounts' IDs are checked here for
   # attributes (an amount class may keep a names() method through
   # normalisation) and duplicates; a keep vector is checked in its branch.
+  # No operand string may be marked "bytes": fmatch() refuses to translate
+  # them where match() accepts them, and without them match() on character
+  # vectors cannot fail, so no fast path raises a condition the base would not.
   # There match() gives base union()/intersect()/setdiff() exactly, without
   # their per-call dispatch, and collapse::fmatch() replaces match() from 32
   # IDs, where it is faster (dev/bench/v0_2_3_helper/results/fmatch_compare.csv)
@@ -447,7 +450,8 @@ ledgr_target_size <- function(ctx,
   addition_ids <- names(add_value)
   fast <- is.character(universe) && is.null(attributes(universe)) && is.character(weighted_ids) &&
     is.null(attributes(weighted_ids)) && is.character(addition_ids) && is.null(attributes(addition_ids)) &&
-    !anyDuplicated(weighted_ids) && !anyDuplicated(addition_ids)
+    !anyDuplicated(weighted_ids) && !anyDuplicated(addition_ids) &&
+    !("bytes" %in% Encoding(universe)) && !("bytes" %in% Encoding(weighted_ids)) && !("bytes" %in% Encoding(addition_ids))
   id_match <- if (fast && length(universe) >= 32L) collapse::fmatch else match
   requested_ids <- if (fast) {
     c(weighted_ids, addition_ids[id_match(addition_ids, weighted_ids, 0L) == 0L])
@@ -484,7 +488,8 @@ ledgr_target_size <- function(ctx,
       )
     }
     held_leavers <- universe[position != 0 & !member]
-    fast_keep <- fast && is.character(explicit_keep) && is.null(attributes(explicit_keep))
+    fast_keep <- fast && is.character(explicit_keep) && is.null(attributes(explicit_keep)) &&
+      !("bytes" %in% Encoding(explicit_keep))
     keep_match <- if (fast_keep) id_match else match
     undecided <- if (fast_keep) {
       held_leavers[id_match(held_leavers, explicit_keep, 0L) == 0L]
@@ -772,7 +777,8 @@ ledgr_target_named_amount <- function(x, label, universe, allow_null = FALSE) {
   # Plain x_names passed anyDuplicated() above, so it is unique; with a
   # plain universe, match() gives setdiff() exactly (fmatch from 32 IDs).
   # Plain means a character vector without attributes.
-  plain <- is.character(universe) && is.null(attributes(universe)) && is.character(x_names) && is.null(attributes(x_names))
+  plain <- is.character(universe) && is.null(attributes(universe)) && is.character(x_names) && is.null(attributes(x_names)) &&
+    !("bytes" %in% Encoding(universe)) && !("bytes" %in% Encoding(x_names))
   id_match <- if (plain && length(universe) >= 32L) collapse::fmatch else match
   unknown <- if (plain) x_names[id_match(x_names, universe, 0L) == 0L] else setdiff(x_names, universe)
   if (length(unknown) > 0L) {
@@ -798,7 +804,8 @@ ledgr_target_logical <- function(x, universe, label) {
   }
   # With plain operands (character vectors without attributes), base
   # setequal() is exactly these two matches.
-  plain <- is.character(universe) && is.null(attributes(universe)) && is.character(x_names) && is.null(attributes(x_names))
+  plain <- is.character(universe) && is.null(attributes(universe)) && is.character(x_names) && is.null(attributes(x_names)) &&
+    !("bytes" %in% Encoding(universe)) && !("bytes" %in% Encoding(x_names))
   id_match <- if (plain && length(universe) >= 32L) collapse::fmatch else match
   if (length(x_names) != length(x) || anyNA(x_names) || any(!nzchar(x_names)) ||
       anyDuplicated(x_names) ||
@@ -816,7 +823,8 @@ ledgr_target_keep <- function(keep, universe) {
       rlang::abort("Character `keep` must contain unique instrument IDs.", class = "ledgr_invalid_strategy_type")
     }
     # Plain keep passed anyDuplicated() above, so it is unique.
-    plain <- is.character(keep) && is.null(attributes(keep)) && is.character(universe) && is.null(attributes(universe))
+    plain <- is.character(keep) && is.null(attributes(keep)) && is.character(universe) && is.null(attributes(universe)) &&
+      !("bytes" %in% Encoding(keep)) && !("bytes" %in% Encoding(universe))
     id_match <- if (plain && length(universe) >= 32L) collapse::fmatch else match
     unknown <- if (plain) {
       keep[id_match(keep, universe, 0L) == 0L]
