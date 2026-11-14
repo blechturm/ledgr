@@ -1,262 +1,262 @@
-"statement","fn","line","text","debug_fn"
-"loop.R|caught|1","caught",471,"tryCatch(expr, error = function(e) list(class(e), conditionMessage(e)))",TRUE
-"loop.R|check_uncovered|1","check_uncovered",519,"u <- hooks$uncovered()",FALSE
-"loop.R|check_uncovered|2","check_uncovered",520,"if (length(u)) lean_not_covered(u[[1L]])",FALSE
-"loop.R|fail|1","fail",458,"rlang::abort(sprintf(""Lean context %s differs from the pin's at pulse %d."", what, i), class = ""ledgr_internal_error"")",TRUE
-"loop.R|feature_fn|1","feature_fn",388,"force(pidx)",FALSE
-"loop.R|feature_fn|2","feature_fn",389,"function(feature_name, default = NA_real_) { feature_name <- ledgr_resolve_feature_name(feature_name, name_lookup) mat <",FALSE
-"loop.R|grow|1","grow",364,"lapply(x, function(v) { length(v) <- cap; v })",FALSE
-"loop.R|lean_context|1","lean_context",400,"fv <- feature_fn(projection_idx[[i]])",FALSE
-"loop.R|lean_context|2","lean_context",401,"lookup <- list2env(list( feature_lookup = feature_lookup_state, feature_vector = fv, projection_idx = projection_idx[[i]",FALSE
-"loop.R|lean_context|3","lean_context",413,"lookup$build_counts <- counts$build",FALSE
-"loop.R|lean_context|4","lean_context",414,"lookup$preparation_counts <- counts$prep",FALSE
-"loop.R|lean_context|5","lean_context",415,"helpers <- lean_ctx_helpers(lookup)",FALSE
-"loop.R|lean_context|6","lean_context",416,"ctx <- list( run_id = run_id, ts_utc = pulses_iso[[i]], universe = ids, .positions = positions_snapshot, cash = cash, eq",FALSE
-"loop.R|lean_context|7","lean_context",424,"class(ctx) <- ""ledgr_pulse_context""",FALSE
-"loop.R|lean_context|8","lean_context",425,"ctx",FALSE
-"loop.R|lean_ctx_dollar|1","lean_ctx_dollar",148,"if (!is.character(name) || length(name) != 1L || is.na(name) || !nzchar(name)) return(lean_pin_ctx_dollar(x, name))",FALSE
-"loop.R|lean_ctx_dollar|2","lean_ctx_dollar",149,"if (!is.null(lean_ctx_retired[[name]])) return(lean_pin_ctx_dollar(x, name))",FALSE
-"loop.R|lean_ctx_dollar|3","lean_ctx_dollar",150,"v <- .subset2(x, name)",FALSE
-"loop.R|lean_ctx_dollar|4","lean_ctx_dollar",151,"if (!is.null(v) && !startsWith(name, ""."")) return(v)",FALSE
-"loop.R|lean_ctx_dollar|5","lean_ctx_dollar",152,"lookup <- .subset2(x, "".pulse_lookup"")",FALSE
-"loop.R|lean_ctx_dollar|6","lean_ctx_dollar",153,"if (is.environment(lookup) && is.environment(cache <- lookup$cache)) { hit <- get0(name, envir = cache, inherits = FALSE",FALSE
-"loop.R|lean_ctx_dollar|7","lean_ctx_dollar",163,"lean_pin_ctx_dollar(x, name)",FALSE
-"loop.R|lean_ctx_helpers|1","lean_ctx_helpers",185,"force(lookup)",FALSE
-"loop.R|lean_ctx_helpers|2","lean_ctx_helpers",186,"list( flat = function(default = 0) ledgr_pulse_context_targets(lookup, default = default), hold = function() { p <- look",FALSE
-"loop.R|lean_e_advance|1","lean_e_advance",839,"processed <<- processed + 1L",FALSE
-"loop.R|lean_e_advance|2","lean_e_advance",840,"if (processed >= max_pulses) { full_run <<- FALSE return(FALSE) }",FALSE
-"loop.R|lean_e_advance|3","lean_e_advance",844,"TRUE",FALSE
-"loop.R|lean_exec_view|1","lean_exec_view",371,"list(member = rep(TRUE, m), restricted = rep(FALSE, m), reason_offset = integer(m), reason_count = integer(m), reason_co",FALSE
-"loop.R|lean_gross|1","lean_gross",21,"v <- abs(q * m)",FALSE
-"loop.R|lean_gross|2","lean_gross",22,"v[which(q == 0)] <- 0",FALSE
-"loop.R|lean_gross|3","lean_gross",23,"if (anyNA(v) || !all(is.finite(v))) NA_real_ else sum(v)",FALSE
-"loop.R|lean_loop_add_decisions|1","lean_loop_add_decisions",888,"m <- length(k)",FALSE
-"loop.R|lean_loop_add_decisions|2","lean_loop_add_decisions",889,"rows <- nd + seq_len(m)",FALSE
-"loop.R|lean_loop_add_decisions|3","lean_loop_add_decisions",890,"if (nd + m > dcap) { while (nd + m > dcap) dcap <<- dcap * 2L dr <<- grow(dr, dcap) }",FALSE
-"loop.R|lean_loop_add_decisions|4","lean_loop_add_decisions",894,"dr$pulse[rows] <<- i",FALSE
-"loop.R|lean_loop_add_decisions|5","lean_loop_add_decisions",895,"dr$k[rows] <<- k",FALSE
-"loop.R|lean_loop_add_decisions|6","lean_loop_add_decisions",896,"dr$target[rows] <<- sq[k]",FALSE
-"loop.R|lean_loop_add_decisions|7","lean_loop_add_decisions",897,"dr$target_after[rows] <<- tq[k]",FALSE
-"loop.R|lean_loop_add_decisions|8","lean_loop_add_decisions",898,"dr$position[rows] <<- position[k]",FALSE
-"loop.R|lean_loop_add_decisions|9","lean_loop_add_decisions",899,"nd <<- nd + m",FALSE
-"loop.R|lean_loop_add_sizing|1","lean_loop_add_sizing",870,"rows <- nsz + seq_len(m)",FALSE
-"loop.R|lean_loop_add_sizing|10","lean_loop_add_sizing",882,"szr$requested[rows] <<- e$requested_quantity",FALSE
-"loop.R|lean_loop_add_sizing|11","lean_loop_add_sizing",883,"szr$before[rows] <<- e$position_before",FALSE
-"loop.R|lean_loop_add_sizing|12","lean_loop_add_sizing",884,"nsz <<- nsz + m",FALSE
-"loop.R|lean_loop_add_sizing|2","lean_loop_add_sizing",871,"if (nsz + m > scap) { while (nsz + m > scap) scap <<- scap * 2L szr <<- grow(szr, scap) }",FALSE
-"loop.R|lean_loop_add_sizing|3","lean_loop_add_sizing",875,"szr$pulse[rows] <<- i",FALSE
-"loop.R|lean_loop_add_sizing|4","lean_loop_add_sizing",876,"szr$id[rows] <<- e$instrument_id",FALSE
-"loop.R|lean_loop_add_sizing|5","lean_loop_add_sizing",877,"szr$reason[rows] <<- e$reason_code",FALSE
-"loop.R|lean_loop_add_sizing|6","lean_loop_add_sizing",878,"szr$reasons[rows] <<- if (is.null(intent)) """" else intent",FALSE
-"loop.R|lean_loop_add_sizing|7","lean_loop_add_sizing",879,"szr$target[rows] <<- e$pre_floor_quantity",FALSE
-"loop.R|lean_loop_add_sizing|8","lean_loop_add_sizing",880,"szr$quantity[rows] <<- e$rounded_quantity",FALSE
-"loop.R|lean_loop_add_sizing|9","lean_loop_add_sizing",881,"szr$price[rows] <<- e$price",FALSE
-"loop.R|lean_loop_debug_ctx|1","lean_loop_debug_ctx",458,"fail <- function(what) rlang::abort(sprintf(""Lean context %s differs from the pin's at pulse %d."", what, i), class = ""le",TRUE
-"loop.R|lean_loop_debug_ctx|10","lean_loop_debug_ctx",471,"caught <- function(expr) tryCatch(expr, error = function(e) list(class(e), conditionMessage(e)))",TRUE
-"loop.R|lean_loop_debug_ctx|11","lean_loop_debug_ctx",472,"for (nm in c(lapply(setdiff(c(names(a), feature_lookup_state$readable_names), c(""flat"", ""hold"")), identity), list(""bars""",TRUE
-"loop.R|lean_loop_debug_ctx|12","lean_loop_debug_ctx",480,"if (!identical(ra$flat(), rb$flat()) || !identical(ra$hold(), rb$hold())) fail(""flat()/hold()"")",TRUE
-"loop.R|lean_loop_debug_ctx|13","lean_loop_debug_ctx",482,"for (nm in c(lapply(feature_lookup_state$readable_names, identity), list(""lean_no_such_feature"", """", NA_character_, c(""a",TRUE
-"loop.R|lean_loop_debug_ctx|14","lean_loop_debug_ctx",488,"invisible(TRUE)",TRUE
-"loop.R|lean_loop_debug_ctx|2","lean_loop_debug_ctx",460,"ra <- unclass(a)",TRUE
-"loop.R|lean_loop_debug_ctx|3","lean_loop_debug_ctx",460,"rb <- unclass(b)",TRUE
-"loop.R|lean_loop_debug_ctx|4","lean_loop_debug_ctx",461,"if (!identical(names(ra), names(rb))) fail(""raw field order"")",TRUE
-"loop.R|lean_loop_debug_ctx|5","lean_loop_debug_ctx",462,"for (nm in names(ra)) { if (!is.function(ra[[nm]]) && !is.environment(ra[[nm]]) && !identical(ra[[nm]], rb[[nm]])) fail(",TRUE
-"loop.R|lean_loop_debug_ctx|6","lean_loop_debug_ctx",465,"la <- ra$.pulse_lookup",TRUE
-"loop.R|lean_loop_debug_ctx|7","lean_loop_debug_ctx",465,"lb <- rb$.pulse_lookup",TRUE
-"loop.R|lean_loop_debug_ctx|8","lean_loop_debug_ctx",466,"if (!identical(sort(ls(la, all.names = TRUE)), sort(ls(lb, all.names = TRUE)))) fail(""lookup names"")",TRUE
-"loop.R|lean_loop_debug_ctx|9","lean_loop_debug_ctx",467,"for (nm in setdiff(ls(la, all.names = TRUE), c(""cache"", ""feature_vector"", ""build_counts"", ""preparation_counts""))) { if (",TRUE
-"loop.R|lean_loop_debug_packet|1","lean_loop_debug_packet",115,"full <- stats::setNames(pos, ids)",TRUE
-"loop.R|lean_loop_debug_packet|2","lean_loop_debug_packet",116,"view <- provider$decision_view(ts, full)",TRUE
-"loop.R|lean_loop_debug_packet|3","lean_loop_debug_packet",117,"vs <- ledgr_availability_valuation_state(substrate$bars, ids, substrate$axis, .Machine$integer.max, ledgr_availability_e",TRUE
-"loop.R|lean_loop_debug_packet|4","lean_loop_debug_packet",119,"valuation <- vs$advance(i, as.character(view$axis), held = as.logical(view$held[as.character(view$axis)]))",TRUE
-"loop.R|lean_loop_debug_packet|5","lean_loop_debug_packet",120,"columns <- ledgr_carrier_provider_view(ledgr_availability_restrict_frozen(view, valuation), valuation)",TRUE
-"loop.R|lean_loop_debug_packet|6","lean_loop_debug_packet",121,"for (name in names(columns)) { if (!identical(unname(columns[[name]]), unname(packet[[name]]))) { rlang::abort(sprintf(""",TRUE
-"loop.R|lean_loop_debug_packet|7","lean_loop_debug_packet",127,"invisible(TRUE)",TRUE
-"loop.R|lean_loop_pin_ctx|1","lean_loop_pin_ctx",430,"pf_source <- ledgr_position_fact_source(position_facts, book, pos, current_bar = projection_idx[[i]], bar_axis = bar_axi",TRUE
-"loop.R|lean_loop_pin_ctx|2","lean_loop_pin_ctx",432,"ctx <- list( run_id = run_id, ts_utc = pulses_iso[[i]], universe = ids, .positions = positions_snapshot, cash = cash, eq",TRUE
-"loop.R|lean_loop_pin_ctx|3","lean_loop_pin_ctx",438,"ctx$members <- p2$members",TRUE
-"loop.R|lean_loop_pin_ctx|4","lean_loop_pin_ctx",439,"ctx$.history <- history_reader$view(i)",TRUE
-"loop.R|lean_loop_pin_ctx|5","lean_loop_pin_ctx",440,"class(ctx) <- ""ledgr_pulse_context""",TRUE
-"loop.R|lean_loop_pin_ctx|6","lean_loop_pin_ctx",441,"ctx <- ledgr_update_pulse_context_helpers(ctx, bars = list(open = bars$open[, col], high = bars$high[, col], low = bars$",TRUE
-"loop.R|lean_loop_pin_ctx|7","lean_loop_pin_ctx",450,"ctx <- ledgr_filter_pulse_context_features(ctx, ids, ids, context_pos = ctx_pos)",TRUE
-"loop.R|lean_loop_pin_ctx|8","lean_loop_pin_ctx",451,"ctx$.notes <- pulse_notes",TRUE
-"loop.R|lean_loop_pin_ctx|9","lean_loop_pin_ctx",452,"ctx",TRUE
-"loop.R|lean_not_covered|1","lean_not_covered",27,"rlang::abort(sprintf(""The lean loop does not cover %s (slice 1)."", feature), class = c(""ledgr_lean_not_covered"", ""ledgr_",FALSE
-"loop.R|lean_p1_value|1","lean_p1_value",530,"ts <- ts_num[[i]]",FALSE
-"loop.R|lean_p1_value|10","lean_p1_value",539,"eq$ts[[n_eq]] <<- ts_num[[i]]",FALSE
-"loop.R|lean_p1_value|11","lean_p1_value",540,"eq$cash[[n_eq]] <<- cash",FALSE
-"loop.R|lean_p1_value|12","lean_p1_value",541,"eq$positions_value[[n_eq]] <<- pv",FALSE
-"loop.R|lean_p1_value|13","lean_p1_value",542,"eq$realized_pnl[[n_eq]] <<- book$realized_pnl",FALSE
-"loop.R|lean_p1_value|14","lean_p1_value",543,"eq$cost_basis[[n_eq]] <<- book$total_cost_basis",FALSE
-"loop.R|lean_p1_value|15","lean_p1_value",544,"n_done <<- i",FALSE
-"loop.R|lean_p1_value|16","lean_p1_value",545,"list(col = col, close = close, pv = pv)",FALSE
-"loop.R|lean_p1_value|2","lean_p1_value",531,"live$cur_ts <- ts",FALSE
-"loop.R|lean_p1_value|3","lean_p1_value",532,"live$cur_stage <- ""valuation""",FALSE
-"loop.R|lean_p1_value|4","lean_p1_value",533,"col <- pulse_cols[[i]]",FALSE
-"loop.R|lean_p1_value|5","lean_p1_value",534,"close <- bars$close[, col]",FALSE
-"loop.R|lean_p1_value|6","lean_p1_value",535,"active <- pos != 0",FALSE
-"loop.R|lean_p1_value|7","lean_p1_value",536,"pv <- if (any(active)) sum(pos[active] * close[active]) else 0",FALSE
-"loop.R|lean_p1_value|8","lean_p1_value",537,"last_fully_valued <<- ts",FALSE
-"loop.R|lean_p1_value|9","lean_p1_value",538,"n_eq <<- n_eq + 1L",FALSE
-"loop.R|lean_p2_decide|1","lean_p2_decide",551,"col <- v1$col",FALSE
-"loop.R|lean_p2_decide|10","lean_p2_decide",560,"if (.lean_debug) { packet <- list( pulse_idx = i, ts = ts_num[[i]], context_pos = ctx_pos, cash = cash, positions_value ",FALSE
-"loop.R|lean_p2_decide|11","lean_p2_decide",577,"ctx <- lean_context(i, col, close, pv, positions_snapshot, view, counts)",FALSE
-"loop.R|lean_p2_decide|12","lean_p2_decide",578,"pulse_notes$sizing_skipped <- character()",FALSE
-"loop.R|lean_p2_decide|13","lean_p2_decide",579,"result <- tryCatch({ live$cur_stage <- ""strategy"" if (strategy_functional) { ledgr_call_strategy_fn(strategy_fn, ctx, st",FALSE
-"loop.R|lean_p2_decide|14","lean_p2_decide",592,"check_uncovered()",FALSE
-"loop.R|lean_p2_decide|15","lean_p2_decide",593,"if (is.object(result) && ledgr_is_strategy_intermediate(result)) ledgr_abort_intermediate_strategy_result(result)",FALSE
-"loop.R|lean_p2_decide|16","lean_p2_decide",594,"if (is.numeric(result)) result <- list(targets = result, state_update = NULL)",FALSE
-"loop.R|lean_p2_decide|17","lean_p2_decide",595,"if (!is.list(result) || is.null(result$targets)) { rlang::abort(sprintf(""Strategy must return %s or a list with `targets",FALSE
-"loop.R|lean_p2_decide|18","lean_p2_decide",599,"intent_reason <- ledgr_validate_strategy_intent_reason(result$intent_reason)",FALSE
-"loop.R|lean_p2_decide|19","lean_p2_decide",600,"sizing_evidence <- attr(result$targets, ""sizing_evidence"", exact = TRUE)",FALSE
-"loop.R|lean_p2_decide|2","lean_p2_decide",552,"close <- v1$close",FALSE
-"loop.R|lean_p2_decide|20","lean_p2_decide",601,"raw_targets <- result$targets",FALSE
-"loop.R|lean_p2_decide|21","lean_p2_decide",604,"targets <- if (is.numeric(raw_targets) && identical(attributes(raw_targets), ids_attr) && all(is.finite(raw_targets))) {",FALSE
-"loop.R|lean_p2_decide|22","lean_p2_decide",610,"if (.lean_debug && !identical(targets, ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE))) { rlang::",FALSE
-"loop.R|lean_p2_decide|23","lean_p2_decide",613,"sq <- as.numeric(targets)",FALSE
-"loop.R|lean_p2_decide|24","lean_p2_decide",614,"pre <- 0L",FALSE
-"loop.R|lean_p2_decide|25","lean_p2_decide",615,"if (!is.null(intent_reason)) { hd_intent[[i]] <<- intent_reason; pre <- pre + 1L }",FALSE
-"loop.R|lean_p2_decide|26","lean_p2_decide",618,"sizing_evidence <- ledgr_validate_sizing_evidence(sizing_evidence, targets = targets, context_ids = ids, position = pos,",FALSE
-"loop.R|lean_p2_decide|27","lean_p2_decide",620,"if (.lean_debug && length(pulse_notes$sizing_skipped) > 0L) { rlang::abort(sprintf(""Lean sizing skipped an instrument at",FALSE
-"loop.R|lean_p2_decide|28","lean_p2_decide",624,"m <- length(sizing_evidence$instrument_id)",FALSE
-"loop.R|lean_p2_decide|29","lean_p2_decide",625,"if (m > 0L) { lean_loop_add_sizing(sizing_evidence, intent_reason, i, m) pre <- pre + m } else if (is.null(sizing_eviden",FALSE
-"loop.R|lean_p2_decide|3","lean_p2_decide",553,"pv <- v1$pv",FALSE
-"loop.R|lean_p2_decide|30","lean_p2_decide",633,"hd_pre[[i]] <<- pre",FALSE
-"loop.R|lean_p2_decide|31","lean_p2_decide",634,"tq <- sq",FALSE
-"loop.R|lean_p2_decide|32","lean_p2_decide",635,"if (n > 0L) { # A fixed basket has no restricted or nonmember instrument. The pin's # risk plan transforms the targets o",FALSE
-"loop.R|lean_p2_decide|33","lean_p2_decide",651,"list(result = result, sq = sq, tq = tq, pos_start = pos_start)",FALSE
-"loop.R|lean_p2_decide|4","lean_p2_decide",554,"pos_start <- pos",FALSE
-"loop.R|lean_p2_decide|5","lean_p2_decide",555,"positions_snapshot <- pos",FALSE
-"loop.R|lean_p2_decide|6","lean_p2_decide",556,"names(positions_snapshot) <- ids",FALSE
-"loop.R|lean_p2_decide|7","lean_p2_decide",557,"view <- view0",FALSE
-"loop.R|lean_p2_decide|8","lean_p2_decide",558,"view$held[] <- pos != 0",FALSE
-"loop.R|lean_p2_decide|9","lean_p2_decide",559,"view$risk_mark[] <- close",FALSE
-"loop.R|lean_p3_plan|1","lean_p3_plan",658,"col <- v1$col",FALSE
-"loop.R|lean_p3_plan|2","lean_p3_plan",659,"sq <- v2$sq",FALSE
-"loop.R|lean_p3_plan|3","lean_p3_plan",660,"tq <- v2$tq",FALSE
-"loop.R|lean_p3_plan|4","lean_p3_plan",661,"live$cur_stage <- ""execution""",FALSE
-"loop.R|lean_p3_plan|5","lean_p3_plan",662,"actionable <- which(abs(tq - pos) > act_tol)",FALSE
-"loop.R|lean_p3_plan|6","lean_p3_plan",663,"exec_ts <- if (i <= length(epochs)) epochs[[i]] else NA_real_",FALSE
-"loop.R|lean_p3_plan|7","lean_p3_plan",664,"batch <- NULL",FALSE
-"loop.R|lean_p3_plan|8","lean_p3_plan",665,"if (length(actionable) > 0L) { next_col <- if (i < n_pulse) pulse_cols[[i + 1L]] else col + 1L has_next <- next_col <= l",FALSE
-"loop.R|lean_p3_plan|9","lean_p3_plan",696,"list(batch = batch, stop = FALSE)",FALSE
-"loop.R|lean_p4_apply|1","lean_p4_apply",703,"close <- v1$close",FALSE
-"loop.R|lean_p4_apply|10","lean_p4_apply",780,"explicit_k <- if (length(clean_k)) differs[match(differs, clean_k, 0L) == 0L] else differs",FALSE
-"loop.R|lean_p4_apply|11","lean_p4_apply",781,"if (length(explicit_k) > 0L) { lean_loop_add_decisions(explicit_k, i, sq, tq, v2$pos_start) }",FALSE
-"loop.R|lean_p4_apply|12","lean_p4_apply",784,"n_fill",FALSE
-"loop.R|lean_p4_apply|2","lean_p4_apply",704,"sq <- v2$sq",FALSE
-"loop.R|lean_p4_apply|3","lean_p4_apply",705,"tq <- v2$tq",FALSE
-"loop.R|lean_p4_apply|4","lean_p4_apply",706,"differs <- which(!(is.finite(sq) & sq == pos & tq == sq & is.finite(close)))",FALSE
-"loop.R|lean_p4_apply|5","lean_p4_apply",707,"n_fill <- if (is.null(batch)) 0L else length(batch$fill$k)",FALSE
-"loop.R|lean_p4_apply|6","lean_p4_apply",708,"n_rej <- if (is.null(batch)) 0L else length(batch$rejection$k)",FALSE
-"loop.R|lean_p4_apply|7","lean_p4_apply",709,"clean_k <- integer()",FALSE
-"loop.R|lean_p4_apply|8","lean_p4_apply",710,"if (n_fill > 0L) { fill <- batch$fill fr <- ledgr_carrier_segment_text(fill$info_offset, fill$info_count, fill$info_code",FALSE
-"loop.R|lean_p4_apply|9","lean_p4_apply",764,"if (n_rej > 0L) { rejection <- batch$rejection rr <- ledgr_carrier_segment_text(rejection$reason_offset, rejection$reaso",FALSE
-"loop.R|lean_p5_commit|1","lean_p5_commit",790,"close <- v1$close",FALSE
-"loop.R|lean_p5_commit|10","lean_p5_commit",806,"recon <- c( lean_gross(pos, close), cash - sum(fill_cash), lean_gross(sq, close), if (has_risk) lean_gross(tq, close) el",FALSE
-"loop.R|lean_p5_commit|11","lean_p5_commit",813,"ledgr_fold_reconciliation_check(recon[[2L]], recon[[6L]], recon[[5L]], recon[[3L]], recon[[4L]], recon[[1L]])",FALSE
-"loop.R|lean_p5_commit|12","lean_p5_commit",814,"if (.lean_debug && !identical(recon[c(1L, 3L, 4L)], c(ledgr_availability_marked_gross(pos, close), ledgr_availability_ma",FALSE
-"loop.R|lean_p5_commit|13","lean_p5_commit",818,"hd_recon[i, ] <<- recon",FALSE
-"loop.R|lean_p5_commit|14","lean_p5_commit",819,"hd_has_recon[[i]] <<- TRUE",FALSE
-"loop.R|lean_p5_commit|15","lean_p5_commit",820,"state_update <- v2$result$state_update",FALSE
-"loop.R|lean_p5_commit|16","lean_p5_commit",821,"if (inherits(state_update, ""ledgr_strategy_state_reset"")) { strategy_state <<- ledgr_strategy_state_defaults(state_decla",FALSE
-"loop.R|lean_p5_commit|17","lean_p5_commit",834,"invisible(NULL)",FALSE
-"loop.R|lean_p5_commit|2","lean_p5_commit",791,"sq <- v2$sq",FALSE
-"loop.R|lean_p5_commit|3","lean_p5_commit",792,"tq <- v2$tq",FALSE
-"loop.R|lean_p5_commit|4","lean_p5_commit",793,"live$cur_stage <- ""accounting""",FALSE
-"loop.R|lean_p5_commit|5","lean_p5_commit",794,"if (nf > capacity) { rlang::abort(""Ledger event buffer exceeded the run's maximum event capacity."", class = ""ledgr_event",FALSE
-"loop.R|lean_p5_commit|6","lean_p5_commit",798,"n_committed <<- nf",FALSE
-"loop.R|lean_p5_commit|7","lean_p5_commit",799,"if (!is.null(batch) && !isTRUE(cash == batch$expected_final_cash) && !isTRUE(all.equal(as.numeric(cash), as.numeric(batc",FALSE
-"loop.R|lean_p5_commit|8","lean_p5_commit",804,"expected <- if (is.null(batch)) cash else batch$expected_final_cash",FALSE
-"loop.R|lean_p5_commit|9","lean_p5_commit",805,"fill_cash <- if (n_fill > 0L) batch$fill$cash_delta else numeric()",FALSE
-"loop.R|lean_state_patch|1","lean_state_patch",497,"if (!is.list(update) || is.data.frame(update)) { return(ledgr_strategy_state_apply_values(strategy_state, update, state_",FALSE
-"loop.R|lean_state_patch|2","lean_state_patch",501,"nm <- names(update)",FALSE
-"loop.R|lean_state_patch|3","lean_state_patch",502,"if (length(update) == 0L || is.null(nm) || anyNA(nm) || !all(nzchar(nm)) || anyDuplicated(nm) || !all(nm %in% names(stra",FALSE
-"loop.R|lean_state_patch|4","lean_state_patch",507,"out <- strategy_state",FALSE
-"loop.R|lean_state_patch|5","lean_state_patch",508,"for (name in nm) { value <- ledgr_strategy_state_validate_value(update[[name]], state_fields[[name]], ids) reset <- is.n",FALSE
-"loop.R|lean_state_patch|6","lean_state_patch",514,"out",FALSE
-"loop.R|lean_strategy_view|1","lean_strategy_view",172,"if (is.list(values) && identical(names(attributes(values)), ""names"")) { view <- values class(view) <- c(""ledgr_strategy_",FALSE
-"loop.R|lean_strategy_view|2","lean_strategy_view",180,"ledgr_strategy_state_view(values)",FALSE
-"loop.R|run_loop|1","run_loop",849,"live$t_start <- ledgr_time_now()",FALSE
-"loop.R|run_loop|10","run_loop",866,"invisible(NULL)",FALSE
-"loop.R|run_loop|2","run_loop",850,"live$in_pulses <- TRUE",FALSE
-"loop.R|run_loop|3","run_loop",851,"on.exit(live$in_pulses <- FALSE)",FALSE
-"loop.R|run_loop|4","run_loop",852,"for (i in seq_len(n_pulse)) { v1 <- lean_p1_value(i) v2 <- lean_p2_decide(i, v1) v3 <- lean_p3_plan(i, v1, v2) if (v3$st",FALSE
-"loop.R|run_loop|5","run_loop",861,"live$in_pulses <- FALSE",FALSE
-"loop.R|run_loop|6","run_loop",862,"live$t_pulses <- ledgr_time_elapsed(live$t_start, ledgr_time_now())",FALSE
-"loop.R|run_loop|7","run_loop",863,"t_pub <- ledgr_time_now()",FALSE
-"loop.R|run_loop|8","run_loop",864,"hooks$publish(lean_loop_publish)",FALSE
-"loop.R|run_loop|9","run_loop",865,"live$t_publish <- ledgr_time_elapsed(t_pub, ledgr_time_now())",FALSE
-"loop.R|schedule_fn|1","schedule_fn",385,"force(i)",FALSE
-"loop.R|schedule_fn|2","schedule_fn",385,"function(schedule) schedule_query(schedule, i)",FALSE
-"plan.R|lean_plan_affordability|1","lean_plan_affordability",100,"n <- length(cash_delta)",FALSE
-"plan.R|lean_plan_affordability|2","lean_plan_affordability",101,"priority <- if (anyNA(generator)) { p <- c(which(generator), which(!generator)) p[order(!generator[p], enc2utf8(stable_i",FALSE
-"plan.R|lean_plan_affordability|3","lean_plan_affordability",111,"accepted <- logical(n)",FALSE
-"plan.R|lean_plan_affordability|4","lean_plan_affordability",112,"insufficient <- logical(n)",FALSE
-"plan.R|lean_plan_affordability|5","lean_plan_affordability",113,"virtual_cash <- as.numeric(cash)",FALSE
-"plan.R|lean_plan_affordability|6","lean_plan_affordability",114,"for (idx in priority) { next_cash <- virtual_cash + cash_delta[[idx]] affordable <- cash_delta[[idx]] >= 0 || next_cash ",FALSE
-"plan.R|lean_plan_affordability|7","lean_plan_affordability",124,"list(accepted = accepted, insufficient = insufficient, final_cash = virtual_cash)",FALSE
-"plan.R|lean_plan_empty_segments|1","lean_plan_empty_segments",25,"list(offset = integer(n), count = integer(n), code = integer())",FALSE
-"plan.R|lean_plan_execution_view|1","lean_plan_execution_view",40,"view <- provider$execution_view(.POSIXct(exec_ts, tz = ""UTC""), ids)",TRUE
-"plan.R|lean_plan_execution_view|2","lean_plan_execution_view",41,"if (.lean_debug && !(identical(names(view$member), ids) && identical(names(view$restricted), ids) && identical(names(vie",TRUE
-"plan.R|lean_plan_execution_view|3","lean_plan_execution_view",45,"n <- length(ids)",TRUE
-"plan.R|lean_plan_execution_view|4","lean_plan_execution_view",46,"restricted <- unname(view$restricted)",TRUE
-"plan.R|lean_plan_execution_view|5","lean_plan_execution_view",47,"segment <- if (anyNA(restricted) || any(restricted)) { tokens <- strsplit(unname(view$reasons)[restricted], ""|"", fixed =",TRUE
-"plan.R|lean_plan_execution_view|6","lean_plan_execution_view",60,"x <- list(member = unname(view$member), restricted = restricted, reason_offset = segment$offset, reason_count = segment$",TRUE
-"plan.R|lean_plan_execution_view|7","lean_plan_execution_view",62,"if (.lean_debug) ledgr_carrier_new(x, ""execution_view"", NA_integer_) else x",TRUE
-"plan.R|lean_plan_groups|1","lean_plan_groups",68,"info <- lean_plan_segment_rows(segment, fills)",FALSE
-"plan.R|lean_plan_groups|2","lean_plan_groups",69,"reasons <- lean_plan_segment_rows(segment, rejected)",FALSE
-"plan.R|lean_plan_groups|3","lean_plan_groups",70,"list( fill = list( k = k[fills], pos = pos[fills], side = side[fills], qty = qty[fills], price = price[fills], fee = fee",FALSE
-"plan.R|lean_plan_id_rank|1","lean_plan_id_rank",131,"if (!identical(lean_plan_rank_cache$ids, ids)) { rank <- integer(length(ids)) rank[order(enc2utf8(ids), method = ""radix""",FALSE
-"plan.R|lean_plan_id_rank|2","lean_plan_id_rank",137,"lean_plan_rank_cache$rank",FALSE
-"plan.R|lean_plan_pulse|1","lean_plan_pulse",144,"k <- actionable_k",FALSE
-"plan.R|lean_plan_pulse|10","lean_plan_pulse",157,"none <- integer()",FALSE
-"plan.R|lean_plan_pulse|11","lean_plan_pulse",158,"if (is.na(exec_ts)) { segment <- ledgr_carrier_segments(n, seq_len(n), rep(1L, n)) groups <- lean_plan_groups(k, pos, si",FALSE
-"plan.R|lean_plan_pulse|12","lean_plan_pulse",165,"view_member <- if (n > 0L) execution_view$member else logical()",FALSE
-"plan.R|lean_plan_pulse|13","lean_plan_pulse",166,"informational <- which(member[k] != view_member)",FALSE
-"plan.R|lean_plan_pulse|14","lean_plan_pulse",167,"open <- execution$open[pos]",FALSE
-"plan.R|lean_plan_pulse|15","lean_plan_pulse",168,"bad_open <- !is.finite(open) | open <= 0",FALSE
-"plan.R|lean_plan_pulse|16","lean_plan_pulse",169,"bad_delta <- !is.finite(delta)",FALSE
-"plan.R|lean_plan_pulse|17","lean_plan_pulse",170,"passed <- which(!bad_open & !bad_delta & epoch_valid)",FALSE
-"plan.R|lean_plan_pulse|18","lean_plan_pulse",171,"resolved <- ledgr_plan_resolve(cost_resolver, side[passed], qty[passed], open[passed])",FALSE
-"plan.R|lean_plan_pulse|19","lean_plan_pulse",172,"price <- rep(NA_real_, n)",FALSE
-"plan.R|lean_plan_pulse|2","lean_plan_pulse",145,"n <- length(k)",FALSE
-"plan.R|lean_plan_pulse|20","lean_plan_pulse",173,"fee <- rep(NA_real_, n)",FALSE
-"plan.R|lean_plan_pulse|21","lean_plan_pulse",174,"price[passed] <- resolved$price",FALSE
-"plan.R|lean_plan_pulse|22","lean_plan_pulse",175,"fee[passed] <- resolved$fee",FALSE
-"plan.R|lean_plan_pulse|23","lean_plan_pulse",176,"bad_price <- !bad_open & !(is.finite(price) & price > 0)",FALSE
-"plan.R|lean_plan_pulse|24","lean_plan_pulse",177,"candidates <- passed[!bad_price[passed]]",FALSE
-"plan.R|lean_plan_pulse|25","lean_plan_pulse",179,"effects <- ledgr_fill_publication_deltas(side[candidates], qty[candidates], price[candidates], fee[candidates])",FALSE
-"plan.R|lean_plan_pulse|26","lean_plan_pulse",180,"resulting <- rep(NA_real_, n)",FALSE
-"plan.R|lean_plan_pulse|27","lean_plan_pulse",181,"resulting[candidates] <- before[candidates] + effects$position_delta",FALSE
-"plan.R|lean_plan_pulse|28","lean_plan_pulse",182,"short <- logical(n)",FALSE
-"plan.R|lean_plan_pulse|29","lean_plan_pulse",183,"floor_qty <- before[candidates]",FALSE
-"plan.R|lean_plan_pulse|3","lean_plan_pulse",146,"pos <- context_pos[k]",FALSE
-"plan.R|lean_plan_pulse|30","lean_plan_pulse",184,"floor_qty[floor_qty > 0] <- 0",FALSE
-"plan.R|lean_plan_pulse|31","lean_plan_pulse",185,"short[candidates] <- resulting[candidates] < floor_qty",FALSE
-"plan.R|lean_plan_pulse|32","lean_plan_pulse",186,"if (any(bad_delta) || (!epoch_valid && n > 0L) || any(short)) { ledgr_plan_refuse_first( list(!bad_open & bad_delta, !ba",FALSE
-"plan.R|lean_plan_pulse|33","lean_plan_pulse",199,"early <- which(bad_open | bad_price)",FALSE
-"plan.R|lean_plan_pulse|34","lean_plan_pulse",201,"view_count <- if (n > 0L) execution_view$reason_count else integer()",FALSE
-"plan.R|lean_plan_pulse|35","lean_plan_pulse",202,"blocked <- view_count[candidates] > 0L",FALSE
-"plan.R|lean_plan_pulse|36","lean_plan_pulse",203,"generator <- side[candidates] == -1L & before[candidates] > 0 & delta[candidates] < 0 & effects$cash_delta >= 0 & !block",FALSE
-"plan.R|lean_plan_pulse|37","lean_plan_pulse",205,"scan <- lean_plan_affordability(effects$cash_delta, blocked, generator, instrument_ids[pos[candidates]], cash, lean_plan",FALSE
-"plan.R|lean_plan_pulse|38","lean_plan_pulse",207,"if (.lean_debug && !identical(scan, ledgr_plan_affordability(effects$cash_delta, blocked, generator, instrument_ids[pos[",FALSE
-"plan.R|lean_plan_pulse|39","lean_plan_pulse",211,"fills <- candidates[scan$accepted]",FALSE
-"plan.R|lean_plan_pulse|4","lean_plan_pulse",147,"before <- position[k]",FALSE
-"plan.R|lean_plan_pulse|40","lean_plan_pulse",212,"late <- candidates[!scan$accepted]",FALSE
-"plan.R|lean_plan_pulse|41","lean_plan_pulse",214,"view_code <- if (n > 0L) execution_view$reason_code else integer()",FALSE
-"plan.R|lean_plan_pulse|42","lean_plan_pulse",215,"short_cash <- candidates[scan$insufficient]",FALSE
-"plan.R|lean_plan_pulse|43","lean_plan_pulse",216,"segment <- lean_plan_segments(n, c(rep.int(seq_len(n), view_count), early, short_cash, informational), c(view_code, rep(",FALSE
-"plan.R|lean_plan_pulse|44","lean_plan_pulse",219,"groups <- lean_plan_groups(k, pos, side, qty, price, fee, exec_ts, before, segment, fills, list(cash_delta = effects$cas",FALSE
-"plan.R|lean_plan_pulse|45","lean_plan_pulse",223,"plan(groups, if (length(fills) > 0L) 1L else none, scan$final_cash)",FALSE
-"plan.R|lean_plan_pulse|5","lean_plan_pulse",148,"delta <- target_qty[k] - before",FALSE
-"plan.R|lean_plan_pulse|6","lean_plan_pulse",149,"side <- ledgr_plan_side(delta)",FALSE
-"plan.R|lean_plan_pulse|7","lean_plan_pulse",150,"qty <- abs(delta)",FALSE
-"plan.R|lean_plan_pulse|8","lean_plan_pulse",151,"exec_ts <- execution$exec_ts",FALSE
-"plan.R|lean_plan_pulse|9","lean_plan_pulse",152,"plan <- function(groups, kinds, final_cash) { x <- list(expected_final_cash = as.numeric(final_cash), economic_event_kin",FALSE
-"plan.R|lean_plan_segment_rows|1","lean_plan_segment_rows",33,"if (length(segment$code) == 0L) return(lean_plan_empty_segments(length(idx)))",FALSE
-"plan.R|lean_plan_segment_rows|2","lean_plan_segment_rows",34,"ledgr_carrier_segment_rows(segment$offset, segment$count, segment$code, idx)",FALSE
-"plan.R|lean_plan_segments|1","lean_plan_segments",28,"if (length(row) == 0L) return(lean_plan_empty_segments(n))",FALSE
-"plan.R|lean_plan_segments|2","lean_plan_segments",29,"ledgr_carrier_segments(n, row, code)",FALSE
-"plan.R|plan|1","plan",153,"x <- list(expected_final_cash = as.numeric(final_cash), economic_event_kinds = kinds, fill = groups$fill, rejection = gr",FALSE
-"plan.R|plan|2","plan",155,"if (.lean_debug) ledgr_carrier_plan(x, context_pos, actionable_k, length(instrument_ids)) else x",FALSE
+"statement","fn","line","text","hash","debug_fn"
+"loop.R|caught|1","caught",471,"tryCatch(expr, error = function(e) list(class(e), conditionMessage(e)))","0bca5cbb5f127856892676a43615fa6d",TRUE
+"loop.R|check_uncovered|1","check_uncovered",519,"u <- hooks$uncovered()","9ef2a22a023ac9928a7d454dc9f5e13c",FALSE
+"loop.R|check_uncovered|2","check_uncovered",520,"if (length(u)) lean_not_covered(u[[1L]])","62adf49d687f4b48950404980811fa13",FALSE
+"loop.R|fail|1","fail",458,"rlang::abort(sprintf(""Lean context %s differs from the pin's at pulse %d."", what, i), class = ""ledgr_internal_error"")","97e58bdc095711a2de4549a781ef4e7d",TRUE
+"loop.R|feature_fn|1","feature_fn",388,"force(pidx)","94d35960a9b478a75a0202d84b103060",FALSE
+"loop.R|feature_fn|2","feature_fn",389,"function(feature_name, default = NA_real_) { feature_name <- ledgr_resolve_feature_name(feature_name, name_lookup) mat <","e7a64d18eada7a85b1beafc912bf7160",FALSE
+"loop.R|grow|1","grow",364,"lapply(x, function(v) { length(v) <- cap; v })","727244f4d9b8e899f841086a802d4a07",FALSE
+"loop.R|lean_context|1","lean_context",400,"fv <- feature_fn(projection_idx[[i]])","a2c68eabaed87f8ecd4f136020bb46f7",FALSE
+"loop.R|lean_context|2","lean_context",401,"lookup <- list2env(list( feature_lookup = feature_lookup_state, feature_vector = fv, projection_idx = projection_idx[[i]","954eec6f652cea8e33383b6855cbf67b",FALSE
+"loop.R|lean_context|3","lean_context",413,"lookup$build_counts <- counts$build","22d1667547391f401bdb8f440fadd740",FALSE
+"loop.R|lean_context|4","lean_context",414,"lookup$preparation_counts <- counts$prep","a1ac86bf8498f77d63b0a00f09531f54",FALSE
+"loop.R|lean_context|5","lean_context",415,"helpers <- lean_ctx_helpers(lookup)","101ec6638d8d8fec02c704f447d854cb",FALSE
+"loop.R|lean_context|6","lean_context",416,"ctx <- list( run_id = run_id, ts_utc = pulses_iso[[i]], universe = ids, .positions = positions_snapshot, cash = cash, eq","d411f5f19a0a17f33b12d6ea8202cd49",FALSE
+"loop.R|lean_context|7","lean_context",424,"class(ctx) <- ""ledgr_pulse_context""","6263bc8f102ef9498c94a8d5a7087513",FALSE
+"loop.R|lean_context|8","lean_context",425,"ctx","f7f7e45fa9af0bcb5a687846bed72aac",FALSE
+"loop.R|lean_ctx_dollar|1","lean_ctx_dollar",148,"if (!is.character(name) || length(name) != 1L || is.na(name) || !nzchar(name)) return(lean_pin_ctx_dollar(x, name))","3ae63d77d5290d0eda05fa3fa6563c17",FALSE
+"loop.R|lean_ctx_dollar|2","lean_ctx_dollar",149,"if (!is.null(lean_ctx_retired[[name]])) return(lean_pin_ctx_dollar(x, name))","c9b73e73e6bc74af0b99bfc0a2c7e19f",FALSE
+"loop.R|lean_ctx_dollar|3","lean_ctx_dollar",150,"v <- .subset2(x, name)","b4d7040390e9b1f7e2ee387d05934fbc",FALSE
+"loop.R|lean_ctx_dollar|4","lean_ctx_dollar",151,"if (!is.null(v) && !startsWith(name, ""."")) return(v)","32709a9dadde679c6ce4a46204c43949",FALSE
+"loop.R|lean_ctx_dollar|5","lean_ctx_dollar",152,"lookup <- .subset2(x, "".pulse_lookup"")","6a047101503da5254a8bd879448d9110",FALSE
+"loop.R|lean_ctx_dollar|6","lean_ctx_dollar",153,"if (is.environment(lookup) && is.environment(cache <- lookup$cache)) { hit <- get0(name, envir = cache, inherits = FALSE","3c765ee4c36e02f3bcf099b9b2fbe879",FALSE
+"loop.R|lean_ctx_dollar|7","lean_ctx_dollar",163,"lean_pin_ctx_dollar(x, name)","8dde911052eea7c745bb0c47b6bae928",FALSE
+"loop.R|lean_ctx_helpers|1","lean_ctx_helpers",185,"force(lookup)","7e5dd088b7e3ea4a245f2d9213f49e6a",FALSE
+"loop.R|lean_ctx_helpers|2","lean_ctx_helpers",186,"list( flat = function(default = 0) ledgr_pulse_context_targets(lookup, default = default), hold = function() { p <- look","edc56d6e05d5ef5869f790f5e6e1395a",FALSE
+"loop.R|lean_e_advance|1","lean_e_advance",839,"processed <<- processed + 1L","9ebdd51acb30ffcd0234692a66851515",FALSE
+"loop.R|lean_e_advance|2","lean_e_advance",840,"if (processed >= max_pulses) { full_run <<- FALSE return(FALSE) }","6b55cca1ffe5d1a0a0e5917a37856931",FALSE
+"loop.R|lean_e_advance|3","lean_e_advance",844,"TRUE","2706cee8a0d0fb6af942a46469bc67e0",FALSE
+"loop.R|lean_exec_view|1","lean_exec_view",371,"list(member = rep(TRUE, m), restricted = rep(FALSE, m), reason_offset = integer(m), reason_count = integer(m), reason_co","a7f68b4d0b44195249613b0af606bb1d",FALSE
+"loop.R|lean_gross|1","lean_gross",21,"v <- abs(q * m)","6275fa548a8bc2f7fd50ee5c194e868f",FALSE
+"loop.R|lean_gross|2","lean_gross",22,"v[which(q == 0)] <- 0","f1de59059193bcee6f1348a7fb1ee35b",FALSE
+"loop.R|lean_gross|3","lean_gross",23,"if (anyNA(v) || !all(is.finite(v))) NA_real_ else sum(v)","aace72c3e4f9824611053c4212f25560",FALSE
+"loop.R|lean_loop_add_decisions|1","lean_loop_add_decisions",888,"m <- length(k)","75acd0833edc702a087a3f4f92c95871",FALSE
+"loop.R|lean_loop_add_decisions|2","lean_loop_add_decisions",889,"rows <- nd + seq_len(m)","77d35949298daa0f26dbb83bd9d37128",FALSE
+"loop.R|lean_loop_add_decisions|3","lean_loop_add_decisions",890,"if (nd + m > dcap) { while (nd + m > dcap) dcap <<- dcap * 2L dr <<- grow(dr, dcap) }","c95cf780aef3f9c47f15f71f5c2ea9ac",FALSE
+"loop.R|lean_loop_add_decisions|4","lean_loop_add_decisions",894,"dr$pulse[rows] <<- i","1786c4d3972f0703e4fd1252962cba9e",FALSE
+"loop.R|lean_loop_add_decisions|5","lean_loop_add_decisions",895,"dr$k[rows] <<- k","213ebf247a9ef6ec6745916779bbe749",FALSE
+"loop.R|lean_loop_add_decisions|6","lean_loop_add_decisions",896,"dr$target[rows] <<- sq[k]","acad7d9e22ee3c850b51d91b4ba94363",FALSE
+"loop.R|lean_loop_add_decisions|7","lean_loop_add_decisions",897,"dr$target_after[rows] <<- tq[k]","1dfd369e4c14df1efa379e0600794465",FALSE
+"loop.R|lean_loop_add_decisions|8","lean_loop_add_decisions",898,"dr$position[rows] <<- position[k]","2c92d41ebfe96fabd461b8ead9510494",FALSE
+"loop.R|lean_loop_add_decisions|9","lean_loop_add_decisions",899,"nd <<- nd + m","4a9028afc3a33e47db8f89096d6c6ea2",FALSE
+"loop.R|lean_loop_add_sizing|1","lean_loop_add_sizing",870,"rows <- nsz + seq_len(m)","e110d88e4fd59a2cbc1128fd1786e5ae",FALSE
+"loop.R|lean_loop_add_sizing|10","lean_loop_add_sizing",882,"szr$requested[rows] <<- e$requested_quantity","ef66f352984aefdeaa1f19a4cc7822b5",FALSE
+"loop.R|lean_loop_add_sizing|11","lean_loop_add_sizing",883,"szr$before[rows] <<- e$position_before","90432f6605aae4f88d9250c7edfa451c",FALSE
+"loop.R|lean_loop_add_sizing|12","lean_loop_add_sizing",884,"nsz <<- nsz + m","0d7893f3a61070b20eb7bd06261148e0",FALSE
+"loop.R|lean_loop_add_sizing|2","lean_loop_add_sizing",871,"if (nsz + m > scap) { while (nsz + m > scap) scap <<- scap * 2L szr <<- grow(szr, scap) }","f1b03fe4a611d128ada250807b47d10d",FALSE
+"loop.R|lean_loop_add_sizing|3","lean_loop_add_sizing",875,"szr$pulse[rows] <<- i","c2fc572074eee84cd0158693bc195ef3",FALSE
+"loop.R|lean_loop_add_sizing|4","lean_loop_add_sizing",876,"szr$id[rows] <<- e$instrument_id","399ec1e804f0b66ab44f35902a554cd1",FALSE
+"loop.R|lean_loop_add_sizing|5","lean_loop_add_sizing",877,"szr$reason[rows] <<- e$reason_code","784ff6fbe7b03199955b6b848ff36e0e",FALSE
+"loop.R|lean_loop_add_sizing|6","lean_loop_add_sizing",878,"szr$reasons[rows] <<- if (is.null(intent)) """" else intent","27cbcc2335e3f53d9a4f8899ecf8669d",FALSE
+"loop.R|lean_loop_add_sizing|7","lean_loop_add_sizing",879,"szr$target[rows] <<- e$pre_floor_quantity","262e1489a09e5a9a126df02a5b3fcdca",FALSE
+"loop.R|lean_loop_add_sizing|8","lean_loop_add_sizing",880,"szr$quantity[rows] <<- e$rounded_quantity","9cfc7e48c37ba371b60457c6181a0700",FALSE
+"loop.R|lean_loop_add_sizing|9","lean_loop_add_sizing",881,"szr$price[rows] <<- e$price","3c10be8ec6fc858928a9301c86aeec83",FALSE
+"loop.R|lean_loop_debug_ctx|1","lean_loop_debug_ctx",458,"fail <- function(what) rlang::abort(sprintf(""Lean context %s differs from the pin's at pulse %d."", what, i), class = ""le","7f2a9b230f7b75cde5ba366ad39c522c",TRUE
+"loop.R|lean_loop_debug_ctx|10","lean_loop_debug_ctx",471,"caught <- function(expr) tryCatch(expr, error = function(e) list(class(e), conditionMessage(e)))","687c367d3c88e1914e1cd79927b0362c",TRUE
+"loop.R|lean_loop_debug_ctx|11","lean_loop_debug_ctx",472,"for (nm in c(lapply(setdiff(c(names(a), feature_lookup_state$readable_names), c(""flat"", ""hold"")), identity), list(""bars""","fe6ff15612a839014ce306c2a7dc48ac",TRUE
+"loop.R|lean_loop_debug_ctx|12","lean_loop_debug_ctx",480,"if (!identical(ra$flat(), rb$flat()) || !identical(ra$hold(), rb$hold())) fail(""flat()/hold()"")","8867d492e4bc7370a81820a0c7ee53d6",TRUE
+"loop.R|lean_loop_debug_ctx|13","lean_loop_debug_ctx",482,"for (nm in c(lapply(feature_lookup_state$readable_names, identity), list(""lean_no_such_feature"", """", NA_character_, c(""a","3e13628883c822697c2c16f7a07866e6",TRUE
+"loop.R|lean_loop_debug_ctx|14","lean_loop_debug_ctx",488,"invisible(TRUE)","e13c7e5c7c94d705781058017c0b325e",TRUE
+"loop.R|lean_loop_debug_ctx|2","lean_loop_debug_ctx",460,"ra <- unclass(a)","fc0b73886d5e5e02643fb9f4abbbde45",TRUE
+"loop.R|lean_loop_debug_ctx|3","lean_loop_debug_ctx",460,"rb <- unclass(b)","75d3ebc51f969c35d18b7f32dfb6ffae",TRUE
+"loop.R|lean_loop_debug_ctx|4","lean_loop_debug_ctx",461,"if (!identical(names(ra), names(rb))) fail(""raw field order"")","35bc56f379506a665e518ebb80840dc1",TRUE
+"loop.R|lean_loop_debug_ctx|5","lean_loop_debug_ctx",462,"for (nm in names(ra)) { if (!is.function(ra[[nm]]) && !is.environment(ra[[nm]]) && !identical(ra[[nm]], rb[[nm]])) fail(","8cebdb0be5a08cf9ebf6ce236b4d65bc",TRUE
+"loop.R|lean_loop_debug_ctx|6","lean_loop_debug_ctx",465,"la <- ra$.pulse_lookup","d1f398c167fc3912559fa09670646316",TRUE
+"loop.R|lean_loop_debug_ctx|7","lean_loop_debug_ctx",465,"lb <- rb$.pulse_lookup","9e75456fe1b2c81d5edaddd0ca0b6311",TRUE
+"loop.R|lean_loop_debug_ctx|8","lean_loop_debug_ctx",466,"if (!identical(sort(ls(la, all.names = TRUE)), sort(ls(lb, all.names = TRUE)))) fail(""lookup names"")","b6b9a8406f873ec2c4b55603624dba8a",TRUE
+"loop.R|lean_loop_debug_ctx|9","lean_loop_debug_ctx",467,"for (nm in setdiff(ls(la, all.names = TRUE), c(""cache"", ""feature_vector"", ""build_counts"", ""preparation_counts""))) { if (","41c23edfff0995b32ac038f6c986cf55",TRUE
+"loop.R|lean_loop_debug_packet|1","lean_loop_debug_packet",115,"full <- stats::setNames(pos, ids)","469f78a1a92d54f849a75684b89c9417",TRUE
+"loop.R|lean_loop_debug_packet|2","lean_loop_debug_packet",116,"view <- provider$decision_view(ts, full)","5b85deaae6a31b49c54df9cd4eea97df",TRUE
+"loop.R|lean_loop_debug_packet|3","lean_loop_debug_packet",117,"vs <- ledgr_availability_valuation_state(substrate$bars, ids, substrate$axis, .Machine$integer.max, ledgr_availability_e","0a524059984cd314e75d30a7b4dcee2c",TRUE
+"loop.R|lean_loop_debug_packet|4","lean_loop_debug_packet",119,"valuation <- vs$advance(i, as.character(view$axis), held = as.logical(view$held[as.character(view$axis)]))","7735c8d9eb941ae9c1fdd65391f29e95",TRUE
+"loop.R|lean_loop_debug_packet|5","lean_loop_debug_packet",120,"columns <- ledgr_carrier_provider_view(ledgr_availability_restrict_frozen(view, valuation), valuation)","58eb6226438eeaaacf3bdbdb81f64dde",TRUE
+"loop.R|lean_loop_debug_packet|6","lean_loop_debug_packet",121,"for (name in names(columns)) { if (!identical(unname(columns[[name]]), unname(packet[[name]]))) { rlang::abort(sprintf(""","b46f848b3a7f50b69c1309af6a983fe5",TRUE
+"loop.R|lean_loop_debug_packet|7","lean_loop_debug_packet",127,"invisible(TRUE)","e13c7e5c7c94d705781058017c0b325e",TRUE
+"loop.R|lean_loop_pin_ctx|1","lean_loop_pin_ctx",430,"pf_source <- ledgr_position_fact_source(position_facts, book, pos, current_bar = projection_idx[[i]], bar_axis = bar_axi","3089b24b808b6fb8b18b95cf41c60c18",TRUE
+"loop.R|lean_loop_pin_ctx|2","lean_loop_pin_ctx",432,"ctx <- list( run_id = run_id, ts_utc = pulses_iso[[i]], universe = ids, .positions = positions_snapshot, cash = cash, eq","8c77aabe2066387f830dd13984f0117b",TRUE
+"loop.R|lean_loop_pin_ctx|3","lean_loop_pin_ctx",438,"ctx$members <- p2$members","45f765607356980dd0b6e2a36eef1a1e",TRUE
+"loop.R|lean_loop_pin_ctx|4","lean_loop_pin_ctx",439,"ctx$.history <- history_reader$view(i)","cb86a295de36ad8999e31e6027c0bdb9",TRUE
+"loop.R|lean_loop_pin_ctx|5","lean_loop_pin_ctx",440,"class(ctx) <- ""ledgr_pulse_context""","6263bc8f102ef9498c94a8d5a7087513",TRUE
+"loop.R|lean_loop_pin_ctx|6","lean_loop_pin_ctx",441,"ctx <- ledgr_update_pulse_context_helpers(ctx, bars = list(open = bars$open[, col], high = bars$high[, col], low = bars$","171edbfd5e3eb429c23dbd19c130eaf6",TRUE
+"loop.R|lean_loop_pin_ctx|7","lean_loop_pin_ctx",450,"ctx <- ledgr_filter_pulse_context_features(ctx, ids, ids, context_pos = ctx_pos)","42010e75982232e59807f080967e850e",TRUE
+"loop.R|lean_loop_pin_ctx|8","lean_loop_pin_ctx",451,"ctx$.notes <- pulse_notes","829cc7dfaecf350510037f94cae7225c",TRUE
+"loop.R|lean_loop_pin_ctx|9","lean_loop_pin_ctx",452,"ctx","f7f7e45fa9af0bcb5a687846bed72aac",TRUE
+"loop.R|lean_not_covered|1","lean_not_covered",27,"rlang::abort(sprintf(""The lean loop does not cover %s (slice 1)."", feature), class = c(""ledgr_lean_not_covered"", ""ledgr_","84725d2c0bdc1df446fdf1e4d4a4ff3e",FALSE
+"loop.R|lean_p1_value|1","lean_p1_value",530,"ts <- ts_num[[i]]","2d9bfec222f1a4d9735d48a5e21cad71",FALSE
+"loop.R|lean_p1_value|10","lean_p1_value",539,"eq$ts[[n_eq]] <<- ts_num[[i]]","93726b559833bb2465e9a033579968a5",FALSE
+"loop.R|lean_p1_value|11","lean_p1_value",540,"eq$cash[[n_eq]] <<- cash","114429aa50d4681a5b2680edfb4f3af7",FALSE
+"loop.R|lean_p1_value|12","lean_p1_value",541,"eq$positions_value[[n_eq]] <<- pv","d92b614b9feeb60ea541cc4fd3dadcc8",FALSE
+"loop.R|lean_p1_value|13","lean_p1_value",542,"eq$realized_pnl[[n_eq]] <<- book$realized_pnl","ea57ad556dd7c7e6a2d2892003f7b8b0",FALSE
+"loop.R|lean_p1_value|14","lean_p1_value",543,"eq$cost_basis[[n_eq]] <<- book$total_cost_basis","d575133124bd29c7d7d69008fa084228",FALSE
+"loop.R|lean_p1_value|15","lean_p1_value",544,"n_done <<- i","2a7916cf341cd81e237a323ff30f893d",FALSE
+"loop.R|lean_p1_value|16","lean_p1_value",545,"list(col = col, close = close, pv = pv)","46aef83294ead4f8c3a540f5b76db411",FALSE
+"loop.R|lean_p1_value|2","lean_p1_value",531,"live$cur_ts <- ts","013600f5c028a41d6d45c14106888204",FALSE
+"loop.R|lean_p1_value|3","lean_p1_value",532,"live$cur_stage <- ""valuation""","5cecf20f551c355b3ef6f60a32c10a8e",FALSE
+"loop.R|lean_p1_value|4","lean_p1_value",533,"col <- pulse_cols[[i]]","6c132be9aa2797ea29cf811694464f3d",FALSE
+"loop.R|lean_p1_value|5","lean_p1_value",534,"close <- bars$close[, col]","cac2436f83e4e0d9ff8920b8a99841e4",FALSE
+"loop.R|lean_p1_value|6","lean_p1_value",535,"active <- pos != 0","8d0c35db59bd645a75aeac5f1a416f20",FALSE
+"loop.R|lean_p1_value|7","lean_p1_value",536,"pv <- if (any(active)) sum(pos[active] * close[active]) else 0","89ca96789b19180ad2548f5a1cbdafa9",FALSE
+"loop.R|lean_p1_value|8","lean_p1_value",537,"last_fully_valued <<- ts","cb7fddee37adfc476d834d619abfd27b",FALSE
+"loop.R|lean_p1_value|9","lean_p1_value",538,"n_eq <<- n_eq + 1L","7eda464f26f4926cd2cb14b39b0d13cd",FALSE
+"loop.R|lean_p2_decide|1","lean_p2_decide",551,"col <- v1$col","dce2c7f2e332fd66f669232fbd6182ff",FALSE
+"loop.R|lean_p2_decide|10","lean_p2_decide",560,"if (.lean_debug) { packet <- list( pulse_idx = i, ts = ts_num[[i]], context_pos = ctx_pos, cash = cash, positions_value ","9f98e56f979f3d3d32b81207ef664832",FALSE
+"loop.R|lean_p2_decide|11","lean_p2_decide",577,"ctx <- lean_context(i, col, close, pv, positions_snapshot, view, counts)","9823e7af8ee43b88a53d5e0c6136098d",FALSE
+"loop.R|lean_p2_decide|12","lean_p2_decide",578,"pulse_notes$sizing_skipped <- character()","8dffcce39211763ab34a567e6117f65b",FALSE
+"loop.R|lean_p2_decide|13","lean_p2_decide",579,"result <- tryCatch({ live$cur_stage <- ""strategy"" if (strategy_functional) { ledgr_call_strategy_fn(strategy_fn, ctx, st","de80b418ce154085eaa6fe411a25d583",FALSE
+"loop.R|lean_p2_decide|14","lean_p2_decide",592,"check_uncovered()","b426556af574c5bc9612ac334ba6e803",FALSE
+"loop.R|lean_p2_decide|15","lean_p2_decide",593,"if (is.object(result) && ledgr_is_strategy_intermediate(result)) ledgr_abort_intermediate_strategy_result(result)","c6000eb58bf6a5736cc14d94287d616e",FALSE
+"loop.R|lean_p2_decide|16","lean_p2_decide",594,"if (is.numeric(result)) result <- list(targets = result, state_update = NULL)","9c516b195017f932ca385bac42d14b5b",FALSE
+"loop.R|lean_p2_decide|17","lean_p2_decide",595,"if (!is.list(result) || is.null(result$targets)) { rlang::abort(sprintf(""Strategy must return %s or a list with `targets","a73ab6a2cea9148036553a5de3e7acb5",FALSE
+"loop.R|lean_p2_decide|18","lean_p2_decide",599,"intent_reason <- ledgr_validate_strategy_intent_reason(result$intent_reason)","c5f393e38c1fbb419832ba1aa9437231",FALSE
+"loop.R|lean_p2_decide|19","lean_p2_decide",600,"sizing_evidence <- attr(result$targets, ""sizing_evidence"", exact = TRUE)","0fb74113bf6421ed3c713e3a32872127",FALSE
+"loop.R|lean_p2_decide|2","lean_p2_decide",552,"close <- v1$close","c5c21f65d920c36c78ddb0de3f2aa492",FALSE
+"loop.R|lean_p2_decide|20","lean_p2_decide",601,"raw_targets <- result$targets","7a913efb732a2ceb0279a1d38648d3e1",FALSE
+"loop.R|lean_p2_decide|21","lean_p2_decide",604,"targets <- if (is.numeric(raw_targets) && identical(attributes(raw_targets), ids_attr) && all(is.finite(raw_targets))) {","ae510370356dc3bb9922f1c9935f5be5",FALSE
+"loop.R|lean_p2_decide|22","lean_p2_decide",610,"if (.lean_debug && !identical(targets, ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE))) { rlang::","54f3069b94f3f4fa40b70f0e302a660b",FALSE
+"loop.R|lean_p2_decide|23","lean_p2_decide",613,"sq <- as.numeric(targets)","12deeaae6e1fe6506d047902b2aba5c3",FALSE
+"loop.R|lean_p2_decide|24","lean_p2_decide",614,"pre <- 0L","a6e0ecde1fd4c8b2c5cfe8359cc7c5f5",FALSE
+"loop.R|lean_p2_decide|25","lean_p2_decide",615,"if (!is.null(intent_reason)) { hd_intent[[i]] <<- intent_reason; pre <- pre + 1L }","124449fe019b00edc99c4b24607b5c2f",FALSE
+"loop.R|lean_p2_decide|26","lean_p2_decide",618,"sizing_evidence <- ledgr_validate_sizing_evidence(sizing_evidence, targets = targets, context_ids = ids, position = pos,","67ef6fd4d32eb0befe41873c6771699c",FALSE
+"loop.R|lean_p2_decide|27","lean_p2_decide",620,"if (.lean_debug && length(pulse_notes$sizing_skipped) > 0L) { rlang::abort(sprintf(""Lean sizing skipped an instrument at","ca29d500c09377f4011275d586e1b833",FALSE
+"loop.R|lean_p2_decide|28","lean_p2_decide",624,"m <- length(sizing_evidence$instrument_id)","6d2d385b51222ee7cf3f0871dcbccafa",FALSE
+"loop.R|lean_p2_decide|29","lean_p2_decide",625,"if (m > 0L) { lean_loop_add_sizing(sizing_evidence, intent_reason, i, m) pre <- pre + m } else if (is.null(sizing_eviden","9a53e02a178813cfbbb451c2384818cd",FALSE
+"loop.R|lean_p2_decide|3","lean_p2_decide",553,"pv <- v1$pv","7b3fbc0a77b01ab44f64b7243b1ba393",FALSE
+"loop.R|lean_p2_decide|30","lean_p2_decide",633,"hd_pre[[i]] <<- pre","144b452955aad1aeaeeca17c340056a6",FALSE
+"loop.R|lean_p2_decide|31","lean_p2_decide",634,"tq <- sq","8e5098dd1008fc9ec3d6cdbcfc4779e9",FALSE
+"loop.R|lean_p2_decide|32","lean_p2_decide",635,"if (n > 0L) { # A fixed basket has no restricted or nonmember instrument. The pin's # risk plan transforms the targets o","4c56a2561076d0b53b2b74d848e1a647",FALSE
+"loop.R|lean_p2_decide|33","lean_p2_decide",651,"list(result = result, sq = sq, tq = tq, pos_start = pos_start)","9e032b84f18d83ac77ad9f7459a3c566",FALSE
+"loop.R|lean_p2_decide|4","lean_p2_decide",554,"pos_start <- pos","b0a91b4817979a381531aeb04a5d9494",FALSE
+"loop.R|lean_p2_decide|5","lean_p2_decide",555,"positions_snapshot <- pos","d9dbfb07ffe029b01d20d36cd072cd57",FALSE
+"loop.R|lean_p2_decide|6","lean_p2_decide",556,"names(positions_snapshot) <- ids","67c911435cc68b91326d879fefe84e0c",FALSE
+"loop.R|lean_p2_decide|7","lean_p2_decide",557,"view <- view0","0c4ef490d0ae61268121e982b2214161",FALSE
+"loop.R|lean_p2_decide|8","lean_p2_decide",558,"view$held[] <- pos != 0","e3a2c028c152e92ef3dff39625ac158c",FALSE
+"loop.R|lean_p2_decide|9","lean_p2_decide",559,"view$risk_mark[] <- close","106ad9d05c57f8656255407d3f46c80e",FALSE
+"loop.R|lean_p3_plan|1","lean_p3_plan",658,"col <- v1$col","dce2c7f2e332fd66f669232fbd6182ff",FALSE
+"loop.R|lean_p3_plan|2","lean_p3_plan",659,"sq <- v2$sq","502f1540eb5de85221e954c5cbfe2699",FALSE
+"loop.R|lean_p3_plan|3","lean_p3_plan",660,"tq <- v2$tq","cf2e4be55e26f46210f67fa7ffd25570",FALSE
+"loop.R|lean_p3_plan|4","lean_p3_plan",661,"live$cur_stage <- ""execution""","8ff72b391f7148a35df7c8f2bc337d05",FALSE
+"loop.R|lean_p3_plan|5","lean_p3_plan",662,"actionable <- which(abs(tq - pos) > act_tol)","7c9cc2c2e9173a8ed298f247dfbaebe9",FALSE
+"loop.R|lean_p3_plan|6","lean_p3_plan",663,"exec_ts <- if (i <= length(epochs)) epochs[[i]] else NA_real_","a4bf960fa0d4c5a90683fda22b66b507",FALSE
+"loop.R|lean_p3_plan|7","lean_p3_plan",664,"batch <- NULL","f8bc6f6e5ca71d3e553b4ba7ec9f2a42",FALSE
+"loop.R|lean_p3_plan|8","lean_p3_plan",665,"if (length(actionable) > 0L) { next_col <- if (i < n_pulse) pulse_cols[[i + 1L]] else col + 1L has_next <- next_col <= l","7421dbfcdd558601b240ec3791166497",FALSE
+"loop.R|lean_p3_plan|9","lean_p3_plan",696,"list(batch = batch, stop = FALSE)","b7a730aac355f240e289daf024be3660",FALSE
+"loop.R|lean_p4_apply|1","lean_p4_apply",703,"close <- v1$close","c5c21f65d920c36c78ddb0de3f2aa492",FALSE
+"loop.R|lean_p4_apply|10","lean_p4_apply",780,"explicit_k <- if (length(clean_k)) differs[match(differs, clean_k, 0L) == 0L] else differs","e6b7a276208e41de5c0beaae2b729f15",FALSE
+"loop.R|lean_p4_apply|11","lean_p4_apply",781,"if (length(explicit_k) > 0L) { lean_loop_add_decisions(explicit_k, i, sq, tq, v2$pos_start) }","68e4baceb7f38de1ed44f392edfb658e",FALSE
+"loop.R|lean_p4_apply|12","lean_p4_apply",784,"n_fill","885ac0995178ecb3d487e1d9a9162be9",FALSE
+"loop.R|lean_p4_apply|2","lean_p4_apply",704,"sq <- v2$sq","502f1540eb5de85221e954c5cbfe2699",FALSE
+"loop.R|lean_p4_apply|3","lean_p4_apply",705,"tq <- v2$tq","cf2e4be55e26f46210f67fa7ffd25570",FALSE
+"loop.R|lean_p4_apply|4","lean_p4_apply",706,"differs <- which(!(is.finite(sq) & sq == pos & tq == sq & is.finite(close)))","65b12d28dd7acccd8ac108e6db6709c2",FALSE
+"loop.R|lean_p4_apply|5","lean_p4_apply",707,"n_fill <- if (is.null(batch)) 0L else length(batch$fill$k)","f0f5d095f5c46993f8d29b750699e06b",FALSE
+"loop.R|lean_p4_apply|6","lean_p4_apply",708,"n_rej <- if (is.null(batch)) 0L else length(batch$rejection$k)","3e5b667e9b13ea479fca1159bb9ef930",FALSE
+"loop.R|lean_p4_apply|7","lean_p4_apply",709,"clean_k <- integer()","c688362900728afccfc6baf4a7b07a8a",FALSE
+"loop.R|lean_p4_apply|8","lean_p4_apply",710,"if (n_fill > 0L) { fill <- batch$fill fr <- ledgr_carrier_segment_text(fill$info_offset, fill$info_count, fill$info_code","db1b2eb8374d69c541e4956bfaa34ab5",FALSE
+"loop.R|lean_p4_apply|9","lean_p4_apply",764,"if (n_rej > 0L) { rejection <- batch$rejection rr <- ledgr_carrier_segment_text(rejection$reason_offset, rejection$reaso","386140d59cccb985fb643d7f5f54b333",FALSE
+"loop.R|lean_p5_commit|1","lean_p5_commit",790,"close <- v1$close","c5c21f65d920c36c78ddb0de3f2aa492",FALSE
+"loop.R|lean_p5_commit|10","lean_p5_commit",806,"recon <- c( lean_gross(pos, close), cash - sum(fill_cash), lean_gross(sq, close), if (has_risk) lean_gross(tq, close) el","d0345c3f4bb401b3db4e9a1e6def4dd8",FALSE
+"loop.R|lean_p5_commit|11","lean_p5_commit",813,"ledgr_fold_reconciliation_check(recon[[2L]], recon[[6L]], recon[[5L]], recon[[3L]], recon[[4L]], recon[[1L]])","d3dab44a198982dc0d28edddd4e7fa77",FALSE
+"loop.R|lean_p5_commit|12","lean_p5_commit",814,"if (.lean_debug && !identical(recon[c(1L, 3L, 4L)], c(ledgr_availability_marked_gross(pos, close), ledgr_availability_ma","1eace7ab1553c9625cd3314af338b195",FALSE
+"loop.R|lean_p5_commit|13","lean_p5_commit",818,"hd_recon[i, ] <<- recon","d152e4d7f5d33c86cfb08904e8d8a531",FALSE
+"loop.R|lean_p5_commit|14","lean_p5_commit",819,"hd_has_recon[[i]] <<- TRUE","2995d15643047b1953b1a6f4dc16d018",FALSE
+"loop.R|lean_p5_commit|15","lean_p5_commit",820,"state_update <- v2$result$state_update","64c1f30f185c07043c6c790fc6924cd6",FALSE
+"loop.R|lean_p5_commit|16","lean_p5_commit",821,"if (inherits(state_update, ""ledgr_strategy_state_reset"")) { strategy_state <<- ledgr_strategy_state_defaults(state_decla","6662a8cfa4debbfe490558f5e5acc32a",FALSE
+"loop.R|lean_p5_commit|17","lean_p5_commit",834,"invisible(NULL)","81cecb7f0741908d82f1437659d8b5de",FALSE
+"loop.R|lean_p5_commit|2","lean_p5_commit",791,"sq <- v2$sq","502f1540eb5de85221e954c5cbfe2699",FALSE
+"loop.R|lean_p5_commit|3","lean_p5_commit",792,"tq <- v2$tq","cf2e4be55e26f46210f67fa7ffd25570",FALSE
+"loop.R|lean_p5_commit|4","lean_p5_commit",793,"live$cur_stage <- ""accounting""","0b277504af9e84aaf146974f40dad5e1",FALSE
+"loop.R|lean_p5_commit|5","lean_p5_commit",794,"if (nf > capacity) { rlang::abort(""Ledger event buffer exceeded the run's maximum event capacity."", class = ""ledgr_event","1f154aa1e00fda98a801ae1f6e37d0f9",FALSE
+"loop.R|lean_p5_commit|6","lean_p5_commit",798,"n_committed <<- nf","1a4fb6195d91f046d4b4d02eab8f61bf",FALSE
+"loop.R|lean_p5_commit|7","lean_p5_commit",799,"if (!is.null(batch) && !isTRUE(cash == batch$expected_final_cash) && !isTRUE(all.equal(as.numeric(cash), as.numeric(batc","b93f1114db0e7ab25619b66a752ade2c",FALSE
+"loop.R|lean_p5_commit|8","lean_p5_commit",804,"expected <- if (is.null(batch)) cash else batch$expected_final_cash","ead93dcad51f01d73a5832930b43475a",FALSE
+"loop.R|lean_p5_commit|9","lean_p5_commit",805,"fill_cash <- if (n_fill > 0L) batch$fill$cash_delta else numeric()","8b017f05b1111ba17a63104fa58a85b1",FALSE
+"loop.R|lean_state_patch|1","lean_state_patch",497,"if (!is.list(update) || is.data.frame(update)) { return(ledgr_strategy_state_apply_values(strategy_state, update, state_","b433c1e4eb5ceec132165dee4d757891",FALSE
+"loop.R|lean_state_patch|2","lean_state_patch",501,"nm <- names(update)","475a5983b7201773d4a64e4f3454114e",FALSE
+"loop.R|lean_state_patch|3","lean_state_patch",502,"if (length(update) == 0L || is.null(nm) || anyNA(nm) || !all(nzchar(nm)) || anyDuplicated(nm) || !all(nm %in% names(stra","d86048ac45b7decb0eb5a1dace85025c",FALSE
+"loop.R|lean_state_patch|4","lean_state_patch",507,"out <- strategy_state","30d831357e256b7d3efbf24e14b034bd",FALSE
+"loop.R|lean_state_patch|5","lean_state_patch",508,"for (name in nm) { value <- ledgr_strategy_state_validate_value(update[[name]], state_fields[[name]], ids) reset <- is.n","5056cdc2478290604e019601b88c53cf",FALSE
+"loop.R|lean_state_patch|6","lean_state_patch",514,"out","9592f94903a9b8d9014ca8ecf479ecbb",FALSE
+"loop.R|lean_strategy_view|1","lean_strategy_view",172,"if (is.list(values) && identical(names(attributes(values)), ""names"")) { view <- values class(view) <- c(""ledgr_strategy_","20e4ef80515988fb37947d470b1fa01e",FALSE
+"loop.R|lean_strategy_view|2","lean_strategy_view",180,"ledgr_strategy_state_view(values)","fbcc233e5610f72a7f5150eb57743031",FALSE
+"loop.R|run_loop|1","run_loop",849,"live$t_start <- ledgr_time_now()","e7e45fa193fd544cd1fdbc1839f86d64",FALSE
+"loop.R|run_loop|10","run_loop",866,"invisible(NULL)","81cecb7f0741908d82f1437659d8b5de",FALSE
+"loop.R|run_loop|2","run_loop",850,"live$in_pulses <- TRUE","96c685a30e66b4664883eab9d8561899",FALSE
+"loop.R|run_loop|3","run_loop",851,"on.exit(live$in_pulses <- FALSE)","969eec6cfe8f821e78369655a464ca52",FALSE
+"loop.R|run_loop|4","run_loop",852,"for (i in seq_len(n_pulse)) { v1 <- lean_p1_value(i) v2 <- lean_p2_decide(i, v1) v3 <- lean_p3_plan(i, v1, v2) if (v3$st","47e69c1ce502831eba6008261780a80f",FALSE
+"loop.R|run_loop|5","run_loop",861,"live$in_pulses <- FALSE","56de0bd1cb82bec3652ffb710f80dc96",FALSE
+"loop.R|run_loop|6","run_loop",862,"live$t_pulses <- ledgr_time_elapsed(live$t_start, ledgr_time_now())","be3cad598240d6cba8bb694a9b5d5669",FALSE
+"loop.R|run_loop|7","run_loop",863,"t_pub <- ledgr_time_now()","13e89f119d5535c436c21f1cdd1f852c",FALSE
+"loop.R|run_loop|8","run_loop",864,"hooks$publish(lean_loop_publish)","7b4999ca3c1d6aaf79c4bfd48aa06e13",FALSE
+"loop.R|run_loop|9","run_loop",865,"live$t_publish <- ledgr_time_elapsed(t_pub, ledgr_time_now())","830d58359f398b41c896c1bc1ff21852",FALSE
+"loop.R|schedule_fn|1","schedule_fn",385,"force(i)","dd2b9d5bf180e216823022e4ff306bf5",FALSE
+"loop.R|schedule_fn|2","schedule_fn",385,"function(schedule) schedule_query(schedule, i)","ffdcc8d058380b9048464cb7bd760ddc",FALSE
+"plan.R|lean_plan_affordability|1","lean_plan_affordability",100,"n <- length(cash_delta)","25db49e1cf1e60e6cd694c8774059845",FALSE
+"plan.R|lean_plan_affordability|2","lean_plan_affordability",101,"priority <- if (anyNA(generator)) { p <- c(which(generator), which(!generator)) p[order(!generator[p], enc2utf8(stable_i","167d9ffe5cde8791df8ece7d3cd3e5d6",FALSE
+"plan.R|lean_plan_affordability|3","lean_plan_affordability",111,"accepted <- logical(n)","3b3c21c4c613f3176266370cf3c080b0",FALSE
+"plan.R|lean_plan_affordability|4","lean_plan_affordability",112,"insufficient <- logical(n)","a76180cdcee23c27d72716a9d3ab6e16",FALSE
+"plan.R|lean_plan_affordability|5","lean_plan_affordability",113,"virtual_cash <- as.numeric(cash)","52b36c3a8cb7bd7098d75f097437fc5d",FALSE
+"plan.R|lean_plan_affordability|6","lean_plan_affordability",114,"for (idx in priority) { next_cash <- virtual_cash + cash_delta[[idx]] affordable <- cash_delta[[idx]] >= 0 || next_cash ","c28018471f7266b50455ee817fb30f59",FALSE
+"plan.R|lean_plan_affordability|7","lean_plan_affordability",124,"list(accepted = accepted, insufficient = insufficient, final_cash = virtual_cash)","dff79722e6f2950877301ba46f6ed94c",FALSE
+"plan.R|lean_plan_empty_segments|1","lean_plan_empty_segments",25,"list(offset = integer(n), count = integer(n), code = integer())","44854a1a39a0bc72e3cfcd2ca187e7fa",FALSE
+"plan.R|lean_plan_execution_view|1","lean_plan_execution_view",40,"view <- provider$execution_view(.POSIXct(exec_ts, tz = ""UTC""), ids)","f41ad36f2f7e58f593b1ade1bf236465",TRUE
+"plan.R|lean_plan_execution_view|2","lean_plan_execution_view",41,"if (.lean_debug && !(identical(names(view$member), ids) && identical(names(view$restricted), ids) && identical(names(vie","6af9c42d26146ef48c862d2e9cad5dc9",TRUE
+"plan.R|lean_plan_execution_view|3","lean_plan_execution_view",45,"n <- length(ids)","90d1d71c387edbc309b6208f288afbcb",TRUE
+"plan.R|lean_plan_execution_view|4","lean_plan_execution_view",46,"restricted <- unname(view$restricted)","26d836ea7be065f67ce5e3d0b31a6568",TRUE
+"plan.R|lean_plan_execution_view|5","lean_plan_execution_view",47,"segment <- if (anyNA(restricted) || any(restricted)) { tokens <- strsplit(unname(view$reasons)[restricted], ""|"", fixed =","cde90533a145a747f79fed6261efa1a2",TRUE
+"plan.R|lean_plan_execution_view|6","lean_plan_execution_view",60,"x <- list(member = unname(view$member), restricted = restricted, reason_offset = segment$offset, reason_count = segment$","60140813493f26a2731e7fdb0915ee21",TRUE
+"plan.R|lean_plan_execution_view|7","lean_plan_execution_view",62,"if (.lean_debug) ledgr_carrier_new(x, ""execution_view"", NA_integer_) else x","e8a226c1228632c96ee156c956af9a1d",TRUE
+"plan.R|lean_plan_groups|1","lean_plan_groups",68,"info <- lean_plan_segment_rows(segment, fills)","60699392ef15a320272122e930541c0f",FALSE
+"plan.R|lean_plan_groups|2","lean_plan_groups",69,"reasons <- lean_plan_segment_rows(segment, rejected)","e62db78914f39d9ef7ce2a428786a5ba",FALSE
+"plan.R|lean_plan_groups|3","lean_plan_groups",70,"list( fill = list( k = k[fills], pos = pos[fills], side = side[fills], qty = qty[fills], price = price[fills], fee = fee","91da94386e78bb9dda7a85dc6ec7cda1",FALSE
+"plan.R|lean_plan_id_rank|1","lean_plan_id_rank",131,"if (!identical(lean_plan_rank_cache$ids, ids)) { rank <- integer(length(ids)) rank[order(enc2utf8(ids), method = ""radix""","0961e1103ede839d658166982d1fb04a",FALSE
+"plan.R|lean_plan_id_rank|2","lean_plan_id_rank",137,"lean_plan_rank_cache$rank","5c0c5cdf518336c1fee5fd7cdf14f321",FALSE
+"plan.R|lean_plan_pulse|1","lean_plan_pulse",144,"k <- actionable_k","0e0b2dbf7b2ba346bfb38e68151cb669",FALSE
+"plan.R|lean_plan_pulse|10","lean_plan_pulse",157,"none <- integer()","ec83cc3fcfc30eedfdcf87a9f9edbbc2",FALSE
+"plan.R|lean_plan_pulse|11","lean_plan_pulse",158,"if (is.na(exec_ts)) { segment <- ledgr_carrier_segments(n, seq_len(n), rep(1L, n)) groups <- lean_plan_groups(k, pos, si","4ebc15bd3e6d1b15e4083305761d679d",FALSE
+"plan.R|lean_plan_pulse|12","lean_plan_pulse",165,"view_member <- if (n > 0L) execution_view$member else logical()","86c7e9190c205da9d9a4524ec926b7ca",FALSE
+"plan.R|lean_plan_pulse|13","lean_plan_pulse",166,"informational <- which(member[k] != view_member)","2ab8d005691d5045fded2e668462f8a0",FALSE
+"plan.R|lean_plan_pulse|14","lean_plan_pulse",167,"open <- execution$open[pos]","8df1f78ae4c7e9236aacae8a8b85df77",FALSE
+"plan.R|lean_plan_pulse|15","lean_plan_pulse",168,"bad_open <- !is.finite(open) | open <= 0","318bb8d7bcf2b3c8be380813286274f1",FALSE
+"plan.R|lean_plan_pulse|16","lean_plan_pulse",169,"bad_delta <- !is.finite(delta)","bf3e2fa1f772348b31e092296885e513",FALSE
+"plan.R|lean_plan_pulse|17","lean_plan_pulse",170,"passed <- which(!bad_open & !bad_delta & epoch_valid)","bfd25f7f944cb815e239834e7a622495",FALSE
+"plan.R|lean_plan_pulse|18","lean_plan_pulse",171,"resolved <- ledgr_plan_resolve(cost_resolver, side[passed], qty[passed], open[passed])","6350ea73f9a05808e2bf0d3ad1f0645d",FALSE
+"plan.R|lean_plan_pulse|19","lean_plan_pulse",172,"price <- rep(NA_real_, n)","28fed66a6377e2fc8cc564f64e3ce1fb",FALSE
+"plan.R|lean_plan_pulse|2","lean_plan_pulse",145,"n <- length(k)","44e9b66441d4c8eb7532285d486ea2bb",FALSE
+"plan.R|lean_plan_pulse|20","lean_plan_pulse",173,"fee <- rep(NA_real_, n)","c5e84ce892312febe23b31b98babce83",FALSE
+"plan.R|lean_plan_pulse|21","lean_plan_pulse",174,"price[passed] <- resolved$price","50914924249af57f038804539d8e6d6f",FALSE
+"plan.R|lean_plan_pulse|22","lean_plan_pulse",175,"fee[passed] <- resolved$fee","0c63988e60ddd862cd78a622b8c305b8",FALSE
+"plan.R|lean_plan_pulse|23","lean_plan_pulse",176,"bad_price <- !bad_open & !(is.finite(price) & price > 0)","59dca4e992404c323e33e17e1ecc4ca8",FALSE
+"plan.R|lean_plan_pulse|24","lean_plan_pulse",177,"candidates <- passed[!bad_price[passed]]","1ebc7613d1a31f54ee4fd0cc315328c7",FALSE
+"plan.R|lean_plan_pulse|25","lean_plan_pulse",179,"effects <- ledgr_fill_publication_deltas(side[candidates], qty[candidates], price[candidates], fee[candidates])","d4f290256a10bff21b0e7fa5d87fdb71",FALSE
+"plan.R|lean_plan_pulse|26","lean_plan_pulse",180,"resulting <- rep(NA_real_, n)","8ce59343077289296c722ce7750fabf7",FALSE
+"plan.R|lean_plan_pulse|27","lean_plan_pulse",181,"resulting[candidates] <- before[candidates] + effects$position_delta","17ce2602476658b782d5acb3eed1fc00",FALSE
+"plan.R|lean_plan_pulse|28","lean_plan_pulse",182,"short <- logical(n)","8d8ca6f723200675ac3b7f3dcc67ee75",FALSE
+"plan.R|lean_plan_pulse|29","lean_plan_pulse",183,"floor_qty <- before[candidates]","6650b9cffe156edfb74ac7a9e90aa5a2",FALSE
+"plan.R|lean_plan_pulse|3","lean_plan_pulse",146,"pos <- context_pos[k]","92f9da25b1bc18deab51556b4d0105c7",FALSE
+"plan.R|lean_plan_pulse|30","lean_plan_pulse",184,"floor_qty[floor_qty > 0] <- 0","208f4b2630d2aeca1bb248e408c2c994",FALSE
+"plan.R|lean_plan_pulse|31","lean_plan_pulse",185,"short[candidates] <- resulting[candidates] < floor_qty","50b773fb39b0a5a42584f1914a6072cd",FALSE
+"plan.R|lean_plan_pulse|32","lean_plan_pulse",186,"if (any(bad_delta) || (!epoch_valid && n > 0L) || any(short)) { ledgr_plan_refuse_first( list(!bad_open & bad_delta, !ba","337ee31b2321fb70b81c95aeade1d9ed",FALSE
+"plan.R|lean_plan_pulse|33","lean_plan_pulse",199,"early <- which(bad_open | bad_price)","58aa7852ee662b2f41be2b61746a4c01",FALSE
+"plan.R|lean_plan_pulse|34","lean_plan_pulse",201,"view_count <- if (n > 0L) execution_view$reason_count else integer()","52bdf3bda3ddf746c7f43bb048f61079",FALSE
+"plan.R|lean_plan_pulse|35","lean_plan_pulse",202,"blocked <- view_count[candidates] > 0L","2d54b5c4744d0e60ef2390bdb8b2c58c",FALSE
+"plan.R|lean_plan_pulse|36","lean_plan_pulse",203,"generator <- side[candidates] == -1L & before[candidates] > 0 & delta[candidates] < 0 & effects$cash_delta >= 0 & !block","e02a0f7b2c234d19746fdf6f5ccbc40b",FALSE
+"plan.R|lean_plan_pulse|37","lean_plan_pulse",205,"scan <- lean_plan_affordability(effects$cash_delta, blocked, generator, instrument_ids[pos[candidates]], cash, lean_plan","12ab474a0e0221801f2167c5c99ad979",FALSE
+"plan.R|lean_plan_pulse|38","lean_plan_pulse",207,"if (.lean_debug && !identical(scan, ledgr_plan_affordability(effects$cash_delta, blocked, generator, instrument_ids[pos[","fd8bf87deb499f2f22a981ce32e63edb",FALSE
+"plan.R|lean_plan_pulse|39","lean_plan_pulse",211,"fills <- candidates[scan$accepted]","63ff6f55a3f5d758976f75c26a6c892a",FALSE
+"plan.R|lean_plan_pulse|4","lean_plan_pulse",147,"before <- position[k]","dbfbfdf30e8bc8dcbd3ec61bd2c196a4",FALSE
+"plan.R|lean_plan_pulse|40","lean_plan_pulse",212,"late <- candidates[!scan$accepted]","9af72a8077594d27c8fda4a1e9982f31",FALSE
+"plan.R|lean_plan_pulse|41","lean_plan_pulse",214,"view_code <- if (n > 0L) execution_view$reason_code else integer()","2f74d37bd581fefd503fdd988bfac440",FALSE
+"plan.R|lean_plan_pulse|42","lean_plan_pulse",215,"short_cash <- candidates[scan$insufficient]","39934244d54a9515c359e552054329c9",FALSE
+"plan.R|lean_plan_pulse|43","lean_plan_pulse",216,"segment <- lean_plan_segments(n, c(rep.int(seq_len(n), view_count), early, short_cash, informational), c(view_code, rep(","db787ef2827b4160259fd7a32f53c3f6",FALSE
+"plan.R|lean_plan_pulse|44","lean_plan_pulse",219,"groups <- lean_plan_groups(k, pos, side, qty, price, fee, exec_ts, before, segment, fills, list(cash_delta = effects$cas","8c3acb85aad2b454cf280dec19264caf",FALSE
+"plan.R|lean_plan_pulse|45","lean_plan_pulse",223,"plan(groups, if (length(fills) > 0L) 1L else none, scan$final_cash)","6b35e81340f77571c37db2a415c34c77",FALSE
+"plan.R|lean_plan_pulse|5","lean_plan_pulse",148,"delta <- target_qty[k] - before","fd9902884bba63508f59134fa3ab5c53",FALSE
+"plan.R|lean_plan_pulse|6","lean_plan_pulse",149,"side <- ledgr_plan_side(delta)","667992e8f53b209e36190cde1710cdc4",FALSE
+"plan.R|lean_plan_pulse|7","lean_plan_pulse",150,"qty <- abs(delta)","12963f4654dfc1dafff9a25e6fa709c5",FALSE
+"plan.R|lean_plan_pulse|8","lean_plan_pulse",151,"exec_ts <- execution$exec_ts","cb34aff420b9fc62bc56d4a81cc78b28",FALSE
+"plan.R|lean_plan_pulse|9","lean_plan_pulse",152,"plan <- function(groups, kinds, final_cash) { x <- list(expected_final_cash = as.numeric(final_cash), economic_event_kin","c45188cb98acafba9a0ad0b0b0e119a9",FALSE
+"plan.R|lean_plan_segment_rows|1","lean_plan_segment_rows",33,"if (length(segment$code) == 0L) return(lean_plan_empty_segments(length(idx)))","efcae1f7a48574d388821bd7b94cf177",FALSE
+"plan.R|lean_plan_segment_rows|2","lean_plan_segment_rows",34,"ledgr_carrier_segment_rows(segment$offset, segment$count, segment$code, idx)","e718e098d83876730efa9e7ce84e4d20",FALSE
+"plan.R|lean_plan_segments|1","lean_plan_segments",28,"if (length(row) == 0L) return(lean_plan_empty_segments(n))","c3157f8028fac0726245e7a7a49683f1",FALSE
+"plan.R|lean_plan_segments|2","lean_plan_segments",29,"ledgr_carrier_segments(n, row, code)","a8d2753b8a680f177e22cfdae008b0f6",FALSE
+"plan.R|plan|1","plan",153,"x <- list(expected_final_cash = as.numeric(final_cash), economic_event_kinds = kinds, fill = groups$fill, rejection = gr","5b2df77161d6c4455ac016324bee1c6d",FALSE
+"plan.R|plan|2","plan",155,"if (.lean_debug) ledgr_carrier_plan(x, context_pos, actionable_k, length(instrument_ids)) else x","6919fa33184c99e50b6bb25d0402615a",FALSE

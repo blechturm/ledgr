@@ -1,0 +1,326 @@
+"status","file","fn","line","text","debug_fn"
+"unchanged","loop.R","caught",471,"tryCatch(expr, error = function(e) list(class(e), conditionMessage(e)))",TRUE
+"unchanged","loop.R","check_uncovered",519,"u <- hooks$uncovered()",FALSE
+"unchanged","loop.R","check_uncovered",520,"if (length(u)) lean_not_covered(u[[1L]])",FALSE
+"unchanged","loop.R","fail",458,"rlang::abort(sprintf(""Lean context %s differs from the pin's at pulse %d."", what, i), class = ""ledgr_internal_error"")",TRUE
+"unchanged","loop.R","feature_fn",388,"force(pidx)",FALSE
+"unchanged","loop.R","feature_fn",389,"function(feature_name, default = NA_real_) { feature_name <- ledgr_resolve_feature_name(feature_name, name_lookup) mat <",FALSE
+"unchanged","loop.R","grow",364,"lapply(x, function(v) { length(v) <- cap; v })",FALSE
+"unchanged","loop.R","lean_context",400,"fv <- feature_fn(projection_idx[[i]])",FALSE
+"unchanged","loop.R","lean_context",401,"lookup <- list2env(list( feature_lookup = feature_lookup_state, feature_vector = fv, projection_idx = projection_idx[[i]",FALSE
+"unchanged","loop.R","lean_context",413,"lookup$build_counts <- counts$build",FALSE
+"unchanged","loop.R","lean_context",414,"lookup$preparation_counts <- counts$prep",FALSE
+"unchanged","loop.R","lean_context",415,"helpers <- lean_ctx_helpers(lookup)",FALSE
+"unchanged","loop.R","lean_context",416,"ctx <- list( run_id = run_id, ts_utc = pulses_iso[[i]], universe = ids, .positions = positions_snapshot, cash = cash, eq",FALSE
+"unchanged","loop.R","lean_context",424,"class(ctx) <- ""ledgr_pulse_context""",FALSE
+"unchanged","loop.R","lean_context",425,"ctx",FALSE
+"unchanged","loop.R","lean_ctx_dollar",148,"if (!is.character(name) || length(name) != 1L || is.na(name) || !nzchar(name)) return(lean_pin_ctx_dollar(x, name))",FALSE
+"unchanged","loop.R","lean_ctx_dollar",149,"if (!is.null(lean_ctx_retired[[name]])) return(lean_pin_ctx_dollar(x, name))",FALSE
+"unchanged","loop.R","lean_ctx_dollar",150,"v <- .subset2(x, name)",FALSE
+"unchanged","loop.R","lean_ctx_dollar",151,"if (!is.null(v) && !startsWith(name, ""."")) return(v)",FALSE
+"unchanged","loop.R","lean_ctx_dollar",152,"lookup <- .subset2(x, "".pulse_lookup"")",FALSE
+"unchanged","loop.R","lean_ctx_dollar",153,"if (is.environment(lookup) && is.environment(cache <- lookup$cache)) { hit <- get0(name, envir = cache, inherits = FALSE",FALSE
+"unchanged","loop.R","lean_ctx_dollar",163,"lean_pin_ctx_dollar(x, name)",FALSE
+"unchanged","loop.R","lean_ctx_helpers",185,"force(lookup)",FALSE
+"unchanged","loop.R","lean_ctx_helpers",186,"list( flat = function(default = 0) ledgr_pulse_context_targets(lookup, default = default), hold = function() { p <- look",FALSE
+"unchanged","loop.R","lean_e_advance",839,"processed <<- processed + 1L",FALSE
+"unchanged","loop.R","lean_e_advance",840,"if (processed >= max_pulses) { full_run <<- FALSE return(FALSE) }",FALSE
+"unchanged","loop.R","lean_e_advance",844,"TRUE",FALSE
+"unchanged","loop.R","lean_exec_view",371,"list(member = rep(TRUE, m), restricted = rep(FALSE, m), reason_offset = integer(m), reason_count = integer(m), reason_co",FALSE
+"unchanged","loop.R","lean_gross",21,"v <- abs(q * m)",FALSE
+"unchanged","loop.R","lean_gross",22,"v[which(q == 0)] <- 0",FALSE
+"unchanged","loop.R","lean_gross",23,"if (anyNA(v) || !all(is.finite(v))) NA_real_ else sum(v)",FALSE
+"unchanged","loop.R","lean_loop_add_decisions",888,"m <- length(k)",FALSE
+"unchanged","loop.R","lean_loop_add_decisions",889,"rows <- nd + seq_len(m)",FALSE
+"unchanged","loop.R","lean_loop_add_decisions",890,"if (nd + m > dcap) { while (nd + m > dcap) dcap <<- dcap * 2L dr <<- grow(dr, dcap) }",FALSE
+"unchanged","loop.R","lean_loop_add_decisions",894,"dr$pulse[rows] <<- i",FALSE
+"unchanged","loop.R","lean_loop_add_decisions",895,"dr$k[rows] <<- k",FALSE
+"unchanged","loop.R","lean_loop_add_decisions",896,"dr$target[rows] <<- sq[k]",FALSE
+"unchanged","loop.R","lean_loop_add_decisions",897,"dr$target_after[rows] <<- tq[k]",FALSE
+"unchanged","loop.R","lean_loop_add_decisions",898,"dr$position[rows] <<- position[k]",FALSE
+"unchanged","loop.R","lean_loop_add_decisions",899,"nd <<- nd + m",FALSE
+"unchanged","loop.R","lean_loop_add_sizing",870,"rows <- nsz + seq_len(m)",FALSE
+"unchanged","loop.R","lean_loop_add_sizing",882,"szr$requested[rows] <<- e$requested_quantity",FALSE
+"unchanged","loop.R","lean_loop_add_sizing",883,"szr$before[rows] <<- e$position_before",FALSE
+"unchanged","loop.R","lean_loop_add_sizing",884,"nsz <<- nsz + m",FALSE
+"unchanged","loop.R","lean_loop_add_sizing",871,"if (nsz + m > scap) { while (nsz + m > scap) scap <<- scap * 2L szr <<- grow(szr, scap) }",FALSE
+"unchanged","loop.R","lean_loop_add_sizing",875,"szr$pulse[rows] <<- i",FALSE
+"unchanged","loop.R","lean_loop_add_sizing",876,"szr$id[rows] <<- e$instrument_id",FALSE
+"unchanged","loop.R","lean_loop_add_sizing",877,"szr$reason[rows] <<- e$reason_code",FALSE
+"unchanged","loop.R","lean_loop_add_sizing",878,"szr$reasons[rows] <<- if (is.null(intent)) """" else intent",FALSE
+"unchanged","loop.R","lean_loop_add_sizing",879,"szr$target[rows] <<- e$pre_floor_quantity",FALSE
+"unchanged","loop.R","lean_loop_add_sizing",880,"szr$quantity[rows] <<- e$rounded_quantity",FALSE
+"unchanged","loop.R","lean_loop_add_sizing",881,"szr$price[rows] <<- e$price",FALSE
+"unchanged","loop.R","lean_loop_debug_ctx",458,"fail <- function(what) rlang::abort(sprintf(""Lean context %s differs from the pin's at pulse %d."", what, i), class = ""le",TRUE
+"unchanged","loop.R","lean_loop_debug_ctx",471,"caught <- function(expr) tryCatch(expr, error = function(e) list(class(e), conditionMessage(e)))",TRUE
+"unchanged","loop.R","lean_loop_debug_ctx",472,"for (nm in c(lapply(setdiff(c(names(a), feature_lookup_state$readable_names), c(""flat"", ""hold"")), identity), list(""bars""",TRUE
+"unchanged","loop.R","lean_loop_debug_ctx",480,"if (!identical(ra$flat(), rb$flat()) || !identical(ra$hold(), rb$hold())) fail(""flat()/hold()"")",TRUE
+"unchanged","loop.R","lean_loop_debug_ctx",482,"for (nm in c(lapply(feature_lookup_state$readable_names, identity), list(""lean_no_such_feature"", """", NA_character_, c(""a",TRUE
+"unchanged","loop.R","lean_loop_debug_ctx",488,"invisible(TRUE)",TRUE
+"unchanged","loop.R","lean_loop_debug_ctx",460,"ra <- unclass(a)",TRUE
+"unchanged","loop.R","lean_loop_debug_ctx",460,"rb <- unclass(b)",TRUE
+"unchanged","loop.R","lean_loop_debug_ctx",461,"if (!identical(names(ra), names(rb))) fail(""raw field order"")",TRUE
+"unchanged","loop.R","lean_loop_debug_ctx",462,"for (nm in names(ra)) { if (!is.function(ra[[nm]]) && !is.environment(ra[[nm]]) && !identical(ra[[nm]], rb[[nm]])) fail(",TRUE
+"unchanged","loop.R","lean_loop_debug_ctx",465,"la <- ra$.pulse_lookup",TRUE
+"unchanged","loop.R","lean_loop_debug_ctx",465,"lb <- rb$.pulse_lookup",TRUE
+"unchanged","loop.R","lean_loop_debug_ctx",466,"if (!identical(sort(ls(la, all.names = TRUE)), sort(ls(lb, all.names = TRUE)))) fail(""lookup names"")",TRUE
+"unchanged","loop.R","lean_loop_debug_ctx",467,"for (nm in setdiff(ls(la, all.names = TRUE), c(""cache"", ""feature_vector"", ""build_counts"", ""preparation_counts""))) { if (",TRUE
+"unchanged","loop.R","lean_loop_debug_packet",115,"full <- stats::setNames(pos, ids)",TRUE
+"unchanged","loop.R","lean_loop_debug_packet",116,"view <- provider$decision_view(ts, full)",TRUE
+"unchanged","loop.R","lean_loop_debug_packet",117,"vs <- ledgr_availability_valuation_state(substrate$bars, ids, substrate$axis, .Machine$integer.max, ledgr_availability_e",TRUE
+"unchanged","loop.R","lean_loop_debug_packet",119,"valuation <- vs$advance(i, as.character(view$axis), held = as.logical(view$held[as.character(view$axis)]))",TRUE
+"unchanged","loop.R","lean_loop_debug_packet",120,"columns <- ledgr_carrier_provider_view(ledgr_availability_restrict_frozen(view, valuation), valuation)",TRUE
+"unchanged","loop.R","lean_loop_debug_packet",121,"for (name in names(columns)) { if (!identical(unname(columns[[name]]), unname(packet[[name]]))) { rlang::abort(sprintf(""",TRUE
+"unchanged","loop.R","lean_loop_debug_packet",127,"invisible(TRUE)",TRUE
+"unchanged","loop.R","lean_loop_pin_ctx",430,"pf_source <- ledgr_position_fact_source(position_facts, book, pos, current_bar = projection_idx[[i]], bar_axis = bar_axi",TRUE
+"unchanged","loop.R","lean_loop_pin_ctx",432,"ctx <- list( run_id = run_id, ts_utc = pulses_iso[[i]], universe = ids, .positions = positions_snapshot, cash = cash, eq",TRUE
+"unchanged","loop.R","lean_loop_pin_ctx",438,"ctx$members <- p2$members",TRUE
+"unchanged","loop.R","lean_loop_pin_ctx",439,"ctx$.history <- history_reader$view(i)",TRUE
+"unchanged","loop.R","lean_loop_pin_ctx",440,"class(ctx) <- ""ledgr_pulse_context""",TRUE
+"unchanged","loop.R","lean_loop_pin_ctx",441,"ctx <- ledgr_update_pulse_context_helpers(ctx, bars = list(open = bars$open[, col], high = bars$high[, col], low = bars$",TRUE
+"unchanged","loop.R","lean_loop_pin_ctx",450,"ctx <- ledgr_filter_pulse_context_features(ctx, ids, ids, context_pos = ctx_pos)",TRUE
+"unchanged","loop.R","lean_loop_pin_ctx",451,"ctx$.notes <- pulse_notes",TRUE
+"unchanged","loop.R","lean_loop_pin_ctx",452,"ctx",TRUE
+"unchanged","loop.R","lean_not_covered",27,"rlang::abort(sprintf(""The lean loop does not cover %s (slice 1)."", feature), class = c(""ledgr_lean_not_covered"", ""ledgr_",FALSE
+"unchanged","loop.R","lean_p1_value",530,"ts <- ts_num[[i]]",FALSE
+"unchanged","loop.R","lean_p1_value",539,"eq$ts[[n_eq]] <<- ts_num[[i]]",FALSE
+"unchanged","loop.R","lean_p1_value",540,"eq$cash[[n_eq]] <<- cash",FALSE
+"unchanged","loop.R","lean_p1_value",541,"eq$positions_value[[n_eq]] <<- pv",FALSE
+"unchanged","loop.R","lean_p1_value",542,"eq$realized_pnl[[n_eq]] <<- book$realized_pnl",FALSE
+"unchanged","loop.R","lean_p1_value",543,"eq$cost_basis[[n_eq]] <<- book$total_cost_basis",FALSE
+"unchanged","loop.R","lean_p1_value",544,"n_done <<- i",FALSE
+"unchanged","loop.R","lean_p1_value",545,"list(col = col, close = close, pv = pv)",FALSE
+"unchanged","loop.R","lean_p1_value",531,"live$cur_ts <- ts",FALSE
+"unchanged","loop.R","lean_p1_value",532,"live$cur_stage <- ""valuation""",FALSE
+"unchanged","loop.R","lean_p1_value",533,"col <- pulse_cols[[i]]",FALSE
+"unchanged","loop.R","lean_p1_value",534,"close <- bars$close[, col]",FALSE
+"unchanged","loop.R","lean_p1_value",535,"active <- pos != 0",FALSE
+"unchanged","loop.R","lean_p1_value",536,"pv <- if (any(active)) sum(pos[active] * close[active]) else 0",FALSE
+"unchanged","loop.R","lean_p1_value",537,"last_fully_valued <<- ts",FALSE
+"unchanged","loop.R","lean_p1_value",538,"n_eq <<- n_eq + 1L",FALSE
+"unchanged","loop.R","lean_p2_decide",551,"col <- v1$col",FALSE
+"unchanged","loop.R","lean_p2_decide",560,"if (.lean_debug) { packet <- list( pulse_idx = i, ts = ts_num[[i]], context_pos = ctx_pos, cash = cash, positions_value ",FALSE
+"unchanged","loop.R","lean_p2_decide",577,"ctx <- lean_context(i, col, close, pv, positions_snapshot, view, counts)",FALSE
+"unchanged","loop.R","lean_p2_decide",578,"pulse_notes$sizing_skipped <- character()",FALSE
+"unchanged","loop.R","lean_p2_decide",579,"result <- tryCatch({ live$cur_stage <- ""strategy"" if (strategy_functional) { ledgr_call_strategy_fn(strategy_fn, ctx, st",FALSE
+"unchanged","loop.R","lean_p2_decide",592,"check_uncovered()",FALSE
+"unchanged","loop.R","lean_p2_decide",593,"if (is.object(result) && ledgr_is_strategy_intermediate(result)) ledgr_abort_intermediate_strategy_result(result)",FALSE
+"unchanged","loop.R","lean_p2_decide",594,"if (is.numeric(result)) result <- list(targets = result, state_update = NULL)",FALSE
+"unchanged","loop.R","lean_p2_decide",595,"if (!is.list(result) || is.null(result$targets)) { rlang::abort(sprintf(""Strategy must return %s or a list with `targets",FALSE
+"unchanged","loop.R","lean_p2_decide",599,"intent_reason <- ledgr_validate_strategy_intent_reason(result$intent_reason)",FALSE
+"unchanged","loop.R","lean_p2_decide",600,"sizing_evidence <- attr(result$targets, ""sizing_evidence"", exact = TRUE)",FALSE
+"unchanged","loop.R","lean_p2_decide",552,"close <- v1$close",FALSE
+"unchanged","loop.R","lean_p2_decide",601,"raw_targets <- result$targets",FALSE
+"removed","loop.R","lean_p2_decide",604,"targets <- if (is.numeric(raw_targets) && identical(attributes(raw_targets), ids_attr) && all(is.finite(raw_targets))) {",FALSE
+"unchanged","loop.R","lean_p2_decide",610,"if (.lean_debug && !identical(targets, ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE))) { rlang::",FALSE
+"unchanged","loop.R","lean_p2_decide",613,"sq <- as.numeric(targets)",FALSE
+"unchanged","loop.R","lean_p2_decide",614,"pre <- 0L",FALSE
+"unchanged","loop.R","lean_p2_decide",615,"if (!is.null(intent_reason)) { hd_intent[[i]] <<- intent_reason; pre <- pre + 1L }",FALSE
+"removed","loop.R","lean_p2_decide",618,"sizing_evidence <- ledgr_validate_sizing_evidence(sizing_evidence, targets = targets, context_ids = ids, position = pos,",FALSE
+"unchanged","loop.R","lean_p2_decide",620,"if (.lean_debug && length(pulse_notes$sizing_skipped) > 0L) { rlang::abort(sprintf(""Lean sizing skipped an instrument at",FALSE
+"unchanged","loop.R","lean_p2_decide",624,"m <- length(sizing_evidence$instrument_id)",FALSE
+"unchanged","loop.R","lean_p2_decide",625,"if (m > 0L) { lean_loop_add_sizing(sizing_evidence, intent_reason, i, m) pre <- pre + m } else if (is.null(sizing_eviden",FALSE
+"unchanged","loop.R","lean_p2_decide",553,"pv <- v1$pv",FALSE
+"unchanged","loop.R","lean_p2_decide",633,"hd_pre[[i]] <<- pre",FALSE
+"unchanged","loop.R","lean_p2_decide",634,"tq <- sq",FALSE
+"removed","loop.R","lean_p2_decide",635,"if (n > 0L) { # A fixed basket has no restricted or nonmember instrument. The pin's # risk plan transforms the targets o",FALSE
+"unchanged","loop.R","lean_p2_decide",651,"list(result = result, sq = sq, tq = tq, pos_start = pos_start)",FALSE
+"unchanged","loop.R","lean_p2_decide",554,"pos_start <- pos",FALSE
+"unchanged","loop.R","lean_p2_decide",555,"positions_snapshot <- pos",FALSE
+"unchanged","loop.R","lean_p2_decide",556,"names(positions_snapshot) <- ids",FALSE
+"unchanged","loop.R","lean_p2_decide",557,"view <- view0",FALSE
+"unchanged","loop.R","lean_p2_decide",558,"view$held[] <- pos != 0",FALSE
+"unchanged","loop.R","lean_p2_decide",559,"view$risk_mark[] <- close",FALSE
+"unchanged","loop.R","lean_p3_plan",658,"col <- v1$col",FALSE
+"unchanged","loop.R","lean_p3_plan",659,"sq <- v2$sq",FALSE
+"unchanged","loop.R","lean_p3_plan",660,"tq <- v2$tq",FALSE
+"unchanged","loop.R","lean_p3_plan",661,"live$cur_stage <- ""execution""",FALSE
+"unchanged","loop.R","lean_p3_plan",662,"actionable <- which(abs(tq - pos) > act_tol)",FALSE
+"unchanged","loop.R","lean_p3_plan",663,"exec_ts <- if (i <= length(epochs)) epochs[[i]] else NA_real_",FALSE
+"unchanged","loop.R","lean_p3_plan",664,"batch <- NULL",FALSE
+"removed","loop.R","lean_p3_plan",665,"if (length(actionable) > 0L) { next_col <- if (i < n_pulse) pulse_cols[[i + 1L]] else col + 1L has_next <- next_col <= l",FALSE
+"unchanged","loop.R","lean_p3_plan",696,"list(batch = batch, stop = FALSE)",FALSE
+"unchanged","loop.R","lean_p4_apply",703,"close <- v1$close",FALSE
+"unchanged","loop.R","lean_p4_apply",780,"explicit_k <- if (length(clean_k)) differs[match(differs, clean_k, 0L) == 0L] else differs",FALSE
+"unchanged","loop.R","lean_p4_apply",781,"if (length(explicit_k) > 0L) { lean_loop_add_decisions(explicit_k, i, sq, tq, v2$pos_start) }",FALSE
+"unchanged","loop.R","lean_p4_apply",784,"n_fill",FALSE
+"unchanged","loop.R","lean_p4_apply",704,"sq <- v2$sq",FALSE
+"unchanged","loop.R","lean_p4_apply",705,"tq <- v2$tq",FALSE
+"unchanged","loop.R","lean_p4_apply",706,"differs <- which(!(is.finite(sq) & sq == pos & tq == sq & is.finite(close)))",FALSE
+"unchanged","loop.R","lean_p4_apply",707,"n_fill <- if (is.null(batch)) 0L else length(batch$fill$k)",FALSE
+"unchanged","loop.R","lean_p4_apply",708,"n_rej <- if (is.null(batch)) 0L else length(batch$rejection$k)",FALSE
+"unchanged","loop.R","lean_p4_apply",709,"clean_k <- integer()",FALSE
+"unchanged","loop.R","lean_p4_apply",710,"if (n_fill > 0L) { fill <- batch$fill fr <- ledgr_carrier_segment_text(fill$info_offset, fill$info_count, fill$info_code",FALSE
+"unchanged","loop.R","lean_p4_apply",764,"if (n_rej > 0L) { rejection <- batch$rejection rr <- ledgr_carrier_segment_text(rejection$reason_offset, rejection$reaso",FALSE
+"unchanged","loop.R","lean_p5_commit",790,"close <- v1$close",FALSE
+"removed","loop.R","lean_p5_commit",806,"recon <- c( lean_gross(pos, close), cash - sum(fill_cash), lean_gross(sq, close), if (has_risk) lean_gross(tq, close) el",FALSE
+"unchanged","loop.R","lean_p5_commit",813,"ledgr_fold_reconciliation_check(recon[[2L]], recon[[6L]], recon[[5L]], recon[[3L]], recon[[4L]], recon[[1L]])",FALSE
+"unchanged","loop.R","lean_p5_commit",814,"if (.lean_debug && !identical(recon[c(1L, 3L, 4L)], c(ledgr_availability_marked_gross(pos, close), ledgr_availability_ma",FALSE
+"unchanged","loop.R","lean_p5_commit",818,"hd_recon[i, ] <<- recon",FALSE
+"unchanged","loop.R","lean_p5_commit",819,"hd_has_recon[[i]] <<- TRUE",FALSE
+"unchanged","loop.R","lean_p5_commit",820,"state_update <- v2$result$state_update",FALSE
+"removed","loop.R","lean_p5_commit",821,"if (inherits(state_update, ""ledgr_strategy_state_reset"")) { strategy_state <<- ledgr_strategy_state_defaults(state_decla",FALSE
+"unchanged","loop.R","lean_p5_commit",834,"invisible(NULL)",FALSE
+"unchanged","loop.R","lean_p5_commit",791,"sq <- v2$sq",FALSE
+"unchanged","loop.R","lean_p5_commit",792,"tq <- v2$tq",FALSE
+"unchanged","loop.R","lean_p5_commit",793,"live$cur_stage <- ""accounting""",FALSE
+"unchanged","loop.R","lean_p5_commit",794,"if (nf > capacity) { rlang::abort(""Ledger event buffer exceeded the run's maximum event capacity."", class = ""ledgr_event",FALSE
+"unchanged","loop.R","lean_p5_commit",798,"n_committed <<- nf",FALSE
+"unchanged","loop.R","lean_p5_commit",799,"if (!is.null(batch) && !isTRUE(cash == batch$expected_final_cash) && !isTRUE(all.equal(as.numeric(cash), as.numeric(batc",FALSE
+"unchanged","loop.R","lean_p5_commit",804,"expected <- if (is.null(batch)) cash else batch$expected_final_cash",FALSE
+"unchanged","loop.R","lean_p5_commit",805,"fill_cash <- if (n_fill > 0L) batch$fill$cash_delta else numeric()",FALSE
+"removed","loop.R","lean_state_patch",497,"if (!is.list(update) || is.data.frame(update)) { return(ledgr_strategy_state_apply_values(strategy_state, update, state_",FALSE
+"removed","loop.R","lean_state_patch",501,"nm <- names(update)",FALSE
+"removed","loop.R","lean_state_patch",502,"if (length(update) == 0L || is.null(nm) || anyNA(nm) || !all(nzchar(nm)) || anyDuplicated(nm) || !all(nm %in% names(stra",FALSE
+"removed","loop.R","lean_state_patch",507,"out <- strategy_state",FALSE
+"removed","loop.R","lean_state_patch",508,"for (name in nm) { value <- ledgr_strategy_state_validate_value(update[[name]], state_fields[[name]], ids) reset <- is.n",FALSE
+"removed","loop.R","lean_state_patch",514,"out",FALSE
+"unchanged","loop.R","lean_strategy_view",172,"if (is.list(values) && identical(names(attributes(values)), ""names"")) { view <- values class(view) <- c(""ledgr_strategy_",FALSE
+"unchanged","loop.R","lean_strategy_view",180,"ledgr_strategy_state_view(values)",FALSE
+"unchanged","loop.R","run_loop",849,"live$t_start <- ledgr_time_now()",FALSE
+"unchanged","loop.R","run_loop",866,"invisible(NULL)",FALSE
+"unchanged","loop.R","run_loop",850,"live$in_pulses <- TRUE",FALSE
+"unchanged","loop.R","run_loop",851,"on.exit(live$in_pulses <- FALSE)",FALSE
+"unchanged","loop.R","run_loop",852,"for (i in seq_len(n_pulse)) { v1 <- lean_p1_value(i) v2 <- lean_p2_decide(i, v1) v3 <- lean_p3_plan(i, v1, v2) if (v3$st",FALSE
+"unchanged","loop.R","run_loop",861,"live$in_pulses <- FALSE",FALSE
+"unchanged","loop.R","run_loop",862,"live$t_pulses <- ledgr_time_elapsed(live$t_start, ledgr_time_now())",FALSE
+"unchanged","loop.R","run_loop",863,"t_pub <- ledgr_time_now()",FALSE
+"unchanged","loop.R","run_loop",864,"hooks$publish(lean_loop_publish)",FALSE
+"unchanged","loop.R","run_loop",865,"live$t_publish <- ledgr_time_elapsed(t_pub, ledgr_time_now())",FALSE
+"unchanged","loop.R","schedule_fn",385,"force(i)",FALSE
+"unchanged","loop.R","schedule_fn",385,"function(schedule) schedule_query(schedule, i)",FALSE
+"unchanged","plan.R","lean_plan_affordability",100,"n <- length(cash_delta)",FALSE
+"removed","plan.R","lean_plan_affordability",101,"priority <- if (anyNA(generator)) { p <- c(which(generator), which(!generator)) p[order(!generator[p], enc2utf8(stable_i",FALSE
+"unchanged","plan.R","lean_plan_affordability",111,"accepted <- logical(n)",FALSE
+"unchanged","plan.R","lean_plan_affordability",112,"insufficient <- logical(n)",FALSE
+"unchanged","plan.R","lean_plan_affordability",113,"virtual_cash <- as.numeric(cash)",FALSE
+"unchanged","plan.R","lean_plan_affordability",114,"for (idx in priority) { next_cash <- virtual_cash + cash_delta[[idx]] affordable <- cash_delta[[idx]] >= 0 || next_cash ",FALSE
+"unchanged","plan.R","lean_plan_affordability",124,"list(accepted = accepted, insufficient = insufficient, final_cash = virtual_cash)",FALSE
+"unchanged","plan.R","lean_plan_empty_segments",25,"list(offset = integer(n), count = integer(n), code = integer())",FALSE
+"unchanged","plan.R","lean_plan_execution_view",40,"view <- provider$execution_view(.POSIXct(exec_ts, tz = ""UTC""), ids)",TRUE
+"unchanged","plan.R","lean_plan_execution_view",41,"if (.lean_debug && !(identical(names(view$member), ids) && identical(names(view$restricted), ids) && identical(names(vie",TRUE
+"unchanged","plan.R","lean_plan_execution_view",45,"n <- length(ids)",TRUE
+"unchanged","plan.R","lean_plan_execution_view",46,"restricted <- unname(view$restricted)",TRUE
+"unchanged","plan.R","lean_plan_execution_view",47,"segment <- if (anyNA(restricted) || any(restricted)) { tokens <- strsplit(unname(view$reasons)[restricted], ""|"", fixed =",TRUE
+"unchanged","plan.R","lean_plan_execution_view",60,"x <- list(member = unname(view$member), restricted = restricted, reason_offset = segment$offset, reason_count = segment$",TRUE
+"unchanged","plan.R","lean_plan_execution_view",62,"if (.lean_debug) ledgr_carrier_new(x, ""execution_view"", NA_integer_) else x",TRUE
+"unchanged","plan.R","lean_plan_groups",68,"info <- lean_plan_segment_rows(segment, fills)",FALSE
+"unchanged","plan.R","lean_plan_groups",69,"reasons <- lean_plan_segment_rows(segment, rejected)",FALSE
+"unchanged","plan.R","lean_plan_groups",70,"list( fill = list( k = k[fills], pos = pos[fills], side = side[fills], qty = qty[fills], price = price[fills], fee = fee",FALSE
+"removed","plan.R","lean_plan_id_rank",131,"if (!identical(lean_plan_rank_cache$ids, ids)) { rank <- integer(length(ids)) rank[order(enc2utf8(ids), method = ""radix""",FALSE
+"removed","plan.R","lean_plan_id_rank",137,"lean_plan_rank_cache$rank",FALSE
+"unchanged","plan.R","lean_plan_pulse",144,"k <- actionable_k",FALSE
+"unchanged","plan.R","lean_plan_pulse",157,"none <- integer()",FALSE
+"removed","plan.R","lean_plan_pulse",158,"if (is.na(exec_ts)) { segment <- ledgr_carrier_segments(n, seq_len(n), rep(1L, n)) groups <- lean_plan_groups(k, pos, si",FALSE
+"unchanged","plan.R","lean_plan_pulse",165,"view_member <- if (n > 0L) execution_view$member else logical()",FALSE
+"unchanged","plan.R","lean_plan_pulse",166,"informational <- which(member[k] != view_member)",FALSE
+"removed","plan.R","lean_plan_pulse",167,"open <- execution$open[pos]",FALSE
+"unchanged","plan.R","lean_plan_pulse",168,"bad_open <- !is.finite(open) | open <= 0",FALSE
+"unchanged","plan.R","lean_plan_pulse",169,"bad_delta <- !is.finite(delta)",FALSE
+"unchanged","plan.R","lean_plan_pulse",170,"passed <- which(!bad_open & !bad_delta & epoch_valid)",FALSE
+"removed","plan.R","lean_plan_pulse",171,"resolved <- ledgr_plan_resolve(cost_resolver, side[passed], qty[passed], open[passed])",FALSE
+"unchanged","plan.R","lean_plan_pulse",172,"price <- rep(NA_real_, n)",FALSE
+"unchanged","plan.R","lean_plan_pulse",145,"n <- length(k)",FALSE
+"unchanged","plan.R","lean_plan_pulse",173,"fee <- rep(NA_real_, n)",FALSE
+"unchanged","plan.R","lean_plan_pulse",174,"price[passed] <- resolved$price",FALSE
+"unchanged","plan.R","lean_plan_pulse",175,"fee[passed] <- resolved$fee",FALSE
+"unchanged","plan.R","lean_plan_pulse",176,"bad_price <- !bad_open & !(is.finite(price) & price > 0)",FALSE
+"unchanged","plan.R","lean_plan_pulse",177,"candidates <- passed[!bad_price[passed]]",FALSE
+"unchanged","plan.R","lean_plan_pulse",179,"effects <- ledgr_fill_publication_deltas(side[candidates], qty[candidates], price[candidates], fee[candidates])",FALSE
+"unchanged","plan.R","lean_plan_pulse",180,"resulting <- rep(NA_real_, n)",FALSE
+"unchanged","plan.R","lean_plan_pulse",181,"resulting[candidates] <- before[candidates] + effects$position_delta",FALSE
+"unchanged","plan.R","lean_plan_pulse",182,"short <- logical(n)",FALSE
+"unchanged","plan.R","lean_plan_pulse",183,"floor_qty <- before[candidates]",FALSE
+"unchanged","plan.R","lean_plan_pulse",146,"pos <- context_pos[k]",FALSE
+"unchanged","plan.R","lean_plan_pulse",184,"floor_qty[floor_qty > 0] <- 0",FALSE
+"unchanged","plan.R","lean_plan_pulse",185,"short[candidates] <- resulting[candidates] < floor_qty",FALSE
+"unchanged","plan.R","lean_plan_pulse",186,"if (any(bad_delta) || (!epoch_valid && n > 0L) || any(short)) { ledgr_plan_refuse_first( list(!bad_open & bad_delta, !ba",FALSE
+"unchanged","plan.R","lean_plan_pulse",199,"early <- which(bad_open | bad_price)",FALSE
+"unchanged","plan.R","lean_plan_pulse",201,"view_count <- if (n > 0L) execution_view$reason_count else integer()",FALSE
+"unchanged","plan.R","lean_plan_pulse",202,"blocked <- view_count[candidates] > 0L",FALSE
+"unchanged","plan.R","lean_plan_pulse",203,"generator <- side[candidates] == -1L & before[candidates] > 0 & delta[candidates] < 0 & effects$cash_delta >= 0 & !block",FALSE
+"removed","plan.R","lean_plan_pulse",205,"scan <- lean_plan_affordability(effects$cash_delta, blocked, generator, instrument_ids[pos[candidates]], cash, lean_plan",FALSE
+"unchanged","plan.R","lean_plan_pulse",207,"if (.lean_debug && !identical(scan, ledgr_plan_affordability(effects$cash_delta, blocked, generator, instrument_ids[pos[",FALSE
+"unchanged","plan.R","lean_plan_pulse",211,"fills <- candidates[scan$accepted]",FALSE
+"unchanged","plan.R","lean_plan_pulse",147,"before <- position[k]",FALSE
+"unchanged","plan.R","lean_plan_pulse",212,"late <- candidates[!scan$accepted]",FALSE
+"unchanged","plan.R","lean_plan_pulse",214,"view_code <- if (n > 0L) execution_view$reason_code else integer()",FALSE
+"unchanged","plan.R","lean_plan_pulse",215,"short_cash <- candidates[scan$insufficient]",FALSE
+"unchanged","plan.R","lean_plan_pulse",216,"segment <- lean_plan_segments(n, c(rep.int(seq_len(n), view_count), early, short_cash, informational), c(view_code, rep(",FALSE
+"unchanged","plan.R","lean_plan_pulse",219,"groups <- lean_plan_groups(k, pos, side, qty, price, fee, exec_ts, before, segment, fills, list(cash_delta = effects$cas",FALSE
+"removed","plan.R","lean_plan_pulse",223,"plan(groups, if (length(fills) > 0L) 1L else none, scan$final_cash)",FALSE
+"unchanged","plan.R","lean_plan_pulse",148,"delta <- target_qty[k] - before",FALSE
+"unchanged","plan.R","lean_plan_pulse",149,"side <- ledgr_plan_side(delta)",FALSE
+"unchanged","plan.R","lean_plan_pulse",150,"qty <- abs(delta)",FALSE
+"removed","plan.R","lean_plan_pulse",151,"exec_ts <- execution$exec_ts",FALSE
+"removed","plan.R","lean_plan_pulse",152,"plan <- function(groups, kinds, final_cash) { x <- list(expected_final_cash = as.numeric(final_cash), economic_event_kin",FALSE
+"unchanged","plan.R","lean_plan_segment_rows",33,"if (length(segment$code) == 0L) return(lean_plan_empty_segments(length(idx)))",FALSE
+"unchanged","plan.R","lean_plan_segment_rows",34,"ledgr_carrier_segment_rows(segment$offset, segment$count, segment$code, idx)",FALSE
+"unchanged","plan.R","lean_plan_segments",28,"if (length(row) == 0L) return(lean_plan_empty_segments(n))",FALSE
+"unchanged","plan.R","lean_plan_segments",29,"ledgr_carrier_segments(n, row, code)",FALSE
+"removed","plan.R","plan",153,"x <- list(expected_final_cash = as.numeric(final_cash), economic_event_kinds = kinds, fill = groups$fill, rejection = gr",FALSE
+"removed","plan.R","plan",155,"if (.lean_debug) ledgr_carrier_plan(x, context_pos, actionable_k, length(instrument_ids)) else x",FALSE
+"introduced","checks.R","lean_cost_resolve",138,"price <- as.numeric(open)",FALSE
+"introduced","checks.R","lean_cost_resolve",139,"fee <- numeric(length(price))",FALSE
+"introduced","checks.R","lean_cost_resolve",140,"for (s in cost$steps) { if (s$kind == 1L) { price <- price * ifelse(side > 0L, s$up, s$down) } else if (s$kind == 2L) { ",FALSE
+"introduced","checks.R","lean_cost_resolve",149,"list(price = round(price, digits = cost$digits), fee = fee)",FALSE
+"introduced","checks.R","lean_debug_same",17,"run <- function(f) tryCatch(list(value = f()), error = function(e) list(error = e))",TRUE
+"introduced","checks.R","lean_debug_same",18,"sig <- function(o) { if (is.null(o$error)) return(list(value = o$value)) e <- o$error list(class = class(e), message = c",TRUE
+"introduced","checks.R","lean_debug_same",24,"a <- run(lean)",TRUE
+"introduced","checks.R","lean_debug_same",25,"if (!identical(sig(a), sig(run(pin)))) { rlang::abort(sprintf(""Lean %s differs from the pin's at pulse %d."", what, i), c",TRUE
+"introduced","checks.R","lean_debug_same",28,"if (!is.null(a$error)) stop(a$error)",TRUE
+"introduced","checks.R","lean_debug_same",29,"a$value",TRUE
+"introduced","checks.R","lean_risk_apply",61,"out <- sq",FALSE
+"introduced","checks.R","lean_risk_apply",62,"for (s in steps) { if (s$long_only) { out[out < 0] <- 0 next } if (!(is.finite(equity) && equity >= 0)) return(NULL) nz ",FALSE
+"introduced","checks.R","lean_risk_apply",77,"out",FALSE
+"introduced","checks.R","lean_risk_pin",97,"risked <- ledgr_apply_risk_plan(targets, risk_plan, ctx)",FALSE
+"introduced","checks.R","lean_risk_pin",98,"tq <- as.numeric(risked)",FALSE
+"introduced","checks.R","lean_risk_pin",99,"ledgr_availability_validate_post_risk(risked, targets)",FALSE
+"introduced","checks.R","lean_risk_pin",100,"if (any(tq < 0 & tq < as.numeric(held))) ledgr_availability_validate_short_exposure(risked, held)",FALSE
+"introduced","checks.R","lean_risk_pin",101,"tq",FALSE
+"introduced","checks.R","lean_risk_targets",85,"if (is.null(steps)) return(lean_risk_pin(targets, held, risk_plan, ctx))",FALSE
+"introduced","checks.R","lean_risk_targets",86,"tq <- lean_risk_apply(sq, steps, equity, close)",FALSE
+"introduced","checks.R","lean_risk_targets",87,"if (is.null(tq)) return(lean_risk_pin(targets, held, risk_plan, ctx))",FALSE
+"introduced","checks.R","lean_risk_targets",88,"if (any(!(tq == 0 | (sign(tq) == sign(sq) & abs(tq) <= abs(sq))))) { ledgr_availability_validate_post_risk(stats::setNam",FALSE
+"introduced","checks.R","lean_risk_targets",91,"if (any(tq < 0 & tq < pos)) ledgr_availability_validate_short_exposure(stats::setNames(tq, ids), held)",FALSE
+"introduced","checks.R","lean_risk_targets",92,"tq",FALSE
+"introduced","checks.R","lean_sizing_evidence",188,"if (is.null(x)) return(NULL)",FALSE
+"introduced","checks.R","lean_sizing_evidence",189,"id <- x$instrument_id",FALSE
+"introduced","checks.R","lean_sizing_evidence",190,"rc <- x$reason_code",FALSE
+"introduced","checks.R","lean_sizing_evidence",191,"ok <- inherits(x, ""ledgr_sizing_evidence"") && is.list(x) && identical(names(x), lean_sizing_fields) && is.character(id) ",FALSE
+"introduced","checks.R","lean_sizing_evidence",196,"k <- if (ok) match(id, ids)",FALSE
+"introduced","checks.R","lean_sizing_evidence",197,"if (ok && !anyNA(k)) { priced <- is.finite(x$price) & x$price > 0 if (all(is.finite(x$rounded_quantity)) && all(is.finit",FALSE
+"introduced","checks.R","lean_sizing_evidence",210,"ledgr_validate_sizing_evidence(x, targets = targets, context_ids = ids, position = position, mark = mark)",FALSE
+"introduced","checks.R","lean_state_apply",235,"if (!is.list(update) || is.data.frame(update)) { return(ledgr_strategy_state_apply_values(state, update, declaration, ax",FALSE
+"introduced","checks.R","lean_state_apply",238,"nm <- names(update)",FALSE
+"introduced","checks.R","lean_state_apply",239,"if (!(names_ok && identical(nm, state_names) && identical(names(state), state_names)) && (length(update) == 0L || is.nul",FALSE
+"introduced","checks.R","lean_state_apply",244,"for (name in nm) { value <- lean_state_value(update[[name]], fields[[name]], axis, axis_attr) reset <- is.na(value) if (",FALSE
+"introduced","checks.R","lean_state_apply",250,"state",FALSE
+"introduced","checks.R","lean_state_value",220,"plain <- if (identical(field$scope, ""asset"")) identical(attributes(value), axis_attr) else is.null(attributes(value)) &&",FALSE
+"introduced","checks.R","lean_state_value",222,"typed <- switch(field$type, numeric = is.double(value), integer = is.integer(value), logical = is.logical(value), charac",FALSE
+"introduced","checks.R","lean_state_value",224,"if (plain && typed && !(is.double(value) && any(is.nan(value) | is.infinite(value)))) return(value)",FALSE
+"introduced","checks.R","lean_state_value",225,"ledgr_strategy_state_validate_value(value, field, axis)",FALSE
+"introduced","checks.R","lean_targets",162,"if (ids_ok && is.numeric(raw) && identical(attributes(raw), ids_attr) && all(is.finite(raw))) return(raw)",FALSE
+"introduced","checks.R","lean_targets",163,"if (ids_ok && identical(class(raw), c(""ledgr_target"", ""numeric""))) { u <- unclass(raw) if (is.numeric(u) && identical(na",FALSE
+"introduced","checks.R","lean_targets",167,"ledgr_validate_strategy_targets(raw, ids, allow_empty = TRUE)",FALSE
+"introduced","checks.R","run",17,"tryCatch(list(value = f()), error = function(e) list(error = e))",TRUE
+"introduced","checks.R","sig",19,"if (is.null(o$error)) return(list(value = o$value))",TRUE
+"introduced","checks.R","sig",20,"e <- o$error",TRUE
+"introduced","checks.R","sig",21,"list(class = class(e), message = conditionMessage(e), reason = e$reason, ids = e$instrument_ids, parent = if (inherits(e",TRUE
+"introduced","loop.R","lean_p2_decide",592,"targets <- lean_targets(raw_targets, ids, ids_attr, ids_ok)",FALSE
+"introduced","loop.R","lean_p2_decide",602,"sizing_evidence <- if (.lean_debug) { lean_debug_same(function() lean_sizing_evidence(sizing_evidence, targets, ids, pos",FALSE
+"introduced","loop.R","lean_p2_decide",622,"if (n > 0L) { # A fixed basket has no restricted or nonmember instrument. The risk # plan (lean steps in checks.R, or th",FALSE
+"introduced","loop.R","lean_p3_plan",653,"if (length(actionable) > 0L) { next_col <- if (i < n_pulse) pulse_cols[[i + 1L]] else col + 1L has_next <- next_col <= l",FALSE
+"introduced","loop.R","lean_p5_commit",793,"gross_sq <- lean_gross(sq, close)",FALSE
+"introduced","loop.R","lean_p5_commit",794,"recon <- c( lean_gross(pos, close), cash - sum(fill_cash), gross_sq, if (has_risk) lean_gross(tq, close) else gross_sq, ",FALSE
+"introduced","loop.R","lean_p5_commit",809,"if (inherits(state_update, ""ledgr_strategy_state_reset"")) { strategy_state <<- ledgr_strategy_state_defaults(state_decla",FALSE
+"introduced","plan.R","lean_plan_affordability",102,"priority <- if (anyNA(generator)) { p <- c(which(generator), which(!generator)) p[order(!generator[p], enc2utf8(stable_i",FALSE
+"introduced","plan.R","lean_plan_id_perm",135,"if (!identical(lean_plan_rank_cache$ids, ids)) { lean_plan_rank_cache$ids <- ids lean_plan_rank_cache$perm <- order(enc2",FALSE
+"introduced","plan.R","lean_plan_id_perm",139,"lean_plan_rank_cache$perm",FALSE
+"introduced","plan.R","lean_plan_pulse",170,"open <- next_open[pos]",FALSE
+"introduced","plan.R","lean_plan_pulse",175,"resolved <- if (is.null(cost_steps)) { ledgr_plan_resolve(cost_resolver, side[passed], qty[passed], open[passed]) } else",FALSE
+"introduced","plan.R","lean_plan_pulse",220,"scan <- lean_plan_affordability(effects$cash_delta, blocked, generator, instrument_ids[pos[candidates]], cash, lean_plan",FALSE
+"introduced","plan.R","lean_plan_pulse",238,"lean_plan_result(groups, if (length(fills) > 0L) 1L else none, scan$final_cash, context_pos, actionable_k, length(instru",FALSE
+"introduced","plan.R","lean_plan_pulse",161,"if (is.na(exec_ts)) { segment <- ledgr_carrier_segments(n, seq_len(n), rep(1L, n)) groups <- lean_plan_groups(k, pos, si",FALSE
+"introduced","plan.R","lean_plan_result",147,"x <- list(expected_final_cash = as.numeric(final_cash), economic_event_kinds = kinds, fill = groups$fill, rejection = gr",FALSE
+"introduced","plan.R","lean_plan_result",148,"if (.lean_debug) ledgr_carrier_plan(x, context_pos, actionable_k, n_ids) else x",FALSE

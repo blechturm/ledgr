@@ -71,8 +71,9 @@ cut18_ancestors <- function(pd, id) {
 }
 
 # The census of a pair of source texts (loop.R, plan.R).
-cut18_census <- function(loop_lines, plan_lines) {
+cut18_census <- function(loop_lines, plan_lines, checks_lines = NULL) {
   pds <- list(loop.R = cut18_parse(loop_lines, "loop.R"), plan.R = cut18_parse(plan_lines, "plan.R"))
+  if (length(checks_lines)) pds$checks.R <- cut18_parse(checks_lines, "checks.R")   # Cut 18 lean-owned checks (LDG-3235)
   fns <- do.call(rbind, lapply(pds, cut18_functions))
   if (anyDuplicated(fns$name)) stop("cut18: a function name is assigned twice: ", paste(fns$name[duplicated(fns$name)], collapse = ", "))
   lexical <- function(pd, id) {   # innermost named function containing token id
@@ -103,8 +104,9 @@ cut18_census <- function(loop_lines, plan_lines) {
     braced <- any(pd$parent == body & pd$token == "'{'")
     stmts <- if (braced) pd[pd$parent == body & pd$token == "expr", ] else pd[pd$id == body, ]  # one statement without `{`
     stmts <- stmts[order(stmts$line1, stmts$col1), ]
+    full <- vapply(stmts$id, function(i) gsub("\\s+", " ", utils::getParseText(pd, i)), "")
     all_stmts[[nm]] <- data.frame(statement = sprintf("%s|%s|%d", f$file, nm, seq_len(nrow(stmts))), fn = nm,
-      line = stmts$line1, text = substr(vapply(stmts$id, function(i) gsub("\\s+", " ", utils::getParseText(pd, i)), ""), 1L, 120L),
+      line = stmts$line1, text = substr(full, 1L, 120L), hash = vapply(full, rlang::hash, ""),   # hash of the full text
       stringsAsFactors = FALSE)
     tok <- pd[(pd$token == "SYMBOL_FUNCTION_CALL" | pd$token %in% cut18_operators) & pd$line1 >= f$from & pd$line2 <= f$to, ]
     for (r in seq_len(nrow(tok))) {

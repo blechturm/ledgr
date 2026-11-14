@@ -1212,3 +1212,57 @@ What changes in the loop:
 
 New loop.R production lines, estimated: about 45 (coverage 5, risk 10,
 decision rule 1, sizing record and rebuild about 30).
+
+### 19.10 Lean-owned checks and simplified hand-offs (Cut 18)
+
+- Status: Cut 18 (workstream 36), accepted by the maintainer on 2026-11-14
+  with `amendment_lean_owned`; implemented in LDG-3235. No behaviour change
+  against the pin. It supersedes, for the call sites below, Section 19.9's
+  "the pin's" wording and Section 19.4's single target fast path.
+
+Lean-owned replacements (`dev/lean_core/checks.R`). Each accepts exactly
+what the pin accepts, with the pin's value; any input outside its plain
+accept path goes to the pin's function, which raises the pin's refusal
+with its class, message, payload and precedence. With debug on, each
+result is compared with the pin's on every pulse (`lean_debug_same()`:
+a value identical, or a refusal's class vector, message, `reason`,
+`instrument_ids` and parent). Direct differential witnesses:
+`dev/lean_core/parity/cut18_witness.R` on `cut18_witness_cases.csv`.
+
+| Pin function (call site) | Lean replacement | Plain accept path | Switch obligation |
+| --- | --- | --- | --- |
+| `ledgr_validate_strategy_targets()` (P2) | `lean_targets()` | a numeric vector named exactly by the axis; a helper `ledgr_target` (class exactly `ledgr_target`, numeric) with finite values named exactly by the axis, returned as `unclass(x)[ids]`; both behind the pin's universe predicate, evaluated once per run | consolidate with the package version: `ledgr_signal_strategy()` and the strategy contracts still call it |
+| `ledgr_validate_sizing_evidence()` (P2) | `lean_sizing_evidence()` | evidence passing every refusal test with no `sizing_unavailable` row; stale evidence (the pin's four `identical(as.numeric(...))` comparisons) returns NULL | delete the package function |
+| `ledgr_apply_risk_plan()`, `ledgr_availability_validate_post_risk()`, `ledgr_availability_validate_short_exposure()` (P2) | `lean_risk_steps()` (once per run), `lean_risk_targets()`, `lean_risk_apply()` | `long_only` and numeric `max_weight` steps on equity = cash + positions value and the decision close, in the pin's expressions; a plan with any other step, or a pulse the pin refuses, takes the pin's path; the refusals raise through the pin's functions | delete `ledgr_apply_risk_plan()` and its step functions; the two refusal functions stay while the lean code calls them |
+| `ledgr_plan_resolve()` and the resolver's `ledgr_cost_model_resolve()` (P3) | `lean_cost_steps()` (once per run), `lean_cost_resolve()` | the pin's own resolver closure with numeric step arguments; steps in compiled order (fees added in turn, the notional fee on the unrounded spread price, the price rounded last) | delete the per-pulse resolver path; the cost model's construction and validation at run setup stay |
+| `ledgr_strategy_state_apply_values(..., patch = TRUE)` and `ledgr_strategy_state_validate_value()` (P5) | `lean_state_apply()`, `lean_state_value()` | a patch naming the state's fields in the state's order (the state's names checked once per run); a plain value of the declared type | delete the package functions no surviving caller needs |
+
+Run constants evaluated once in E, not checks moved to debug: each is a
+pure function of a value that does not change during the run, so the
+refusal point cannot move: the target check's universe predicate
+(`lean_targets_axis_ok()`), the risk steps (`lean_risk_steps()`, including
+the `max_weight` argument test), the cost steps (`lean_cost_steps()`) and
+the state's own names (`state_names_ok`).
+
+One check moved to debug: the cost resolver's output-shape assertion
+(`ledgr_plan_resolve()`, class `ledgr_invalid_pulse_plan`). Producer:
+`lean_cost_resolve()`, whose price and fee columns are built by vector
+arithmetic on the planner's own open column (doubles of the batch's
+length). Input origin: the planner's columns (`side` from
+`ledgr_plan_side()`, `qty` and `open` doubles), not user code. Under pulse
+plumbing R1 and Section 4 it is an internal assertion, not an economic
+refusal. With debug on, the lean columns pass through the pin's assertion
+before the comparison with the pin's resolver; variant `cost_columns_short`
+(debug on, `s2_cost_chain`) shows a short fee column raising
+`ledgr_invalid_pulse_plan`. The external-entry checks on what the strategy
+returned (targets, sizing evidence, state) stay in production.
+
+Simplified hand-offs (forwarders removed): the planner takes the execution
+timestamp and the next open column directly (`exec_ts`, `next_open`) and
+the run's position and membership vectors, instead of a per-pulse
+execution list and rebuilt constants; `lean_plan_result()` replaces a
+closure built on every planner call; P5's reconciliation record reuses the
+strategy targets' gross exposure when no risk step runs. The affordability
+priority walks the run's radix ID permutation (`lean_plan_id_perm()`) with
+`match()` instead of sorting each pulse (the pin's order: generators first,
+then ID order).
