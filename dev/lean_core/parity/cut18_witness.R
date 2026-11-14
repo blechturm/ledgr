@@ -46,8 +46,22 @@ cut18_witness_mutations <- list(
   afford_axis_order = lean_edit("plan.R", "lean_plan_affordability", "    o <- slot[id_perm]", "    o <- slot"),
   risk_short_check_skipped = lean_edit("checks.R", "lean_risk_targets",
     "  if (any(tq < 0 & tq < pos)) ledgr_availability_validate_short_exposure(stats::setNames(tq, ids), held)", "  NULL"))
+  # Pre-summing the fixed fees (A1's order-sensitive case): all fixed amounts
+  # added at once by sum(), the per-step addition dropped.
+cut18_witness_mutations$cost_fees_presummed <- list(
+  lean_edit("checks.R", "lean_cost_resolve", "  fee <- numeric(length(price))",
+    "  fee <- numeric(length(price)) + sum(vapply(Filter(function(s) s$kind == 2L, cost$steps), function(s) s$amount, 0))"),
+  lean_edit("checks.R", "lean_cost_resolve", "      fee <- fee + s$amount", "      NULL"))
+cut18_witness_mutations$cost_notional_reassociated <- lean_edit("checks.R", "lean_cost_resolve",
+  "      fee <- fee + abs(as.numeric(qty) * price) * s$bps / 10000", "      fee <- fee + abs(as.numeric(qty) * price) * (s$bps / 10000)")
+cut18_witness_mutations$cost_rounding_skipped <- lean_edit("checks.R", "lean_cost_resolve",
+  "  list(price = round(price, digits = cost$digits), fee = fee)", "  list(price = price, fee = fee)")
 mutation <- opt("mutation", "")
-if (nzchar(mutation)) lean_load_edited(lean, lean$.lean_home, list(cut18_witness_mutations[[mutation]]))
+if (nzchar(mutation)) {
+  m <- cut18_witness_mutations[[mutation]]
+  if (is.null(m)) stop("unknown mutation: ", mutation)
+  lean_load_edited(lean, lean$.lean_home, if (!is.null(m$file)) list(m) else m)
+}
 
 norm_cond <- function(e) {
   if (!inherits(e, "condition")) return(NULL)
@@ -202,6 +216,31 @@ afford_case("no_candidate", ax, integer(), numeric(), logical(), logical(), 10)
 afford_case("missing_generator_flag", ax, c(1L, 2L, 3L), c(10, NA, -5), c(FALSE, FALSE, FALSE), c(TRUE, NA, FALSE), 100)
 afford_case("large_axis_few_candidates", sprintf("I%04d", 1200:1), c(17L, 900L, 3L), c(-5, 7, -2), c(FALSE, FALSE, FALSE),
             c(FALSE, TRUE, FALSE), 6)
+
+## R2: the cost steps -------------------------------------------------------------
+# Pin side: ledgr_plan_resolve() with the pin's resolver for the same model.
+cost_case <- function(id, model, side, qty, open) {
+  res <- ns$ledgr_cost_resolver_from_model(model)
+  case("R2", id, function() lean$lean_cost_resolve(lean$lean_cost_steps(res), side, qty, open),
+       function() ns$ledgr_plan_resolve(res, side, qty, open))
+}
+sd <- c(1L, -1L, 1L, -1L); qt <- c(120, 35.5, 7, 1e4); op <- c(37.13, 101.7, 9.83, 0.012345)
+chain <- ledgr::ledgr_cost_chain
+cost_case("zero", ledgr::ledgr_cost_zero(), sd, qt, op)
+cost_case("spread", ledgr::ledgr_cost_spread_bps(10), sd, qt, op)
+cost_case("fixed", ledgr::ledgr_cost_fixed_fee(1), sd, qt, op)
+cost_case("notional", ledgr::ledgr_cost_notional_bps_fee(5), sd, qt, op)
+cost_case("chain_slice2", chain(ledgr::ledgr_cost_spread_bps(10), ledgr::ledgr_cost_fixed_fee(1), ledgr::ledgr_cost_notional_bps_fee(5)), sd, qt, op)
+cost_case("notional_before_fixed", chain(ledgr::ledgr_cost_spread_bps(10), ledgr::ledgr_cost_notional_bps_fee(5), ledgr::ledgr_cost_fixed_fee(1)), sd, qt, op)
+cost_case("repeated_spread", chain(ledgr::ledgr_cost_spread_bps(7), ledgr::ledgr_cost_spread_bps(13)), sd, qt, op)
+cost_case("repeated_fixed_order_sensitive", chain(ledgr::ledgr_cost_fixed_fee(1), ledgr::ledgr_cost_fixed_fee(2^-53),
+                                                  ledgr::ledgr_cost_fixed_fee(2^-53)), sd, qt, op)
+cost_case("empty_batch", chain(ledgr::ledgr_cost_spread_bps(10), ledgr::ledgr_cost_fixed_fee(1)), integer(), numeric(), numeric())
+cost_case("rounding_boundary", ledgr::ledgr_cost_spread_bps(3), c(1L, -1L), c(1, 1), c(12.345678905, 98.765432105))
+cost_case("overflow_quantity", ledgr::ledgr_cost_notional_bps_fee(5), 1L, 1e308, 1e10)
+cost_case("negative_price_spread", ledgr::ledgr_cost_spread_bps(30000), sd, qt, op)
+case("R2", "steps_foreign_resolver", function() lean$lean_cost_steps(structure(function(side, qty, open) list(price = open, fee = 0 * open),
+     class = c("ledgr_cost_resolver", "function"))), function() NULL)
 
 ## run ---------------------------------------------------------------------------
 manifest <- utils::read.csv(file.path(here, "cut18_witness_cases.csv"), stringsAsFactors = FALSE)

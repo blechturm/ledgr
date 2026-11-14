@@ -144,7 +144,7 @@ lean_plan_id_perm <- function(ids) {
 # The availability planner (pinned: ledgr_fold_build_availability_pulse_plan,
 # R/availability-economics.R:365), same order of checks and rows.
 lean_plan_pulse <- function(context_pos, target_qty, position, actionable_k, member, execution,
-                            execution_view, epoch_valid, cost_resolver, cash, instrument_ids) {
+                            execution_view, epoch_valid, cost_resolver, cash, instrument_ids, cost_steps = NULL) {
   k <- actionable_k
   n <- length(k)
   pos <- context_pos[k]
@@ -172,7 +172,13 @@ lean_plan_pulse <- function(context_pos, target_qty, position, actionable_k, mem
   bad_open <- !is.finite(open) | open <= 0
   bad_delta <- !is.finite(delta)
   passed <- which(!bad_open & !bad_delta & epoch_valid)
-  resolved <- ledgr_plan_resolve(cost_resolver, side[passed], qty[passed], open[passed])
+  # Cut 18 R2: the run's cost steps in lean (checks.R), or the pin's resolver.
+  resolved <- if (is.null(cost_steps)) {
+    ledgr_plan_resolve(cost_resolver, side[passed], qty[passed], open[passed])
+  } else if (.lean_debug) {
+    lean_debug_same(function() lean_cost_resolve(cost_steps, side[passed], qty[passed], open[passed]),
+      function() ledgr_plan_resolve(cost_resolver, side[passed], qty[passed], open[passed]), "cost resolution", NA_integer_)
+  } else lean_cost_resolve(cost_steps, side[passed], qty[passed], open[passed])
   price <- rep(NA_real_, n)
   fee <- rep(NA_real_, n)
   price[passed] <- resolved$price

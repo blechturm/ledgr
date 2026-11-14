@@ -220,6 +220,7 @@ lean_fold_envelope <- function(execution, output_handler) {
   def_ids <- if (length(feature_defs) > 0L) vapply(feature_defs, function(def) def$id, character(1)) else character()
   active_alias_map <- ledgr_normalize_alias_map(execution$active_alias_map)
   cost_resolver <- execution$cost_resolver
+  cost_steps <- lean_cost_steps(cost_resolver)  # checks.R: NULL keeps the pin's resolver
   # The pin's compiled risk plan, validated once in E as the pin does
   # (slice 2, Section 19.9).
   risk_plan <- ledgr_risk_validate_compiled_plan(execution$risk_plan)
@@ -663,7 +664,7 @@ lean_fold_envelope <- function(execution, output_handler) {
       batch <- lean_plan_pulse(context_pos = seq_len(n), target_qty = tq, position = pos,
         actionable_k = actionable, member = rep(TRUE, n), execution = execution_packet,
         execution_view = view, epoch_valid = i > length(epochs) || epoch_valid[[i]],
-        cost_resolver = cost_resolver, cash = cash, instrument_ids = ids)
+        cost_resolver = cost_resolver, cash = cash, instrument_ids = ids, cost_steps = cost_steps)
       fill <- batch$fill
       recorded <- cash + sum(fill$cash_delta)
       if (!isTRUE(recorded == batch$expected_final_cash) &&

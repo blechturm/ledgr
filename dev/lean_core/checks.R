@@ -101,6 +101,54 @@ lean_risk_pin <- function(targets, held, risk_plan, ctx) {
   tq
 }
 
+# R2: the run's cost resolver as plain steps, once per run. The lean path
+# takes the pin's own resolver closure (ledgr_cost_resolver_from_model(),
+# recognised by its body) whose steps carry numeric scalar arguments; NULL
+# (the pin's resolver for the whole run) otherwise. Step types the pin
+# ignores stay out, as in the pin.
+lean_cost_steps <- function(resolver) {
+  ref <- ledgr_cost_resolver_from_model(ledgr::ledgr_cost_zero())
+  e <- environment(resolver)
+  if (!inherits(resolver, "ledgr_cost_resolver") || !identical(body(resolver), body(ref)) || !is.list(e$steps)) return(NULL)
+  num <- function(x) is.numeric(x) && length(x) == 1L
+  steps <- list()
+  for (s in e$steps) {
+    if (identical(s$type_id, "spread_bps")) {
+      if (!num(s$args$bps)) return(NULL)
+      bps <- as.numeric(s$args$bps)
+      steps[[length(steps) + 1L]] <- list(kind = 1L, up = 1 + bps / 20000, down = 1 - bps / 20000)
+    } else if (identical(s$type_id, "fixed_fee")) {
+      if (!num(s$args$amount)) return(NULL)
+      steps[[length(steps) + 1L]] <- list(kind = 2L, amount = as.numeric(s$args$amount))
+    } else if (identical(s$type_id, "notional_bps_fee")) {
+      if (!num(s$args$bps)) return(NULL)
+      steps[[length(steps) + 1L]] <- list(kind = 3L, bps = as.numeric(s$args$bps))
+    }
+  }
+  list(steps = steps, digits = as.integer(e$price_round_digits))
+}
+
+# R2: the pin's ledgr_cost_model_resolve() for one batch, the steps in their
+# compiled order on whole columns: the spread multiplies the price, each
+# fee adds in turn (an order-sensitive sum), the notional fee uses the
+# spread-adjusted unrounded price, and the price is rounded last. `side`,
+# `qty` and `open` are the planner's own columns (integer side, doubles of
+# one length), so the pin's input and output shape refusals cannot fire.
+lean_cost_resolve <- function(cost, side, qty, open) {
+  price <- as.numeric(open)
+  fee <- numeric(length(price))
+  for (s in cost$steps) {
+    if (s$kind == 1L) {
+      price <- price * ifelse(side > 0L, s$up, s$down)
+    } else if (s$kind == 2L) {
+      fee <- fee + s$amount
+    } else {
+      fee <- fee + abs(as.numeric(qty) * price) * s$bps / 10000
+    }
+  }
+  list(price = round(price, digits = cost$digits), fee = fee)
+}
+
 # R5: one declared-state field value. Accepts, unchanged, a value the pin's
 # ledgr_strategy_state_validate_value() returns unchanged: an attribute-free
 # scalar of the declared type for a portfolio field, or a vector of the
