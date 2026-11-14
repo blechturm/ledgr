@@ -1,7 +1,9 @@
 # cut17-helper-1: the commands behind each record
 
-Recovered verbatim from the executing session's command history
-(2026-11-13 and 2026-11-14), from the package root, Git Bash on Windows.
+A parameterised summary, normalised from the commands as executed (Git Bash on
+Windows, from the package root). The commands themselves, verbatim and in
+order, are in dev/bench/v0_2_3_helper/results/commands_executed.txt.
+
 `$PCORE` is `dev/bench/v0_2_3_lean_tuning_profile/pcore.ps1`, which sets
 P-core affinity 0xFFFF and runs Rscript with the given arguments, logging to
 the first argument. Before each window the power plan was set with
@@ -20,7 +22,11 @@ each slot's affinity. `$OVERLAY` is
 | ldg3232-base-base-2 | 176be4a7 | fa69ffa9 | all | raised about 30 percent |
 | ldg3233-match-vs-gated | f27d3dc1 | a564a226 | reb_10,reb_500,reb_1166,adj_10,adj_500,adj_1166 | as base-base-2 |
 | ldg3233-close | 176be4a7 | a564a226 | all | as base-base-2 |
-| ldg3233-close-2 | 176be4a7 | (the corrected candidate, its session.csv) | all | raised for the candidate (close review round 1, finding 7) |
+| ldg3233-close-2 | 176be4a7 | d6a258f6 | all | raised for the candidate (close review round 1, finding 7) |
+| ldg3233-close-3 | 176be4a7 | 4347bac8 | all | as ldg3233-close-2 |
+
+Each row's base, candidate and cells agree with its attempt's session.csv;
+the harness commit each record ran under is in the same file.
 
 Each record was checked with
 

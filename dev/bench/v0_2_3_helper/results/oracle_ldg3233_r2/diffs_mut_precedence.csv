@@ -1,0 +1,3 @@
+"case","signal","path","detail"
+"prec_add_then_sum","precedence","error$message","condition differs"
+"prec_add_then_sum","precedence","error$call","condition differs"

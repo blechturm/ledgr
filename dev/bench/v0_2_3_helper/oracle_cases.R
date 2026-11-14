@@ -28,6 +28,13 @@ registerS3method("names", "oracle_wts", function(x) structure(attr(x, "names"), 
 registerS3method("[", "oracle_ids", function(x, i) structure(rev(unclass(x)[i]), class = "oracle_ids"), envir = globalenv())
 registerS3method("[", "oracle_univ", function(x, i) structure(unclass(x)[i], class = "oracle_univ"), envir = globalenv())
 oracle_wts <- function(...) { v <- c(...); structure(unname(v), names = names(v), class = "oracle_wts") }
+# An amount class that survives normalisation: as.double() returns the object
+# itself, so stats::setNames(as.numeric(x), x_names) keeps the class and its
+# names() method still returns classed IDs (close review round 2, finding 1).
+registerS3method("as.double", "oracle_amt", function(x, ...) x, envir = globalenv())
+registerS3method("names", "oracle_amt", function(x) structure(attr(x, "names"), class = "oracle_ids"), envir = globalenv())
+oracle_amt <- function(...) { v <- c(...); structure(unname(v), names = names(v), class = "oracle_amt") }
+oracle_ids40 <- sprintf("P%02d", 40:1)
 
 oracle_ctx <- function(ids = c("CCC", "AAA", "BBB", "DDD"), close = NULL, position = NULL, holding_value = NULL,
                        member = NULL, buyable = NULL, equity = 1e6) {
@@ -158,7 +165,26 @@ oracle_cases <- function() {
     ledgr::ledgr_signal(oracle_wts(EEE = 1, AAA = 2, FFF = 3), universe = c("AAA", "BBB")), function() list()))
   add(oracle_case("tgt_classed_names_missing", "S15;S16;S17", "error:ledgr_invalid_strategy_type",
     ledgr::ledgr_target(oracle_wts(EEE = 1, AAA = 2, FFF = 3), universe = c("DDD", "AAA", "BBB", "CCC")), function() list()))
-  add(oracle_case("reb_keep_named_character", "S03;S05;S06;S13", "value",
+  # close review round 2, finding 1: amounts whose class survives normalisation
+  add(oracle_case("reb_amt_class_kept", "S01;S05;S06", "error:ledgr_invalid_strategy_result",
+    ledgr::ledgr_target_rebalance(ctx, weights = oracle_amt(BBB = 0.2, CCC = 0.1), keep = c("BBB", "CCC"),
+                                  capital_base = "total_equity"), function() list(ctx = oracle_ctx4())))
+  add(oracle_case("adj_amt_class_exited", "S01;S07", "error:ledgr_invalid_strategy_result",
+    ledgr::ledgr_target_adjust(ctx, weights = oracle_amt(BBB = 0.2, CCC = 0.1), exit = c(TRUE, FALSE, TRUE, FALSE)),
+    function() list(ctx = oracle_ctx4())))
+  add(oracle_case("reb_amt_class_kept_40", "S01;S05;S06;S18", "error:ledgr_invalid_strategy_result",
+    ledgr::ledgr_target_rebalance(ctx, weights = oracle_amt(P07 = 0.2, P03 = 0.1), keep = c("P07", "P03"),
+                                  capital_base = "total_equity"), function() list(ctx = oracle_ctx(ids = oracle_ids40))))
+  add(oracle_case("adj_amt_class_exited_40", "S01;S07;S18", "error:ledgr_invalid_strategy_result",
+    ledgr::ledgr_target_adjust(ctx, weights = oracle_amt(P07 = 0.2, P03 = 0.1), exit = oracle_ids40 %in% c("P07", "P03")),
+    function() list(ctx = oracle_ctx(ids = oracle_ids40))))
+  add(oracle_case("reb_amt_class_value_40", "S01;S04;S05;S08;S18", "value",
+    ledgr::ledgr_target_rebalance(ctx, weights = oracle_amt(P07 = 0.2, P03 = 0.1, P31 = 0.3)),
+    function() list(ctx = oracle_ctx(ids = oracle_ids40, position = rep(c(4, 0), 20)))))
+  add(oracle_case("reb_plain_value_40", "S01;S04;S05;S08;S18", "value",
+    ledgr::ledgr_target_rebalance(ctx, weights = c(P07 = 0.2, P03 = 0.1, P31 = 0.3), keep = "P12", capital_base = "total_equity"),
+    function() list(ctx = oracle_ctx(ids = oracle_ids40, position = rep(c(4, 0), 20)))))
+  add(oracle_case("reb_keep_named_character","S03;S05;S06;S13", "value",
     ledgr::ledgr_target_rebalance(ctx, weights = c(AAA = 0.3), keep = c(k = "BBB"), capital_base = "total_equity"),
     function() list(ctx = oracle_ctx4(member = c(TRUE, TRUE, FALSE, TRUE)))))
   add(oracle_case("reb_keep_classed", "S03;S05;S06;S13", "value",
