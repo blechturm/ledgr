@@ -394,14 +394,6 @@ ledgr_target_size <- function(ctx,
                               invest_fraction = 1,
                               capital_base = NULL) {
   universe <- ledgr_validate_strategy_helper_ctx(ctx, paste0("ledgr_target_", verb))
-  # A plain universe (no attributes) passed the entrance's anyDuplicated(),
-  # so its elements, and every subset of them, are unique. ID lookups on it
-  # use collapse::fmatch() from 32 IDs, where it beats match()
-  # (dev/bench/v0_2_3_helper/results/fmatch_compare.csv) with identical
-  # results (results/collapse_semantics.csv); any other universe keeps
-  # match(), which dispatches through mtfrm() for classed objects.
-  plain <- is.null(attributes(universe))
-  id_match <- if (plain && length(universe) >= 32L) collapse::fmatch else match
   equity <- ledgr_strategy_helper_context_equity(ctx)
   invest_fraction <- ledgr_strategy_helper_validate_invest_fraction(invest_fraction)
   weights <- ledgr_target_named_amount(weights, "weights", universe, allow_null = TRUE)
@@ -440,14 +432,22 @@ ledgr_target_size <- function(ctx,
   sizing_reason <- rep("", length(universe))
   sizing_used <- rep(FALSE, length(universe))
 
-  # Where `fast` holds, the ID vectors below are plain and unique (plain
-  # names of the amounts, checked here; subsets of the plain universe; a
-  # plain keep that passed its anyDuplicated()), so match() gives base
-  # union()/intersect()/setdiff() exactly, without their per-call dispatch.
-  # Anything else keeps the base operation.
+  # `fast` holds when every ID operand below is plain and unique: a universe
+  # without attributes passed the entrance's anyDuplicated(), so it and each
+  # subset of it are unique; the amounts' IDs are checked here for
+  # attributes (an amount class may keep a names() method through
+  # normalisation) and duplicates; a keep vector is checked in its branch.
+  # There match() gives base union()/intersect()/setdiff() exactly, without
+  # their per-call dispatch, and collapse::fmatch() replaces match() from 32
+  # IDs, where it is faster (dev/bench/v0_2_3_helper/results/fmatch_compare.csv)
+  # with identical results (results/collapse_semantics.csv). Otherwise every
+  # site keeps the base operation and match(), which dispatches through
+  # mtfrm() for classed objects.
   weighted_ids <- names(weights)
   addition_ids <- names(add_value)
-  fast <- plain && !anyDuplicated(weighted_ids) && !anyDuplicated(addition_ids)
+  fast <- is.null(attributes(universe)) && is.null(attributes(weighted_ids)) && is.null(attributes(addition_ids)) &&
+    !anyDuplicated(weighted_ids) && !anyDuplicated(addition_ids)
+  id_match <- if (fast && length(universe) >= 32L) collapse::fmatch else match
   requested_ids <- if (fast) {
     c(weighted_ids, addition_ids[id_match(addition_ids, weighted_ids, 0L) == 0L])
   } else {
@@ -484,6 +484,7 @@ ledgr_target_size <- function(ctx,
     }
     held_leavers <- universe[position != 0 & !member]
     fast_keep <- fast && is.null(attributes(explicit_keep))
+    keep_match <- if (fast_keep) id_match else match
     undecided <- if (fast_keep) {
       held_leavers[id_match(held_leavers, explicit_keep, 0L) == 0L]
     } else {
@@ -501,7 +502,7 @@ ledgr_target_size <- function(ctx,
     }
     if (identical(index_leavers, "sell") && length(undecided) > 0L) {
       target[undecided] <- 0
-      leaver_pos <- id_match(undecided, universe)
+      leaver_pos <- keep_match(undecided, universe)
       preserve[leaver_pos] <- FALSE
       sizing_used[leaver_pos] <- TRUE
       sizing_requested[leaver_pos] <- 0
@@ -525,7 +526,7 @@ ledgr_target_size <- function(ctx,
       union(explicit_keep, kept_mask_ids)
     }
     target[keep_ids] <- position[keep_ids]
-    preserve[id_match(keep_ids, universe)] <- TRUE
+    preserve[keep_match(keep_ids, universe)] <- TRUE
     overlap <- if (fast_keep) weighted_ids[id_match(weighted_ids, keep_ids, 0L) > 0L] else intersect(weighted_ids, keep_ids)
     if (length(overlap) > 0L) {
       rlang::abort(
