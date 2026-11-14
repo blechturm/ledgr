@@ -149,6 +149,30 @@ lean_cost_resolve <- function(cost, side, qty, open) {
   list(price = round(price, digits = cost$digits), fee = fee)
 }
 
+# R3: the strategy's targets, the pin's ledgr_validate_strategy_targets(raw,
+# ids, allow_empty = TRUE). Two plain accept paths: a numeric vector whose
+# only attribute is the axis as names, returned as it is (the pin's
+# targets[universe] of it is identical); and a helper's ledgr_target (class
+# exactly ledgr_target, numeric; none of the intermediate classes) whose
+# unclassed values are finite and named exactly by the axis, returned as
+# the pin returns it, unclass(raw)[ids]. `ids_ok` is the pin's universe
+# predicate, evaluated once per run on the fixed axis; both paths need it. Anything else goes to
+# the pin's validator, which normalises it or raises its refusal.
+lean_targets <- function(raw, ids, ids_attr, ids_ok) {
+  if (ids_ok && is.numeric(raw) && identical(attributes(raw), ids_attr) && all(is.finite(raw))) return(raw)
+  if (ids_ok && identical(class(raw), c("ledgr_target", "numeric"))) {
+    u <- unclass(raw)
+    if (is.numeric(u) && identical(names(u), ids) && all(is.finite(u))) return(u[ids])
+  }
+  ledgr_validate_strategy_targets(raw, ids, allow_empty = TRUE)
+}
+
+# R3: the pin's universe predicate in ledgr_validate_strategy_targets()
+# (allow_empty = TRUE), for the run's fixed axis.
+lean_targets_axis_ok <- function(ids) {
+  is.character(ids) && !anyNA(ids) && all(nzchar(ids)) && !anyDuplicated(ids)
+}
+
 # R5: one declared-state field value. Accepts, unchanged, a value the pin's
 # ledgr_strategy_state_validate_value() returns unchanged: an attribute-free
 # scalar of the declared type for a portfolio field, or a vector of the

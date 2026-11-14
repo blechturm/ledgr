@@ -56,6 +56,14 @@ cut18_witness_mutations$cost_notional_reassociated <- lean_edit("checks.R", "lea
   "      fee <- fee + abs(as.numeric(qty) * price) * s$bps / 10000", "      fee <- fee + abs(as.numeric(qty) * price) * (s$bps / 10000)")
 cut18_witness_mutations$cost_rounding_skipped <- lean_edit("checks.R", "lean_cost_resolve",
   "  list(price = round(price, digits = cost$digits), fee = fee)", "  list(price = price, fee = fee)")
+cut18_witness_mutations$targets_helper_reorder_accepted <- lean_edit("checks.R", "lean_targets",
+  "    if (is.numeric(u) && identical(names(u), ids) && all(is.finite(u))) return(u[ids])",
+  "    if (is.numeric(u) && setequal(names(u), ids) && all(is.finite(u))) return(u)")
+cut18_witness_mutations$targets_helper_attributes_kept <- lean_edit("checks.R", "lean_targets",
+  "    if (is.numeric(u) && identical(names(u), ids) && all(is.finite(u))) return(u[ids])",
+  "    if (is.numeric(u) && identical(names(u), ids) && all(is.finite(u))) return(u)")
+cut18_witness_mutations$targets_axis_check_skipped <- lean_edit("checks.R", "lean_targets",
+  "  if (ids_ok && identical(class(raw), c(\"ledgr_target\", \"numeric\"))) {", "  if (identical(class(raw), c(\"ledgr_target\", \"numeric\"))) {")
 mutation <- opt("mutation", "")
 if (nzchar(mutation)) {
   m <- cut18_witness_mutations[[mutation]]
@@ -68,7 +76,8 @@ norm_cond <- function(e) {
   fields <- unclass(e); fields$trace <- NULL; fields$parent <- NULL
   # the called function, as an error message shows it (`Error in f()`); the
   # caller's argument expressions are internal variable names
-  fields$call <- if (is.null(conditionCall(e))) NULL else paste(deparse(conditionCall(e)[[1L]]), collapse = " ")
+  # (a witness's own `ns$f` or `ledgr:::f` access path is dropped)
+  fields$call <- if (is.null(conditionCall(e))) NULL else sub(".*[$:]", "", paste(deparse(conditionCall(e)[[1L]]), collapse = " "))
   list(class = class(e), fields = fields[order(names(fields))], parent = norm_cond(e$parent))
 }
 outcome <- function(f) tryCatch(list(value = f()), error = function(e) list(error = norm_cond(e)))
@@ -241,6 +250,37 @@ cost_case("overflow_quantity", ledgr::ledgr_cost_notional_bps_fee(5), 1L, 1e308,
 cost_case("negative_price_spread", ledgr::ledgr_cost_spread_bps(30000), sd, qt, op)
 case("R2", "steps_foreign_resolver", function() lean$lean_cost_steps(structure(function(side, qty, open) list(price = open, fee = 0 * open),
      class = c("ledgr_cost_resolver", "function"))), function() NULL)
+
+## R3: the strategy's targets ---------------------------------------------------
+# Pin side: ledgr_validate_strategy_targets(raw, ids, allow_empty = TRUE).
+tgt_case <- function(id, raw, axis = ids) {
+  case("R3", id, function() lean$lean_targets(raw, axis, list(names = axis), lean$lean_targets_axis_ok(axis)),
+       function() ns$ledgr_validate_strategy_targets(raw, axis, allow_empty = TRUE))
+}
+hctx <- list(universe = ids, close = nmd(c(37.13, 101.7, 9.83)), equity = 1e6, position = nmd(c(10, 0, 0)),
+             holding_value = nmd(c(371.3, 0, 0)), buyable = nmd(c(TRUE, TRUE, TRUE)), member = nmd(c(TRUE, TRUE, TRUE)))
+helper <- ledgr::ledgr_target_rebalance(hctx, weights = nmd(c(0.2, 0.3, 0.1)), invest_fraction = 0.9)
+retag <- function(x, f) { y <- x; f(y) }
+tgt_case("plain_in_order", nmd(c(1, 2, 3)))
+tgt_case("plain_integer_in_order", nmd(1:3))
+tgt_case("plain_reordered", nmd(c(1, 2, 3))[c(2, 3, 1)])
+tgt_case("plain_unnamed", c(1, 2, 3))
+tgt_case("plain_nan", nmd(c(1, NaN, 3)))
+tgt_case("plain_extra_attribute", structure(nmd(c(1, 2, 3)), note = 1))
+tgt_case("helper_in_order", helper)
+tgt_case("helper_reordered", retag(helper, function(y) { u <- unclass(y)[c(2, 3, 1)]; attributes(u) <- c(attributes(unclass(y))[setdiff(names(attributes(unclass(y))), "names")], list(names = ids[c(2, 3, 1)])); class(u) <- class(y); u }))
+tgt_case("helper_nan", retag(helper, function(y) { y[[2L]] <- NaN; y }))
+tgt_case("helper_extra_class", retag(helper, function(y) { class(y) <- c("mine", class(y)); y }))
+tgt_case("helper_missing_instrument", retag(helper, function(y) y[1:2]))
+tgt_case("helper_integer_payload", retag(helper, function(y) { u <- unclass(y); storage.mode(u) <- "integer"; class(u) <- c("ledgr_target", "integer"); u }))
+tgt_case("signal_intermediate", structure(nmd(c(1, 0, 1)), class = c("ledgr_signal", "numeric")))
+tgt_case("extra_instrument", c(nmd(c(1, 2, 3)), ZZZ = 4))
+tgt_case("duplicate_names", stats::setNames(c(1, 2, 3), c("CCC", "AAA", "AAA")))
+tgt_case("character_targets", nmd(c("1", "2", "3")))
+tgt_case("list_targets", as.list(nmd(c(1, 2, 3))))
+tgt_case("empty_axis_empty_targets", stats::setNames(numeric(), character()), axis = character())
+tgt_case("axis_invalid_duplicates", stats::setNames(c(1, 2), c("A", "A")), axis = c("A", "A"))
+tgt_case("helper_axis_invalid", stats::setNames(structure(c(1, 2), class = c("ledgr_target", "numeric")), c("A", "A")), axis = c("A", "A"))
 
 ## run ---------------------------------------------------------------------------
 manifest <- utils::read.csv(file.path(here, "cut18_witness_cases.csv"), stringsAsFactors = FALSE)

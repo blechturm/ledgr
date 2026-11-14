@@ -369,6 +369,7 @@ lean_fold_envelope <- function(execution, output_handler) {
   # each pulse copies it and sets `held` and `risk_mark`.
   ctx_pos <- seq_len(n)
   ids_attr <- list(names = ids)
+  ids_ok <- lean_targets_axis_ok(ids)          # checks.R: the target check's universe predicate, once
   act_tol <- sqrt(.Machine$double.eps)
   lean_exec_view <- function(m) list(member = rep(TRUE, m), restricted = rep(FALSE, m),
     reason_offset = integer(m), reason_count = integer(m), reason_code = integer())
@@ -585,14 +586,9 @@ lean_fold_envelope <- function(execution, output_handler) {
     intent_reason <- ledgr_validate_strategy_intent_reason(result$intent_reason)
     sizing_evidence <- attr(result$targets, "sizing_evidence", exact = TRUE)
     raw_targets <- result$targets
-    # Fast path: a full, finite, named numeric vector in context order is
-    # returned by the pin's validator unchanged.
-    targets <- if (is.numeric(raw_targets) && identical(attributes(raw_targets), ids_attr) &&
-                   all(is.finite(raw_targets))) {
-      raw_targets
-    } else {
-      ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE)
-    }
+    # Targets (checks.R, lean_targets): the plain and helper accept paths,
+    # or the pin's validator.
+    targets <- lean_targets(raw_targets, ids, ids_attr, ids_ok)
     if (.lean_debug && !identical(targets, ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE))) {
       rlang::abort(sprintf("Lean target validation differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
     }
