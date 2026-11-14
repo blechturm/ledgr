@@ -1,0 +1,4 @@
+"case","signal","path","detail"
+"reb_skip_held_unmarked","cond_class","error$class","condition differs"
+"reb_preserve_unmarked","cond_class","error$class","condition differs"
+"prec_skip_then_unmarked","precedence","error$class","condition differs"

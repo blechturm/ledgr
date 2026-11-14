@@ -1,0 +1,49 @@
+CHANGES_REQUIRED
+Mode: final narrowly scoped Type 1 check of workstream 35 (Cut 17), maintainer-authorized after round 3; independent fresh session.
+
+1. Plain character operands can still carry an unproved encoding into the fast paths.
+
+   Claim: `is.character(x) && is.null(attributes(x))` proves the operand's type and lack of vector attributes. It does not exclude strings marked `"bytes"`; Encoding is a property of the strings, not an attribute of the vector. Such accepted operands reach both the set-operation shortcuts and `collapse::fmatch()`. The universal equivalence claim is false, although the plain-character-only claim about fmatch operands holds.
+
+   Evidence: the gates are at R/strategy-helpers.R:448, :487, :775, :801 and :819, and R/strategy-types.R:37. None checks encodings. The installed candidate is 2e1c052011016672e69973d1002a4470fb570e49, with product files equal to 5eb67e6d.
+
+   `repro.R` constructs `b <- rawToChar(as.raw(c(0x63, 0x61, 0x66, 0xe9)))`, marks `Encoding(b) <- "bytes"`, and uses `u <- c(b, sprintf("P%02d", 1:39))`, `w <- setNames(0.2, b)`. Both operands pass the new predicate and the existing uniqueness/nonempty validators. The context has equity 1000, closes 10, zero positions/holding values and all members buyable.
+
+   Without tracing, base match returns position 1 and base setdiff returns character(0), while collapse 2.1.8 fmatch raises `simpleError: translating strings with "bytes" encoding is not allowed` (repro_candidate.log:96, :100, :104 and :109). On the pin, named-amount validation, logical-mask validation, keep validation, rebalance, adjust, signal, selection, weights and full target all return values (repro_pin.log:112 through :155). Both verbs target 20 shares of the first ID. On the candidate, all nine calls fail in id_match (repro_candidate.log:112 through :155). These are successful accepted inputs changed into failures.
+
+   Refusal identity also fails. With a UTF-8 spelling of cafe-with-acute as the unknown weight name against the same 40-ID byte-marked universe, the pin produces `ledgr_invalid_strategy_type` and the original unknown-ID message; the candidate errors in fmatch first (repro_pin.log:156; repro_candidate.log:157). On the four-ID universe, `ledgr_signal()` with that UTF-8 name already errors on the pin, but its conditionCall is `match(x, y, 0L)`; the candidate changes it to `id_match(universe, x_names, 0L)` even though this small-universe path uses base match (both repro logs:70). Thus screening only fmatch would leave a condition-identity failure in the setdiff shortcut.
+
+   Consequence: the predicate does not establish values and conditions for every admitted operand, or preserve refusal precedence. This violates Cut 17 decisions (1) and (3), under inst/design/contracts.md#contract-strategy-outputs. The passing registered oracle does not cover this encoding witness.
+
+   Smallest fix: exclude byte-marked strings in every source operand of these fast paths and fmatch selections, and send those operands through the original base operations at their original validation points. Apply this to the set-operation gates as well as fmatch selection; merely using match below 32 IDs does not preserve the original failing call. Add these value and refusal witnesses to the cut's new differential coverage. Do not reject or normalize the previously accepted input. No product fix was made during this check.
+
+What I checked:
+
+Read all six scoped functions and every gate, id_match and keep_match call, against the pinned source. The following is the value/order/de-duplication argument for each shortcut; it is conditional on matching completing with base semantics. Finding 1 prevents elevating that argument to the requested universal guarantee, including conditions.
+
+| Candidate site | Base operation replaced | What the current predicate and preceding checks establish |
+| --- | --- | --- |
+| R/strategy-helpers.R:453 | union(weighted_ids, addition_ids) | Both sources are plain unique character vectors. Appending only new second-source IDs preserves base's first-source then new-second-source order. |
+| :464 | length(intersect(weighted_ids, addition_ids)) > 0L | A positive match exists exactly when the intersection is nonempty. When fast is false the original intersect remains. |
+| :490 | setdiff(held_leavers, explicit_keep) | held_leavers is a subset of the plain unique universe; fast_keep also requires plain explicit_keep. Filtering unmatched first-source IDs preserves order. |
+| :525 | union(explicit_keep, kept_mask_ids) | The keep validator established uniqueness; kept_mask_ids is a universe subset. The append-new formula preserves union order and removes cross-source repeats. |
+| :531 | intersect(weighted_ids, keep_ids) | weighted_ids is unique; filtering its matched IDs preserves base's first-source intersection order. |
+| :545 through :547 | union(intersect(weighted_ids, exit_ids), intersect(addition_ids, exit_ids)) | exit_ids is a universe subset. Each intersection preserves its source order, then the append-new step preserves union order. |
+| :567 | !universe %in% weighted_ids | match(..., 0L) == 0L expresses the same nonmembership mask when matching succeeds. |
+| :639 | union(skipped, skipped_weight) | skipped starts as plain character(0); skipped_weight is a unique subset of weighted_ids. The append-new formula preserves the base union result. |
+| :777 | setdiff(x_names, universe) | The earlier name check established uniqueness of plain x_names. Filtering unmatched IDs preserves the first operand and its order. |
+| :805 | setequal(x_names, universe) | Matching in both directions tests mutual membership, exactly the set-equality truth value; the existing earlier validation terms still short-circuit first. |
+| :822 | setdiff(keep, universe) | keep has passed the base duplicate check and is plain under this gate. Filtering unmatched IDs preserves its order. |
+| R/strategy-types.R:39 and :40 | setdiff(universe, x_names), setdiff(x_names, universe) | Both validated operands are plain and unique, so filtering each source preserves its base difference order. |
+
+For these successful character set results, base's unique/name-stripping steps have nothing further to remove: the source operands are unique and have no attributes. Subsetting and concatenation retain the selected source strings and their encoding marks. This explains the value construction; it does not make fmatch accept byte encodings or preserve errors thrown inside the original set operations.
+
+All remaining match calls were inspected too. R/strategy-helpers.R:457, :570, :620, :640, :668, :694 and :714 replace existing match calls for alignment. Their operands are the universe and requested, preserved, zero, skipped or valid subsets of the gated universe/amount IDs. The calls at :506 and :530 use keep_match, which selects fmatch only under fast_keep; otherwise it selects base match even when the main id_match selected fmatch. The logical alignment at :809 uses the same two operands admitted by its local plain gate. None introduces an unguarded external source into fmatch. Requested/keep unions and conflict intermediates are plain characters when their gates hold. Classed, dimensioned, named and non-character sources select the base fallback. The main gate rechecks names after amount normalization and checks duplicates again. ledgr_target() at R/strategy-types.R:566 has no separate shortcut; it retains the public name checker and finiteness check.
+
+Execution evidence:
+
+- Installed a git archive of the exact HEAD into `C:/Users/maxth/ledgr-wt/ws35-final-out/lib-2e1c0520`; LEDGR_INSTALLED_FROM_COMMIT contains the full SHA. The oracle verifies loaded function bodies and namespace resolution against that source. The supplied pin library was read only; its resolved source is d5b3a151ea33bc0c58a8a225335e65988614535d.
+- `probe.R` runs both installed arms on 4-ID and 40-ID universes, through both verbs, the four public strategy types, and the internal validators. It exercises names methods returning lists, classed/dimensioned/named characters, factors, numeric and logical vectors; as.double methods retaining the amount class; plain, classed, named and matrix universes and keeps; overlaps, exits, leavers, unavailable prices, zero weights, additions and competing invalidities. All 1,094 non-encoding cases agree (audit.log:2). The retained amount class is confirmed at audit.log:3. The four character encoding variants are UTF-8, Latin-1, bytes and unknown. Of 1,382 total cases, 89 encoding cases differ; these include the one defect class above, not 89 separate findings. Comparison checks recursive attributes and their order, numeric bits, names and explicit Encoding marks, conditions excluding trace, ordered signals and notes. It ignores ALTREP storage representation.
+- Traced 647 product fmatch calls and 32 direct primitive calls; every x and table was character with NULL attributes (audit.log:376 and :377; fmatch_operands.csv, with full operands/stacks in probe_candidate.rds). Thus the round-3 list-name admission hole is closed. The trace also demonstrates that plainness alone permits the failing encodings. The focused repro runs without tracing.
+- Ran the requested oracle_check.R with the supplied pin, this candidate install and `--wrong-source=d5b3a151`: exit 0. Independently read the per-check CSVs: clean diff has zero rows; all 13 mutations have their required signal on their required case; all three synthetic controls have their required signal; all five refusal controls have their required exit. Result: 22 of 22 (oracle/oracle_check.csv, oracle_csv_audit.csv; audit.log:523). The current manifest contains 161 cases and 18 sites.
+- No timing window, test suite or package check was run. No tracked file was edited and no commit was made. Final git status is clean. All scripts, installation files and outputs are in the authorized output directory.

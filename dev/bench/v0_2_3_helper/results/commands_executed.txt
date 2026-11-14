@@ -109,3 +109,57 @@ cd C:/Users/maxth/Documents/GitHub/ledgr && git commit -q --only dev/spikes/ephe
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" 2>&1 | grep -v "LF will\|original line"; git log --oneline -1 | cat; H=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/helper && PIN=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151 && P=dev/bench/v0_2_3_lean_tuning_profile/pcore.ps1 && OV=dev/bench/v0_2_3_helper/views.R,dev/bench/v0_2_3_lean_tuning_profile/descriptors.R,dev/spikes/r_floor/fixture.R && V=dev/bench/v0_2_3_helper/results/verification_r3 && mkdir -p $V && powercfg //setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c && powershell -NoProfile -ExecutionPolicy Bypass -File $P $H/r3_rec.log dev/bench/timing/runner.R --protocol=dev/bench/timing/protocols/cut17-helper-1 --base=176be4a7 --candidate=5eb67e6d --label=ldg3233-close-4 --candidate-overlay=$OV; echo "record $?"; powershell -NoProfile -ExecutionPolicy Bypass -File $P $H/r3_lean.log dev/bench/v0_2_3_helper/lean_helper_compare.R --base-lib=$PIN --cand-lib=$H/lib_c6 --out=C:/Users/maxth/Documents/GitHub/ledgr/dev/bench/v0_2_3_helper/results/lean_helper_r3; echo "lean $?"; powercfg //setactive 381b4222-f694-41f0-9685-ff5bb260df2e; "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary', stop_on_failure=FALSE)" > $V/tests.log 2>&1; echo "tests exit $?" >> $V/tests.log; git rev-parse HEAD > $V/source_commit.txt; rm -rf $H/check_r3 && mkdir -p $H/check_r3/src && git archive --format=tar HEAD | tar -x -C $H/check_r3/src && cd $H/check_r3 && export QUARTO_PATH="C:/Program Files/RStudio/resources/app/bin/quarto/bin/quarto.exe" && "C:/Program Files/R/R-4.6.1/bin/x64/R.exe" CMD build src > build.log 2>&1; echo "build $?"; "C:/Program Files/R/R-4.6.1/bin/x64/R.exe" CMD check --no-manual --no-build-vignettes ledgr_*.tar.gz > check.log 2>&1; echo "check $?"; cp build.log check.log C:/Users/maxth/Documents/GitHub/ledgr/$V/; grep "^Status" check.log
 
+
+# Final check corrections (2026-11-14), appended verbatim. 8bb61546: one Bash command
+# (task stopped during the test suite; the record, oracle, adversarial and lean steps
+# had completed). c4140436: bash on the script below, then check.R on its record.
+----
+cd C:/Users/maxth/Documents/GitHub/ledgr && H=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/helper && PIN=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151 && RS="C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" && B=dev/bench/v0_2_3_helper && "$RS" $B/freeze_manifest.R --pin=$H/pin_c7.rds && rm -rf $H/check_c7 && "$RS" $B/oracle_check.R --pin-lib=$PIN --pin-source=d5b3a151 --cand-lib=$H/lib_c7 --cand-source=8bb61546 --wrong-source=d5b3a151 --out=$H/check_c7 2>&1 | tail -1; "$RS" $B/oracle_run.R --lib=$H/lib_c6 --source=5eb67e6d --out=$H/old_c6.rds 2>&1 | tail -1; "$RS" $B/oracle_compare.R --pin=$H/check_c7/pin.rds --candidate=$H/old_c6.rds --out=C:/Users/maxth/Documents/GitHub/ledgr/$B/results/oracle_ldg3233_final_old_candidate.csv 2>&1 | head -3; A=C:/Users/maxth/Documents/GitHub/ledgr/$B/results/adversarial_final; "$RS" $B/adversarial_probe.R --arm=pin --lib=$PIN --out=$A > $H/adv_pin.log 2>&1; "$RS" $B/adversarial_probe.R --arm=candidate --lib=$H/lib_c7 --out=$A > $H/adv_cand.log 2>&1; "$RS" $B/adversarial_compare.R --out=$A 2>&1 | head -4; echo "adversarial exit ${PIPESTATUS[0]}"; P=dev/bench/v0_2_3_lean_tuning_profile/pcore.ps1 && OV=dev/bench/v0_2_3_helper/views.R,dev/bench/v0_2_3_lean_tuning_profile/descriptors.R,dev/spikes/r_floor/fixture.R && V=$B/results/verification_final && mkdir -p $V && powercfg //setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c && powershell -NoProfile -ExecutionPolicy Bypass -File $P $H/fin_rec.log dev/bench/timing/runner.R --protocol=dev/bench/timing/protocols/cut17-helper-1 --base=176be4a7 --candidate=8bb61546 --label=ldg3233-close-5 --candidate-overlay=$OV; echo "record $?"; powershell -NoProfile -ExecutionPolicy Bypass -File $P $H/fin_lean.log $B/lean_helper_compare.R --base-lib=$PIN --cand-lib=$H/lib_c7 --out=C:/Users/maxth/Documents/GitHub/ledgr/$B/results/lean_helper_final; echo "lean $?"; powercfg //setactive 381b4222-f694-41f0-9685-ff5bb260df2e; "$RS" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary', stop_on_failure=FALSE)" > $V/tests.log 2>&1; echo "tests exit $?" >> $V/tests.log; git rev-parse HEAD > $V/source_commit.txt; rm -rf $H/check_fin && mkdir -p $H/check_fin/src && git archive --format=tar HEAD | tar -x -C $H/check_fin/src && cd $H/check_fin && export QUARTO_PATH="C:/Program Files/RStudio/resources/app/bin/quarto/bin/quarto.exe" && "C:/Program Files/R/R-4.6.1/bin/x64/R.exe" CMD build src > build.log 2>&1; echo "build $?"; "C:/Program Files/R/R-4.6.1/bin/x64/R.exe" CMD check --no-manual --no-build-vignettes ledgr_*.tar.gz > check.log 2>&1; echo "check $?"; cp build.log check.log C:/Users/maxth/Documents/GitHub/ledgr/$V/; grep "^Status" check.log
+----
+bash C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/helper/closing_c8.sh
+# closing_c8.sh:
+cd C:/Users/maxth/Documents/GitHub/ledgr
+H=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/helper
+PIN=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151
+RS="C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe"
+B=dev/bench/v0_2_3_helper
+CAND=c4140436
+"$RS" $B/oracle_run.R --lib=$PIN --source=d5b3a151 --out=$H/pin_c8.rds 2>&1 | tail -1
+"$RS" $B/freeze_manifest.R --pin=$H/pin_c8.rds
+rm -rf $H/check_c8
+"$RS" $B/oracle_check.R --pin-lib=$PIN --pin-source=d5b3a151 --cand-lib=$H/lib_c8 --cand-source=$CAND --wrong-source=d5b3a151 --out=$H/check_c8 2>&1 | tail -1
+echo "oracle_check exit ${PIPESTATUS[0]}"
+"$RS" $B/oracle_run.R --lib=$H/lib_c6 --source=5eb67e6d --out=$H/old_c6b.rds 2>&1 | tail -1
+"$RS" $B/oracle_compare.R --pin=$H/check_c8/pin.rds --candidate=$H/old_c6b.rds --out=C:/Users/maxth/Documents/GitHub/ledgr/$B/results/oracle_ldg3233_final_old_candidate.csv 2>&1 | head -12
+A=C:/Users/maxth/Documents/GitHub/ledgr/$B/results/adversarial_final
+"$RS" $B/adversarial_probe.R --arm=pin --lib=$PIN --out=$A > $H/adv_pin8.log 2>&1
+"$RS" $B/adversarial_probe.R --arm=candidate --lib=$H/lib_c8 --out=$A > $H/adv_cand8.log 2>&1
+"$RS" $B/adversarial_compare.R --out=$A 2>&1 | head -6
+echo "adversarial exit ${PIPESTATUS[0]}"
+P=dev/bench/v0_2_3_lean_tuning_profile/pcore.ps1
+OV=dev/bench/v0_2_3_helper/views.R,dev/bench/v0_2_3_lean_tuning_profile/descriptors.R,dev/spikes/r_floor/fixture.R
+V=$B/results/verification_final
+mkdir -p $V
+powercfg //setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+powershell -NoProfile -ExecutionPolicy Bypass -File $P $H/fin6_rec.log dev/bench/timing/runner.R --protocol=dev/bench/timing/protocols/cut17-helper-1 --base=176be4a7 --candidate=$CAND --label=ldg3233-close-6 --candidate-overlay=$OV
+echo "record $?"
+powershell -NoProfile -ExecutionPolicy Bypass -File $P $H/fin6_lean.log $B/lean_helper_compare.R --base-lib=$PIN --cand-lib=$H/lib_c8 --out=C:/Users/maxth/Documents/GitHub/ledgr/$B/results/lean_helper_final
+echo "lean $?"
+powercfg //setactive 381b4222-f694-41f0-9685-ff5bb260df2e
+"$RS" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary', stop_on_failure=FALSE)" > $V/tests.log 2>&1
+echo "tests exit $?" >> $V/tests.log
+tail -3 $V/tests.log
+git rev-parse HEAD > $V/source_commit.txt
+rm -rf $H/check_fin
+mkdir -p $H/check_fin/src
+git archive --format=tar $CAND | tar -x -C $H/check_fin/src
+cd $H/check_fin
+export QUARTO_PATH="C:/Program Files/RStudio/resources/app/bin/quarto/bin/quarto.exe"
+"C:/Program Files/R/R-4.6.1/bin/x64/R.exe" CMD build src > build.log 2>&1
+echo "build $?"
+"C:/Program Files/R/R-4.6.1/bin/x64/R.exe" CMD check --no-manual --no-build-vignettes ledgr_*.tar.gz > check.log 2>&1
+echo "check $?"
+cp build.log check.log C:/Users/maxth/Documents/GitHub/ledgr/$V/
+grep "^Status" check.log
+----
+cd C:/Users/maxth/Documents/GitHub/ledgr && "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" dev/bench/timing/check.R --protocol=C:/Users/maxth/Documents/GitHub/ledgr/dev/bench/timing/protocols/cut17-helper-1 --record=C:/Users/maxth/Documents/GitHub/ledgr/dev/bench/timing/records/cut17-helper-1/ldg3233-close-6/attempt-1 2>&1 | tail -12

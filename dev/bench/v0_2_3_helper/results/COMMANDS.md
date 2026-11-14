@@ -17,6 +17,11 @@ the High performance plan; each result's host file records plan and affinity.
 | oracle_ldg3233_r1 | same, `--cand-source=d6a258f6 --wrong-source=d5b3a151` | close review round 1 corrections |
 | oracle_ldg3233_r2 | same, `--cand-source=4347bac8 --wrong-source=d5b3a151` | close review round 2 correction |
 | oracle_ldg3233_r3 | same, `--cand-source=5eb67e6d --wrong-source=d5b3a151` | close review round 3 correction |
+| oracle_ldg3233_final | same, `--cand-source=c4140436 --wrong-source=d5b3a151`, after `Rscript dev/bench/v0_2_3_helper/freeze_manifest.R --pin=<pin.rds of oracle_run.R on the pin>` | final check correction (bytes marks on caller names) |
+| oracle_ldg3233_final_old_candidate.csv | `Rscript dev/bench/v0_2_3_helper/oracle_run.R --lib=<lib> --source=5eb67e6d --out=<rds>`, then `Rscript dev/bench/v0_2_3_helper/oracle_compare.R --pin=<pin.rds from the final check> --candidate=<rds> --out=dev/bench/v0_2_3_helper/results/oracle_ldg3233_final_old_candidate.csv` | round-3 candidate 5eb67e6d against the byte-name witnesses |
+| adversarial_final | `Rscript dev/bench/v0_2_3_helper/adversarial_probe.R --arm=<pin or candidate> --lib=<lib> --out=dev/bench/v0_2_3_helper/results/adversarial_final`, then `Rscript dev/bench/v0_2_3_helper/adversarial_compare.R --out=dev/bench/v0_2_3_helper/results/adversarial_final` | pin and c4140436; probe from the final check (ws35_final_check.md) |
+| lean_helper_final | `powershell ... -File $PCORE <log> dev/bench/v0_2_3_helper/lean_helper_compare.R --base-lib=<pin> --cand-lib=<lib> --out=dev/bench/v0_2_3_helper/results/lean_helper_final` | candidate c4140436 |
+| verification_final | `Rscript -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary', stop_on_failure=FALSE)"`; `R CMD build` and `R CMD check --no-manual --no-build-vignettes` on a git archive of c4140436 | c4140436 |
 | measure_base (timings) | `powershell ... -File $PCORE <log> dev/bench/v0_2_3_helper/measure_helper.R --mode=timing --lib=<lib> --out=dev/bench/v0_2_3_helper/results/measure_base` | 176be4a7 |
 | measure_base (sites) | the same with `--mode=sites` | 176be4a7 |
 | collapse_semantics.csv | `Rscript dev/bench/v0_2_3_helper/collapse_semantics.R --out=dev/bench/v0_2_3_helper/results/collapse_semantics.csv` | collapse 2.1.8 |

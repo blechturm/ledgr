@@ -1,0 +1,11 @@
+loaded: C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151/ledgr 
+installed: d5b3a151 
+R: R version 4.6.1 (2026-06-24 ucrt) collapse: 2.1.8 
+Tracing function "fmatch" in package "namespace:collapse"
+[1] "fmatch"
+cases: 1382 values: 730 
+fmatch calls: 32 nonplain: 0 
+primitive mismatches: 7 
+Untracing function "fmatch" in package "namespace:collapse"
+Warning message:
+In sink() : no sink to remove

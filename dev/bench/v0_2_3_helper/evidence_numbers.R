@@ -49,15 +49,15 @@ ck <- function(label) {
               paste(sprintf("%s %.3f", names(r), r), collapse = ", "), rng[1], rng[2], rb[1], rb[2]))
 }
 cat("\n")
-for (l in c("ldg3232-base-base", "ldg3232-base-base-2", "ldg3233-match-vs-gated", "ldg3233-close", "ldg3233-close-2", "ldg3233-close-3", "ldg3233-close-4")) ck(l)
+for (l in c("ldg3232-base-base", "ldg3232-base-base-2", "ldg3233-match-vs-gated", "ldg3233-close", "ldg3233-close-2", "ldg3233-close-3", "ldg3233-close-4", "ldg3233-close-5", "ldg3233-close-6")) ck(l)
 
-for (d in c("lean_helper", "lean_helper_r1", "lean_helper_r2", "lean_helper_r3")) {
+for (d in c("lean_helper", "lean_helper_r1", "lean_helper_r2", "lean_helper_r3", "lean_helper_final")) {
   x <- rd(res, d, "lean_helper_summary.csv")
   cat(sprintf("\n%s: fold %.0f -> %.0f us/pulse (saving %.1f%%), run saving %.1f%%", d, x$fold_us_per_pulse_base,
               x$fold_us_per_pulse_cand, 100 * x$fold_saving_median, 100 * x$run_saving_median))
 }
 cat("\n")
-for (od in c("oracle_ldg3233_r1", "oracle_ldg3233_r2", "oracle_ldg3233_r3")) {
+for (od in c("oracle_ldg3233_r1", "oracle_ldg3233_r2", "oracle_ldg3233_r3", "oracle_ldg3233_final")) {
   o <- rd(res, od, "oracle_check.csv"); cat(sprintf("\n%s: %d checks, %d as required", od, nrow(o), sum(o$ok)))
 }
 ins <- rd(res, "lean_helper", "insitu.csv")
@@ -68,3 +68,8 @@ cat(sprintf("\ninsitu (lean slice2; base = pin, candidate = a564a226; mean of 3 
 m <- utils::read.csv(file.path(here, "manifest.csv"), colClasses = "character")
 cat(sprintf("manifest: %d cases (%d value, %d error), %d sites\n", nrow(m), sum(m$expect == "value"), sum(m$expect != "value"),
             nrow(rd(here, "sites.csv"))))
+oc <- rd(res, "oracle_ldg3233_final_old_candidate.csv")
+cat(sprintf("old candidate 5eb67e6d against the final manifest: %d differences, cases %s\n", nrow(oc), paste(unique(oc$case), collapse = ", ")))
+a <- rd(res, "adversarial_final", "probe_comparison.csv")
+cat(sprintf("adversarial: %d cases, %d in contract with %d mismatches; %d byte-marked-universe cases outside, %d differ\n",
+            nrow(a), sum(a$contract), sum(a$contract & !a$equal), sum(!a$contract), sum(!a$contract & !a$equal)))
