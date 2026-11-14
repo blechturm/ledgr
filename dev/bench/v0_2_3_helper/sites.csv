@@ -16,3 +16,4 @@ S14,ledgr_target_logical,"anyDuplicated(x_names) || !setequal(x_names, universe)
 S15,ledgr_strategy_type_check_names,"missing <- setdiff(universe, x_names)",all four strategy-type constructors
 S16,ledgr_strategy_type_check_names,"extra <- setdiff(x_names, universe)",all four strategy-type constructors
 S17,ledgr_target,"check_names(full_universe), finiteness, structure(setNames(as.numeric(x), names(x)))",target construction (helpers and public)
+S18,ledgr_target_size,"id_match(x, universe) position lookups (leaver_pos, zero_pos, skipped_pos, valid_pos, preserved_values)",sized rows of both verbs

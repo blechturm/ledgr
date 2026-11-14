@@ -1,0 +1,6 @@
+"case","signal","path","detail"
+"reb_matrix_held_leavers","message","error$message","condition differs"
+"reb_classed_names_weights","message","error$message","condition differs"
+"adj_classed_names_add","message","error$message","condition differs"
+"sig_classed_names","message","error$message","condition differs"
+"tgt_classed_names_missing","message","error$message","condition differs"

@@ -69,7 +69,9 @@ site_locals <- function(verb, a) {
   e$raw_w <- a$w; e$raw_a <- a$a; e$raw_keep <- a$k; e$raw_exit <- a$ex
   e
 }
-# Each site's operation, evaluated on the captured operands (sites.csv).
+# Each site's operation, evaluated on the captured operands (sites.csv). S12a, S12b,
+# S13, S14, S15_16 and S17 time the whole validator or constructor call (the
+# site's set operation is part of it); the others time the operation alone.
 site_exprs <- list(
   S01a = quote(union(weighted_ids, addition_ids)),
   S01b = quote(buyable[match(requested_ids, universe)]),
@@ -101,7 +103,7 @@ site_executed <- function(s, env) {
     S03a = , S04 = , S05a = , S05b = , S06 = , S13 = reb,
     S07 = adj,
     S14 = adj || (reb && !is.null(env$raw_keep) && !is.character(env$raw_keep)),
-    S09 = has("skipped_weight"),
+    S09 = has("skipped_weight") && length(env$skipped_weight) > 0L,
     S11 = is.environment(notes) && length(env$skipped) > 0L,
     TRUE)
 }

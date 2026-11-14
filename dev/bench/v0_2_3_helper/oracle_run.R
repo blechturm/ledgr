@@ -56,10 +56,33 @@ for (f in c("R/strategy-helpers.R", "R/strategy-types.R")) {
   eval(parse(text = txt, keep.source = FALSE), envir = src_env)
 }
 if (nzchar(mutation)) oracle_apply_mutation(mutation, ns, src_env)
+# Control (--mixed-from=<commit>): rebind ledgr_target_size() to an
+# environment in which ledgr_target_named_amount() is that commit's, as an
+# arm that resolves a changed callee from another build would. The
+# resolution check below must refuse it.
+mixed_from <- opt("mixed-from", "")
+if (nzchar(mixed_from)) {
+  other <- new.env(parent = ns)
+  eval(parse(text = system2("git", c("-C", repo, "show", paste0(mixed_from, ":R/strategy-helpers.R")), stdout = TRUE),
+             keep.source = FALSE), envir = other)
+  f <- get("ledgr_target_size", envir = ns)
+  environment(f) <- list2env(list(ledgr_target_named_amount = other$ledgr_target_named_amount), parent = ns)
+  unlockBinding("ledgr_target_size", ns); assign("ledgr_target_size", f, envir = ns); lockBinding("ledgr_target_size", ns)
+}
 fn_digest <- function(f) digest::digest(deparse(f, control = c("keepNA", "keepInteger", "niceNames", "showAttributes")))
 mismatch <- changed[vapply(changed, function(n) !identical(fn_digest(get(n, envir = ns)), fn_digest(get(n, envir = src_env))), TRUE)]
 if (length(mismatch)) {
   cat("ARM REFUSED: loaded functions differ from", source_commit, "source:", paste(mismatch, collapse = ", "), "\n")
+  quit(status = 3L)
+}
+# Resolution: every function of the two helper files, as loaded, must be
+# enclosed by the arm's own namespace, so each callee it names resolves from
+# this arm's build (a body check alone cannot see a rebound environment).
+defined <- intersect(ls(src_env, all.names = TRUE), ls(ns, all.names = TRUE))
+defined <- defined[vapply(defined, function(n) is.function(get(n, envir = ns)), TRUE)]
+foreign <- defined[!vapply(defined, function(n) identical(environment(get(n, envir = ns)), ns), TRUE)]
+if (length(foreign)) {
+  cat("ARM REFUSED: functions not enclosed by the arm's namespace:", paste(foreign, collapse = ", "), "\n")
   quit(status = 3L)
 }
 
@@ -84,13 +107,16 @@ with_notes <- function(ctx, notes) {
   list(ctx = x, env = env)
 }
 snap_notes <- function(env) if (is.null(env)) NULL else as.list(env, all.names = TRUE, sorted = TRUE)
+# One normalizer for terminal errors, their parents (recursively), warnings
+# and messages: class, message, call, every payload field (presence and
+# value) and the parent. Only the backtrace (`trace`) is excluded.
 cond_fields <- function(c) {
   if (is.null(c)) return(NULL)
   f <- unclass(c)
-  drop <- c("message", "call", "trace", "parent", "rlang", "body", "footer", "use_cli_format")
   list(class = class(c), message = conditionMessage(c), call = conditionCall(c),
-       parent = if (!is.null(f$parent)) list(class = class(f$parent), message = conditionMessage(f$parent)) else NULL,
-       fields = f[setdiff(names(f), drop)], field_names = setdiff(names(f), c("trace", "rlang")))
+       parent = cond_fields(f$parent),
+       fields = f[setdiff(names(f), c("message", "call", "trace", "parent"))],
+       field_names = setdiff(names(f), "trace"))
 }
 run_case <- function(case) {
   data <- case$data()
@@ -103,11 +129,14 @@ run_case <- function(case) {
   err <- NULL
   err <- tryCatch({
     value <- withCallingHandlers(eval(case$expr, env),
-      warning = function(c) { signals[[length(signals) + 1L]] <<- list(type = "warning", class = class(c), message = conditionMessage(c)); invokeRestart("muffleWarning") },
-      message = function(c) { signals[[length(signals) + 1L]] <<- list(type = "message", class = class(c), message = conditionMessage(c)); invokeRestart("muffleMessage") })
+      warning = function(c) { signals[[length(signals) + 1L]] <<- c(list(type = "warning"), cond_fields(c)); invokeRestart("muffleWarning") },
+      message = function(c) { signals[[length(signals) + 1L]] <<- c(list(type = "message"), cond_fields(c)); invokeRestart("muffleMessage") })
     NULL
   }, error = function(e) e)
-  reach <- if (is.null(err) && is.function(case$reach)) isTRUE(case$reach(value)) else NA
+  # A declared reach predicate is evaluated on the value; on a refusal it is
+  # FALSE (the case did not reach its value branch). Refusals and notes are
+  # asserted against the manifest's frozen message and notes digest.
+  reach <- if (is.function(case$reach)) is.null(err) && isTRUE(case$reach(value)) else NA
   list(id = case$id, expect = case$expect, tag = case$tag, sites = case$sites, view = case$view %||% "",
        outcome = if (is.null(err)) "value" else "error", value = value, error = cond_fields(err), signals = signals,
        notes_before = before, notes_after = snap_notes(w$env), notes_present = !is.null(w$env), reach = reach)

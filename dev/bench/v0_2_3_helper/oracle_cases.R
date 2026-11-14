@@ -19,6 +19,16 @@
 oracle_u8 <- paste0("Z", intToUtf8(0xFCL), "rich")
 oracle_l1 <- iconv(oracle_u8, "UTF-8", "latin1")
 
+# Classed operands with their own methods (registered in each arm the same
+# way): numeric amounts whose names() returns classed IDs, IDs whose `[`
+# reverses the selection (legal, if odd), and a universe class whose `[`
+# keeps the class. Base set operations strip these classes first; a shortcut
+# that dispatches on them would not.
+registerS3method("names", "oracle_wts", function(x) structure(attr(x, "names"), class = "oracle_ids"), envir = globalenv())
+registerS3method("[", "oracle_ids", function(x, i) structure(rev(unclass(x)[i]), class = "oracle_ids"), envir = globalenv())
+registerS3method("[", "oracle_univ", function(x, i) structure(unclass(x)[i], class = "oracle_univ"), envir = globalenv())
+oracle_wts <- function(...) { v <- c(...); structure(unname(v), names = names(v), class = "oracle_wts") }
+
 oracle_ctx <- function(ids = c("CCC", "AAA", "BBB", "DDD"), close = NULL, position = NULL, holding_value = NULL,
                        member = NULL, buyable = NULL, equity = 1e6) {
   n <- length(ids)
@@ -55,12 +65,12 @@ oracle_cases <- function() {
   add <- function(x) C[[length(C) + 1L]] <<- x
   R <- function(...) ledgr::ledgr_target_rebalance(...)
   # ---- rebalance: values -----------------------------------------------------
-  add(oracle_case("reb_subset_nonlexical", "S01;S04;S05;S08;S12;S15;S17", "value",
+  add(oracle_case("reb_subset_nonlexical", "S01;S04;S05;S08;S12;S15;S17;S18", "value",
     ledgr::ledgr_target_rebalance(ctx, weights = c(DDD = 0.3, AAA = 0.2)), function() list(ctx = oracle_ctx4()),
     reach = oracle_has_reason("sizing_liquidation")))
   add(oracle_case("reb_weights_omitted", "S01;S04;S05;S08;S15;S17", "value",
     ledgr::ledgr_target_rebalance(ctx), function() list(ctx = oracle_ctx4()), reach = oracle_has_reason("sizing_liquidation")))
-  add(oracle_case("reb_zero_weights", "S01;S12", "value",
+  add(oracle_case("reb_zero_weights", "S01;S12;S18", "value",
     ledgr::ledgr_target_rebalance(ctx, weights = c(CCC = 0, AAA = 0, BBB = 0.4)), function() list(ctx = oracle_ctx4()),
     reach = function(v) all(c("sizing_liquidation", "sizing_zero_target") %in% attr(v, "sizing_evidence")$reason_code)))
   add(oracle_case("reb_round_to_zero", "S01;S12", "value",
@@ -80,7 +90,7 @@ oracle_cases <- function() {
   add(oracle_case("reb_keep_mask_named_permuted", "S04;S05;S08;S14", "value",
     ledgr::ledgr_target_rebalance(ctx, weights = c(AAA = 0.2), keep = c(DDD = FALSE, BBB = TRUE, AAA = FALSE, CCC = TRUE),
                                   capital_base = "remaining_equity"), function() list(ctx = oracle_ctx4())))
-  add(oracle_case("reb_leaver_sell", "S03;S05;S08", "value",
+  add(oracle_case("reb_leaver_sell", "S03;S05;S08;S18", "value",
     ledgr::ledgr_target_rebalance(ctx, weights = c(AAA = 0.3), index_leavers = "sell"),
     function() list(ctx = oracle_ctx4(member = c(TRUE, TRUE, FALSE, TRUE)))))
   add(oracle_case("reb_leaver_keep", "S03;S05;S08", "value",
@@ -95,7 +105,7 @@ oracle_cases <- function() {
   add(oracle_case("reb_restricted_member_flat", "S03;S04", "value",
     ledgr::ledgr_target_rebalance(ctx, weights = c(AAA = 0.3)),
     function() list(ctx = oracle_ctx4(member = c(TRUE, TRUE, TRUE, FALSE)))))
-  add(oracle_case("reb_skip_flat", "S09;S11", "value",
+  add(oracle_case("reb_skip_flat", "S09;S11;S18", "value",
     ledgr::ledgr_target_rebalance(ctx, weights = c(AAA = 0.3, DDD = 0.3)),
     function() list(ctx = oracle_ctx4(close = c(40, NA, 70, 85))), notes = list(),
     reach = oracle_has_reason("sizing_unavailable")))
@@ -135,6 +145,50 @@ oracle_cases <- function() {
   add(oracle_case("reb_matrix_universe_unique", "S15;S16;S17", "value",
     ledgr::ledgr_target_rebalance(ctx, weights = c(BBB = 0.2)),
     function() list(ctx = oracle_ctx(ids = matrix(c("AAA", "BBB", "DDD", "CCC"), nrow = 2L)))))
+  # cut review: close review 1, finding 1 (duplicate flattened IDs and classed names)
+  add(oracle_case("reb_matrix_held_leavers", "S03;S15", "error:ledgr_invalid_strategy_result",
+    ledgr::ledgr_target_rebalance(ctx, weights = c(BBB = 0.2)),
+    function() list(ctx = oracle_ctx(ids = matrix(c("AAA", "BBB", "AAA", "CCC"), nrow = 2L), position = c(1, 0, 1, 0),
+                                      member = c(FALSE, TRUE, FALSE, TRUE)))))
+  add(oracle_case("reb_classed_names_weights", "S12", "error:ledgr_invalid_strategy_type",
+    ledgr::ledgr_target_rebalance(ctx, weights = oracle_wts(EEE = 0.1, AAA = 0.1, FFF = 0.1)), function() list(ctx = oracle_ctx4())))
+  add(oracle_case("adj_classed_names_add", "S12", "error:ledgr_invalid_strategy_type",
+    ledgr::ledgr_target_adjust(ctx, add_value = oracle_wts(EEE = 10, AAA = 10, FFF = 10)), function() list(ctx = oracle_ctx4())))
+  add(oracle_case("sig_classed_names", "S15;S16", "error:ledgr_invalid_strategy_type",
+    ledgr::ledgr_signal(oracle_wts(EEE = 1, AAA = 2, FFF = 3), universe = c("AAA", "BBB")), function() list()))
+  add(oracle_case("tgt_classed_names_missing", "S15;S16;S17", "error:ledgr_invalid_strategy_type",
+    ledgr::ledgr_target(oracle_wts(EEE = 1, AAA = 2, FFF = 3), universe = c("DDD", "AAA", "BBB", "CCC")), function() list()))
+  add(oracle_case("reb_keep_named_character", "S03;S05;S06;S13", "value",
+    ledgr::ledgr_target_rebalance(ctx, weights = c(AAA = 0.3), keep = c(k = "BBB"), capital_base = "total_equity"),
+    function() list(ctx = oracle_ctx4(member = c(TRUE, TRUE, FALSE, TRUE)))))
+  add(oracle_case("reb_keep_classed", "S03;S05;S06;S13", "value",
+    ledgr::ledgr_target_rebalance(ctx, weights = c(AAA = 0.3), keep = structure(c("BBB", "CCC"), class = "oracle_ids"),
+                                  capital_base = "total_equity"),
+    function() list(ctx = oracle_ctx4(member = c(TRUE, TRUE, FALSE, TRUE)))))
+  add(oracle_case("reb_keep_matrix", "S03;S05;S06;S13", "value",
+    ledgr::ledgr_target_rebalance(ctx, weights = c(AAA = 0.3), keep = matrix(c("BBB", "CCC"), nrow = 1L), capital_base = "total_equity"),
+    function() list(ctx = oracle_ctx4(member = c(TRUE, TRUE, FALSE, TRUE)))))
+  add(oracle_case("reb_keep_classed_overlap", "S06", "error:ledgr_invalid_strategy_result",
+    ledgr::ledgr_target_rebalance(ctx, weights = c(BBB = 0.3, CCC = 0.1), keep = structure(c("CCC", "BBB"), class = "oracle_ids"),
+                                  capital_base = "total_equity"), function() list(ctx = oracle_ctx4())))
+  add(oracle_case("reb_classed_universe_methods", "S03;S04;S05;S08;S15;S16;S18", "value",
+    ledgr::ledgr_target_rebalance(ctx, weights = c(AAA = 0.3), keep = "BBB", index_leavers = "sell", capital_base = "total_equity"),
+    function() list(ctx = oracle_ctx(ids = structure(c("CCC", "AAA", "BBB", "DDD"), class = "oracle_univ"),
+                                      position = c(10, 0, 5, 3), member = c(TRUE, TRUE, TRUE, FALSE)))))
+  add(oracle_case("adj_classed_universe_methods", "S07;S14;S18", "error:ledgr_invalid_strategy_result",
+    ledgr::ledgr_target_adjust(ctx, weights = c(AAA = 0.1), add_value = c(DDD = 50), exit = c(FALSE, TRUE, FALSE, TRUE)),
+    function() list(ctx = oracle_ctx(ids = structure(c("CCC", "AAA", "BBB", "DDD"), class = "oracle_univ"),
+                                      position = c(10, 0, 5, 3)))))
+  add(oracle_case("adj_zero_weights", "S01;S12;S18", "value",
+    ledgr::ledgr_target_adjust(ctx, weights = c(CCC = 0, AAA = 0, BBB = 0.2)), function() list(ctx = oracle_ctx4()),
+    reach = function(v) all(c("sizing_liquidation", "sizing_zero_target") %in% attr(v, "sizing_evidence")$reason_code)))
+  add(oracle_case("adj_guard_scaling", "S09;S18", "value",
+    ledgr::ledgr_target_adjust(ctx, weights = c(BBB = 0.4, AAA = 0.3, DDD = 0.3)),
+    function() list(ctx = oracle_ctx4(close = c(40, 55, NA, 85), holding_value = c(400, 0, 500000, 0))),
+    notes = list(), reach = function(v) {
+      e <- attr(v, "sizing_evidence"); ok <- e$reason_code == "sizing_rounded"
+      any(e$pre_floor_quantity[ok] < e$requested_quantity[ok])
+    }))
   add(oracle_case("reb_classed_universe", "S04;S15;S16", "value",
     ledgr::ledgr_target_rebalance(ctx, weights = c(BBB = 0.2)),
     function() list(ctx = oracle_ctx(ids = structure(c("CCC", "AAA", "BBB"), class = "oracle_ids")))))
@@ -231,7 +285,7 @@ oracle_cases <- function() {
     function() list(ctx = oracle_ctx4(close = c(40, NA, NA, 85), holding_value = c(400, 0, NA, 0))), notes = list(),
     tag = "precedence"))
   # ---- adjust ------------------------------------------------------------------
-  add(oracle_case("adj_weights", "S01;S08;S12", "value",
+  add(oracle_case("adj_weights", "S01;S08;S12;S18", "value",
     ledgr::ledgr_target_adjust(ctx, weights = c(DDD = 0.2, AAA = 0.1)), function() list(ctx = oracle_ctx4())))
   add(oracle_case("adj_add_held_and_flat", "S01;S02;S08;S12", "value",
     ledgr::ledgr_target_adjust(ctx, add_value = c(CCC = 500, AAA = 300)), function() list(ctx = oracle_ctx4())))
@@ -248,7 +302,7 @@ oracle_cases <- function() {
     reach = function(v) all(c("sizing_rounded_to_zero_liquidation", "sizing_rounded_to_zero_addition") %in%
                               attr(v, "sizing_evidence")$reason_code) ||
                           any(grepl("rounded_to_zero", attr(v, "sizing_evidence")$reason_code))))
-  add(oracle_case("adj_add_skipped", "S10;S11", "value",
+  add(oracle_case("adj_add_skipped", "S10;S11;S18", "value",
     ledgr::ledgr_target_adjust(ctx, add_value = c(AAA = 300, DDD = 100)),
     function() list(ctx = oracle_ctx4(close = c(40, NA, 70, NA))), notes = list(sizing_skipped = "DDD"),
     reach = oracle_has_reason("sizing_unavailable")))

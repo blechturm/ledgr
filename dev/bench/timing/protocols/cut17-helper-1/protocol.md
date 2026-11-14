@@ -32,9 +32,14 @@ with `Sys.time()` (about 1.5 us resolution here; `proc.time()` ticks in 20 ms
 steps on this host). This is a cached-context measurement: it does
 not include the first read of a fresh pulse's columns and is not a
 decomposition of a whole run. `reps` is frozen in `matrix.csv` before any
-comparison so a batch lasts about three seconds (calibrated in LDG-3232 on
-the base). The installed package is byte-compiled; the workload adds no
-compilation.
+comparison so the faster arm's batch lasts about three seconds or more. The
+first counts were calibrated on the base in LDG-3232 (records
+ldg3232-base-base and ldg3232-base-base-2, ldg3233-match-vs-gated and
+ldg3233-close ran under them); the close review of workstream 35 (round 1,
+finding 7) found the candidate's batches at 1.4-1.8 s, so the counts were
+raised to give the candidate about 3.2 s (from ldg3233-close's candidate
+medians); the base's batches then last about 6-7 s. The installed package
+is byte-compiled; the workload adds no compilation.
 
 The descriptive cell runs `slice2_10x7200` (Cut 16 decision 6) from a sealed
 store opened with `verify = TRUE`, through the ordinary package path, and

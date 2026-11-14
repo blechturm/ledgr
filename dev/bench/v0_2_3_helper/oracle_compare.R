@@ -33,7 +33,11 @@ opt <- function(name, default = NULL) {
 here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/"))
 pin <- readRDS(opt("pin"))
 cand <- readRDS(opt("candidate"))
-manifest <- utils::read.csv(file.path(here, "manifest.csv"), stringsAsFactors = FALSE)
+manifest <- utils::read.csv(file.path(here, "manifest.csv"), colClasses = "character", na.strings = character())
+# Frozen outcomes: the refusal message in ASCII (non-ASCII as <U+XXXX>) and a
+# digest of the notes bindings after the call ("" when the case has no notes).
+msg_key <- function(m) iconv(enc2utf8(m), "UTF-8", "ASCII", sub = "Unicode")
+notes_digest <- function(x) if (is.null(x)) "" else digest::digest(x)
 sites <- utils::read.csv(file.path(here, "sites.csv"), stringsAsFactors = FALSE)
 drop_surface <- opt("demo-drop-surface", "")
 surfaces <- c("outcome", "value", "error", "signals", "notes_before", "notes_after", "notes_present", "reach")
@@ -67,6 +71,14 @@ for (i in seq_len(nrow(manifest))) {
       if (r$outcome == "error") paste(r$error$class, collapse = "/") else "a value"))
   }
   if (isFALSE(r$reach)) refuse <- c(refuse, sprintf("pin_reach: %s does not reach its named branch on the pin", id))
+  # the frozen outcome: the pin's refusal message and its notes after the call
+  got_message <- if (r$outcome == "error") msg_key(r$error$message) else ""
+  if (!identical(got_message, manifest$expect_message[[i]])) {
+    refuse <- c(refuse, sprintf("pin_reach: %s refusal message is not the frozen one", id))
+  }
+  if (!identical(notes_digest(r$notes_after), manifest$expect_notes[[i]])) {
+    refuse <- c(refuse, sprintf("pin_reach: %s notes after the call are not the frozen ones", id))
+  }
 }
 pv <- pin$meta$provenance; cv <- cand$meta$provenance
 if (!identical(pv$inputs_digest, cv$inputs_digest)) refuse <- c(refuse, "view_inputs: the arms captured views from different inputs")
@@ -90,9 +102,13 @@ cmp <- function(case, a, b, path) {
   }
   aa <- attributes(a); ba <- attributes(b)
   an <- names(aa) %||% character(); bn <- names(ba) %||% character()
-  if (!setequal(an, bn)) note(case, if (in_evidence(path)) "evidence" else if ("names" %in% c(setdiff(an, bn), setdiff(bn, an))) "names" else "attributes",
-                              path, sprintf("attributes {%s} vs {%s}", paste(an, collapse = ","), paste(bn, collapse = ",")))
-  else if (!identical(an, bn)) note(case, "attr_order", path, sprintf("{%s} vs {%s}", paste(an, collapse = ","), paste(bn, collapse = ",")))
+  if (!setequal(an, bn)) {
+    lost <- c(setdiff(an, bn), setdiff(bn, an))
+    detail <- sprintf("attributes {%s} vs {%s}", paste(an, collapse = ","), paste(bn, collapse = ","))
+    note(case, if (in_evidence(path)) "evidence" else if ("names" %in% lost) "names" else "attributes", path, detail)
+    # an added or removed names attribute is a names difference wherever it is
+    if (in_evidence(path) && "names" %in% lost) note(case, "names", path, detail)
+  } else if (!identical(an, bn)) note(case, "attr_order", path, sprintf("{%s} vs {%s}", paste(an, collapse = ","), paste(bn, collapse = ",")))
   for (n in intersect(an, bn)) {
     p <- paste0(path, "@", n)
     before <- length(diffs)
