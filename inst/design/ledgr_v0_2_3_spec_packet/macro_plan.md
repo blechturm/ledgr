@@ -50,6 +50,12 @@ accepted by the maintainer on 2026-11-06 after the Type 1 final review
 (PASS_AFTER_PATCHES, patches applied in 0f531a04): its Section 6 amends rules
 15 and 16, WS16, WS14a and WS14 for the pending WS16 lean core only, with
 local notices at each amended section.
+Revision 14 records the maintainer's 2026-11-14 sequencing for WS16 (point 8
+of the compact-state loop): R-floor stage 2b, then a lean-orchestration
+simplification cut on `dev/lean_core/`, then slices 3-5 and the switch;
+package simplification stays in WS14a after the switch, and the standing
+instruction to remove work and abstractions before adding compiled kernels,
+caches or fast paths.
 Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
@@ -923,6 +929,31 @@ public behavior except the explicit pulse-plumbing ledger differences.
      then tunes the loop as a second, by Cut 15's method: the cost map's
      lean arm rerun on the slice-2 code scopes the tuning, Cut 15's keep
      and stop rules apply, and a timing record closes the cut.
+  8. **Measure, then simplify, then slices 3-5 (maintainer, 2026-11-14).**
+     After Cut 16 closed and the spikes of 2026-11-14 (compiled FIFO and
+     planner: `dev/spikes/lean_fifo_cpp`, `dev/spikes/lean_plan_cpp`; the
+     ephemeral lane: `dev/spikes/ephemeral_lane`), the order is:
+     a. R-floor stage 2b (`dev/spikes/r_floor/CHARTER_stage2b.md`): a
+        guarantee-preserving plain-R reference on matched workloads, the
+        implementation overhead ratio, and a three-way attribution
+        (guarantee, package implementation, stage hand-offs).
+     b. A lean-orchestration simplification cut on `dev/lean_core/` only,
+        scoped from stage 2b's closeout and written after it, with no
+        behaviour change and proven by the existing gate and variant driver.
+        For each wrapper or intermediate representation it asks whether it
+        owns an invariant, isolates a contract, or only forwards data, and
+        removes the last kind. It precedes slices 3-5 so they build on the
+        simplified shape and fit `loop.R`'s line budget.
+     c. Slices 3-5, then the switch.
+     Package code in `R/` is simplified after the switch, in WS14a as
+     planned: the switch deletes the current fold, so the surviving core is
+     reviewed once. The exception is a package function the lean loop keeps
+     calling after the switch and whose cost is measured, which may get a
+     focused cut before it (as Cut 17 did for the sizing helper). Standing
+     instruction for this work: prefer removing unnecessary work and
+     abstractions before introducing compiled kernels, caches or fast-path
+     frameworks; compiled execution stays a WS14 decision through a focused
+     Type 2 review.
 - **Every family close (A2, A4).** For the first checkpoint; families after
   it use the family method above. WS16 uses frozen floor v1 and stage
   isolation under R11: each cut sets cost-above-floor budgets on both
