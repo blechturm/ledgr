@@ -35,6 +35,13 @@ registerS3method("as.double", "oracle_amt", function(x, ...) x, envir = globalen
 registerS3method("names", "oracle_amt", function(x) structure(attr(x, "names"), class = "oracle_ids"), envir = globalenv())
 oracle_amt <- function(...) { v <- c(...); structure(unname(v), names = names(v), class = "oracle_amt") }
 oracle_ids40 <- sprintf("P%02d", 40:1)
+# A names() method returning an unclassed list (close review round 3, finding
+# 1): attribute-free but not character, accepted by the validators.
+registerS3method("as.double", "oracle_lnames", function(x, ...) x, envir = globalenv())
+registerS3method("names", "oracle_lnames", function(x) as.list(attr(x, "names")), envir = globalenv())
+registerS3method("names", "oracle_lmask", function(x) as.list(attr(x, "names")), envir = globalenv())
+oracle_lnames <- function(...) { v <- c(...); structure(unname(v), names = names(v), class = "oracle_lnames") }
+oracle_lmask <- function(v) structure(unname(v), names = names(v), class = "oracle_lmask")
 
 oracle_ctx <- function(ids = c("CCC", "AAA", "BBB", "DDD"), close = NULL, position = NULL, holding_value = NULL,
                        member = NULL, buyable = NULL, equity = 1e6) {
@@ -184,6 +191,26 @@ oracle_cases <- function() {
   add(oracle_case("reb_plain_value_40", "S01;S04;S05;S08;S18", "value",
     ledgr::ledgr_target_rebalance(ctx, weights = c(P07 = 0.2, P03 = 0.1, P31 = 0.3), keep = "P12", capital_base = "total_equity"),
     function() list(ctx = oracle_ctx(ids = oracle_ids40, position = rep(c(4, 0), 20)))))
+  # close review round 3, finding 1: names() returning an unclassed list
+  add(oracle_case("reb_list_names_kept", "S01;S06;S12", "error:ledgr_invalid_strategy_result",
+    ledgr::ledgr_target_rebalance(ctx, weights = oracle_lnames(BBB = 0.2, CCC = 0.1), keep = c("BBB", "CCC"),
+                                  capital_base = "total_equity"), function() list(ctx = oracle_ctx4())))
+  add(oracle_case("reb_list_names_kept_40", "S01;S06;S12;S18", "error:ledgr_invalid_strategy_result",
+    ledgr::ledgr_target_rebalance(ctx, weights = oracle_lnames(P07 = 0.2, P03 = 0.1), keep = c("P07", "P03"),
+                                  capital_base = "total_equity"), function() list(ctx = oracle_ctx(ids = oracle_ids40))))
+  add(oracle_case("adj_list_names_exited_40", "S01;S07;S12;S18", "error:ledgr_invalid_strategy_result",
+    ledgr::ledgr_target_adjust(ctx, weights = oracle_lnames(P07 = 0.2, P03 = 0.1), exit = oracle_ids40 %in% c("P07", "P03")),
+    function() list(ctx = oracle_ctx(ids = oracle_ids40))))
+  add(oracle_case("reb_list_names_value_40", "S01;S08;S12;S18", "error:error",
+    ledgr::ledgr_target_rebalance(ctx, weights = oracle_lnames(P07 = 0.2, P03 = 0.1)),
+    function() list(ctx = oracle_ctx(ids = oracle_ids40, position = rep(c(4, 0), 20)))))
+  add(oracle_case("adj_list_names_exit_mask_40", "S14;S18", "value",
+    ledgr::ledgr_target_adjust(ctx, exit = oracle_lmask(stats::setNames(rev(oracle_ids40) %in% c("P07", "P03"), rev(oracle_ids40)))),
+    function() list(ctx = oracle_ctx(ids = oracle_ids40, position = rep(c(4, 0), 20)))))
+  add(oracle_case("sig_list_names_40", "S15;S16", "value",
+    ledgr::ledgr_signal(oracle_lnames(P07 = 1, P03 = 2), universe = oracle_ids40), function() list()))
+  add(oracle_case("sig_list_names", "S15;S16", "value",
+    ledgr::ledgr_signal(oracle_lnames(BBB = 1, AAA = 2), universe = c("CCC", "AAA", "BBB")), function() list()))
   add(oracle_case("reb_keep_named_character","S03;S05;S06;S13", "value",
     ledgr::ledgr_target_rebalance(ctx, weights = c(AAA = 0.3), keep = c(k = "BBB"), capital_base = "total_equity"),
     function() list(ctx = oracle_ctx4(member = c(TRUE, TRUE, FALSE, TRUE)))))

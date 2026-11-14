@@ -33,6 +33,14 @@ if (identical(opt("mode"), "arm")) {
   env <- spike_lean_env(lib, repo)
   ns <- env$ns
   shape <- opt("shape"); lane <- opt("lane")
+  # Gut (check.R only): the crossover strategy reads its slow average as fast
+  # and its fast as slow, so the run's metrics must differ from the record.
+  if (identical(opt("gut"), "1")) {
+    b <- paste(deparse(body(env$defs$r_floor_transition)), collapse = "\n")
+    b <- sub("fast <- ctx$fast\n    slow <- ctx$slow", "fast <- ctx$slow\n    slow <- ctx$fast", b, fixed = TRUE)
+    if (!grepl("fast <- ctx$slow", b, fixed = TRUE)) stop("gut target not found")
+    body(env$defs$r_floor_transition) <- parse(text = b)[[1L]]
+  }
   desc <- env$defs$bench_descriptor(shape)
   store <- tempfile(fileext = ".duckdb")
   ledgr::ledgr_snapshot_close(ledgr::ledgr_snapshot_from_df(desc$bars(), db_path = store, snapshot_id = "eph",
