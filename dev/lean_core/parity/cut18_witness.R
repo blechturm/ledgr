@@ -63,11 +63,23 @@ cut18_witness_mutations$targets_helper_attributes_kept <- lean_edit("checks.R", 
   "    if (is.numeric(u) && identical(names(u), ids) && all(is.finite(u))) return(u[ids])",
   "    if (is.numeric(u) && identical(names(u), ids) && all(is.finite(u))) return(u)")
 cut18_witness_mutations$targets_axis_check_skipped <- lean_edit("checks.R", "lean_targets",
-  "  if (ids_ok && identical(class(raw), c(\"ledgr_target\", \"numeric\"))) {", "  if (identical(class(raw), c(\"ledgr_target\", \"numeric\"))) {")
+  "  if (ids_ok && length(ids) > 0L && identical(class(raw), c(\"ledgr_target\", \"numeric\"))) {",
+  "  if (length(ids) > 0L && identical(class(raw), c(\"ledgr_target\", \"numeric\"))) {")
 cut18_witness_mutations$sizing_stale_not_detected <- lean_edit("checks.R", "lean_sizing_evidence",
   "      return(if (stale) NULL else x)", "      return(x)")
 cut18_witness_mutations$sizing_unavailable_on_plain_path <- lean_edit("checks.R", "lean_sizing_evidence",
   "    all(rc %in% .ledgr_sizing_reason_codes) && !any(rc == \"sizing_unavailable\")", "    all(rc %in% .ledgr_sizing_reason_codes)")
+cut18_witness_mutations$targets_empty_helper_taken <- lean_edit("checks.R", "lean_targets",
+  "  if (ids_ok && length(ids) > 0L && identical(class(raw), c(\"ledgr_target\", \"numeric\"))) {",
+  "  if (ids_ok && identical(class(raw), c(\"ledgr_target\", \"numeric\"))) {")
+cut18_witness_mutations$sizing_field_before_shape <- lean_edit("checks.R", "lean_sizing_evidence",
+  "  id <- if (ok) x$instrument_id", "  id <- x$instrument_id")
+cut18_witness_mutations$sizing_classed_column_taken <- lean_edit("checks.R", "lean_sizing_evidence",
+  "    !is.object(x$instrument_id) && !is.object(x$requested_quantity) && !is.object(x$pre_floor_quantity) &&",
+  "    TRUE &&")
+cut18_witness_mutations$debug_payload_unchecked <- lean_edit("checks.R", "sig",
+  "    list(class = class(e), message = conditionMessage(e), reason = e$reason, ids = e$instrument_ids,",
+  "    list(class = class(e), message = conditionMessage(e), reason = e$reason, ids = NULL,")
 cut18_witness_mutations$sizing_requested_unchecked <- lean_edit("checks.R", "lean_sizing_evidence",
   "    if (all(is.finite(x$rounded_quantity)) && all(is.finite(x$position_before)) && all(is.finite(x$requested_quantity)) &&",
   "    if (all(is.finite(x$rounded_quantity)) && all(is.finite(x$position_before)) &&")
@@ -287,6 +299,7 @@ tgt_case("character_targets", nmd(c("1", "2", "3")))
 tgt_case("list_targets", as.list(nmd(c(1, 2, 3))))
 tgt_case("empty_axis_empty_targets", stats::setNames(numeric(), character()), axis = character())
 tgt_case("axis_invalid_duplicates", stats::setNames(c(1, 2), c("A", "A")), axis = c("A", "A"))
+tgt_case("helper_empty_axis", ledgr::ledgr_target(numeric(), universe = character(), origin = "review"), axis = character())
 tgt_case("helper_axis_invalid", stats::setNames(structure(c(1, 2), class = c("ledgr_target", "numeric")), c("A", "A")), axis = c("A", "A"))
 
 ## R4: the sizing evidence --------------------------------------------------------
@@ -324,6 +337,35 @@ ev_case("unavailable_row_valid", ev_mod(function(y) { y$reason_code[[3L]] <- "si
 ev_case("unavailable_row_with_price", ev_mod(function(y) { y$reason_code[[3L]] <- "sizing_unavailable"; y$requested_quantity[[3L]] <- NA;
   y$pre_floor_quantity[[3L]] <- NA; y }))
 ev_case("unavailable_row_with_quantities", ev_mod(function(y) { y$reason_code[[3L]] <- "sizing_unavailable"; y$price[[3L]] <- NA; y }))
+
+ev_case("atomic_numeric", 1)
+ev_case("atomic_character", "bad")
+ev_case("atomic_logical", TRUE)
+ev_case("zero_length_numeric", numeric())
+ev_case("empty_list_classed", structure(list(), class = "ledgr_sizing_evidence"))
+ev_case("container_extra_class", ev_mod(function(y) { class(y) <- c("mine", "ledgr_sizing_evidence"); y }))
+# a column whose `[` method changes what the pin's subset sees (accepted only by a lean path that skips the subset)
+`[.review_quantity` <- function(x, i) NA_real_
+ev_one <- structure(list(instrument_id = "AAA", requested_quantity = structure(0, class = "review_quantity"),
+  pre_floor_quantity = 0, rounded_quantity = 0, price = NA_real_, position_before = 0, reason_code = "sizing_zero_target"),
+  class = "ledgr_sizing_evidence")
+ev_case("column_subset_dispatch", ev_one, targets = c(0, 0, 0), position = c(0, 0, 0))
+ev_case("column_classed_plain", ev_mod(function(y) { y$price <- structure(y$price, class = "plain_units"); y }))
+
+## DBG: the debug outcome comparator (lean_debug_same) --------------------------
+# Lean side: the comparator's outcome as class and message (and IDs when it re-signals);
+# expected side: written independently. A refusal differing only in its
+# instrument_ids must be detected by the payload comparison.
+dbg_refusal <- function(ids, reason = "r") function() rlang::abort("m", class = "ledgr_review_refusal", reason = reason, instrument_ids = ids)
+dbg_seen <- function(f) tryCatch({ v <- f(); list(value = v) }, error = function(e) list(class = class(e)[[1L]], message = conditionMessage(e), ids = e$instrument_ids))
+dbg_case <- function(id, lean_f, pin_f, expected) case("DBG", id, function() dbg_seen(function() lean$lean_debug_same(lean_f, pin_f, "review", 1L)), function() expected)
+dbg_differs <- list(class = "ledgr_internal_error", message = "Lean review differs from the pin's at pulse 1.", ids = NULL)
+dbg_case("same_value", function() c(a = 1), function() c(a = 1), list(value = c(a = 1)))
+dbg_case("different_value", function() c(a = 1), function() c(a = 2), dbg_differs)
+dbg_case("same_refusal", dbg_refusal(c("A", "B")), dbg_refusal(c("A", "B")), list(class = "ledgr_review_refusal", message = "m", ids = c("A", "B")))
+dbg_case("refusal_ids_only_differ", dbg_refusal(c("A", "B")), dbg_refusal(c("B", "A")), dbg_differs)
+dbg_case("refusal_reason_only_differs", dbg_refusal("A", "r"), dbg_refusal("A", "s"), dbg_differs)
+dbg_case("refusal_against_value", dbg_refusal("A"), function() 1, dbg_differs)
 
 ## run ---------------------------------------------------------------------------
 manifest <- utils::read.csv(file.path(here, "cut18_witness_cases.csv"), stringsAsFactors = FALSE)

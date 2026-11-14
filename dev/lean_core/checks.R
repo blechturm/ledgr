@@ -156,11 +156,13 @@ lean_cost_resolve <- function(cost, side, qty, open) {
 # exactly ledgr_target, numeric; none of the intermediate classes) whose
 # unclassed values are finite and named exactly by the axis, returned as
 # the pin returns it, unclass(raw)[ids]. `ids_ok` is the pin's universe
-# predicate, evaluated once per run on the fixed axis; both paths need it. Anything else goes to
-# the pin's validator, which normalises it or raises its refusal.
+# predicate, evaluated once per run on the fixed axis; both paths need it. The
+# helper path also needs a non-empty axis: on an empty one the pin returns the
+# unclassed helper with its attributes. Anything else goes to the pin's
+# validator, which normalises it or raises its refusal.
 lean_targets <- function(raw, ids, ids_attr, ids_ok) {
   if (ids_ok && is.numeric(raw) && identical(attributes(raw), ids_attr) && all(is.finite(raw))) return(raw)
-  if (ids_ok && identical(class(raw), c("ledgr_target", "numeric"))) {
+  if (ids_ok && length(ids) > 0L && identical(class(raw), c("ledgr_target", "numeric"))) {
     u <- unclass(raw)
     if (is.numeric(u) && identical(names(u), ids) && all(is.finite(u))) return(u[ids])
   }
@@ -180,16 +182,21 @@ lean_targets_axis_ok <- function(ids) {
 # quantities, priced rows that need a price, and no price on an unpriced
 # row), evaluated directly rather than through vapply() and repeated
 # subsets; it returns the evidence, or NULL when it is stale by the pin's
-# four identical(as.numeric(...)) comparisons. Anything else goes to the pin.
+# four identical(as.numeric(...)) comparisons. The plain path reads no field
+# before the container's shape holds (a list of exactly the helper's class
+# and fields), and takes only columns without a class, on which these
+# operations equal the pin's. Anything else goes to the pin.
 lean_sizing_fields <- c("instrument_id", "requested_quantity", "pre_floor_quantity", "rounded_quantity", "price",
                         "position_before", "reason_code")
 lean_sizing_priced_codes <- c("sizing_rounded", "sizing_rounded_to_zero_addition", "sizing_rounded_to_zero_liquidation")
 lean_sizing_evidence <- function(x, targets, ids, position, mark) {
   if (is.null(x)) return(NULL)
-  id <- x$instrument_id
-  rc <- x$reason_code
-  ok <- inherits(x, "ledgr_sizing_evidence") && is.list(x) && identical(names(x), lean_sizing_fields) &&
-    is.character(id) && is.character(rc) && all(lengths(x) == length(id)) && !anyNA(id) && all(nzchar(id)) &&
+  ok <- is.list(x) && identical(class(x), "ledgr_sizing_evidence") && identical(names(x), lean_sizing_fields) &&
+    !is.object(x$instrument_id) && !is.object(x$requested_quantity) && !is.object(x$pre_floor_quantity) &&
+    !is.object(x$rounded_quantity) && !is.object(x$price) && !is.object(x$position_before) && !is.object(x$reason_code)
+  id <- if (ok) x$instrument_id
+  rc <- if (ok) x$reason_code
+  ok <- ok && is.character(id) && is.character(rc) && all(lengths(x) == length(id)) && !anyNA(id) && all(nzchar(id)) &&
     !anyDuplicated(id) && is.numeric(x$requested_quantity) && is.numeric(x$pre_floor_quantity) &&
     is.numeric(x$rounded_quantity) && is.numeric(x$price) && is.numeric(x$position_before) && !anyNA(rc) &&
     all(rc %in% .ledgr_sizing_reason_codes) && !any(rc == "sizing_unavailable")

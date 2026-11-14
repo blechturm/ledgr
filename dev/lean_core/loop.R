@@ -589,10 +589,10 @@ lean_fold_envelope <- function(execution, output_handler) {
     raw_targets <- result$targets
     # Targets (checks.R, lean_targets): the plain and helper accept paths,
     # or the pin's validator.
-    targets <- lean_targets(raw_targets, ids, ids_attr, ids_ok)
-    if (.lean_debug && !identical(targets, ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE))) {
-      rlang::abort(sprintf("Lean target validation differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
-    }
+    targets <- if (.lean_debug) {
+      lean_debug_same(function() lean_targets(raw_targets, ids, ids_attr, ids_ok),
+        function() ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE), "target validation", i)
+    } else lean_targets(raw_targets, ids, ids_attr, ids_ok)
     sq <- as.numeric(targets)
     pre <- 0L
     if (!is.null(intent_reason)) { hd_intent[[i]] <<- intent_reason; pre <- pre + 1L }
