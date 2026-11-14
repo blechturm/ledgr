@@ -57,3 +57,28 @@ pk$us_slice2 <- vapply(pk$statement, net, 0, shape = "slice2_10x7200")
 utils::write.csv(pk, file.path(ev, "package_costs.csv"), row.names = FALSE)
 print(wl[c("id", "kind", "us_10x7200", "us_slice2", "share_10x7200", "share_slice2", "share_20x23400", "share_500x1260", "worked")], digits = 2, row.names = FALSE)
 print(pk[c("site", "us_10x7200", "us_slice2")], digits = 3, row.names = FALSE)
+
+# Amendment lean_owned, item (e): the lean-owned replacements join the
+# worklist (worklist_amended.csv), in-loop cost from package_costs.csv; W5
+# folds into R5 (the state patch path replaces the name predicate with it).
+rep_row <- function(id, sites, statement, change) {
+  cross <- net(statement, "10x7200"); s2 <- net(statement, "slice2_10x7200")
+  data.frame(id = id, kind = "replacement", sites = sites, change = change, us_10x7200 = cross, us_slice2 = s2,
+             share_10x7200 = cross / plain[["10x7200"]], share_slice2 = s2 / plain[["slice2_10x7200"]],
+             share_20x23400 = NA_real_, share_500x1260 = NA_real_, worked = TRUE, stringsAsFactors = FALSE)
+}
+am <- rbind(wl[wl$id != "W5", ],
+  rep_row("R1", "risk plan, post-risk and short checks (P2)", "loop.R|lean_p2_decide|32",
+          "lean risk steps on plain equity and close; refusals through the pin's functions"),
+  rep_row("R2", "cost resolver call (P3)", "plan.R|lean_plan_pulse|18",
+          "the compiled steps evaluated in their order from run constants; no output-shape re-check"),
+  rep_row("R3", "target validator on non-plain returns (P2)", "loop.R|lean_p2_decide|21",
+          "match-based checks, the universe predicate once per run; refusals through the pin's validator"),
+  rep_row("R4", "sizing-evidence validator (P2)", "loop.R|lean_p2_decide|26",
+          "fused checks; anything not clearly valid goes to the pin's validator"),
+  rep_row("R5", "state patch path (P5), with W5", "loop.R|lean_p5_commit|16",
+          "declared-name fast accept and per-field checks; anything else to the pin's apply_values"))
+am <- am[order(-pmax(am$share_10x7200, am$share_slice2, na.rm = TRUE)), ]
+utils::write.csv(am, file.path(ev, "worklist_amended.csv"), row.names = FALSE)
+cat("\namended worklist:\n")
+print(am[c("id", "kind", "us_10x7200", "us_slice2", "share_10x7200", "share_slice2", "worked")], digits = 2, row.names = FALSE)

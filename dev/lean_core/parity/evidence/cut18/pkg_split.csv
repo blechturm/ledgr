@@ -1,0 +1,31 @@
+"fn","part","us"
+"validate_strategy_targets","WHOLE",36
+"validate_strategy_targets","universe checks (is.character, anyNA, nzchar, anyDuplicated)",2.3
+"validate_strategy_targets","unwrap: ledgr_is_strategy_intermediate + inherits + unclass",3.7
+"validate_strategy_targets","name checks (names, anyNA, nzchar, anyDuplicated)",2.4
+"validate_strategy_targets","finite check",0.3
+"validate_strategy_targets","setdiff(universe, names) + setdiff(names, universe)",25.1
+"validate_strategy_targets","targets[universe] (name lookup subset)",0.4
+"validate_sizing_evidence","WHOLE",28.8
+"validate_sizing_evidence","shape: inherits, is.list, identical(names)",0.7
+"validate_sizing_evidence","lengths, character id checks, anyDuplicated",7.9
+"validate_sizing_evidence","match ids to axis",0.8
+"validate_sizing_evidence","numeric columns via vapply(is.numeric)",2.8
+"validate_sizing_evidence","reason codes %in% dictionary",2.3
+"validate_sizing_evidence","typed-value block (9 finiteness/NA tests)",8.6
+"validate_sizing_evidence","staleness: 4 identical(as.numeric(...)) comparisons",5.5
+"validate_sizing_evidence","a hold pulse: x is NULL",0.4
+"apply_risk_plan","WHOLE (plain list context, pin $ method)",15
+"apply_risk_plan","switch dispatch + step call overhead",0.8
+"apply_risk_plan","ledgr_risk_validate_max_weight (incl. ledgr_is_param_ref) per pulse",1.5
+"apply_risk_plan","ledgr_risk_context_equity (ctx$equity via $ method + 5 checks)",2.4
+"apply_risk_plan","ledgr_risk_context_prices (unclass(ctx), lookup, [universe] by names, setNames)",2.1
+"apply_risk_plan","the cap arithmetic itself",4.7
+"post-risk checks","ledgr_availability_validate_post_risk",1.4
+"post-risk checks","as.numeric(risked) + short test",0.6
+"cost resolver","WHOLE ledgr_plan_resolve (wrapper + resolver + shape check)",9.9
+"cost resolver","resolver closure -> ledgr_cost_model_resolve",9.1
+"cost resolver","the step arithmetic alone (3 steps, rounding)",3.9
+"cost resolver","per-step identical(type_id) tests + as.numeric(args) (3 steps)",8.6
+"state field validator","WHOLE ledgr_strategy_state_validate_value(1L)",0.8
+"state field validator","WHOLE, asset field (crossover)",1.4
