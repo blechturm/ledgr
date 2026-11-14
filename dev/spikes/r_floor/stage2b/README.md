@@ -52,8 +52,10 @@ strategy call is 65 and 142, of which the sizing helper 109 on slice2.
   more than the formulas it computes), the declared-state update (19 and
   16), and the context build, call wrapper and stage hand-offs (about 120 and
   170, reading slice2's risk at its standalone price, since its accumulated
-  increment carries a changed trade path). None of it is a guarantee: the
-  reference keeps every one.
+  increment carries a changed trade path). The reference matches every
+  compared record, but it does not keep every guarantee of the context
+  service (see the correction below), so part of the gap may be the price
+  of guarantees it omits.
 - Shared costs dominate what is left. The FIFO kernel is 30 percent of the
   crossover reference and 38 percent of slice2's; the sizing helper is about
   110 us of slice2's pulse on both sides. They are the next floor.
@@ -77,6 +79,20 @@ accepted with identical records. The cost model has no refusal a run can
 reach (a non-positive price is a rejection), and the affordability
 reconciliation stop has no constructible input (relative tolerance 1e-8);
 the checker's gutted path exercises the reference's stop branch.
+
+## Correction (cut review 18, 2026-11-14)
+
+The first paragraph's "every guarantee" is too strong. Cut review 18 (R1,
+`inst/design/ledgr_v0_2_3_spec_packet/cut_review_18.md`) showed with two
+probes outside the registered fixtures: a context the strategy keeps from
+pulse 1 returns a later pulse's position from `hold()`, because the
+reference's `hold()` closes over a variable the loop reassigns; and sizing
+evidence with a NaN requested quantity is refused by the pin and accepted by
+the reference, which omits some typed sizing checks. The reference also uses
+a plain list without the lean lookup service and compares refusal class
+membership, not message or precedence. So the reference is an attribution
+input for the two compared workloads, not a guarantee oracle, and its 108
+and 345 us are descriptive figures, not an attainable floor.
 
 ## Limits
 
