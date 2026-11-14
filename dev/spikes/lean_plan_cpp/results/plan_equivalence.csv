@@ -1,0 +1,4 @@
+"shape","calls","identical","declined","different","with_rejections","first_bad_call"
+"slice2_10x7200",7192,7191,1,0,1,NA
+"10x7200",4911,4910,1,0,1,NA
+"500x1260",1250,1249,1,0,1,NA

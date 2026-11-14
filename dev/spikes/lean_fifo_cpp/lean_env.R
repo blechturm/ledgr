@@ -39,11 +39,12 @@ spike_run <- function(env, shape, run_id = "spike") {
   lockBinding("ledgr_fold_envelope", ns)
   on.exit({ unlockBinding("ledgr_fold_envelope", ns); assign("ledgr_fold_envelope", inner, envir = ns)
             lockBinding("ledgr_fold_envelope", ns) }, add = TRUE, after = FALSE)
+  folds_before <- env$lean$lean_entry$lean_folds %||% 0L
   invisible(gc(FALSE))
   t0 <- now()
   bt <- suppressWarnings(ledgr::ledgr_run(exp, run_id = run_id, seed = 20260530L))
   run_s <- now() - t0
-  if (env$lean$lean_entry$lean_folds != 1L) stop("the lean loop did not run")
+  if (env$lean$lean_entry$lean_folds - folds_before != 1L) stop("the lean loop did not run")
   tables <- lapply(stats::setNames(nm = c("fills", "equity", "ledger", "diagnostics")),
                    function(t) as.data.frame(ledgr::ledgr_results(bt, t)))
   close(bt)
