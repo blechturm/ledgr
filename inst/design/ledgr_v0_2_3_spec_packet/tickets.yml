@@ -2231,6 +2231,156 @@ cuts:
       every acceptance item; a design concern returns NEEDS_TYPE_2. A third
       correction round stops for maintainer disposition.
     cut_review: "CHANGES_REQUIRED in cut_review_17.md (independent clean-context Codex CLI, gpt-6.1-sol/high, at efd39798): R1 (the constructor bypass is unsafe: a character-matrix universe and a skip-then-overflow case; resolved by dropping the bypass rather than fencing it, decision (4)), R2 (explicit comparator and per-surface mutations), R3 (required-case manifest, shared-caller coverage, independent notes state), R4 (shared timing protocol cut17-helper-1, eight pairs, bound 1.02 per helper cell, descriptive whole run), R5 (closed product scope and permitted non-product diff), R6 (committed versus scratch inputs) applied with the review's replacement text, R1 and R5 adjusted for the dropped bypass. Focused re-review 1 (cut_review_17_rereview_1.md, same setup, at ce97bb2d): PASS, R1-R6 resolved, dropping the bypass accepted as R1's resolution; advisory N1 (the timing summaries keep decision (6)'s descriptive whole-run exception) applied with its replacement text."
+  - id: 18
+    name: "Lean-orchestration simplification (macro WS16 point 8b)"
+    cut: "2026-11-14"
+    status: "proposed"
+    opening: >-
+      R-floor stage 2b (dev/spikes/r_floor/stage2b, committed 5c3f9c4a)
+      built a plain-R loop that keeps every guarantee the lean loop keeps on
+      the two reference workloads and reproduces its records exactly
+      (economic, observable, and six contract fixtures). The lean loop takes
+      286 and 611 us per pulse (crossover 10x7200, slice2_10x7200) against
+      the reference's 108 and 345: an implementation overhead ratio of 2.6
+      and 1.8. The extra time sits in the order planner (lean_plan_pulse()
+      47 and 102 us against 12 for the same cost and affordability
+      formulas), the declared-state update (21 and 18 against 2), and the
+      context build, strategy call path and stage hand-offs (about 120 and
+      170 us). The FIFO kernel (33 to 40 and 126 to 132 us) and the sizing
+      helper (about 110 us on slice2) are shared by both loops. Macro plan
+      point 8b (revision 14) puts a simplification of the lean
+      orchestration here, before slices 3-5, so they build on the
+      simplified shape.
+    authority: >-
+      macro_plan.md WS16 compact-state points 1 (named stages, compact
+      state) and 8b (revision 14), with the maintainer's standing
+      instruction of 2026-11-14 recorded there (remove unnecessary work and
+      abstractions before adding compiled kernels, caches or fast-path
+      frameworks); AGENTS.md (in the lean core, validate external entry and
+      keep contracted refusals in production; check internal hand-offs only
+      in debug); lean_core_interface.md Section 19 (19.4 one pulse, 19.8
+      tuning); dev/lean_core/parity/loop_checklist.md; Cut 15's decisions 2
+      to 5 and Cut 16's decision 2, carried as stated below;
+      inst/design/manual/optimization_coding_style.qmd (fold path).
+    measured_input: >-
+      Stage 2b evidence (dev/spikes/r_floor/stage2b/evidence at 5c3f9c4a;
+      seven alternating rounds in fresh processes, High performance plan,
+      P-core affinity): ratio.csv, summary.csv and attribution.csv. The lean
+      cells come from clocks inserted at fixed anchors of an in-memory copy
+      of loop.R (lean_clocks.R); the clocks cost 18 and 38 us per pulse and
+      cells under about 5 us are not resolved. Lean cells, us per pulse
+      (crossover / slice2): P1 10.5 / 11.3; context build 33.9 / 37.2;
+      strategy call 64.5 / 141.6 (the sizing helper 109.4 of it on
+      slice2); sizing-evidence check 2.0 / 17.6; risk plan 0 / 31.2; P2
+      residual 17.2 / 48.7; lean_plan_pulse() 46.9 / 102.0; P3 residual
+      15.9 / 31.4; FIFO and position facts 39.8 / 126.3; P4 residual 28.6 /
+      56.5; state update 20.7 / 18.4; P5 residual 19.0 / 19.8; E 1.7 / 1.8.
+      Reference prices (accumulated): floor 53.2 / 121.4, costs and
+      affordability 12.3 / 11.6, risk 5.4 / 64.3 (slice2's carries a
+      changed trade path; standalone 38.4), sizing evidence 1.3 / 14.0,
+      FIFO 32.9 / 131.9, state 2.4 / 2.2. probe_findings.md records the
+      package calls per run. LDG-3230's stop evidence puts the state
+      patch's name check at 3.6 to 3.75 us per pulse, so most of the
+      state-update cell is the pin's ledgr_strategy_state_validate_value().
+      These are cell-level figures; LDG-3234 measures the sites inside
+      them.
+    decisions: >-
+      (1) No behaviour change. Every table of every gate workload, batch
+      one and inert-hooks workload stays identical to the pin with debug off
+      and on; the frozen execution paths (loop_freeze.csv) do not move;
+      every manifest variant is still reached and caught by its expected
+      signal and the negative controls still fail closed; every row of
+      loop_checklist.md keeps a witness. A rule a failure surfaces goes into
+      the rules ledger in the ticket that found it. (2) Scope: the
+      execution sources loop.R, plan.R and loop_harness.R in dev/lean_core
+      and their parity harness. fifo.R and prepare.R change only where a
+      call site in loop.R changes what it hands them; their internals are
+      out of scope. Nothing in R/, tests/, DESCRIPTION, NAMESPACE, vignettes
+      or the store format changes. (3) The test for each per-pulse wrapper,
+      closure, list, environment, copy, conversion, hook call, check or
+      intermediate representation (macro point 8b): does it own an
+      invariant, isolate a contract, or only forward data? Forwarders are
+      removed. An invariant or contract stays with its one owner. A check
+      of a lean-internal hand-off (a value the lean loop itself produced
+      earlier in the same run) may move to debug under AGENTS.md's rule only
+      where LDG-3234 names its producer and the guarantee that makes it
+      redundant in production; it still runs with debug on. Contracted
+      refusals stay in production at their current point and precedence.
+      (4) What does not change: E and P1-P5 stay named functions with
+      explicit inputs and outputs writing by index into run-long state
+      (macro point 1); the context stays fresh per pulse and keeps the
+      pin's class, raw-field order and lookup service, compared with the
+      pin's context in debug (Cut 15 decision 3); the pin functions the
+      loop calls today stay called and none is copied (Cut 16 decision 2),
+      except a lean copy kept under Cut 15's decision 4 (timed against an
+      arm delegating that copy to the pin, kept only at 0.02 of the loop);
+      no compiled code, cache or fast-path framework is added. (5) Method:
+      LDG-3234's inventory, worked in measured cost order. Each change is
+      measured with loop_shortcuts.R --mode=compare against the preceding
+      commit under Cut 15's decision 5 (per-arm source identities, seven
+      alternating rounds, signature checks, compilation, warm-up, GC,
+      clocks, host policy) on 10x7200, 20x23400, 500x1260 and
+      slice2_10x7200. A forwarder removal is kept unless its median paired
+      change is a regression above 0.01 of the loop on some shape: it
+      removes code and needs no speed case. Any other change is kept only
+      at a median saving of 0.02 of the loop on some shape. Cut 15's
+      regression rule (decision 5) applies to each change and to the cut as
+      a whole. A changed dispatch predicate meets Cut 15's decision 2 with a
+      reached variant. A variant whose anchor disappears with removed code
+      is re-anchored to the same intended fault and listed in
+      loop_variant_changes.csv, never dropped. (6) Stop: no numeric target
+      gates the cut. LDG-3235 stops when the next inventory item is neither
+      a forwarder removal nor a change measured at 0.02 of the loop on some
+      shape, or after two working days of simplification, and reports to
+      the maintainer. Expected, not a gate: the stage 2b reference (108 and
+      345 us per pulse) is the ceiling; the state validator's own cost and
+      the shared FIFO and helper costs stay. (7) Close: the gate, batch one,
+      inert hooks and the variant driver on the final code with debug off
+      and on; a timing record cut18-loop-1 (cut16-loop-1's method: the pin
+      against the final lean loop on Cut 16's five descriptors, eight
+      alternating pairs, run and fold clocks, bound 1.0); a paired
+      comparison of the cut's base against its final code on the four
+      comparison shapes; and stage 2b's runner rerun on the final code, with
+      lean_clocks.R's anchors moved where the simplified loop moved them,
+      reporting the overhead ratio and the cells before and after. (8)
+      Lines: loop.R production lines (role count as in LDG-3219) stay at or
+      below 925 (Cut 16's close), and the cut's net production lines across
+      dev/lean_core are zero or fewer; debug, witness and harness lines are
+      reported beside; an overrun goes to the maintainer.
+    identity_and_release_impact: >-
+      None. No file in R/, tests/, DESCRIPTION, NAMESPACE, vignettes or the
+      store format changes, and no dependency is added. Design impact:
+      lean_core_interface.md Section 19.4 and Section 19's tuning paragraph
+      describe the simplified hand-offs and any check moved to debug.
+    sequencing: >-
+      One workstream (36), three serial tickets: LDG-3234 (inventory and
+      measurement, no execution change; its list is reported to the
+      maintainer before LDG-3235 starts), LDG-3235 (simplification, one
+      commit per kept change), LDG-3236 (close measurement). Serial so that
+      each paired comparison measures one change.
+    out_of_scope: >-
+      Any behaviour change. Package code the loop calls (the declared-state
+      validator, the cost resolver, the risk plan, the sizing-evidence
+      validator, the sizing helpers): LDG-3234 lists their measured costs
+      and the maintainer routes them to WS14a or a focused cut like Cut 17.
+      The FIFO kernel's internals (the next shared floor; compiled FIFO
+      stays a WS14 decision). The after-loop publish and the envelope
+      setup and commit (store-write question). Slices 3-5, feature
+      computation, compiled code, caches and fast-path frameworks. Dropping
+      the named stages or the fresh per-pulse context.
+    workstreams: [36]
+    review_lifecycle: >-
+      An independent clean-context Codex CLI cut review, iterated to PASS,
+      then the maintainer's acceptance. Workstream 36 then receives one
+      independent clean-context Type 1 close review of its whole diff and
+      every acceptance item; it verifies faithful implementation and
+      contained scope and independently asks whether the inputs are right;
+      a design concern returns NEEDS_TYPE_2. Findings receive one
+      correction pass, with a further round only for a wrong answer on a
+      covered workload (maintainer, 2026-11-11); that limit waives no
+      acceptance item. A third correction round stops for maintainer
+      disposition. Findings, reviewed ranges and consequential rejection
+      reasons are kept under rfc_cycle.md's record rule.
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -2556,6 +2706,14 @@ workstreams:
     depends_on_workstream: 34
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 35, after LDG-3233", reason: "Every helper and shared-caller result, nested attribute, encoding, notes snapshot, signal and refusal (class, message, call, fields, precedence) is identical to the pin's on the oracle's manifest and on real captured contexts; the oracle fails on each listed deliberate change and on an omitted case; the cut17-helper-1 record meets decision (6): all shared-checker validity checks pass, every helper cell is at or under 1.02, and only the descriptive whole-run cell's ratio verdict may be ignored by the demonstrated reporting adapter; the full test suite and R CMD check pass; the product diff stays within decision (2) and the non-product diff within its permitted list; the seven-shape review is recorded."}
+  - id: 36
+    name: "Lean-orchestration simplification"
+    cut: 18
+    status: "proposed"
+    close_review: null
+    depends_on_workstream: 35
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 36, after LDG-3236", reason: "Every simplified stage is bit-identical to the pin on the full gate, batch one and inert hooks with debug on and off and on the frozen execution paths; every registered variant is reached and caught, re-anchored ones included; each removal is a forwarder by LDG-3234's inventory or kept by the 0.02 rule; contracted refusals, the fresh context and the debug comparisons are intact; each check moved to debug names its producer and guarantee; the line budget holds; and every number in the timing record, the paired comparison and the stage 2b rerun reproduces from its committed inputs."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -5575,3 +5733,54 @@ tickets:
       - "Lean loop, descriptive (the lean core is untouched and keeps the pin as its parity reference): the same lean sources on the pin library and on c4140436 (lean_helper_compare.R, results/lean_helper_final, 7 alternating rounds, identical work strings): slice2 fold 747 to 719 us per pulse (-3.3 percent), run -3.2 percent; earlier candidates -3.9 (d6a258f6, lean_helper_r1), -4.0 (4347bac8, lean_helper_r2) and -3.5 percent (5eb67e6d, lean_helper_r3); 8bb61546 measured -1.0 percent in a run whose output lean_helper_final replaced. Earlier, on a564a226 (results/lean_helper): -3.8 percent; in situ on a564a226 (results/lean_helper/insitu.csv, fills and final equity recorded per run): the helper call 268 to 145 us per call, the column reads 114 and 112 us (means of 3 runs). Found input for later work: first reads of the context's asset fields cost 17-30 us each (dev/bench/v0_2_3_lean_tuning_profile/asset_reads.R)."
       - "Verification on the final code (logs in dev/bench/v0_2_3_helper/results/verification_final, source commit in source_commit.txt: c4140436; earlier rounds in verification_r1, _r2 and _r3): full test suite (pkgload::load_all, testthat summary reporter): 0 failures, 0 errors, one skip that predates the cut (quantmod installed); R CMD build (vignettes with RStudio's Quarto through QUARTO_PATH) and R CMD check --no-manual --no-build-vignettes on a git archive of c4140436: Status OK. No registered test, fixture or oracle changed; nothing in dev/lean_core, DESCRIPTION, NAMESPACE or the store format. NEWS.md bullet under the development version."
       - "Seven-shape review (optimization_coding_style.qmd): (1) no per-element frames; (2) no full-table subset per ID: each site is one vectorised match; (3) no per-element parsing; (4) no JSON; (5) no recomputed work added beyond two anyDuplicated() calls on the requested IDs, and ledgr_target()'s re-check stays by decision (4); (6) no pairwise validator; (7) no write into an environment-held vector. No new loop over a growing collection. The measured numbers quoted in both tickets are printed by dev/bench/v0_2_3_helper/evidence_numbers.R from the committed CSVs and records; the scratch estimates (the 20-40 ID crossover, the 0.35 us binding cost) and the found-input asset-read figures are labelled as such and not regenerated; commands in dev/bench/v0_2_3_helper/results/COMMANDS.md and dev/bench/timing/records/cut17-helper-1/COMMANDS.md."
+  - id: "LDG-3234"
+    title: "Inventory and measure the lean loop's per-pulse orchestration"
+    workstream: 36
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: >-
+      The committed scope of Cut 18: every per-pulse site of the lean loop,
+      classified by decision (3), measured, and given a disposition. No
+      execution change in dev/lean_core.
+    acceptance:
+      - "An inventory script parses loop.R's stage functions (lean_p1_value to lean_p5_commit and lean_e_advance), lean_context(), the P2 strategy-call path and lean_plan_pulse() and lists every call and allocation site with file and line; dev/lean_core/parity/evidence/cut18/inventory.csv gives each site its stage cell, kind (owns an invariant, isolates a contract, forwards data, or package call), the owner of a kept invariant or contract, and a disposition (remove, keep, move a lean-internal hand-off check to debug, or out of scope with its routing); the script refuses a parsed site without a row and a row whose site no longer parses"
+      - "Each site or named group of sites measured on 10x7200 and slice2_10x7200 under the host policy (High performance, P-core affinity), with the clock's own cost recorded; sites under the clock's resolution are reported as unresolved, not as zero; the figures reconcile with the stage 2b cells they sit in"
+      - "Decisions (3) and (4) applied in the CSV: each forwarder named; each kept site's invariant or contract and its owner; each proposed debug move names its producer and the guarantee that makes the check redundant in production; package-owned costs (state validator, cost resolver, risk plan, sizing-evidence validator, helpers) listed with measured cost and proposed routing"
+      - "The ordered list with expected savings reported to the maintainer before LDG-3235 starts"
+    evidence: []
+  - id: "LDG-3235"
+    title: "Simplify the lean orchestration"
+    workstream: 36
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3234"]
+    scope: >-
+      Work LDG-3234's list in measured cost order under decisions (1) to
+      (6), one commit per kept change; stop by decision (6) and report.
+    acceptance:
+      - "Record LDG-3234's closing commit as the immutable base. After each kept change: the full gate, batch one and inert hooks identical to the pin with debug off and on, on the frozen execution paths; the variant driver passes with re-anchored variants listed in loop_variant_changes.csv and the negative controls failing closed"
+      - "Each change: its paired comparison (decision 5) on 10x7200, 20x23400, 500x1260 and slice2_10x7200 with per-arm source identities, command and raw observations, and its keep or delete classification; a deleted change is reverted with its witnesses"
+      - "Each check moved to debug: its producer and guarantee as LDG-3234 named them, the check still running with debug on, and a gate workload or variant showing it fires with debug on when its guarantee is broken"
+      - "Every row of loop_checklist.md keeps a witness; lean_core_interface.md Section 19.4 and Section 19's tuning paragraph describe the simplified hand-offs and the moved checks"
+      - "The stop condition of decision (6) recorded: the next inventory item and its measured bound, or the start and end of the two working days"
+      - "Lines per decision (8): loop.R production lines at or below 925, the cut's net production lines across dev/lean_core zero or fewer, debug, witness and harness lines reported beside"
+    evidence: []
+  - id: "LDG-3236"
+    title: "Record Cut 18's timing and rerun stage 2b"
+    workstream: 36
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3235"]
+    scope: >-
+      Close measurement by decision (7). No dev/lean_core change.
+    acceptance:
+      - "The gate and the variant driver pass on the final code as recorded by LDG-3235"
+      - "Timing record cut18-loop-1 under dev/bench/timing/ (protocol folder committed before the run): eight alternating pairs per cell on Cut 16's five descriptors, run and fold clocks, bound 1.0 against the pin; the overlay loads every lean execution source; the record's check passes"
+      - "A paired comparison of LDG-3234's closing commit against the final code on the four comparison shapes, Cut 15's regression rule applied to the cut as a whole"
+      - "Stage 2b's runner rerun on the final code into a new evidence folder, with lean_clocks.R's anchors moved only where the simplified loop moved them and its checker passing; the lean loop, reference and overhead ratio per workload and the attribution cells reported before and after"
+      - "The Balanced plan restored after timing"
+    evidence: []
