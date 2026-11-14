@@ -2234,7 +2234,8 @@ cuts:
   - id: 18
     name: "Lean-orchestration simplification (macro WS16 point 8b)"
     cut: "2026-11-14"
-    status: "proposed"
+    status: "accepted"
+    accepted: "2026-11-14 by the maintainer, after the cut review passed at re-review 1 (cut_review_18_rereview_1.md), as written."
     opening: >-
       R-floor stage 2b (dev/spikes/r_floor/stage2b, committed 5c3f9c4a)
       built a plain-R reference whose compared compact records match the
@@ -2746,7 +2747,8 @@ workstreams:
   - id: 36
     name: "Lean-orchestration simplification"
     cut: 18
-    status: "proposed"
+    status: "accepted"
+    accepted: "2026-11-14 by the maintainer with Cut 18."
     close_review: null
     depends_on_workstream: 35
     requires_review_acceptance: true
