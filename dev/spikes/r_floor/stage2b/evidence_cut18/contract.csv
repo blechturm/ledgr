@@ -1,0 +1,7 @@
+"fixture","lean_loop_ran","lean","reference","same_outcome"
+"nonfinite_target",TRUE,"refused: ledgr_invalid_strategy_result","refused: ledgr_invalid_strategy_result",TRUE
+"cost_rejects_sells",TRUE,"accepted: 4 fills, 2 rejections (execution_bar_missing)","accepted: 4 fills, 2 rejections (execution_bar_missing)",TRUE
+"insufficient_cash",TRUE,"accepted: 3 fills, 2 rejections (insufficient_cash)","accepted: 3 fills, 2 rejections (insufficient_cash)",TRUE
+"short_target",TRUE,"refused: ledgr_short_exposure_unsupported","refused: ledgr_short_exposure_unsupported",TRUE
+"malformed_sizing",TRUE,"refused: ledgr_invalid_strategy_result","refused: ledgr_invalid_strategy_result",TRUE
+"stale_sizing",TRUE,"accepted: 12 fills, 0 rejections ()","accepted: 12 fills, 0 rejections ()",TRUE
