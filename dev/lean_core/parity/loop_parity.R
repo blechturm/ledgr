@@ -160,9 +160,11 @@ loop_mutations <- list(
   # Cut 16, LDG-3226: the risk plan skipped, the implicit-row rule without
   # LR-23's post-risk equality, and the planner ignoring the resolved price
   # or the resolved fee.
-  risk_not_applied = variant("differ", list(edit("loop.R", "lean_p2_decide",
-    "        risked <- ledgr_apply_risk_plan(targets, risk_plan, ctx)", "        risked <- targets")),
-    tables = "^fills$|^ledger_events$|^run_diagnostic"),
+  # Cut 18 R1 re-anchor: the lean risk steps not applied (post-risk targets
+  # equal the strategy targets); with debug on the per-pulse comparison with
+  # the pin reports it.
+  risk_not_applied = variant("differ", list(edit("checks.R", "lean_risk_apply", "  for (s in steps) {", "  for (s in list()) {")),
+    tables = "^fills$|^ledger_events$|^run_diagnostic", error = "^Lean risk plan differs from the pin's at pulse [0-9]+[.]$"),
   implicit_row_old_rule = variant("differ", list(edit("loop.R", "lean_p4_apply",
     "    differs <- which(!(is.finite(sq) & sq == pos & tq == sq & is.finite(close)))      # LR-23",
     "    differs <- which(!(is.finite(sq) & sq == pos & is.finite(close)))")),

@@ -224,6 +224,7 @@ lean_fold_envelope <- function(execution, output_handler) {
   # (slice 2, Section 19.9).
   risk_plan <- ledgr_risk_validate_compiled_plan(execution$risk_plan)
   has_risk <- length(risk_plan$steps) > 0L
+  risk_steps <- lean_risk_steps(risk_plan)  # checks.R: NULL keeps the pin's path
   provider <- execution$availability_provider
   telemetry <- execution$telemetry
   seed <- execution$seed
@@ -617,19 +618,20 @@ lean_fold_envelope <- function(execution, output_handler) {
     hd_pre[[i]] <<- pre
     tq <- sq
     if (n > 0L) {
-      # A fixed basket has no restricted or nonmember instrument. The pin's
-      # risk plan transforms the targets on the lean context; its post-risk
-      # quantity recheck runs in debug only (LR-16), its admissibility and
-      # the short-exposure refusal in production. Without a risk step the
-      # post-risk targets are the strategy targets.
+      # A fixed basket has no restricted or nonmember instrument. The risk
+      # plan (lean steps in checks.R, or the pin's for a plan they do not
+      # take) transforms the targets; its post-risk quantity recheck runs in
+      # debug only (LR-16), its admissibility and the short-exposure refusal
+      # in production. Without a risk step the post-risk targets are the
+      # strategy targets.
       if (.lean_debug) ledgr_availability_validate_strategy_targets(targets, positions_snapshot, view)
       live$cur_stage <- "risk"
       if (has_risk) {
-        risked <- ledgr_apply_risk_plan(targets, risk_plan, ctx)
-        if (.lean_debug) ledgr_validate_post_risk_quantities(risked, n)
-        tq <- as.numeric(risked)
-        ledgr_availability_validate_post_risk(risked, targets)
-        if (any(tq < 0 & tq < pos)) ledgr_availability_validate_short_exposure(risked, positions_snapshot)
+        tq <- if (.lean_debug) {
+          lean_debug_same(function() lean_risk_targets(sq, targets, pos, positions_snapshot, risk_steps, cash + pv, close, ids,
+            risk_plan, ctx), function() lean_risk_pin(targets, positions_snapshot, risk_plan, ctx), "risk plan", i)
+        } else lean_risk_targets(sq, targets, pos, positions_snapshot, risk_steps, cash + pv, close, ids, risk_plan, ctx)
+        if (.lean_debug) ledgr_validate_post_risk_quantities(stats::setNames(tq, ids), n)
       } else if (any(sq < 0 & sq < pos)) ledgr_availability_validate_short_exposure(targets, positions_snapshot)
     }
     list(result = result, sq = sq, tq = tq, pos_start = pos_start)

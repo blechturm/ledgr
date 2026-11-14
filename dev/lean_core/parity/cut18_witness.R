@@ -8,8 +8,9 @@
 # Each case evaluates the lean call and the pin call on the same inputs. A
 # value must be identical (types, names, attributes; doubles bit for bit,
 # no tolerance); a refusal must match on the class vector, message, call
-# and every payload field (reason, instrument_ids and the rest), and its
-# parent condition the same way, recursively; the backtrace is excluded.
+# (the called function's name) and every payload field (reason,
+# instrument_ids and the rest), and its parent condition the same way,
+# recursively; the backtrace is excluded.
 # A case of the manifest the grid does not produce, or a grid case the
 # manifest lacks, fails the run (exit 1). --mutation loads checks.R with
 # one registered fault (cut18_witness_mutations) and requires that some
@@ -34,14 +35,23 @@ cut18_witness_mutations <- list(
   state_nan_accepted = lean_edit("checks.R", "lean_state_value",
     "  if (plain && typed && !(is.double(value) && any(is.nan(value) | is.infinite(value)))) return(value)",
     "  if (plain && typed) return(value)"),
-  state_reset_skipped = lean_edit("checks.R", "lean_state_apply", "    if (any(reset)) value[reset] <- defaults[[name]]", "    NULL"))
+  state_reset_skipped = lean_edit("checks.R", "lean_state_apply", "    if (any(reset)) value[reset] <- defaults[[name]]", "    NULL"),
+  risk_cap_order = lean_edit("checks.R", "lean_risk_apply", "    cap <- (s$max_weight * equity) / close[nz]",
+    "    cap <- s$max_weight * (equity / close[nz])"),
+  risk_steps_reversed = lean_edit("checks.R", "lean_risk_apply", "  for (s in steps) {", "  for (s in rev(steps)) {"),
+  risk_price_refusal_skipped = lean_edit("checks.R", "lean_risk_apply",
+    "    if (any(nz & !(is.finite(close) & close > 0))) return(NULL)", "    NULL"),
+  risk_short_check_skipped = lean_edit("checks.R", "lean_risk_targets",
+    "  if (any(tq < 0 & tq < pos)) ledgr_availability_validate_short_exposure(stats::setNames(tq, ids), held)", "  NULL"))
 mutation <- opt("mutation", "")
 if (nzchar(mutation)) lean_load_edited(lean, lean$.lean_home, list(cut18_witness_mutations[[mutation]]))
 
 norm_cond <- function(e) {
   if (!inherits(e, "condition")) return(NULL)
   fields <- unclass(e); fields$trace <- NULL; fields$parent <- NULL
-  fields$call <- if (is.null(conditionCall(e))) NULL else paste(deparse(conditionCall(e)), collapse = " ")
+  # the called function, as an error message shows it (`Error in f()`); the
+  # caller's argument expressions are internal variable names
+  fields$call <- if (is.null(conditionCall(e))) NULL else paste(deparse(conditionCall(e)[[1L]]), collapse = " ")
   list(class = class(e), fields = fields[order(names(fields))], parent = norm_cond(e$parent))
 }
 outcome <- function(f) tryCatch(list(value = f()), error = function(e) list(error = norm_cond(e)))
@@ -122,6 +132,53 @@ renamed <- state0[rev(names(state0))]
 case("R5", "patch_state_renamed", function() lean$lean_state_apply(patches$full_in_order, renamed, fields, defaults, decl, ids, ids_attr,
                                                                      st_names, names_ok),
      function() ns$ledgr_strategy_state_apply_values(renamed, patches$full_in_order, decl, ids, patch = TRUE, default_scalars = defaults))
+
+## R1: the risk plan and its post-risk and short checks ----------------------
+# The pin side is the loop's former code verbatim (lean_risk_pin): the pin's
+# ledgr_apply_risk_plan() on a context whose reads give the equity and the
+# decision close, then its admissibility and short-exposure checks.
+risk_ctx <- function(equity, close, rid) {
+  structure(list(equity = equity, close = stats::setNames(close, rid),
+                 .pulse_lookup = list2env(list(availability = list(risk_mark = stats::setNames(close, rid))))),
+            class = "ledgr_pulse_context")
+}
+plan_of <- function(...) ns$ledgr_risk_plan_compile(ledgr::ledgr_risk_chain(...), params = list())
+risk_case <- function(id, plan, sq, held, equity, close, rid = ids) {
+  targets <- stats::setNames(sq, rid); held_n <- stats::setNames(held, rid); ctx <- risk_ctx(equity, close, rid)
+  steps <- lean$lean_risk_steps(plan)
+  case("R1", id, function() lean$lean_risk_targets(sq, targets, held, held_n, steps, equity, close, rid, plan, ctx),
+       function() lean$lean_risk_pin(targets, held_n, plan, ctx))
+}
+mw <- function(w) ledgr::ledgr_risk_max_weight(w)
+lo <- ledgr::ledgr_risk_long_only()
+cl3 <- c(37.13, 101.7, 9.83)
+risk_case("max_weight_binding", plan_of(mw(0.05)), c(5000, 3000, 80000), c(0, 0, 0), 1e6, cl3)
+risk_case("max_weight_nonbinding", plan_of(mw(0.5)), c(50, 30, 800), c(0, 0, 0), 1e6, cl3)
+risk_case("max_weight_bits", plan_of(mw(0.0731)), c(12345.678, 9876.54321, 31415.9265), c(0, 0, 0), 1234567.891, c(17.31, 3.0007, 0.3333))
+risk_case("max_weight_negative_reducing_short", plan_of(mw(0.05)), c(-100, 3000, 0), c(-500, 0, 0), 1e6, cl3)
+risk_case("max_weight_tiny_targets", plan_of(mw(0.05)), c(1e-9, -1e-9, 1e5), c(0, 0, 0), 1e6, cl3)
+risk_case("max_weight_all_zero", plan_of(mw(0.05)), c(0, 0, 0), c(10, 0, 0), 1e6, cl3)
+risk_case("max_weight_equity_zero", plan_of(mw(0.05)), c(5000, 0, 3), c(0, 0, 0), 0, cl3)
+risk_case("max_weight_equity_negative", plan_of(mw(0.05)), c(5000, 0, 3), c(0, 0, 0), -10, cl3)
+risk_case("max_weight_equity_na", plan_of(mw(0.05)), c(5000, 0, 3), c(0, 0, 0), NA_real_, cl3)
+risk_case("max_weight_price_zero_on_target", plan_of(mw(0.05)), c(5000, 10, 3), c(0, 0, 0), 1e6, c(37.13, 0, 9.83))
+risk_case("max_weight_price_na_on_zero_target", plan_of(mw(0.05)), c(5000, 0, 3), c(0, 0, 0), 1e6, c(37.13, NA, 9.83))
+risk_case("long_only_clips", plan_of(lo), c(-5, 10, -1), c(0, 0, 0), 1e6, cl3)
+risk_case("long_only_then_max_weight", plan_of(lo, mw(0.05)), c(-5000, 3000, 80000), c(0, 0, 0), 1e6, cl3)
+risk_case("max_weight_then_long_only", plan_of(mw(0.05), lo), c(-5000, 3000, 80000), c(0, 0, 0), 1e6, cl3)
+# Step order is observable through admission: long_only first zeroes a
+# negative target whose close is not positive, so max_weight does not refuse
+# it; max_weight first refuses (the two steps commute in value otherwise).
+risk_case("order_long_only_first_bad_price", plan_of(lo, mw(0.05)), c(-50, 3000, 80000), c(0, 0, 0), 1e6, c(0, 101.7, 9.83))
+risk_case("order_max_weight_first_bad_price", plan_of(mw(0.05), lo), c(-50, 3000, 80000), c(0, 0, 0), 1e6, c(0, 101.7, 9.83))
+risk_case("short_refused_after_risk", plan_of(mw(0.5)), c(-10, 30, 800), c(0, 0, 0), 1e6, cl3)
+risk_case("short_refused_two_ids", plan_of(mw(0.5)), c(-10, -20, 800), c(0, -5, 0), 1e6, cl3)
+risk_case("reordered_axis", plan_of(mw(0.05)), c(5000, 3000, 80000), c(0, 0, 0), 1e6, cl3, rid = c("ZZZ", "AAA", "MMM"))
+risk_case("one_instrument", plan_of(mw(0.05)), 80000, 0, 1e6, 9.83, rid = "AAA")
+case("R1", "steps_unsupported_type", function() lean$lean_risk_steps(list(steps = list(list(type_id = "other")))), function() NULL)
+case("R1", "steps_param_reference",
+     function() lean$lean_risk_steps(list(steps = list(list(type_id = "max_weight", args = list(max_weight = ledgr::ledgr_param("w")))))),
+     function() NULL)
 
 ## run ---------------------------------------------------------------------------
 manifest <- utils::read.csv(file.path(here, "cut18_witness_cases.csv"), stringsAsFactors = FALSE)
