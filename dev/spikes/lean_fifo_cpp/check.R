@@ -26,8 +26,11 @@ new <- utils::read.csv(file.path(scratch, "rerun", "equivalence.csv"), stringsAs
 say("equivalence rerun equals the recorded CSV", identical(rec, new))
 
 scope <- c("R", "src", "tests", "NAMESPACE", "DESCRIPTION", "man", "inst/design")
-changed <- system2("git", c("-C", repo, "diff", "--name-only", opt("spike-base"), "HEAD", "--", scope), stdout = TRUE)
-say("package scope untouched by the spike's commits", length(changed) == 0L)
+# only the spike's own commits (those touching this folder) since the base
+spike_dir <- sub(paste0("^", repo, "/"), "", here)
+mine <- system2("git", c("-C", repo, "log", "--format=%H", paste0(opt("spike-base"), "..HEAD"), "--", spike_dir), stdout = TRUE)
+changed <- unlist(lapply(mine, function(h) system2("git", c("-C", repo, "show", "--name-only", "--format=", h, "--", scope), stdout = TRUE)))
+say(sprintf("package scope untouched by the spike's %d commits", length(mine)), length(changed) == 0L)
 
 gut <- file.path(scratch, "kernel_gutted.cpp")
 src <- readLines(file.path(here, "kernel.cpp"))

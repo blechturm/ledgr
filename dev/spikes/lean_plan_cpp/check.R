@@ -28,8 +28,11 @@ say("fuzz rerun equals the recorded CSV",
     identical(rd(file.path(here, "results", "plan_fuzz.csv")), rd(file.path(scratch, "rerun", "plan_fuzz.csv"))))
 
 scope <- c("R", "src", "tests", "NAMESPACE", "DESCRIPTION", "man", "inst/design")
-changed <- system2("git", c("-C", repo, "diff", "--name-only", opt("spike-base"), "HEAD", "--", scope), stdout = TRUE)
-say("package scope untouched by the spike's commits", length(changed) == 0L)
+# only the spike's own commits (those touching this folder) since the base
+spike_dir <- sub(paste0("^", repo, "/"), "", here)
+mine <- system2("git", c("-C", repo, "log", "--format=%H", paste0(opt("spike-base"), "..HEAD"), "--", spike_dir), stdout = TRUE)
+changed <- unlist(lapply(mine, function(h) system2("git", c("-C", repo, "show", "--name-only", "--format=", h, "--", scope), stdout = TRUE)))
+say(sprintf("package scope untouched by the spike's %d commits", length(mine)), length(changed) == 0L)
 
 src <- readLines(file.path(here, "kernel.cpp"))
 line <- grep("return id_rank[pos[cand[a] - 1] - 1] < id_rank[pos[cand[b] - 1] - 1];", src, fixed = TRUE)
