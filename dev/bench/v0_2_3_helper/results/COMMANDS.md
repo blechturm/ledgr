@@ -16,6 +16,7 @@ the High performance plan; each result's host file records plan and affinity.
 | oracle_ldg3233 | same, `--cand-source=a564a226 --wrong-source=d5b3a151` | candidate a564a226 |
 | oracle_ldg3233_r1 | same, `--cand-source=d6a258f6 --wrong-source=d5b3a151` | close review round 1 corrections |
 | oracle_ldg3233_r2 | same, `--cand-source=4347bac8 --wrong-source=d5b3a151` | close review round 2 correction |
+| oracle_ldg3233_r3 | same, `--cand-source=5eb67e6d --wrong-source=d5b3a151` | close review round 3 correction |
 | measure_base (timings) | `powershell ... -File $PCORE <log> dev/bench/v0_2_3_helper/measure_helper.R --mode=timing --lib=<lib> --out=dev/bench/v0_2_3_helper/results/measure_base` | 176be4a7 |
 | measure_base (sites) | the same with `--mode=sites` | 176be4a7 |
 | collapse_semantics.csv | `Rscript dev/bench/v0_2_3_helper/collapse_semantics.R --out=dev/bench/v0_2_3_helper/results/collapse_semantics.csv` | collapse 2.1.8 |

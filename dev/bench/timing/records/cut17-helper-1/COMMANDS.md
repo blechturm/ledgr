@@ -24,6 +24,7 @@ each slot's affinity. `$OVERLAY` is
 | ldg3233-close | 176be4a7 | a564a226 | all | as base-base-2 |
 | ldg3233-close-2 | 176be4a7 | d6a258f6 | all | raised for the candidate (close review round 1, finding 7) |
 | ldg3233-close-3 | 176be4a7 | 4347bac8 | all | as ldg3233-close-2 |
+| ldg3233-close-4 | 176be4a7 | 5eb67e6d | all | as ldg3233-close-2 |
 
 Each row's base, candidate and cells agree with its attempt's session.csv;
 the harness commit each record ran under is in the same file.
