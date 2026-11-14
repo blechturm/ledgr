@@ -89,17 +89,20 @@ if (identical(opt("mode"), "arm")) {
   if (!is.null(opt("records"))) {
     fr <- lean$.spk$frame
     keep <- function(x, n) lapply(x, function(v) v[seq_len(n)])
-    saveRDS(list(fills = keep(fr$fl, fr$nf), equity = keep(fr$eq, fr$n_eq), decisions = keep(fr$dr, fr$nd), sizing = keep(fr$szr, fr$nsz),
-                 rejections = fr$rj, recon = fr$hd_recon, pre = fr$hd_pre, sizing_notice = fr$hd_sizing,
-                 strategy_state = fr$strategy_state, cash = fr$cash, pos = fr$pos, book = fr$book, status = fr$status,
-                 stop_reason = fr$stop_reason,
-                 results = lapply(stats::setNames(nm = c("fills", "equity")), function(t) as.data.frame(ledgr::ledgr_results(bt, t)))),
-            opt("records"))
+    rec <- list(fills = keep(fr$fl, fr$nf), equity = keep(fr$eq, fr$n_eq), decisions = keep(fr$dr, fr$nd), sizing = keep(fr$szr, fr$nsz),
+                rejections = fr$rj, recon = fr$hd_recon, pre = fr$hd_pre, sizing_notice = fr$hd_sizing,
+                strategy_state = fr$strategy_state, cash = fr$cash, pos = fr$pos, book = fr$book, status = fr$status,
+                stop_reason = fr$stop_reason,
+                results = lapply(stats::setNames(nm = c("fills", "equity")), function(t) as.data.frame(ledgr::ledgr_results(bt, t))))
+    # check.R's corruption demonstration: a clocked record altered after the run
+    if (identical(opt("corrupt"), "1")) rec$fills$qty[[1L]] <- rec$fills$qty[[1L]] + 1
+    saveRDS(rec, opt("records"))
   }
   close(bt); restore(); unhelper(); ledgr::ledgr_snapshot_close(snapshot)
   clk <- if (arm == "clocked") spk_clocks(env) else stats::setNames(numeric(0), character(0))
   row <- data.frame(config = arm, loop_s = lean$lean_loop_last_times$pulses, write_s = lean$lean_loop_last_times$publish,
-                    prep_s = NA_real_, fold_s = fold$s, run_s = run_s)
+                    prep_s = NA_real_, fold_s = fold$s, run_s = run_s,
+                    sources = paste(paste0(names(env$hashes), "=", substr(env$hashes, 1L, 12L)), collapse = ";"))
   for (cell in names(clk)) row[[cell]] <- clk[[cell]]
   utils::write.csv(row, opt("row"), row.names = FALSE)
   quit(status = 0L)
@@ -113,9 +116,10 @@ raw <- list()
 arms <- c("lean", "clocked", "ref")
 for (s in shapes) for (k in seq_len(rounds)) for (arm in if (k %% 2L) arms else rev(arms)) {
   row <- tempfile(fileext = ".csv")
-  rec <- if (k == 1L && arm %in% c("lean", "ref")) file.path(out, sprintf("records_%s_%s.rds", s, arm))
+  rec <- if (k == 1L) file.path(out, sprintf("records_%s_%s.rds", s, arm))
   st <- system2(rscript, c(file.path(here, "run.R"), paste0("--lib=", lib), "--mode=arm", paste0("--arm=", arm),
-                           paste0("--shape=", s), paste0("--row=", row), if (!is.null(rec)) paste0("--records=", rec)))
+                           paste0("--shape=", s), paste0("--row=", row), if (!is.null(rec)) paste0("--records=", rec),
+                           if (arm == "clocked" && identical(opt("corrupt"), "1")) "--corrupt=1"))
   if (st != 0L) stop("arm ", arm, " on ", s, " round ", k, " failed")
   x <- utils::read.csv(row, stringsAsFactors = FALSE); x$shape <- s; x$round <- k; x$arm <- arm
   raw[[length(raw) + 1L]] <- x
@@ -124,6 +128,17 @@ for (s in shapes) for (k in seq_len(rounds)) for (arm in if (k %% 2L) arms else 
 cols <- unique(unlist(lapply(raw, names)))
 raw <- do.call(rbind, lapply(raw, function(x) { for (c in setdiff(cols, names(x))) x[[c]] <- NA_real_; x[cols] }))
 utils::write.csv(raw, file.path(out, "runs_raw.csv"), row.names = FALSE)
+# Identities (cut review 18, R6): commit, pin library, versions, command, plan, affinity.
+host <- c(paste("head:", system2("git", c("-C", repo, "rev-parse", "HEAD"), stdout = TRUE)),
+  paste("pin library:", lib, "marker", paste(readLines(file.path(lib, "LEDGR_INSTALLED_FROM_COMMIT"), warn = FALSE), collapse = " ")),
+  paste("versions:", R.version.string, paste(vapply(c("collapse", "duckdb", "microbenchmark", "rlang"), function(p)
+    paste(p, as.character(utils::packageVersion(p))), ""), collapse = ", ")),
+  paste("command: Rscript", paste(c("dev/spikes/r_floor/stage2b/run.R", args), collapse = " ")),
+  paste("power plan:", paste(system2("powercfg", "/getactivescheme", stdout = TRUE), collapse = " ")),
+  # a child process inherits the runner's affinity, so the child reports it
+  paste("process affinity:", paste(system2("powershell", c("-NoProfile", "-Command",
+    "[System.Diagnostics.Process]::GetCurrentProcess().ProcessorAffinity"), stdout = TRUE, stderr = FALSE), collapse = " ")))
+writeLines(host, file.path(out, "host_identity.txt"))
 source(file.path(here, "summarise.R"))
 ok <- s2b_summarise(out, raw, configs, cell_map, guarantees)
 fx <- system2(rscript, c(file.path(here, "fixtures.R"), paste0("--lib=", lib), paste0("--out=", out)))

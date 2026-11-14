@@ -55,9 +55,14 @@ s2b_summarise <- function(out, raw, configs, cell_map, guarantees) {
       observable_rejections = fields("rejections"),
       observable_recon_notice_state = same(a$recon, b$recon) && same(a$pre, b$pre) && same(a$sizing_notice, b$sizing_notice) &&
         identical(a$strategy_state, b$strategy_state) && identical(a$status, b$status),
+      # the clocked arm computes what the plain arm computes: compact records,
+      # fold outcome and state, and the public result tables (cut review 18, R6)
+      clocked_equals_plain = identical(readRDS(file.path(out, sprintf("records_%s_clocked.rds", s))), b),
       fills = length(a$fills$qty), decisions = length(a$decisions$k), sizing = length(a$sizing$id))
   }
   attribution <- do.call(rbind, attr_rows); ratio <- do.call(rbind, ratio_rows); parity <- do.call(rbind, parity_rows)
+  # gross clocked cells, never net of the clocks' aggregate cost; under about 5 us unresolved
+  attribution$lean_resolved <- !is.na(attribution$lean_us) & attribution$lean_us >= 5
   utils::write.csv(attribution, file.path(out, "attribution.csv"), row.names = FALSE)
   utils::write.csv(ratio, file.path(out, "ratio.csv"), row.names = FALSE)
   utils::write.csv(parity, file.path(out, "parity.csv"), row.names = FALSE)
