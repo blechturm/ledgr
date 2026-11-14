@@ -1,0 +1,5 @@
+power plan: Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (High performance)
+base lib installed from: d5b3a151
+candidate lib installed from: 5eb67e6d8dbcdbefbab0cc63063d72935afdd760
+lean sources: f0d5c658532022d5e8b1af6d93a636b3efbabf7e
+work: slice2_10x7200|45189|42760819.52365765|ff01831a726d30d1|24001|d79e77a78ee96167|sizing_rows=24001,risk_reductions=45193,priced_fills_with_fees=45189
