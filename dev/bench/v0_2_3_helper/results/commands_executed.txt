@@ -2,8 +2,8 @@
 # Cut 17 measurement, oracle or timing tool, verbatim from the session transcript, in
 # order of first appearance, failed attempts included. Extracted with
 # dev/bench/v0_2_3_helper/extract_commands.pl; shell variables (H, PIN, P, OV, NEW, C)
-# are defined inside each command. Commands after this extraction are appended by hand,
-# copied from the command as issued.
+# are defined inside each command. Regenerated after each batch of runs with the
+# same script, so the file stays a verbatim extraction.
 ----
 
 ----
@@ -97,4 +97,7 @@ cd C:/Users/maxth/Documents/GitHub/ledgr && H=C:/Users/maxth/AppData/Local/Temp/
 
 ----
 cd C:/Users/maxth/Documents/GitHub/ledgr && H=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/helper && rm -rf $H/check_c5 && "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" dev/bench/v0_2_3_helper/oracle_check.R --pin-lib=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151 --pin-source=d5b3a151 --cand-lib=$H/lib_c5 --cand-source=4347bac8 --wrong-source=d5b3a151 --out=$H/check_c5 2>&1 | tail -3; "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" dev/bench/v0_2_3_helper/oracle_run.R --lib=$H/lib_c4 --source=d6a258f6 --out=$H/old_c4.rds 2>&1 | tail -1; "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" dev/bench/v0_2_3_helper/oracle_compare.R --pin=$H/check_c5/pin.rds --candidate=$H/old_c4.rds --out=C:/Users/maxth/Documents/GitHub/ledgr/dev/bench/v0_2_3_helper/results/oracle_ldg3233_r2_old_candidate.csv 2>&1 | head -8
+
+----
+cd C:/Users/maxth/Documents/GitHub/ledgr && H=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/helper && PIN=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151 && P=dev/bench/v0_2_3_lean_tuning_profile/pcore.ps1 && OV=dev/bench/v0_2_3_helper/views.R,dev/bench/v0_2_3_lean_tuning_profile/descriptors.R,dev/spikes/r_floor/fixture.R && V=dev/bench/v0_2_3_helper/results/verification_r2 && mkdir -p $V && powercfg //setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c && powershell -NoProfile -ExecutionPolicy Bypass -File $P $H/r2_rec.log dev/bench/timing/runner.R --protocol=dev/bench/timing/protocols/cut17-helper-1 --base=176be4a7 --candidate=4347bac8 --label=ldg3233-close-3 --candidate-overlay=$OV; echo "record $?"; powershell -NoProfile -ExecutionPolicy Bypass -File $P $H/r2_lean.log dev/bench/v0_2_3_helper/lean_helper_compare.R --base-lib=$PIN --cand-lib=$H/lib_c5 --out=C:/Users/maxth/Documents/GitHub/ledgr/dev/bench/v0_2_3_helper/results/lean_helper_r2; echo "lean $?"; powercfg //setactive 381b4222-f694-41f0-9685-ff5bb260df2e; "C:/Program Files/R/R-4.6.1/bin/x64/Rscript.exe" -e "pkgload::load_all('.', quiet=TRUE); testthat::test_local('.', reporter='summary', stop_on_failure=FALSE)" > $V/tests.log 2>&1; echo "tests exit $?" >> $V/tests.log; git rev-parse HEAD > $V/source_commit.txt; rm -rf $H/check_r2 && mkdir -p $H/check_r2/src && git archive --format=tar HEAD | tar -x -C $H/check_r2/src && cd $H/check_r2 && export QUARTO_PATH="C:/Program Files/RStudio/resources/app/bin/quarto/bin/quarto.exe" && "C:/Program Files/R/R-4.6.1/bin/x64/R.exe" CMD build src > build.log 2>&1; echo "build $?"; "C:/Program Files/R/R-4.6.1/bin/x64/R.exe" CMD check --no-manual --no-build-vignettes ledgr_*.tar.gz > check.log 2>&1; echo "check $?"; cp build.log check.log C:/Users/maxth/Documents/GitHub/ledgr/$V/; grep "^Status" check.log
 

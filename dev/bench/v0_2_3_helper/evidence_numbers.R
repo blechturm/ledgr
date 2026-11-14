@@ -15,6 +15,7 @@ t <- rd(res, "measure_base", "timings.csv")
 cat("measure_base timings (us per call, first use / cached):\n")
 for (i in seq_len(nrow(t))) cat(sprintf("  %-9s %4d  %.0f / %.0f  (resolution share %.1e)\n", t$verb[i], t$instruments[i],
                                          t$first_use_us[i], t$cached_us[i], t$resolution_share[i]))
+cat(sprintf("  first-use views %d-%d, cached calls %d-%d\n", min(t$first_use_calls), max(t$first_use_calls), min(t$cached_calls), max(t$cached_calls)))
 
 s <- rd(res, "measure_base", "sites_timing.csv")
 s$cell <- cell(s$verb, s$instruments)
@@ -43,19 +44,27 @@ ck <- function(label) {
   r <- vapply(unique(x$cell), function(cc) {
     stats::median(x$seconds[x$cell == cc & x$arm == "candidate"]) / stats::median(x$seconds[x$cell == cc & x$arm == "base"]) }, 0)
   rng <- range(x$seconds[x$arm == "candidate" & x$cell != "run_slice2_10x7200"])
-  cat(sprintf("%s: %s; candidate helper batches %.2f-%.2f s\n", label, paste(sprintf("%s %.3f", names(r), r), collapse = ", "),
-              rng[1], rng[2]))
+  rb <- range(x$seconds[x$arm == "base" & x$cell != "run_slice2_10x7200"])
+  cat(sprintf("%s: %s; helper batches candidate %.2f-%.2f s, base %.2f-%.2f s\n", label,
+              paste(sprintf("%s %.3f", names(r), r), collapse = ", "), rng[1], rng[2], rb[1], rb[2]))
 }
 cat("\n")
-for (l in c("ldg3232-base-base", "ldg3232-base-base-2", "ldg3233-match-vs-gated", "ldg3233-close", "ldg3233-close-2")) ck(l)
+for (l in c("ldg3232-base-base", "ldg3232-base-base-2", "ldg3233-match-vs-gated", "ldg3233-close", "ldg3233-close-2", "ldg3233-close-3")) ck(l)
 
-for (d in c("lean_helper", "lean_helper_r1")) {
+for (d in c("lean_helper", "lean_helper_r1", "lean_helper_r2")) {
   x <- rd(res, d, "lean_helper_summary.csv")
   cat(sprintf("\n%s: fold %.0f -> %.0f us/pulse (saving %.1f%%), run saving %.1f%%", d, x$fold_us_per_pulse_base,
               x$fold_us_per_pulse_cand, 100 * x$fold_saving_median, 100 * x$run_saving_median))
 }
-o <- rd(res, "oracle_ldg3233_r1", "oracle_check.csv")
-cat(sprintf("\n\noracle_ldg3233_r1: %d checks, %d as required\n", nrow(o), sum(o$ok)))
+cat("\n")
+for (od in c("oracle_ldg3233_r1", "oracle_ldg3233_r2")) {
+  o <- rd(res, od, "oracle_check.csv"); cat(sprintf("\n%s: %d checks, %d as required", od, nrow(o), sum(o$ok)))
+}
+ins <- rd(res, "lean_helper", "insitu.csv")
+ins_m <- aggregate(cbind(helper_us_per_call, read_us_per_call) ~ arm, ins, mean)
+cat(sprintf("\ninsitu (lean slice2; base = pin, candidate = a564a226; mean of 3 runs): %s\n",
+            paste(sprintf("%s helper %.0f us per call, column reads %.0f us", ins_m$arm, ins_m$helper_us_per_call,
+                          ins_m$read_us_per_call), collapse = "; ")))
 m <- utils::read.csv(file.path(here, "manifest.csv"), colClasses = "character")
 cat(sprintf("manifest: %d cases (%d value, %d error), %d sites\n", nrow(m), sum(m$expect == "value"), sum(m$expect != "value"),
             nrow(rd(here, "sites.csv"))))
