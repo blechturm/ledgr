@@ -22,7 +22,8 @@ st <- system2(rscript, c(file.path(here, "run.R"), paste0("--lib=", opt("lib")),
 say("one-round rerun exits 0 (parity held)", st == 0L)
 rec <- rd(file.path(here, "results", "lanes_raw.csv")); new <- rd(file.path(scratch, "lanes_raw.csv"))
 key <- c("shape", "lane", "final_equity", "metrics", "write_calls")
-same <- identical(unique(rec[order(rec$shape, rec$lane), key]), new[order(new$shape, new$lane), key])
+strip <- function(d) { rownames(d) <- NULL; d }
+same <- identical(strip(unique(rec[order(rec$shape, rec$lane), key])), strip(new[order(new$shape, new$lane), key]))
 say("non-timing outputs equal the recorded ones", isTRUE(same))
 
 scope <- c("R", "src", "tests", "NAMESPACE", "DESCRIPTION", "man", "inst/design")
