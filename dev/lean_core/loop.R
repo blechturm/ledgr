@@ -369,6 +369,7 @@ lean_fold_envelope <- function(execution, output_handler) {
   # each pulse copies it and sets `held` and `risk_mark`.
   ctx_pos <- seq_len(n)
   ids_attr <- list(names = ids)
+  member_all <- rep(TRUE, n)                  # a fixed basket's membership, for the planner
   ids_ok <- lean_targets_axis_ok(ids)          # checks.R: the target check's universe predicate, once
   act_tol <- sqrt(.Machine$double.eps)
   lean_exec_view <- function(m) list(member = rep(TRUE, m), restricted = rep(FALSE, m),
@@ -652,8 +653,6 @@ lean_fold_envelope <- function(execution, output_handler) {
     if (length(actionable) > 0L) {
       next_col <- if (i < n_pulse) pulse_cols[[i + 1L]] else col + 1L
       has_next <- next_col <= length(bar_axis)
-      execution_packet <- list(exec_ts = exec_ts, has_next = has_next,
-        open = if (has_next) bars$open[, next_col] else rep(NA_real_, n))
       view <- if (!is.na(exec_ts)) lean_exec_view(length(actionable))
       if (.lean_debug && !is.na(exec_ts)) {
         pv_view <- lean_plan_execution_view(provider, exec_ts, ids[actionable])
@@ -661,8 +660,9 @@ lean_fold_envelope <- function(execution, output_handler) {
           rlang::abort(sprintf("Lean execution view differs from the provider's at pulse %d.", i), class = "ledgr_internal_error")
         }
       }
-      batch <- lean_plan_pulse(context_pos = seq_len(n), target_qty = tq, position = pos,
-        actionable_k = actionable, member = rep(TRUE, n), execution = execution_packet,
+      batch <- lean_plan_pulse(context_pos = ctx_pos, target_qty = tq, position = pos,
+        actionable_k = actionable, member = member_all, exec_ts = exec_ts,
+        next_open = if (has_next) bars$open[, next_col] else rep(NA_real_, n),
         execution_view = view, epoch_valid = i > length(epochs) || epoch_valid[[i]],
         cost_resolver = cost_resolver, cash = cash, instrument_ids = ids, cost_steps = cost_steps)
       fill <- batch$fill
@@ -790,11 +790,12 @@ lean_fold_envelope <- function(execution, output_handler) {
     }
     expected <- if (is.null(batch)) cash else batch$expected_final_cash
     fill_cash <- if (n_fill > 0L) batch$fill$cash_delta else numeric()
+    gross_sq <- lean_gross(sq, close)
     recon <- c(
       lean_gross(pos, close),
       cash - sum(fill_cash),
-      lean_gross(sq, close),
-      if (has_risk) lean_gross(tq, close) else lean_gross(sq, close),
+      gross_sq,
+      if (has_risk) lean_gross(tq, close) else gross_sq,   # Cut 18 F3: no second gross without a risk step
       cash,
       expected)
     ledgr_fold_reconciliation_check(recon[[2L]], recon[[6L]], recon[[5L]], recon[[3L]], recon[[4L]], recon[[1L]])

@@ -143,7 +143,15 @@ lean_plan_id_perm <- function(ids) {
 
 # The availability planner (pinned: ledgr_fold_build_availability_pulse_plan,
 # R/availability-economics.R:365), same order of checks and rows.
-lean_plan_pulse <- function(context_pos, target_qty, position, actionable_k, member, execution,
+# The plan from its groups (Cut 18 F1: one function, not a closure built on
+# every lean_plan_pulse() call); with debug on the pin checks its carrier.
+lean_plan_result <- function(groups, kinds, final_cash, context_pos, actionable_k, n_ids) {
+  x <- list(expected_final_cash = as.numeric(final_cash), economic_event_kinds = kinds,
+            fill = groups$fill, rejection = groups$rejection)
+  if (.lean_debug) ledgr_carrier_plan(x, context_pos, actionable_k, n_ids) else x
+}
+
+lean_plan_pulse <- function(context_pos, target_qty, position, actionable_k, member, exec_ts, next_open,
                             execution_view, epoch_valid, cost_resolver, cash, instrument_ids, cost_steps = NULL) {
   k <- actionable_k
   n <- length(k)
@@ -152,23 +160,17 @@ lean_plan_pulse <- function(context_pos, target_qty, position, actionable_k, mem
   delta <- target_qty[k] - before
   side <- ledgr_plan_side(delta)
   qty <- abs(delta)
-  exec_ts <- execution$exec_ts
-  plan <- function(groups, kinds, final_cash) {
-    x <- list(expected_final_cash = as.numeric(final_cash), economic_event_kinds = kinds,
-              fill = groups$fill, rejection = groups$rejection)
-    if (.lean_debug) ledgr_carrier_plan(x, context_pos, actionable_k, length(instrument_ids)) else x
-  }
   none <- integer()
   if (is.na(exec_ts)) {
     segment <- ledgr_carrier_segments(n, seq_len(n), rep(1L, n))
     groups <- lean_plan_groups(k, pos, side, qty, rep(NA_real_, n), rep(NA_real_, n), exec_ts, before, segment,
       none, list(cash_delta = numeric(), position_delta = numeric()), seq_len(n), rep(1L, n), rep(NA_real_, n))
-    return(plan(groups, none, cash))
+    return(lean_plan_result(groups, none, cash, context_pos, actionable_k, length(instrument_ids)))
   }
 
   view_member <- if (n > 0L) execution_view$member else logical()
   informational <- which(member[k] != view_member)
-  open <- execution$open[pos]
+  open <- next_open[pos]
   bad_open <- !is.finite(open) | open <= 0
   bad_delta <- !is.finite(delta)
   passed <- which(!bad_open & !bad_delta & epoch_valid)
@@ -230,7 +232,7 @@ lean_plan_pulse <- function(context_pos, target_qty, position, actionable_k, mem
     fills, list(cash_delta = effects$cash_delta[scan$accepted], position_delta = effects$position_delta[scan$accepted]),
     c(early, late), rep(c(1L, 2L), c(length(early), length(late))),
     c(rep(NA_real_, length(early)), price[late]))
-  plan(groups, if (length(fills) > 0L) 1L else none, scan$final_cash)
+  lean_plan_result(groups, if (length(fills) > 0L) 1L else none, scan$final_cash, context_pos, actionable_k, length(instrument_ids))
 }
 
 # The diagnostic codec's clean-pair certification in one pass (pinned:
@@ -340,7 +342,8 @@ lean_stage_plan <- function(
     position = position,
     actionable_k = actionable_k,
     member = observation$packet$member,
-    execution = execution,
+    exec_ts = execution$exec_ts,
+    next_open = execution$open,
     execution_view = execution_view,
     epoch_valid = epoch_valid,
     cost_resolver = services$cost_resolver,
