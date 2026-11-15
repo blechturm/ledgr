@@ -1072,7 +1072,9 @@ execution-sensitive economics cuts are held to rule 17 instead.
      execution, as one of: retain as an independent semantic owner; merge
      fast path and fallback into one implementation; replace with a
      lean-owned implementation after full parity proof; or delete because
-     it is genuinely obsolete;
+     it is genuinely obsolete. Done: the
+     [deletion-readiness seed v2](../rfc/rfc_lean_core_deletion_readiness_v0_2_3_seed_v2.md),
+     accepted 2026-11-15, classifies them and binds the switch cut;
   2. the switch cut applies that classification; no function is deleted
      while a fallback, a refusal path or another caller still needs it
      (`ledgr_validate_strategy_targets()` also serves

@@ -1,7 +1,9 @@
 # Lean Core Deletion Readiness: Seed v2
 
 - Author: Claude, 2026-11-15, at the maintainer's request.
-- Status: seed v2. Proposes classifications; implements nothing.
+- Status: accepted by the maintainer on 2026-11-15, after its Type 1
+  confirmation passed ([confirmation](rfc_lean_core_deletion_readiness_v0_2_3_confirmation.md)).
+  Binds the switch cut (macro WS14a); implements nothing itself.
 - Changes from v1: corrects every finding of the Type 1 review
   ([review](rfc_lean_core_deletion_readiness_v0_2_3_review.md), on v1 at
   `f9de1bb0`: CHANGES_REQUIRED, N1-N8, all accepted).
