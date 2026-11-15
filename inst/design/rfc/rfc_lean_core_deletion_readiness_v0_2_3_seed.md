@@ -73,6 +73,27 @@ compiled `max_weight` step carrying `ledgr_param("w")`) showed that it
 passes `ledgr_risk_validate_compiled_plan()`. `ledgr_apply_risk_plan()` then
 returns missing targets with a coercion warning, not a ledgr refusal.
 
+The branches split into dead code and one hidden defect:
+
+- **Dead code: the other-step-type and non-package-resolver branches.**
+  Cut 18 sent every input outside the fast path to the pin without asking
+  whether that input could arrive. The pin's own `ledgr_apply_risk_step()`
+  default and `ledgr_plan_resolve()`'s output-shape check are the same kind
+  of defensive code. The resolver-shape conditions look left over from a
+  resolver that was once meant to be swappable.
+- **A latent validation defect: the parameter-reference branch.**
+  `ledgr_risk_validate_compiled_step()` reuses
+  `ledgr_risk_validate_max_weight()`, which lets a parameter reference
+  through because the uncompiled chain needs that. A compiled plan must not
+  hold one. Downstream, by reading only:
+  - the old fold's post-risk quantity check refuses the missing targets
+    under a strategy-result class;
+  - the lean path stops in `ledgr_availability_validate_post_risk()` with an
+    unclassed base R error.
+
+  No public entry reaches it: run and sweep refuse a missing parameter at
+  compile time with `ledgr_risk_plan_parameter_missing`. Q3 fixes the cause.
+
 **F2. After the switch the in-loop oracle has nothing in-tree to compare
 with.** Today `lean_debug_same()` compares each lean result with the pin's
 function in the same session. Once a check is merged, the package holds only
