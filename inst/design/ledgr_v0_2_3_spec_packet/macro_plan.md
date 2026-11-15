@@ -986,6 +986,25 @@ public behavior except the explicit pulse-plumbing ledger differences.
   (variant anchors, census and line counts). No product or lean-core change
   in the spike. The maintainer then decides: a tuning cut, folding it into
   the switch, or dropping it.
+- **Optimization manual update (maintainer, 2026-11-15).** Right after the
+  hashed-frame spike, one documentation pass brings
+  `inst/design/manual/optimization_coding_style.qmd` (last changed
+  2026-11-06) and, where a finding is about measuring,
+  `benchmark_methodology.qmd` up to what the lean-core work found since,
+  each rule with its evidence: frame size as a per-pulse cost (Cut 19's
+  close and the spike's result); byte compilation in timings (sourced lean
+  code compiled before the clock, as the installed pin is); set-operation
+  fast paths admitted only on plain character caller operands, ledgr's own
+  universe trusted (workstream 35, Cut 17); the skeleton's own costs
+  (`<<-` column writes, list hand-offs, per-pulse hook calls;
+  `dev/spikes/skeleton_floor`, Cut 15); exact-by-construction replacements,
+  a plain accept path with everything else delegated to the pin's function
+  (Cut 18, lean_core_interface.md Section 19.10); run-level constants
+  filled at publish rather than written per row (Cut 19); stage 2b's
+  attribution of the remaining cost (`dev/spikes/r_floor/stage2b`); and the
+  standing instruction to remove work before adding kernels, caches or fast
+  paths. Rules only, with evidence links; no new measurement and no code
+  change.
 - **Every family close (A2, A4).** For the first checkpoint; families after
   it use the family method above. WS16 uses frozen floor v1 and stage
   isolation under R11: each cut sets cost-above-floor budgets on both
