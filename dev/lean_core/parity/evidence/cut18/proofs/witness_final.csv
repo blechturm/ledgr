@@ -105,6 +105,7 @@
 "R3","list_targets",0,"refusal: ledgr_invalid_strategy_result",TRUE
 "R3","empty_axis_empty_targets",0,"value",TRUE
 "R3","axis_invalid_duplicates",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","helper_empty_axis",0,"value",TRUE
 "R3","helper_axis_invalid",0,"refusal: ledgr_invalid_strategy_result",TRUE
 "R4","valid",0,"value",TRUE
 "R4","null",0,"value",TRUE
@@ -129,6 +130,20 @@
 "R4","unavailable_row_valid",0,"value",TRUE
 "R4","unavailable_row_with_price",0,"refusal: ledgr_invalid_strategy_result",TRUE
 "R4","unavailable_row_with_quantities",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","atomic_numeric",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","atomic_character",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","atomic_logical",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","zero_length_numeric",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","empty_list_classed",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","container_extra_class",0,"value",TRUE
+"R4","column_subset_dispatch",0,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","column_classed_plain",0,"value",TRUE
+"DBG","same_value",0,"value",TRUE
+"DBG","different_value",0,"value",TRUE
+"DBG","same_refusal",0,"value",TRUE
+"DBG","refusal_ids_only_differ",0,"value",TRUE
+"DBG","refusal_reason_only_differs",0,"value",TRUE
+"DBG","refusal_against_value",0,"value",TRUE
 "R5","value_asset_logical_named",1,"value",TRUE
 "R5","value_asset_logical_na",1,"value",TRUE
 "R5","value_asset_double_named",1,"value",TRUE
@@ -235,6 +250,7 @@
 "R3","list_targets",1,"refusal: ledgr_invalid_strategy_result",TRUE
 "R3","empty_axis_empty_targets",1,"value",TRUE
 "R3","axis_invalid_duplicates",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R3","helper_empty_axis",1,"value",TRUE
 "R3","helper_axis_invalid",1,"refusal: ledgr_invalid_strategy_result",TRUE
 "R4","valid",1,"value",TRUE
 "R4","null",1,"value",TRUE
@@ -259,3 +275,17 @@
 "R4","unavailable_row_valid",1,"value",TRUE
 "R4","unavailable_row_with_price",1,"refusal: ledgr_invalid_strategy_result",TRUE
 "R4","unavailable_row_with_quantities",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","atomic_numeric",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","atomic_character",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","atomic_logical",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","zero_length_numeric",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","empty_list_classed",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","container_extra_class",1,"value",TRUE
+"R4","column_subset_dispatch",1,"refusal: ledgr_invalid_strategy_result",TRUE
+"R4","column_classed_plain",1,"value",TRUE
+"DBG","same_value",1,"value",TRUE
+"DBG","different_value",1,"value",TRUE
+"DBG","same_refusal",1,"value",TRUE
+"DBG","refusal_ids_only_differ",1,"value",TRUE
+"DBG","refusal_reason_only_differs",1,"value",TRUE
+"DBG","refusal_against_value",1,"value",TRUE
