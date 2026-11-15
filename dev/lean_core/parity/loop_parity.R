@@ -242,8 +242,11 @@ loop_mutations <- list(
     "  list(affected = c(affected, list(ts_utc = ts_posix, specified = TRUE)),",
     "  list(affected = c(ledgr_availability_affected_exposure(ids[-1L], m$full, v), list(ts_utc = ts_posix, specified = TRUE)),")),
     tables = "^run_completion$"),
+  # The growth copy loses the last record already written (close review
+  # round 1, F1): it takes the padding's NA in every column.
   record_lost_at_growth = variant("differ", list(edit("marks.R", "lean_marks_add_rows",
-    "    xr <- lapply(xr, function(v) { length(v) <- s3$xcap; v })", "    s3$nx <- s3$nx - 1L", "after")),
+    "    xr <- lapply(xr, function(v) { length(v) <- s3$xcap; v })",
+    "    xr <- lapply(xr, function(v) { v[[s3$nx]] <- v[[length(v)]]; v })", "after")),
     tables = "^run_diagnostic", error = "."),
   # Cut 19, LDG-3239: the strategy called on a pulse the schedule skips, and
   # the skip pulse's evidence rows dropped.

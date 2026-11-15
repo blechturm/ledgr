@@ -1,0 +1,6 @@
+marker TRUE
+used 70 allocated 128
+all_existing_prefix_columns_identical FALSE
+existing_rows_lost old60
+incoming_rows_lost 
+physical_row70 new10
