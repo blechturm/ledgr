@@ -2427,7 +2427,8 @@ cuts:
   - id: 19
     name: "Lean loop slice 3: sessions, marks, schedules and history reads (macro WS16)"
     cut: "2026-11-15"
-    status: "proposed"
+    status: "accepted"
+    accepted: "2026-11-15 by the maintainer, after the cut review passed at re-review 1 (cut_review_19_rereview_1.md), as written. The maintainer asked for one Codex code review of the whole workstream at its close, iterated to green, keeping the spirit of the cut."
     opening: >-
       Cut 18 closed (bdeea449); the end-to-end profile (053316af, d882ce02)
       and the deletion-readiness audit (seed v2, accepted 2026-11-15) are
@@ -2961,7 +2962,8 @@ workstreams:
   - id: 37
     name: "Lean loop slice 3: sessions, marks, schedules and history reads"
     cut: 19
-    status: "proposed"
+    status: "accepted"
+    accepted: "2026-11-15 by the maintainer with Cut 19."
     close_review: null
     depends_on_workstream: 36
     requires_review_acceptance: true
