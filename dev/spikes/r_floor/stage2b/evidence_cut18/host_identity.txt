@@ -1,4 +1,4 @@
-head: 9311bd68b3a505d576ba74ad46f65b65ef8e7d4f
+head: 737cba1ecffd901597895890d2ea85fb2129c38d
 pin library: C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151 marker d5b3a151
 versions: R version 4.6.1 (2026-06-24 ucrt) collapse 2.1.8, duckdb 2.0.0, microbenchmark 1.5.0, rlang 1.3.0
 command: Rscript dev/spikes/r_floor/stage2b/run.R --lib=C:/Users/maxth/AppData/Local/Temp/claude/a337d437c6e22de3/78383ced-ac83-4579-b480-65f39660106d/scratchpad/ws16/lib-d5b3a151 --out=C:/Users/maxth/Documents/GitHub/ledgr/dev/spikes/r_floor/stage2b/evidence_cut18
