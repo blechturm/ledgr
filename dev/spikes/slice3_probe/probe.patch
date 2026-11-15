@@ -1,0 +1,531 @@
+diff --git a/dev/lean_core/loop.R b/dev/lean_core/loop.R
+index a54fa67e..dc1986a7 100644
+--- a/dev/lean_core/loop.R
++++ b/dev/lean_core/loop.R
+@@ -62,7 +62,8 @@ lean_abort_attempt <- function(feature) {
+ 
+ # --- coverage ---------------------------------------------------------------
+ 
+-lean_loop_scan_names <- c(
++lean_loop_scan_names <- character()  # slice-3 probe: history reads lifted
++lean_loop_scan_names_was <- c(
+   "ledgr_history_matrix", "ledgr_history_frame", "ledgr_history_info"
+ )
+ 
+@@ -80,18 +81,18 @@ lean_loop_coverage <- function(execution, entry = NULL) {
+     lean_not_covered("a checkpoint_every control")
+   }
+   if (!identical(as.integer(execution$start_idx), 1L)) lean_not_covered("restart")
+-  if (!is.null(execution$decision_due)) lean_not_covered("schedules")
+-  if (!identical(substrate$clock_kind, "bar_native")) lean_not_covered("declared sessions")
++  # slice-3 probe: schedules lifted
++  # slice-3 probe: declared sessions lifted
+   if (!is.null(execution$corporate_action_plan)) lean_not_covered("corporate actions")
+   if (length(execution$opening_frozen) > 0L || length(execution$position_fact_unknown_basis) > 0L ||
+       any(ledgr_fold_positions_to_vec(execution$state$positions, execution$instrument_ids) != 0) ||
+       length(execution$state$lot_state$lot_qty %||% numeric()) > 0L ||
+       !identical(as.integer(execution$event_seq_start), 1L)) lean_not_covered("opening positions and imports")
+-  if (length(provider$identity()$declared_families) > 0L) {
++  if (length(setdiff(provider$identity()$declared_families, "sessions")) > 0L) {  # slice-3 probe: sessions alone allowed
+     lean_not_covered("membership, status or lifetime facts")
+   }
+   opp <- execution$execution_opportunities_posix
+-  if (length(pulses) > 0L && !identical(as.numeric(opp), as.numeric(pulses[-1L]))) lean_not_covered("declared execution opportunities")
++  # slice-3 probe: declared execution opportunities lifted
+   if (length(opp) > 0L && n > 0L) {
+     # The loop's constant execution view (checked per pulse in debug).
+     view <- lean_plan_execution_view(provider, as.numeric(opp[[1L]]), execution$instrument_ids)
+@@ -101,8 +102,8 @@ lean_loop_coverage <- function(execution, entry = NULL) {
+   if (anyNA(cols)) lean_not_covered("pulses outside the prepared axis")
+   used <- unique(c(cols, cols[length(cols)] + 1L))
+   used <- used[used <= length(substrate$axis)]
+-  if (!all(substrate$bars$observed[, used])) lean_not_covered("missing bars")
+-  if (!all(is.finite(substrate$bars$close[, used]))) lean_not_covered("missing closes")
++  # slice-3 probe: missing bars lifted
++  # slice-3 probe: missing closes lifted
+   called <- all.names(body(execution$strategy_fn))
+   hit <- intersect(called, lean_loop_scan_names)
+   if (length(hit) > 0L) lean_not_covered(sprintf("`%s()` in the strategy", hit[[1L]]))
+@@ -238,6 +239,21 @@ lean_fold_envelope <- function(execution, output_handler) {
+   }
+   history_reader <- ledgr_history_substrate_fold_reader(substrate, pulses_posix,
+     feature_defs = feature_defs, active_alias_map = active_alias_map)
++  # slice-3 probe: with any missing bar, marks come from the pin's valuation
++  # state and provider view (the probe's stand-in for a lean valuation).
++  s3_stale <- !all(bars$observed) || !all(is.finite(bars$close))
++  s3_vs <- if (s3_stale) ledgr_availability_valuation_state(bars, ids, substrate$axis,
++    as.integer(provider$valuation_policy$max_sessions), ledgr_availability_exhausted_choice(provider$valuation_policy),
++    pulse_columns = history_reader$pulse_columns)
++  s3_frozen_set <- character()
++  s3_val <- vector("list", n_pulse)     # valuation rows per pulse (frozen entered, exited)
++  s3_risk <- vector("list", n_pulse)    # stale-mark risk rows per pulse
++  s3_stop <- vector("list", n_pulse)    # valuation or risk-mark stop rows
++  s3_pd <- vector("list", n_pulse)      # per-cell decision mark, source, age, reason, reasons
++  s3_ndec <- rep(n, n_pulse)
++  decision_due <- execution$decision_due
++  stop_affected <- list(value = NA_real_, details = list(), ts_utc = as.POSIXct(NA, tz = "UTC"), specified = FALSE)
++  s3_rows <- function(...) { x <- list(...); x }
+   epochs <- as.numeric(execution$execution_opportunities_posix %||% pulses_posix[-1L])
+   epoch_valid <- ledgr_plan_epoch_valid(epochs)
+   max_events <- max(1L, n_pulse * n)
+@@ -520,8 +536,57 @@ lean_fold_envelope <- function(execution, output_handler) {
+     live$cur_stage <- "valuation"
+     col <- pulse_cols[[i]]
+     close <- bars$close[, col]
++    s3 <- NULL
++    if (s3_stale) {
++      full <- stats::setNames(pos, ids)
++      view <- provider$decision_view(pulses_posix[[i]], full)
++      axis <- as.character(view$axis)
++      valuation <- s3_vs$advance(i, axis, held = as.logical(view$held[axis]))
++      view <- ledgr_availability_restrict_frozen(view, valuation)
++      columns <- ledgr_carrier_provider_view(view, valuation)
++      if (!identical(columns$context_pos, seq_len(n))) lean_abort_attempt("a context axis other than the run axis")
++      unvalued <- axis[columns$held & !columns$priced]
++      if (length(unvalued) > 0L) {
++        affected <- ledgr_availability_affected_exposure(unvalued, full, valuation)
++        stop_affected <<- c(affected, list(ts_utc = pulses_posix[[i]], specified = TRUE))
++        s3_stop[[i]] <<- list(instrument_id = unvalued, stage = "valuation", outcome = "stopped",
++          reason_code = "valuation_horizon_exhausted", reasons = "valuation_horizon_exhausted",
++          quantity = unname(full[unvalued]), price = unname(valuation$reference[unvalued]),
++          mark_source = unname(valuation$source[unvalued]), mark_age = unname(valuation$age[unvalued]),
++          position_before = unname(full[unvalued]), position_after = unname(full[unvalued]),
++          detail_json = vapply(seq_along(unvalued), function(k) ledgr_availability_detail_json(affected$details[[k]]), ""))
++        s3_ndec[[i]] <<- 0L
++        hd_all_explicit[[i]] <<- TRUE
++        status <<- "INCOMPLETE"
++        stop_reason <<- "valuation_horizon_exhausted"
++        n_done <<- i
++        return(list(stop = TRUE))
++      }
++      frozen_now <- axis[columns$held & columns$frozen]
++      entered <- setdiff(frozen_now, s3_frozen_set)
++      exited <- setdiff(s3_frozen_set, frozen_now)
++      rows <- list()
++      if (length(entered) > 0L) rows[[1L]] <- list(instrument_id = entered, stage = "valuation", outcome = "frozen",
++        reason_code = "valuation_frozen", reasons = "valuation_frozen", quantity = unname(full[entered]),
++        price = unname(valuation$mark[entered]), mark_source = unname(valuation$source[entered]),
++        mark_age = unname(valuation$age[entered]), position_before = unname(full[entered]),
++        position_after = unname(full[entered]))
++      if (length(exited) > 0L) {
++        es <- as.character(valuation$source[exited]); es[is.na(es)] <- ""
++        rows[[length(rows) + 1L]] <- list(instrument_id = exited, stage = "valuation", outcome = "exited",
++          reason_code = "valuation_freeze_exited", reasons = "valuation_freeze_exited", quantity = unname(full[exited]),
++          price = as.numeric(valuation$mark[exited]), mark_source = es, mark_age = as.integer(valuation$age[exited]),
++          position_before = unname(full[exited]), position_after = unname(full[exited]))
++      }
++      if (length(rows) > 0L) s3_val[[i]] <<- rows
++      s3_frozen_set <<- frozen_now
++      mark <- rep(NA_real_, n)
++      mark[columns$context_pos] <- columns$mark
++      s3 <- list(mark = mark, columns = columns, p2 = ledgr_carrier_p2_input(columns, ids))
++    }
++    mk <- if (is.null(s3)) close else s3$mark
+     active <- pos != 0
+-    pv <- if (any(active)) sum(pos[active] * close[active]) else 0
++    pv <- if (any(active)) sum(pos[active] * mk[active]) else 0
+     last_fully_valued <<- ts
+     n_eq <<- n_eq + 1L
+     eq$ts[[n_eq]] <<- ts_num[[i]]
+@@ -530,7 +595,7 @@ lean_fold_envelope <- function(execution, output_handler) {
+     eq$realized_pnl[[n_eq]] <<- book$realized_pnl
+     eq$cost_basis[[n_eq]] <<- book$total_cost_basis
+     n_done <<- i
+-    list(col = col, close = close, pv = pv)
++    list(col = col, close = close, pv = pv, mk = mk, s3 = s3, stop = FALSE)
+   }
+ 
+   # P2: a fresh context (Section 19.4), the strategy call, the checks on its
+@@ -542,10 +607,20 @@ lean_fold_envelope <- function(execution, output_handler) {
+     pos_start <- pos
+     positions_snapshot <- pos
+     names(positions_snapshot) <- ids
+-    view <- view0
+-    view$held[] <- pos != 0
+-    view$risk_mark[] <- close
+-    if (.lean_debug) {
++    s3 <- v1$s3
++    mk <- v1$mk
++    if (!is.null(s3)) {
++      view <- s3$p2$view
++    } else {
++      view <- view0
++      view$held[] <- pos != 0
++      view$risk_mark[] <- close
++    }
++    if (.lean_debug && !is.null(s3)) {
++      lean_loop_debug_ctx(lean_context(i, col, close, pv, positions_snapshot, view, NULL),
++        lean_loop_pin_ctx(i, col, close, pv, positions_snapshot, s3$p2), i)
++    }
++    if (.lean_debug && is.null(s3)) {
+       packet <- list(
+         pulse_idx = i, ts = ts_num[[i]], context_pos = ctx_pos, cash = cash, positions_value = pv,
+         position = pos, member = rep(TRUE, n), held = pos != 0, buyable = rep(TRUE, n),
+@@ -600,11 +675,11 @@ lean_fold_envelope <- function(execution, output_handler) {
+     # validated evidence, or NULL (none, or stale) for the raw path; zero
+     # rows write nothing.
+     sizing_evidence <- if (.lean_debug) {
+-      lean_debug_same(function() lean_sizing_evidence(sizing_evidence, targets, ids, pos, close),
++      lean_debug_same(function() lean_sizing_evidence(sizing_evidence, targets, ids, pos, mk),
+         function() ledgr_validate_sizing_evidence(sizing_evidence, targets = targets, context_ids = ids, position = pos,
+-          mark = close), "sizing evidence", i)
+-    } else lean_sizing_evidence(sizing_evidence, targets, ids, pos, close)
+-    if (.lean_debug && length(pulse_notes$sizing_skipped) > 0L) {
++          mark = mk), "sizing evidence", i)
++    } else lean_sizing_evidence(sizing_evidence, targets, ids, pos, mk)
++    if (.lean_debug && is.null(s3) && length(pulse_notes$sizing_skipped) > 0L) {
+       rlang::abort(sprintf("Lean sizing skipped an instrument at pulse %d, unreachable in slice 2.", i),
+                    class = "ledgr_internal_error")
+     }
+@@ -626,17 +701,91 @@ lean_fold_envelope <- function(execution, output_handler) {
+       # debug only (LR-16), its admissibility and the short-exposure refusal
+       # in production. Without a risk step the post-risk targets are the
+       # strategy targets.
+-      if (.lean_debug) ledgr_availability_validate_strategy_targets(targets, positions_snapshot, view)
++      if (.lean_debug || !is.null(s3)) ledgr_availability_validate_strategy_targets(targets, positions_snapshot, view)
++      if (!is.null(s3)) {
++        # slice-3 probe: a new or larger long position on an unusable mark
++        # stops the run (the pin's availability risk-mark gate).
++        np <- sq > pos & sq > 0 & !s3$columns$permissible
++        if (any(np)) {
++          s3_decision_fields(i, s3)
++          hd_all_explicit[[i]] <<- TRUE
++          lean_loop_add_decisions(seq_len(n), i, sq, rep(NA_real_, n), pos)
++          st <- which(np)
++          affected <- ledgr_availability_affected_exposure(ids[st], positions_snapshot,
++            ledgr_carrier_p2_valuation(s3$columns, ids))
++          stop_affected <<- c(affected, list(ts_utc = pulses_posix[[i]], specified = TRUE))
++          s3_stop[[i]] <<- list(instrument_id = ids[st], stage = "risk", outcome = "stopped",
++            reason_code = "risk_mark_unavailable", reasons = "risk_mark_unavailable", target = sq[st], quantity = pos[st],
++            mark_source = s3$p2$mark_source[st], mark_age = s3$columns$mark_age[st], target_before_risk = sq[st],
++            position_before = pos[st], position_after = pos[st],
++            detail_json = canonical_json(list(risk_step = "availability_risk_mark_gate")))
++          status <<- "INCOMPLETE"
++          stop_reason <<- "risk_mark_unavailable"
++          processed <<- processed + 1L
++          return(list(stop = TRUE))
++        }
++      }
+       live$cur_stage <- "risk"
+       if (has_risk) {
+         tq <- if (.lean_debug) {
+-          lean_debug_same(function() lean_risk_targets(sq, targets, pos, positions_snapshot, risk_steps, cash + pv, close, ids,
++          lean_debug_same(function() lean_risk_targets(sq, targets, pos, positions_snapshot, risk_steps, cash + pv, mk, ids,
+             risk_plan, ctx), function() lean_risk_pin(targets, positions_snapshot, risk_plan, ctx), "risk plan", i)
+-        } else lean_risk_targets(sq, targets, pos, positions_snapshot, risk_steps, cash + pv, close, ids, risk_plan, ctx)
++        } else lean_risk_targets(sq, targets, pos, positions_snapshot, risk_steps, cash + pv, mk, ids, risk_plan, ctx)
+         if (.lean_debug) ledgr_validate_post_risk_quantities(stats::setNames(tq, ids), n)
+       } else if (any(sq < 0 & sq < pos)) ledgr_availability_validate_short_exposure(targets, positions_snapshot)
+     }
+-    list(result = result, sq = sq, tq = tq, pos_start = pos_start)
++    if (!is.null(s3)) {
++      s3_decision_fields(i, s3)
++      age <- s3$columns$mark_age
++      st <- which(s3$columns$permissible & !is.na(age) & age > 0L & (pos != 0 | tq != 0))
++      if (length(st) > 0L) {
++        reduced <- ledgr_fold_target_changed(tq[st], sq[st])
++        s3_risk[[i]] <<- list(instrument_id = ids[st], stage = "risk", outcome = ifelse(reduced, "reduced", "passed"),
++          reason_code = ifelse(reduced, "stale_mark_reduction", "stale_mark_pass_through"),
++          reasons = ifelse(reduced, "stale_mark_reduction", "stale_mark_pass_through"), target = tq[st],
++          quantity = pos[st], price = s3$columns$mark[st], mark_source = s3$p2$mark_source[st], mark_age = age[st],
++          target_before_risk = sq[st], target_after_risk = tq[st], position_before = pos[st], position_after = pos[st])
++      }
++    }
++    list(result = result, sq = sq, tq = tq, pos_start = pos_start, stop = FALSE)
++  }
++
++  # slice-3 probe: a pulse the schedule does not decide (the pin's scheduled
++  # skip): the skip row, then evidence for holdings marked from a stale or
++  # frozen close; no strategy call, no decision cells, targets = positions.
++  lean_p2_skip <- function(i, v1) {
++    rows <- s3_val[[i]] %||% list()
++    rows[[length(rows) + 1L]] <- list(instrument_id = "", stage = "decision", outcome = "skipped",
++      reason_code = "scheduled_skip", reasons = "scheduled_skip", detail_json = "{}")
++    s3 <- v1$s3
++    if (!is.null(s3)) {
++      src <- s3$p2$mark_source
++      ev <- which(pos != 0 & src %in% c("stale_close", "frozen_close"))
++      if (length(ev) > 0L) rows[[length(rows) + 1L]] <- list(instrument_id = ids[ev], stage = "valuation",
++        outcome = "marked", reason_code = "", reasons = "", quantity = pos[ev], price = s3$columns$mark[ev],
++        mark_source = src[ev], mark_age = s3$columns$mark_age[ev], position_before = pos[ev], position_after = pos[ev])
++    }
++    s3_val[[i]] <<- rows
++    s3_ndec[[i]] <<- 0L
++    hd_all_explicit[[i]] <<- TRUE
++    list(result = list(state_update = NULL), sq = pos, tq = pos, pos_start = pos, stop = FALSE, skip = TRUE)
++  }
++
++  # slice-3 probe: the decision rows' per-cell mark fields and reasons (the
++  # pin's append_decision_trace), recorded after the strategy call so the
++  # helpers' sizing skips are known.
++  s3_decision_fields <- function(i, s3) {
++    rs <- s3$p2$restriction
++    reason <- ifelse(nzchar(rs$reason), rs$reason, "decision_recorded")
++    reasons <- ifelse(nzchar(rs$reasons), rs$reasons, reason)
++    skipped <- ids %in% pulse_notes$sizing_skipped
++    if (any(skipped)) {
++      reason[skipped] <- "sizing_unavailable"
++      reasons[skipped] <- ifelse(nzchar(rs$reasons[skipped]), paste(rs$reasons[skipped], "sizing_unavailable", sep = "|"),
++                                 "sizing_unavailable")
++    }
++    s3_pd[[i]] <<- list(price = s3$columns$mark, src = s3$p2$mark_source, age = s3$columns$mark_age,
++                        reason = reason, reasons = reasons)
+   }
+ 
+   # P3: the order plan, or the affordability reconciliation stop (cut review
+@@ -690,7 +839,17 @@ lean_fold_envelope <- function(execution, output_handler) {
+     close <- v1$close
+     sq <- v2$sq
+     tq <- v2$tq
+-    differs <- which(!(is.finite(sq) & sq == pos & tq == sq & is.finite(close)))      # LR-23
++    # slice-3 probe: a cell is clean only on a current-close mark with the
++    # plain decision reason and no risk row (the pin's clean-hold rule).
++    cleanc <- if (isTRUE(v2$skip)) rep(TRUE, n) else if (is.null(v1$s3)) is.finite(close) else {
++      d <- s3_pd[[i]]
++      x <- d$src == "current_close" & !is.na(d$age) & d$age == 0L & is.finite(d$price) &
++        d$reason == "decision_recorded" & d$reasons == "decision_recorded" &
++        !(ids %in% (s3_risk[[i]]$instrument_id %||% character()))
++      x[is.na(x)] <- FALSE
++      x
++    }
++    differs <- if (isTRUE(v2$skip)) integer() else which(!(is.finite(sq) & sq == pos & tq == sq & cleanc))      # LR-23
+     n_fill <- if (is.null(batch)) 0L else length(batch$fill$k)
+     n_rej <- if (is.null(batch)) 0L else length(batch$rejection$k)
+     clean_k <- integer()
+@@ -699,7 +858,7 @@ lean_fold_envelope <- function(execution, output_handler) {
+       fr <- ledgr_carrier_segment_text(fill$info_offset, fill$info_count, fill$info_code, .ledgr_plan_reason_levels)
+       k <- fill$k
+       clean <- if (can_encode) {
+-        is.finite(sq[k]) & is.finite(close[k]) & is.finite(fill$position_before) &
++        is.finite(sq[k]) & cleanc[k] & is.finite(fill$position_before) &
+           pos[k] == fill$position_before & is.finite(fill$planned_position_after) &
+           sq[k] == fill$planned_position_after & tq[k] == sq[k] & !nzchar(fr$reason) & !nzchar(fr$reasons)
+       } else rep(FALSE, n_fill)
+@@ -774,7 +933,7 @@ lean_fold_envelope <- function(execution, output_handler) {
+   # P5: the capacity refusal, commitment, the reconciliation record and the
+   # declared-state update.
+   lean_p5_commit <- function(i, v1, v2, batch, n_fill) {
+-    close <- v1$close
++    close <- v1$mk   # slice-3 probe: gross at the decision marks
+     sq <- v2$sq
+     tq <- v2$tq
+     live$cur_stage <- "accounting"
+@@ -842,7 +1001,9 @@ lean_fold_envelope <- function(execution, output_handler) {
+     on.exit(live$in_pulses <- FALSE)   # also when an error unwinds the loop, before rollback
+     for (i in seq_len(n_pulse)) {
+       v1 <- lean_p1_value(i)
+-      v2 <- lean_p2_decide(i, v1)
++      if (isTRUE(v1$stop)) break
++      v2 <- if (is.null(decision_due) || isTRUE(decision_due[[i]])) lean_p2_decide(i, v1) else lean_p2_skip(i, v1)
++      if (isTRUE(v2$stop)) break
+       v3 <- lean_p3_plan(i, v1, v2)
+       if (v3$stop) break
+       n_fill <- lean_p4_apply(i, v1, v2, v3$batch)
+@@ -950,7 +1111,7 @@ lean_fold_envelope <- function(execution, output_handler) {
+     if (full_run) {
+       completion <- ledgr_availability_completion_row(run_id = run_id, pulses_posix = pulses_posix,
+         status = status, stop_reason = stop_reason,
+-        affected = list(value = NA_real_, details = list(), ts_utc = as.POSIXct(NA, tz = "UTC"), specified = FALSE),
++        affected = stop_affected,
+         last_fully_valued_ts_utc = .POSIXct(last_fully_valued, tz = "UTC"), last_executed_ts_utc = .POSIXct(last_executed, tz = "UTC"))
+       output_handler$write_run_evidence(completion, diagnostics)
+     } else {
+@@ -965,16 +1126,21 @@ lean_fold_envelope <- function(execution, output_handler) {
+     np <- n_done
+     p <- seq_len(np)
+     nrec <- as.integer(hd_has_recon[p])
+-    nstop <- as.integer(!is.na(hd_stop_detail[p]))
+-    logical_per <- hd_pre[p] + n + hd_nrej[p] + hd_nfill[p] + nrec + nstop
++    cnt <- function(x) vapply(x, function(s) if (is.null(s)) 0L else length(s$instrument_id), integer(1L))
++    nval <- vapply(s3_val[p], function(s) if (is.null(s)) 0L else sum(vapply(s, function(g) length(g$instrument_id), 0L)), 0L)
++    nrisk <- cnt(s3_risk[p])
++    nstop <- as.integer(!is.na(hd_stop_detail[p])) + cnt(s3_stop[p])
++    ndec <- s3_ndec[p]
++    logical_per <- nval + hd_pre[p] + ndec + nrisk + hd_nrej[p] + hd_nfill[p] + nrec + nstop
+     base <- c(0L, cumsum(logical_per))[p]
+-    dec0 <- base + hd_pre[p]                       # seq of decision k is dec0 + k
++    pre0 <- base + nval
++    dec0 <- pre0 + hd_pre[p]                       # seq of decision k is dec0 + k
+     nd_p <- tabulate(dr$pulse[seq_len(nd)], np)
+     xf_p <- tabulate(fl$pulse[seq_len(nf)][!fl$clean[seq_len(nf)]], np)
+-    rows <- hd_pre[p] + nd_p + hd_nrej[p] + xf_p + nrec + nstop + hd_nfill[p] +
++    rows <- nval + hd_pre[p] + nd_p + nrisk + hd_nrej[p] + xf_p + nrec + nstop + hd_nfill[p] +
+       if (can_encode) n * !hd_all_explicit[p] else 0L
+-    list(np = np, logical_per = logical_per, base = base, dec0 = dec0, rej0 = dec0 + n,
+-         fill0 = dec0 + n + hd_nrej[p], rows = rows)
++    list(np = np, logical_per = logical_per, base = base, pre0 = pre0, dec0 = dec0, risk0 = dec0 + ndec,
++         rej0 = dec0 + ndec + nrisk, fill0 = dec0 + ndec + nrisk + hd_nrej[p], rows = rows)
+   }
+ 
+   # Rows of a pulse-ordered record whose pulse lies in [a, b].
+@@ -994,17 +1160,38 @@ lean_fold_envelope <- function(execution, output_handler) {
+     p <- seq.int(a, b)
+     parts <- list()
+     add <- function(seq, pulse, fields) parts[[length(parts) + 1L]] <<- c(list(seq = seq, pulse = pulse), fields)
++    # slice-3 probe: valuation rows open the pulse, risk rows follow the
++    # decision cells, stop rows close it.
++    for (j in p) {
++      if (!is.null(s3_val[[j]])) {
++        off <- 0L
++        for (g in s3_val[[j]]) {
++          m <- length(g$instrument_id)
++          add(lay$base[[j]] + off + seq_len(m), rep(j, m), g)
++          off <- off + m
++        }
++      }
++      if (!is.null(s3_risk[[j]])) {
++        g <- s3_risk[[j]]
++        add(lay$risk0[[j]] + seq_along(g$instrument_id), rep(j, length(g$instrument_id)), g)
++      }
++      if (!is.null(s3_stop[[j]])) {
++        g <- s3_stop[[j]]
++        add(lay$fill0[[j]] + hd_nfill[[j]] + as.integer(hd_has_recon[[j]]) + seq_along(g$instrument_id),
++            rep(j, length(g$instrument_id)), g)
++      }
++    }
+     it <- p[!is.na(hd_intent[p])]
+-    if (length(it)) add(lay$base[it] + 1L, it, list(stage = "decision", outcome = "recorded",
++    if (length(it)) add(lay$pre0[it] + 1L, it, list(stage = "decision", outcome = "recorded",
+       reason_code = "strategy_intent", reasons = hd_intent[it]))
+     sz <- p[hd_sizing[p]]
+-    if (length(sz)) add(lay$base[sz] + as.integer(!is.na(hd_intent[sz])) + 1L, sz, list(stage = "sizing",
++    if (length(sz)) add(lay$pre0[sz] + as.integer(!is.na(hd_intent[sz])) + 1L, sz, list(stage = "sizing",
+       outcome = "unavailable", reason_code = "sizing_intent_unavailable", reasons = "raw_quantity_targets"))
+     sr <- lean_rows_in(szr$pulse[seq_len(nsz)], a, b)
+     if (length(sr)) {
+       sp <- szr$pulse[sr]
+       within <- seq_along(sr) - match(sp, sp) + 1L
+-      add(lay$base[sp] + as.integer(!is.na(hd_intent[sp])) + within, sp, list(instrument_id = szr$id[sr],
++      add(lay$pre0[sp] + as.integer(!is.na(hd_intent[sp])) + within, sp, list(instrument_id = szr$id[sr],
+         stage = "sizing", outcome = "recorded", reason_code = szr$reason[sr], reasons = szr$reasons[sr],
+         target = szr$target[sr], quantity = szr$quantity[sr], price = szr$price[sr],
+         target_before_risk = szr$requested[sr], position_before = szr$before[sr]))
+@@ -1012,10 +1199,20 @@ lean_fold_envelope <- function(execution, output_handler) {
+     r <- lean_rows_in(dr$pulse[seq_len(nd)], a, b)
+     if (length(r)) {
+       dp <- dr$pulse[r]; dk <- dr$k[r]
++      pdv <- function(field, default) {
++        out <- rep_len(default, length(dp))
++        if (!s3_stale) return(out)
++        for (j in seq_along(dp)) {
++          d <- s3_pd[[dp[[j]]]]
++          if (!is.null(d)) out[[j]] <- d[[field]][[dk[[j]]]]
++        }
++        out
++      }
+       add(lay$dec0[dp] + dk, dp, list(instrument_id = ids[dk], stage = "decision", outcome = "recorded",
+-        reason_code = "decision_recorded", reasons = "decision_recorded", target = dr$target[r],
+-        quantity = dr$position[r], price = bars$close[cbind(dk, pulse_cols[dp])], mark_source = "current_close",
+-        mark_age = 0L, target_before_risk = dr$target[r], target_after_risk = dr$target_after[r],
++        reason_code = pdv("reason", "decision_recorded"), reasons = pdv("reasons", "decision_recorded"),
++        target = dr$target[r], quantity = dr$position[r],
++        price = pdv("price", bars$close[cbind(dk, pulse_cols[dp])]), mark_source = pdv("src", "current_close"),
++        mark_age = pdv("age", 0L), target_before_risk = dr$target[r], target_after_risk = dr$target_after[r],
+         position_before = dr$position[r], position_after = dr$position[r]))
+     }
+     rr <- lean_rows_in(rj$pulse, a, b)
+diff --git a/dev/lean_core/parity/loop_workloads_slice2.R b/dev/lean_core/parity/loop_workloads_slice2.R
+index d81d046a..97d54b78 100644
+--- a/dev/lean_core/parity/loop_workloads_slice2.R
++++ b/dev/lean_core/parity/loop_workloads_slice2.R
+@@ -340,3 +340,100 @@ loop_reach <- c(loop_reach, list(
+   s2_sizing_growth = function(t) nrow(s2_sizing_rows(t, s2_sized_codes)) > 64L,
+   s2_sizing_prefix = function(t) nrow(s2_sizing_rows(t, "sizing_rounded")) > 0L
+ ))
++
++# --- slice-3 probe (2026-11-15, not product) ---------------------------------
++s3_dates <- as.Date("2020-01-01") + seq_len(20L) - 1L
++s3_day <- function(k) format(s3_dates[[k]], "%Y-%m-%d")
++s3_closes <- function(drop = list()) {
++  x <- list(A = 30 * (1 + 0.02 * sin(1:20)), B = 45 * (1 + 0.02 * sin(2:21)), C = 12 * (1 + 0.02 * sin(3:22)))
++  for (id in names(drop)) x[[id]][drop[[id]]] <- NA
++  x
++}
++s3_snapshot <- function(name, closes) build(name, function(db) {
++  at <- function(k) as.POSIXct(paste(s3_dates[k], "16:00:00"), tz = "UTC")
++  sessions <- ledgr::ledgr_facts_sessions(data.frame(session_date = s3_dates, status = "open", session_open = "09:30:00",
++    session_close = "16:00:00", knowledge_time = as.POSIXct(s3_dates, tz = "UTC") - 1, stringsAsFactors = FALSE),
++    venue_id = "XNYS")
++  bars <- do.call(rbind, lapply(names(closes), function(id) {
++    k <- which(!is.na(closes[[id]]))
++    data.frame(ts_utc = at(k), instrument_id = id, open = closes[[id]][k], high = closes[[id]][k] + 1,
++               low = closes[[id]][k] - 1, close = closes[[id]][k], volume = 1000, stringsAsFactors = FALSE)
++  }))
++  ledgr::ledgr_snapshot_from_df(bars, instruments_df = data.frame(instrument_id = names(closes)),
++    facts = ledgr::ledgr_facts(sessions), price_basis = "split_adjusted", db_path = db, snapshot_id = name)
++})
++s3_case <- function(name, drop, plan, valuation = NULL, risk = ledgr::ledgr_risk_none(), strategy = NULL) function() {
++  db <- s3_snapshot(name, s3_closes(drop))
++  exp <- function(snapshot) ledgr::ledgr_experiment(snapshot, if (is.null(strategy)) lw_schedule_strategy(plan) else strategy,
++    opening = ledgr::ledgr_opening(cash = 1e4), cost_model = ledgr::ledgr_cost_zero(), risk_chain = risk,
++    valuation_policy = valuation)
++  collect(db, name, paste0("s3-", name), exp, seed = 11L)
++}
++s3_stale <- function(n, ex) ledgr::ledgr_valuation_stale(max_sessions = n, exhausted = ex)
++s3_plan <- function(...) { x <- list(...); stats::setNames(lapply(x, `[[`, 2L), vapply(x, function(p) s3_day(p[[1L]]), "")) }
++loop_slice2 <- c(loop_slice2, list(
++  s3_full = s3_case("s3_full", list(), s3_plan(list(2L, c(A = 10, B = 10)), list(9L, c(A = 0)))),
++  s3_gap_default = s3_case("s3_gap_default", list(B = 8L), s3_plan(list(2L, c(A = 10, B = 10)))),
++  s3_stop_freeze = s3_case("s3_stop_freeze", list(B = 12:20), s3_plan(list(2L, c(A = 10, B = 10))), s3_stale(2, "freeze")),
++  s3_stop_refuse = s3_case("s3_stop_refuse", list(B = 12:20), s3_plan(list(2L, c(A = 10, B = 10))), s3_stale(2, "refuse")),
++  s3_reduce_on_stale = s3_case("s3_reduce_on_stale", list(B = 7:8), s3_plan(list(2L, c(A = 10, B = 20)), list(8L, c(B = 5))),
++    s3_stale(3, "freeze"), risk = ledgr::ledgr_risk_max_weight(0.9)),
++  s3_exec_bar_missing = s3_case("s3_exec_bar_missing", list(C = 6L), s3_plan(list(5L, c(C = 10))), s3_stale(3, "freeze")),
++  s3_sizing_unpriced = s3_case("s3_sizing_unpriced", list(C = 5L), NULL, s3_stale(3, "freeze"),
++    strategy = function(ctx, params) ledgr::ledgr_target_rebalance(ctx, c(A = 0.3, B = 0.3, C = 0.3)))))
++s3_param_strategy <- function(ctx, params) {
++  targets <- ctx$hold()
++  if (substr(ctx$ts_utc, 1L, 10L) == "2020-01-02") targets[c("A", "B")] <- params$q
++  targets
++}
++loop_slice2 <- c(loop_slice2, list(
++  s3_risk_mark_stop = s3_case("s3_risk_mark_stop", list(C = 4:12), s3_plan(list(2L, c(A = 10)), list(10L, c(C = 5))),
++    s3_stale(2, "freeze")),
++  s3_stale_reduction = s3_case("s3_stale_reduction", list(B = 7:8), s3_plan(list(2L, c(A = 10, B = 20)), list(8L, c(B = 200))),
++    s3_stale(3, "freeze"), risk = ledgr::ledgr_risk_max_weight(0.3)),
++  s3_freeze_exit = s3_case("s3_freeze_exit", list(B = 8:14), s3_plan(list(2L, c(A = 10, B = 10))), s3_stale(2, "freeze")),
++  s3_sweep = function() {
++    db <- s3_snapshot("s3_sweep", s3_closes(list(B = 8:14)))
++    snapshot <- ledgr::ledgr_snapshot_open(db, "s3_sweep", verify = TRUE)
++    on.exit(ledgr::ledgr_snapshot_close(snapshot))
++    exp <- ledgr::ledgr_experiment(snapshot, s3_param_strategy, opening = ledgr::ledgr_opening(cash = 1e4),
++      cost_model = ledgr::ledgr_cost_zero(), valuation_policy = s3_stale(2, "freeze"))
++    grid <- ledgr::ledgr_grid_named(a = list(strategy = list(q = 10)), b = list(strategy = list(q = 20)))
++    set.seed(8L)
++    obs <- a0_observe_memory(ledgr::ledgr_sweep(exp, grid, seed = 17L, retain = a0_retain()))
++    list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value)))
++  }))
++s3_buy_ab <- function(ctx, params) { t <- ctx$hold(); t[c("A", "B")] <- 10; t }
++s3_sched <- function(name, drop, valuation = NULL) function() {
++  db <- s3_snapshot(name, s3_closes(drop))
++  exp <- function(snapshot) ledgr::ledgr_experiment(snapshot, s3_buy_ab, opening = ledgr::ledgr_opening(cash = 1e4),
++    cost_model = ledgr::ledgr_cost_zero(), schedule = ledgr::ledgr_schedule_week_start(), valuation_policy = valuation)
++  collect(db, name, paste0("s3-", name), exp, seed = 11L)
++}
++loop_slice2 <- c(loop_slice2, list(
++  s3_sched_full = s3_sched("s3_sched_full", list()),
++  s3_sched_stale = s3_sched("s3_sched_stale", list(B = 8:14), s3_stale(2, "freeze"))))
++s3_hist_strategy <- function(ctx, params) {
++  m <- ledgr::ledgr_history_matrix(ctx, bar = "close", lookback = 3L)
++  info <- ledgr::ledgr_history_info(m)
++  f <- ledgr::ledgr_history_frame(ctx, bar = "close", lookback = 2L)
++  t <- ctx$hold()
++  s <- sum(m, na.rm = TRUE) + nrow(f) + length(info)
++  t[ctx$universe[[1L]]] <- if (floor(s) %% 2 == 1) 10 else 0
++  t
++}
++s3_hist <- function(name, drop, valuation = NULL) function() {
++  db <- s3_snapshot(name, s3_closes(drop))
++  exp <- function(snapshot) ledgr::ledgr_experiment(snapshot, s3_hist_strategy, opening = ledgr::ledgr_opening(cash = 1e4),
++    cost_model = ledgr::ledgr_cost_zero(), valuation_policy = valuation)
++  collect(db, name, paste0("s3-", name), exp, seed = 11L)
++}
++loop_slice2 <- c(loop_slice2, list(
++  s3_hist_full = s3_hist("s3_hist_full", list()),
++  s3_hist_gap = s3_hist("s3_hist_gap", list(A = 6:7, B = 8L), s3_stale(3, "freeze")),
++  s3_hist_bar_native = function() {
++    db <- lw_snapshot("s3_hist_bar_native", lw_bars(c(A = 30, B = 45, C = 12), 20L, drift = 0.05))
++    exp <- function(snapshot) ledgr::ledgr_experiment(snapshot, s3_hist_strategy, opening = ledgr::ledgr_opening(cash = 1e4),
++      cost_model = ledgr::ledgr_cost_zero())
++    collect(db, "s3_hist_bar_native", "s3-s3_hist_bar_native", exp, seed = 11L)
++  }))

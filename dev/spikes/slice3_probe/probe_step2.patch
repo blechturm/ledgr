@@ -1,0 +1,87 @@
+diff --git a/dev/lean_core/loop.R b/dev/lean_core/loop.R
+index a54fa67e..d0cefc71 100644
+--- a/dev/lean_core/loop.R
++++ b/dev/lean_core/loop.R
+@@ -80,18 +80,18 @@ lean_loop_coverage <- function(execution, entry = NULL) {
+     lean_not_covered("a checkpoint_every control")
+   }
+   if (!identical(as.integer(execution$start_idx), 1L)) lean_not_covered("restart")
+-  if (!is.null(execution$decision_due)) lean_not_covered("schedules")
+-  if (!identical(substrate$clock_kind, "bar_native")) lean_not_covered("declared sessions")
++  # slice-3 probe: schedules lifted
++  # slice-3 probe: declared sessions lifted
+   if (!is.null(execution$corporate_action_plan)) lean_not_covered("corporate actions")
+   if (length(execution$opening_frozen) > 0L || length(execution$position_fact_unknown_basis) > 0L ||
+       any(ledgr_fold_positions_to_vec(execution$state$positions, execution$instrument_ids) != 0) ||
+       length(execution$state$lot_state$lot_qty %||% numeric()) > 0L ||
+       !identical(as.integer(execution$event_seq_start), 1L)) lean_not_covered("opening positions and imports")
+-  if (length(provider$identity()$declared_families) > 0L) {
++  if (length(setdiff(provider$identity()$declared_families, "sessions")) > 0L) {  # slice-3 probe: sessions alone allowed
+     lean_not_covered("membership, status or lifetime facts")
+   }
+   opp <- execution$execution_opportunities_posix
+-  if (length(pulses) > 0L && !identical(as.numeric(opp), as.numeric(pulses[-1L]))) lean_not_covered("declared execution opportunities")
++  # slice-3 probe: declared execution opportunities lifted
+   if (length(opp) > 0L && n > 0L) {
+     # The loop's constant execution view (checked per pulse in debug).
+     view <- lean_plan_execution_view(provider, as.numeric(opp[[1L]]), execution$instrument_ids)
+@@ -101,8 +101,8 @@ lean_loop_coverage <- function(execution, entry = NULL) {
+   if (anyNA(cols)) lean_not_covered("pulses outside the prepared axis")
+   used <- unique(c(cols, cols[length(cols)] + 1L))
+   used <- used[used <= length(substrate$axis)]
+-  if (!all(substrate$bars$observed[, used])) lean_not_covered("missing bars")
+-  if (!all(is.finite(substrate$bars$close[, used]))) lean_not_covered("missing closes")
++  # slice-3 probe: missing bars lifted
++  # slice-3 probe: missing closes lifted
+   called <- all.names(body(execution$strategy_fn))
+   hit <- intersect(called, lean_loop_scan_names)
+   if (length(hit) > 0L) lean_not_covered(sprintf("`%s()` in the strategy", hit[[1L]]))
+diff --git a/dev/lean_core/parity/loop_workloads_slice2.R b/dev/lean_core/parity/loop_workloads_slice2.R
+index d81d046a..22a11571 100644
+--- a/dev/lean_core/parity/loop_workloads_slice2.R
++++ b/dev/lean_core/parity/loop_workloads_slice2.R
+@@ -340,3 +340,44 @@ loop_reach <- c(loop_reach, list(
+   s2_sizing_growth = function(t) nrow(s2_sizing_rows(t, s2_sized_codes)) > 64L,
+   s2_sizing_prefix = function(t) nrow(s2_sizing_rows(t, "sizing_rounded")) > 0L
+ ))
++
++# --- slice-3 probe (2026-11-15, not product) ---------------------------------
++s3_dates <- as.Date("2020-01-01") + seq_len(20L) - 1L
++s3_day <- function(k) format(s3_dates[[k]], "%Y-%m-%d")
++s3_closes <- function(drop = list()) {
++  x <- list(A = 30 * (1 + 0.02 * sin(1:20)), B = 45 * (1 + 0.02 * sin(2:21)), C = 12 * (1 + 0.02 * sin(3:22)))
++  for (id in names(drop)) x[[id]][drop[[id]]] <- NA
++  x
++}
++s3_snapshot <- function(name, closes) build(name, function(db) {
++  at <- function(k) as.POSIXct(paste(s3_dates[k], "16:00:00"), tz = "UTC")
++  sessions <- ledgr::ledgr_facts_sessions(data.frame(session_date = s3_dates, status = "open", session_open = "09:30:00",
++    session_close = "16:00:00", knowledge_time = as.POSIXct(s3_dates, tz = "UTC") - 1, stringsAsFactors = FALSE),
++    venue_id = "XNYS")
++  bars <- do.call(rbind, lapply(names(closes), function(id) {
++    k <- which(!is.na(closes[[id]]))
++    data.frame(ts_utc = at(k), instrument_id = id, open = closes[[id]][k], high = closes[[id]][k] + 1,
++               low = closes[[id]][k] - 1, close = closes[[id]][k], volume = 1000, stringsAsFactors = FALSE)
++  }))
++  ledgr::ledgr_snapshot_from_df(bars, instruments_df = data.frame(instrument_id = names(closes)),
++    facts = ledgr::ledgr_facts(sessions), price_basis = "split_adjusted", db_path = db, snapshot_id = name)
++})
++s3_case <- function(name, drop, plan, valuation = NULL, risk = ledgr::ledgr_risk_none(), strategy = NULL) function() {
++  db <- s3_snapshot(name, s3_closes(drop))
++  exp <- function(snapshot) ledgr::ledgr_experiment(snapshot, if (is.null(strategy)) lw_schedule_strategy(plan) else strategy,
++    opening = ledgr::ledgr_opening(cash = 1e4), cost_model = ledgr::ledgr_cost_zero(), risk_chain = risk,
++    valuation_policy = valuation)
++  collect(db, name, paste0("s3-", name), exp, seed = 11L)
++}
++s3_stale <- function(n, ex) ledgr::ledgr_valuation_stale(max_sessions = n, exhausted = ex)
++s3_plan <- function(...) { x <- list(...); stats::setNames(lapply(x, `[[`, 2L), vapply(x, function(p) s3_day(p[[1L]]), "")) }
++loop_slice2 <- c(loop_slice2, list(
++  s3_full = s3_case("s3_full", list(), s3_plan(list(2L, c(A = 10, B = 10)), list(9L, c(A = 0)))),
++  s3_gap_default = s3_case("s3_gap_default", list(B = 8L), s3_plan(list(2L, c(A = 10, B = 10)))),
++  s3_stop_freeze = s3_case("s3_stop_freeze", list(B = 12:20), s3_plan(list(2L, c(A = 10, B = 10))), s3_stale(2, "freeze")),
++  s3_stop_refuse = s3_case("s3_stop_refuse", list(B = 12:20), s3_plan(list(2L, c(A = 10, B = 10))), s3_stale(2, "refuse")),
++  s3_reduce_on_stale = s3_case("s3_reduce_on_stale", list(B = 7:8), s3_plan(list(2L, c(A = 10, B = 20)), list(8L, c(B = 5))),
++    s3_stale(3, "freeze"), risk = ledgr::ledgr_risk_max_weight(0.9)),
++  s3_exec_bar_missing = s3_case("s3_exec_bar_missing", list(C = 6L), s3_plan(list(5L, c(C = 10))), s3_stale(3, "freeze")),
++  s3_sizing_unpriced = s3_case("s3_sizing_unpriced", list(C = 5L), NULL, s3_stale(3, "freeze"),
++    strategy = function(ctx, params) ledgr::ledgr_target_rebalance(ctx, c(A = 0.3, B = 0.3, C = 0.3)))))

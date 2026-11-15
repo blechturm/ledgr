@@ -1,0 +1,46 @@
+
+CASE closed_sessions debug TRUE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 14
+
+[[1]]$full_run
+[1] TRUE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 14
+
+[[1]]$full_run
+[1] TRUE
+
+
+DIFFERENT:  
+[1] run_id  seq     kind    class   message
+<0 rows> (or 0-length row.names)
+      run_id   intended_start_utc     intended_end_utc   achieved_start_utc
+1 review_run 2020-01-01T16:00:00Z 2020-01-20T16:00:00Z 2020-01-01T16:00:00Z
+      achieved_end_utc intended_terminal_status stop_reason affected_exposure
+1 2020-01-20T16:00:00Z                     DONE        <NA>              <NA>
+  affected_exposure_ts_utc affected_exposure_basis last_fully_valued_ts_utc
+1                     <NA>                    <NA>     2020-01-20T16:00:00Z
+  last_executed_ts_utc complete_performance
+1 2020-01-03T09:30:00Z                 TRUE
+PIN REASONS:
+                           affordability_reconciled         decision_recorded 
+                        2                        14                        39 
+sizing_intent_unavailable   stale_mark_pass_through   valuation_freeze_exited 
+                        1                         2                         1 
+         valuation_frozen 
+                        4 
+   diagnostic_seq               ts_utc instrument_id     stage
+47             47 2020-01-15T16:00:00Z             B valuation
+               reason_code quantity              price   mark_source mark_age
+47 valuation_freeze_exited       10 44.712096680000002 current_close        0

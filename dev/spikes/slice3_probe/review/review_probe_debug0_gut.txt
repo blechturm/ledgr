@@ -1,0 +1,73 @@
+
+CASE frozen_increase debug FALSE 
+pin fold results:list()
+lean fold results:[[1]]
+[[1]]$status
+[1] "INCOMPLETE"
+
+[[1]]$processed
+[1] 10
+
+[[1]]$full_run
+[1] TRUE
+
+
+DIFFERENT: equity_curve,ledger_events,run_completion,run_diagnostic_coverage,run_diagnostic_implicit,run_diagnostic_summary,run_diagnostics,run_telemetry,runs,conditions 
+TABLE equity_curve 
+pin rows 0 lean rows 10 
+TABLE ledger_events 
+pin rows 0 lean rows 2 
+TABLE run_completion 
+pin rows 0 lean rows 1 
+TABLE run_diagnostic_coverage 
+columns: logical_count 
+  logical_count
+1             1
+  logical_count
+1            46
+TABLE run_diagnostic_implicit 
+pin rows 0 lean rows 25 
+TABLE run_diagnostic_summary 
+columns: decisions,stale,frozen,unavailable_decisions,raw_intent_unavailable,summary_hash 
+  decisions stale frozen unavailable_decisions raw_intent_unavailable
+1         0     0      0                     0                  FALSE
+                                                      summary_hash
+1 ef1aa2c61ecbfce53e3a6bce044e93467613301f87bf2a63e8094472b29680e4
+  decisions stale frozen unavailable_decisions raw_intent_unavailable
+1        30     2      1                    10                   TRUE
+                                                      summary_hash
+1 c74a0aa9ce1ae03e838de2b095dd5f5810336b1fc7b2bf5490cdc4c884fce595
+TABLE run_diagnostics 
+pin rows 1 lean rows 46 
+TABLE run_telemetry 
+columns: status,pulse_count 
+  status pulse_count
+1 FAILED           0
+      status pulse_count
+1 INCOMPLETE          10
+TABLE runs 
+columns: status,error_msg 
+  status                                                        error_msg
+1 FAILED Restricted targets must hold the current quantity or be zero: B.
+      status error_msg
+1 INCOMPLETE      <NA>
+TABLE conditions 
+pin rows 1 lean rows 0 
+      run_id seq  kind
+1 review_run   1 error
+                                                                              class
+1 ledgr_restricted_target/ledgr_invalid_strategy_result/rlang_error/error/condition
+                                                           message
+1 Restricted targets must hold the current quantity or be zero: B.
+ [1] run_id                   intended_start_utc       intended_end_utc        
+ [4] achieved_start_utc       achieved_end_utc         intended_terminal_status
+ [7] stop_reason              affected_exposure        affected_exposure_ts_utc
+[10] affected_exposure_basis  last_fully_valued_ts_utc last_executed_ts_utc    
+[13] complete_performance    
+<0 rows> (or 0-length row.names)
+PIN REASONS:
+restricted_target 
+                1 
+[1] diagnostic_seq ts_utc         instrument_id  stage          reason_code   
+[6] quantity       price          mark_source    mark_age      
+<0 rows> (or 0-length row.names)

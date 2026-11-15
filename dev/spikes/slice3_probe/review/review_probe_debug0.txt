@@ -1,0 +1,669 @@
+
+CASE frozen_increase debug FALSE 
+pin fold results:list()
+lean fold results:list()
+DIFFERENT:  
+      run_id seq  kind
+1 review_run   1 error
+                                                                              class
+1 ledgr_restricted_target/ledgr_invalid_strategy_result/rlang_error/error/condition
+                                                           message
+1 Restricted targets must hold the current quantity or be zero: B.
+ [1] run_id                   intended_start_utc       intended_end_utc        
+ [4] achieved_start_utc       achieved_end_utc         intended_terminal_status
+ [7] stop_reason              affected_exposure        affected_exposure_ts_utc
+[10] affected_exposure_basis  last_fully_valued_ts_utc last_executed_ts_utc    
+[13] complete_performance    
+<0 rows> (or 0-length row.names)
+PIN REASONS:
+restricted_target 
+                1 
+[1] diagnostic_seq ts_utc         instrument_id  stage          reason_code   
+[6] quantity       price          mark_source    mark_age      
+<0 rows> (or 0-length row.names)
+
+CASE frozen_liquidate debug FALSE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 20
+
+[[1]]$full_run
+[1] TRUE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 20
+
+[[1]]$full_run
+[1] TRUE
+
+
+DIFFERENT:  
+[1] run_id  seq     kind    class   message
+<0 rows> (or 0-length row.names)
+      run_id   intended_start_utc     intended_end_utc   achieved_start_utc
+1 review_run 2020-01-01T16:00:00Z 2020-01-20T16:00:00Z 2020-01-01T16:00:00Z
+      achieved_end_utc intended_terminal_status stop_reason affected_exposure
+1 2020-01-20T16:00:00Z                     DONE        <NA>              <NA>
+  affected_exposure_ts_utc affected_exposure_basis last_fully_valued_ts_utc
+1                     <NA>                    <NA>     2020-01-20T16:00:00Z
+  last_executed_ts_utc complete_performance
+1 2020-01-15T09:30:00Z                 TRUE
+PIN REASONS:
+                           affordability_reconciled         decision_recorded 
+                        3                        20                        55 
+    execution_bar_missing sizing_intent_unavailable   stale_mark_pass_through 
+                        1                         1                         2 
+  valuation_freeze_exited          valuation_frozen 
+                        1                         6 
+   diagnostic_seq               ts_utc instrument_id     stage
+46             46 2020-01-10T16:00:00Z             B execution
+63             63 2020-01-14T16:00:00Z             B execution
+65             65 2020-01-15T16:00:00Z             B valuation
+               reason_code quantity              price   mark_source mark_age
+46   execution_bar_missing       10               <NA>                   <NA>
+63                               10 44.712096680000002                   <NA>
+65 valuation_freeze_exited        0 44.712096680000002 current_close        0
+
+CASE skip_stop debug FALSE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "INCOMPLETE"
+
+[[1]]$processed
+[1] 9
+
+[[1]]$full_run
+[1] TRUE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "INCOMPLETE"
+
+[[1]]$processed
+[1] 9
+
+[[1]]$full_run
+[1] TRUE
+
+
+DIFFERENT:  
+[1] run_id  seq     kind    class   message
+<0 rows> (or 0-length row.names)
+      run_id   intended_start_utc     intended_end_utc   achieved_start_utc
+1 review_run 2020-01-01T16:00:00Z 2020-01-20T16:00:00Z 2020-01-01T16:00:00Z
+      achieved_end_utc intended_terminal_status                 stop_reason
+1 2020-01-09T16:00:00Z               INCOMPLETE valuation_horizon_exhausted
+   affected_exposure affected_exposure_ts_utc   affected_exposure_basis
+1 459.89358250000004     2020-01-10T16:00:00Z last_accepted_close_gross
+  last_fully_valued_ts_utc last_executed_ts_utc complete_performance
+1     2020-01-09T16:00:00Z 2020-01-03T09:30:00Z                FALSE
+PIN REASONS:
+                               affordability_reconciled 
+                          4                           9 
+          decision_recorded              scheduled_skip 
+                          3                           8 
+  sizing_intent_unavailable valuation_horizon_exhausted 
+                          1                           1 
+   diagnostic_seq               ts_utc instrument_id     stage
+26             26 2020-01-10T16:00:00Z             B valuation
+                   reason_code quantity              price   mark_source
+26 valuation_horizon_exhausted       10 45.989358250000002 expired_close
+   mark_age
+26        3
+
+CASE declared_prefix debug FALSE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 11
+
+[[1]]$full_run
+[1] FALSE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 11
+
+[[1]]$full_run
+[1] FALSE
+
+
+DIFFERENT:  
+[1] run_id  seq     kind    class   message
+<0 rows> (or 0-length row.names)
+ [1] run_id                   intended_start_utc       intended_end_utc        
+ [4] achieved_start_utc       achieved_end_utc         intended_terminal_status
+ [7] stop_reason              affected_exposure        affected_exposure_ts_utc
+[10] affected_exposure_basis  last_fully_valued_ts_utc last_executed_ts_utc    
+[13] complete_performance    
+<0 rows> (or 0-length row.names)
+PIN REASONS:
+                           affordability_reconciled         decision_recorded 
+                        2                        11                        31 
+sizing_intent_unavailable   stale_mark_pass_through          valuation_frozen 
+                        1                         2                         3 
+[1] diagnostic_seq ts_utc         instrument_id  stage          reason_code   
+[6] quantity       price          mark_source    mark_age      
+<0 rows> (or 0-length row.names)
+
+CASE scheduled_prefix debug FALSE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 11
+
+[[1]]$full_run
+[1] FALSE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 11
+
+[[1]]$full_run
+[1] FALSE
+
+
+DIFFERENT:  
+[1] run_id  seq     kind    class   message
+<0 rows> (or 0-length row.names)
+ [1] run_id                   intended_start_utc       intended_end_utc        
+ [4] achieved_start_utc       achieved_end_utc         intended_terminal_status
+ [7] stop_reason              affected_exposure        affected_exposure_ts_utc
+[10] affected_exposure_basis  last_fully_valued_ts_utc last_executed_ts_utc    
+[13] complete_performance    
+<0 rows> (or 0-length row.names)
+PIN REASONS:
+                           affordability_reconciled         decision_recorded 
+                        6                        11                         3 
+           scheduled_skip sizing_intent_unavailable          valuation_frozen 
+                       10                         1                         1 
+[1] diagnostic_seq ts_utc         instrument_id  stage          reason_code   
+[6] quantity       price          mark_source    mark_age      
+<0 rows> (or 0-length row.names)
+
+CASE sizing_frozen debug FALSE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 20
+
+[[1]]$full_run
+[1] TRUE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 20
+
+[[1]]$full_run
+[1] TRUE
+
+
+DIFFERENT:  
+[1] run_id  seq     kind    class   message
+<0 rows> (or 0-length row.names)
+      run_id   intended_start_utc     intended_end_utc   achieved_start_utc
+1 review_run 2020-01-01T16:00:00Z 2020-01-20T16:00:00Z 2020-01-01T16:00:00Z
+      achieved_end_utc intended_terminal_status stop_reason affected_exposure
+1 2020-01-20T16:00:00Z                     DONE        <NA>              <NA>
+  affected_exposure_ts_utc affected_exposure_basis last_fully_valued_ts_utc
+1                     <NA>                    <NA>     2020-01-20T16:00:00Z
+  last_executed_ts_utc complete_performance
+1 2020-01-03T09:30:00Z                 TRUE
+PIN REASONS:
+                           affordability_reconciled         decision_recorded 
+                        2                        20                        55 
+    execution_bar_missing sizing_intent_unavailable        sizing_liquidation 
+                        1                         1                         1 
+  stale_mark_pass_through   valuation_freeze_exited          valuation_frozen 
+                        2                         1                         6 
+   diagnostic_seq               ts_utc instrument_id     stage
+43             43 2020-01-10T16:00:00Z             B    sizing
+47             47 2020-01-10T16:00:00Z             B execution
+65             65 2020-01-15T16:00:00Z             B valuation
+               reason_code quantity              price   mark_source mark_age
+43      sizing_liquidation        0               <NA>                   <NA>
+47   execution_bar_missing       10               <NA>                   <NA>
+65 valuation_freeze_exited       10 44.712096680000002 current_close        0
+
+CASE sizing_stale debug FALSE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 20
+
+[[1]]$full_run
+[1] TRUE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 20
+
+[[1]]$full_run
+[1] TRUE
+
+
+DIFFERENT:  
+[1] run_id  seq     kind    class   message
+<0 rows> (or 0-length row.names)
+      run_id   intended_start_utc     intended_end_utc   achieved_start_utc
+1 review_run 2020-01-01T16:00:00Z 2020-01-20T16:00:00Z 2020-01-01T16:00:00Z
+      achieved_end_utc intended_terminal_status stop_reason affected_exposure
+1 2020-01-20T16:00:00Z                     DONE        <NA>              <NA>
+  affected_exposure_ts_utc affected_exposure_basis last_fully_valued_ts_utc
+1                     <NA>                    <NA>     2020-01-20T16:00:00Z
+  last_executed_ts_utc complete_performance
+1 2020-01-03T09:30:00Z                 TRUE
+PIN REASONS:
+                           affordability_reconciled         decision_recorded 
+                        2                        20                        55 
+    execution_bar_missing sizing_intent_unavailable        sizing_liquidation 
+                        1                         1                         1 
+  stale_mark_pass_through   valuation_freeze_exited          valuation_frozen 
+                        2                         1                         6 
+   diagnostic_seq               ts_utc instrument_id     stage
+32             32 2020-01-08T16:00:00Z             B    sizing
+37             37 2020-01-08T16:00:00Z             B execution
+65             65 2020-01-15T16:00:00Z             B valuation
+               reason_code quantity              price   mark_source mark_age
+32      sizing_liquidation        0               <NA>                   <NA>
+37   execution_bar_missing       10               <NA>                   <NA>
+65 valuation_freeze_exited       10 44.712096680000002 current_close        0
+
+CASE history_feature debug FALSE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 20
+
+[[1]]$full_run
+[1] TRUE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 20
+
+[[1]]$full_run
+[1] TRUE
+
+
+DIFFERENT:  
+[1] run_id  seq     kind    class   message
+<0 rows> (or 0-length row.names)
+      run_id   intended_start_utc     intended_end_utc   achieved_start_utc
+1 review_run 2020-01-01T16:00:00Z 2020-01-20T16:00:00Z 2020-01-01T16:00:00Z
+      achieved_end_utc intended_terminal_status stop_reason affected_exposure
+1 2020-01-20T16:00:00Z                     DONE        <NA>              <NA>
+  affected_exposure_ts_utc affected_exposure_basis last_fully_valued_ts_utc
+1                     <NA>                    <NA>     2020-01-20T16:00:00Z
+  last_executed_ts_utc complete_performance
+1 2020-01-20T09:30:00Z                 TRUE
+PIN REASONS:
+                           affordability_reconciled         decision_recorded 
+                       10                        20                        55 
+ final_pulse_no_execution sizing_intent_unavailable   stale_mark_pass_through 
+                        1                         1                         2 
+  valuation_freeze_exited          valuation_frozen 
+                        1                         6 
+   diagnostic_seq               ts_utc instrument_id     stage
+69             69 2020-01-15T16:00:00Z             B valuation
+               reason_code quantity              price   mark_source mark_age
+69 valuation_freeze_exited       10 44.712096680000002 current_close        0
+
+CASE scheduled_sweep debug FALSE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 20
+
+[[1]]$full_run
+[1] TRUE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 20
+
+[[1]]$full_run
+[1] TRUE
+
+
+DIFFERENT:  
+  status
+1   DONE
+2 FAILED
+                                                                                             error_msg
+1                                                                                                 <NA>
+2 The resolved strategy schedule has no decision pulse and the run has no opening or carried position.
+
+CASE all_missing_session debug FALSE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 20
+
+[[1]]$full_run
+[1] TRUE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 20
+
+[[1]]$full_run
+[1] TRUE
+
+
+DIFFERENT:  
+[1] run_id  seq     kind    class   message
+<0 rows> (or 0-length row.names)
+      run_id   intended_start_utc     intended_end_utc   achieved_start_utc
+1 review_run 2020-01-01T16:00:00Z 2020-01-20T16:00:00Z 2020-01-01T16:00:00Z
+      achieved_end_utc intended_terminal_status stop_reason affected_exposure
+1 2020-01-20T16:00:00Z                     DONE        <NA>              <NA>
+  affected_exposure_ts_utc affected_exposure_basis last_fully_valued_ts_utc
+1                     <NA>                    <NA>     2020-01-20T16:00:00Z
+  last_executed_ts_utc complete_performance
+1 2020-01-03T09:30:00Z                 TRUE
+PIN REASONS:
+                           affordability_reconciled         decision_recorded 
+                        2                        20                        60 
+sizing_intent_unavailable   stale_mark_pass_through 
+                        1                         2 
+[1] diagnostic_seq ts_utc         instrument_id  stage          reason_code   
+[6] quantity       price          mark_source    mark_age      
+<0 rows> (or 0-length row.names)
+
+CASE risk_stop debug FALSE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "INCOMPLETE"
+
+[[1]]$processed
+[1] 10
+
+[[1]]$full_run
+[1] TRUE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "INCOMPLETE"
+
+[[1]]$processed
+[1] 10
+
+[[1]]$full_run
+[1] TRUE
+
+
+DIFFERENT:  
+[1] run_id  seq     kind    class   message
+<0 rows> (or 0-length row.names)
+      run_id   intended_start_utc     intended_end_utc   achieved_start_utc
+1 review_run 2020-01-01T16:00:00Z 2020-01-20T16:00:00Z 2020-01-01T16:00:00Z
+      achieved_end_utc intended_terminal_status           stop_reason
+1 2020-01-10T16:00:00Z               INCOMPLETE risk_mark_unavailable
+  affected_exposure affected_exposure_ts_utc   affected_exposure_basis
+1                 0     2020-01-10T16:00:00Z last_accepted_close_gross
+  last_fully_valued_ts_utc last_executed_ts_utc complete_performance
+1     2020-01-10T16:00:00Z 2020-01-03T09:30:00Z                FALSE
+PIN REASONS:
+                           affordability_reconciled         decision_recorded 
+                        2                         9                        30 
+    risk_mark_unavailable sizing_intent_unavailable 
+                        1                         1 
+   diagnostic_seq               ts_utc instrument_id stage
+43             43 2020-01-10T16:00:00Z             C  risk
+             reason_code quantity price   mark_source mark_age
+43 risk_mark_unavailable        0  <NA> expired_close        7
+
+CASE skip_stop_first_missing debug FALSE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "INCOMPLETE"
+
+[[1]]$processed
+[1] 7
+
+[[1]]$full_run
+[1] TRUE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "INCOMPLETE"
+
+[[1]]$processed
+[1] 7
+
+[[1]]$full_run
+[1] TRUE
+
+
+DIFFERENT:  
+[1] run_id  seq     kind    class   message
+<0 rows> (or 0-length row.names)
+      run_id   intended_start_utc     intended_end_utc   achieved_start_utc
+1 review_run 2020-01-01T16:00:00Z 2020-01-20T16:00:00Z 2020-01-01T16:00:00Z
+      achieved_end_utc intended_terminal_status                 stop_reason
+1 2020-01-07T16:00:00Z               INCOMPLETE valuation_horizon_exhausted
+   affected_exposure affected_exposure_ts_utc   affected_exposure_basis
+1 459.89358250000004     2020-01-08T16:00:00Z last_accepted_close_gross
+  last_fully_valued_ts_utc last_executed_ts_utc complete_performance
+1     2020-01-07T16:00:00Z 2020-01-03T09:30:00Z                FALSE
+PIN REASONS:
+                               affordability_reconciled 
+                          2                           7 
+          decision_recorded              scheduled_skip 
+                          3                           6 
+  sizing_intent_unavailable valuation_horizon_exhausted 
+                          1                           1 
+   diagnostic_seq               ts_utc instrument_id     stage
+20             20 2020-01-08T16:00:00Z             B valuation
+                   reason_code quantity              price   mark_source
+20 valuation_horizon_exhausted       10 45.989358250000002 expired_close
+   mark_age
+20        1
+
+CASE schedule_query debug FALSE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 20
+
+[[1]]$full_run
+[1] TRUE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 20
+
+[[1]]$full_run
+[1] TRUE
+
+
+DIFFERENT:  
+[1] run_id  seq     kind    class   message
+<0 rows> (or 0-length row.names)
+      run_id   intended_start_utc     intended_end_utc   achieved_start_utc
+1 review_run 2020-01-01T16:00:00Z 2020-01-20T16:00:00Z 2020-01-01T16:00:00Z
+      achieved_end_utc intended_terminal_status stop_reason affected_exposure
+1 2020-01-20T16:00:00Z                     DONE        <NA>              <NA>
+  affected_exposure_ts_utc affected_exposure_basis last_fully_valued_ts_utc
+1                     <NA>                    <NA>     2020-01-20T16:00:00Z
+  last_executed_ts_utc complete_performance
+1 2020-01-19T09:30:00Z                 TRUE
+PIN REASONS:
+                           affordability_reconciled         decision_recorded 
+                        7                        20                        60 
+sizing_intent_unavailable 
+                        1 
+[1] diagnostic_seq ts_utc         instrument_id  stage          reason_code   
+[6] quantity       price          mark_source    mark_age      
+<0 rows> (or 0-length row.names)
+
+CASE schedule_no_decisions debug FALSE 
+pin fold results:list()
+lean fold results:list()
+DIFFERENT:  
+      run_id seq  kind
+1 review_run   1 error
+                                                                                   class
+1 ledgr_schedule_no_decision/ledgr_invalid_strategy_schedule/rlang_error/error/condition
+                                                                                               message
+1 The resolved strategy schedule has no decision pulse and the run has no opening or carried position.
+ [1] run_id                   intended_start_utc       intended_end_utc        
+ [4] achieved_start_utc       achieved_end_utc         intended_terminal_status
+ [7] stop_reason              affected_exposure        affected_exposure_ts_utc
+[10] affected_exposure_basis  last_fully_valued_ts_utc last_executed_ts_utc    
+[13] complete_performance    
+<0 rows> (or 0-length row.names)
+PIN REASONS:< table of extent 0 >
+[1] diagnostic_seq ts_utc         instrument_id  stage          reason_code   
+[6] quantity       price          mark_source    mark_age      
+<0 rows> (or 0-length row.names)
+
+CASE risk_never_marked debug FALSE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "INCOMPLETE"
+
+[[1]]$processed
+[1] 2
+
+[[1]]$full_run
+[1] TRUE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "INCOMPLETE"
+
+[[1]]$processed
+[1] 2
+
+[[1]]$full_run
+[1] TRUE
+
+
+DIFFERENT:  
+[1] run_id  seq     kind    class   message
+<0 rows> (or 0-length row.names)
+      run_id   intended_start_utc     intended_end_utc   achieved_start_utc
+1 review_run 2020-01-01T16:00:00Z 2020-01-20T16:00:00Z 2020-01-01T16:00:00Z
+      achieved_end_utc intended_terminal_status           stop_reason
+1 2020-01-02T16:00:00Z               INCOMPLETE risk_mark_unavailable
+  affected_exposure affected_exposure_ts_utc   affected_exposure_basis
+1                 0     2020-01-02T16:00:00Z last_accepted_close_gross
+  last_fully_valued_ts_utc last_executed_ts_utc complete_performance
+1     2020-01-02T16:00:00Z                 <NA>                FALSE
+PIN REASONS:
+ affordability_reconciled         decision_recorded     risk_mark_unavailable 
+                        1                         6                         1 
+sizing_intent_unavailable 
+                        1 
+  diagnostic_seq               ts_utc instrument_id stage           reason_code
+9              9 2020-01-02T16:00:00Z             C  risk risk_mark_unavailable
+  quantity price mark_source mark_age
+9        0  <NA>     missing     <NA>
+
+CASE closed_sessions debug FALSE 
+pin fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 14
+
+[[1]]$full_run
+[1] TRUE
+
+
+lean fold results:[[1]]
+[[1]]$status
+[1] "DONE"
+
+[[1]]$processed
+[1] 14
+
+[[1]]$full_run
+[1] TRUE
+
+
+DIFFERENT:  
+[1] run_id  seq     kind    class   message
+<0 rows> (or 0-length row.names)
+      run_id   intended_start_utc     intended_end_utc   achieved_start_utc
+1 review_run 2020-01-01T16:00:00Z 2020-01-20T16:00:00Z 2020-01-01T16:00:00Z
+      achieved_end_utc intended_terminal_status stop_reason affected_exposure
+1 2020-01-20T16:00:00Z                     DONE        <NA>              <NA>
+  affected_exposure_ts_utc affected_exposure_basis last_fully_valued_ts_utc
+1                     <NA>                    <NA>     2020-01-20T16:00:00Z
+  last_executed_ts_utc complete_performance
+1 2020-01-03T09:30:00Z                 TRUE
+PIN REASONS:
+                           affordability_reconciled         decision_recorded 
+                        2                        14                        39 
+sizing_intent_unavailable   stale_mark_pass_through   valuation_freeze_exited 
+                        1                         2                         1 
+         valuation_frozen 
+                        4 
+   diagnostic_seq               ts_utc instrument_id     stage
+47             47 2020-01-15T16:00:00Z             B valuation
+               reason_code quantity              price   mark_source mark_age
+47 valuation_freeze_exited       10 44.712096680000002 current_close        0
