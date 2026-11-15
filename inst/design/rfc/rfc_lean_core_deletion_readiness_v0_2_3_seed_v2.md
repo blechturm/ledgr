@@ -294,5 +294,7 @@ Taken on v1 while its Type 1 review was running:
   checked out of process; the in-loop comparisons for merged checks go.
 - Q2: the switch cut lists, by script, every `R/` function whose only
   callers are the old fold.
-- Q3: agreed on v1's premise; reopened in v2 (Section 7).
+- Q3: agreed on v1's premise; reopened in v2 (Section 7); agreed again on
+  v2's corrected premise (2026-11-15): setup refuses an unresolved
+  reference, landing in the switch cut with the risk merge.
 - Q4: the merges land in the switch cut itself.
