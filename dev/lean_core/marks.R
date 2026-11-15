@@ -1,9 +1,63 @@
 # Slice 3 (Cut 19, Section 19.11): marks on a run whose prepared planes hold
-# a missing bar or a non-finite close. Pure helpers, no loop state: the loop
-# (loop.R) keeps the valuation state, the frozen set and the records. The
-# mark rule itself is the pin's (ledgr_availability_valuation_state(), the
-# provider's decision view, ledgr_availability_restrict_frozen() and
+# a missing bar or a non-finite close, schedules and the slice-3 records.
+# The loop (loop.R) holds the slice-3 run state as one environment, `s3`
+# (lean_marks_run_state); the other helpers are pure. The mark rule itself
+# is the pin's (ledgr_availability_valuation_state(), the provider's
+# decision view, ledgr_availability_restrict_frozen() and
 # ledgr_carrier_provider_view()); nothing here copies it.
+
+# The slice-3 run state. One environment, so slice 3 adds one binding to the
+# loop's frame: R searches that frame's bindings one by one for every name a
+# pulse stage looks up, and twelve more cost about 12 us per pulse (Cut 19
+# timing). Fields: the pin's valuation state on a marked run (NULL
+# otherwise), the schedule's decision flags (NULL: every pulse is decided),
+# the frozen set, the stop's affected exposure, and the slice-3 rows, typed
+# and preallocated: valuation, risk and stop rows, pulse-ordered and within
+# a pulse in logical order (part 1 opens the pulse: valuation, scheduled-skip
+# and evidence rows; part 2 follows the decision cells: stale-mark risk rows;
+# part 3 closes it: stop rows).
+lean_marks_run_state <- function(bars, ids, substrate, provider, history_reader, due) {
+  s3 <- new.env(parent = emptyenv())
+  s3$state <- if (lean_marks_needed(bars)) lean_marks_state(bars, ids, substrate, provider, history_reader)
+  s3$due <- due
+  s3$frozen <- character()
+  s3$affected <- list(value = NA_real_, details = list(), ts_utc = as.POSIXct(NA, tz = "UTC"), specified = FALSE)
+  s3$xcap <- cap <- 64L
+  s3$xr <- list(pulse = integer(cap), part = integer(cap), instrument_id = character(cap), stage = character(cap),
+    outcome = character(cap), reason_code = character(cap), reasons = character(cap), target = numeric(cap),
+    quantity = numeric(cap), price = numeric(cap), mark_source = character(cap), mark_age = integer(cap),
+    target_before_risk = numeric(cap), target_after_risk = numeric(cap), position_before = numeric(cap),
+    position_after = numeric(cap), detail_json = character(cap))
+  s3$nx <- 0L
+  s3
+}
+
+# Appends a group of rows of one part, written by index, the buffer doubled
+# when full; a field the group does not carry takes the pin's diagnostic
+# default. The buffer is detached while written, so its columns change in
+# place.
+lean_marks_add_rows <- function(s3, i, part, g) {
+  m <- length(g$instrument_id)
+  rows <- s3$nx + seq_len(m)
+  xr <- s3$xr
+  s3$xr <- NULL
+  if (s3$nx + m > s3$xcap) {
+    while (s3$nx + m > s3$xcap) s3$xcap <- s3$xcap * 2L
+    xr <- lapply(xr, function(v) { length(v) <- s3$xcap; v })
+  }
+  xr$pulse[rows] <- i
+  xr$part[rows] <- part
+  for (f in names(xr)[-(1:2)]) xr[[f]][rows] <- rep_len(g[[f]] %||% .ledgr_diagnostic_defaults[[f]], m)
+  s3$xr <- xr
+  s3$nx <- s3$nx + m
+}
+
+# A slice-3 stop: its rows close the pulse, and the completion row records
+# its affected exposure.
+lean_marks_stop <- function(s3, i, s) {
+  lean_marks_add_rows(s3, i, 3L, s$rows)
+  s3$affected <- s$affected
+}
 
 # TRUE when any prepared bar is unobserved or any prepared close is not
 # finite. Such a run takes its marks from the pin's valuation state; a run
@@ -134,11 +188,16 @@ lean_marks_clean <- function(d, close, ids, risk_ids) {
 # The decision fields of a cell on complete planes, apart from its mark.
 lean_marks_current <- list(source = "current_close", age = 0L, reason = "decision_recorded", reasons = "decision_recorded")
 
-# The slice-3 rows of pulses 1..np by part: 1 opens the pulse, 2 follows the
-# decision cells, 3 closes it.
-lean_marks_part_counts <- function(pulse, part, np) {
+# The slice-3 rows of pulses 1..np by part (1 opens the pulse, 2 follows the
+# decision cells, 3 closes it), and the pulses without decision cells: a
+# scheduled skip and a valuation stop, each recognised by its row.
+lean_marks_part_counts <- function(s3, np) {
+  k <- seq_len(s3$nx)
+  pulse <- s3$xr$pulse[k]
+  part <- s3$xr$part[k]
+  none <- s3$xr$reason_code[k] %in% c("scheduled_skip", "valuation_horizon_exhausted")
   list(open = tabulate(pulse[part == 1L], np), risk = tabulate(pulse[part == 2L], np),
-       stop = tabulate(pulse[part == 3L], np))
+       stop = tabulate(pulse[part == 3L], np), no_decision = tabulate(pulse[none], np) > 0L)
 }
 
 # Logical sequence numbers of slice-3 rows: rows of one (pulse, part) are

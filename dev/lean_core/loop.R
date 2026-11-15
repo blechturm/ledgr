@@ -1,5 +1,6 @@
-# Compact-state lean loop, slices 1-2 (macro WS16 "Compact-state loop";
-# interface Sections 19 and 19.9; LDG-3219, LDG-3226, LDG-3227).
+# Compact-state lean loop, slices 1-3 (macro WS16 "Compact-state loop";
+# interface Sections 19, 19.9 and 19.11; LDG-3219, LDG-3226, LDG-3227,
+# LDG-3237 to LDG-3239).
 #
 # lean_fold_envelope(execution, output_handler) takes the seat of the pinned
 # ledgr_fold_envelope (R/fold-engine.R:1670, pin d5b3a151) through
@@ -12,7 +13,7 @@
 # hands them to the pin's handler and diagnostic writer in bounded batches
 # (diagnostic-records D3 synthesis, accepted 2026-11-10).
 #
-# Coverage (Sections 19.2 and 19.9): anything outside slices 1-2 is refused before the
+# Coverage (Section 19.2): anything outside slices 1-3 is refused before the
 # first pulse with `ledgr_lean_not_covered`; the harness then runs the pin.
 
 # The pin's marked gross exposure (ledgr_availability_marked_gross) without
@@ -232,12 +233,9 @@ lean_fold_envelope <- function(execution, output_handler) {
     feature_defs = feature_defs, active_alias_map = active_alias_map)
   # Slice 3 (marks.R, Section 19.11): a run whose prepared planes hold a
   # missing bar or a non-finite close takes its marks from the pin's
-  # valuation state; the loop keeps the frozen set across pulses.
-  marked <- lean_marks_needed(bars)
-  decision_due <- execution$decision_due   # NULL: every pulse is decided
-  mark_state <- if (marked) lean_marks_state(bars, ids, substrate, provider, history_reader)
-  frozen_set <- character()
-  stop_affected <- list(value = NA_real_, details = list(), ts_utc = as.POSIXct(NA, tz = "UTC"), specified = FALSE)
+  # valuation state; the schedule, the frozen set and the slice-3 rows. One
+  # binding: each binding in this frame slows every lookup (marks.R).
+  s3 <- lean_marks_run_state(bars, ids, substrate, provider, history_reader, execution$decision_due)
   epochs <- as.numeric(execution$execution_opportunities_posix %||% pulses_posix[-1L])
   epoch_valid <- ledgr_plan_epoch_valid(epochs)
   max_events <- max(1L, n_pulse * n)
@@ -324,18 +322,6 @@ lean_fold_envelope <- function(execution, output_handler) {
              position = numeric(dcap), mark = numeric(dcap), source = character(dcap), age = integer(dcap),
              reason = character(dcap), reasons = character(dcap))
   nd <- 0L
-  # Slice 3: valuation, risk and stop rows, pulse-ordered and within a pulse
-  # in logical order (Section 19.11): part 1 opens the pulse (valuation,
-  # scheduled-skip and evidence rows), part 2 follows the decision cells
-  # (stale-mark risk rows), part 3 closes it (stop rows).
-  xcap <- 64L
-  xr <- list(pulse = integer(xcap), part = integer(xcap), instrument_id = character(xcap), stage = character(xcap),
-             outcome = character(xcap), reason_code = character(xcap), reasons = character(xcap), target = numeric(xcap),
-             quantity = numeric(xcap), price = numeric(xcap), mark_source = character(xcap), mark_age = integer(xcap),
-             target_before_risk = numeric(xcap), target_after_risk = numeric(xcap), position_before = numeric(xcap),
-             position_after = numeric(xcap), detail_json = character(xcap))
-  nx <- 0L
-  hd_ndec <- rep(n, n_pulse)          # decision cells of a pulse (none on a valuation stop)
   # rejections
   rj <- list(pulse = integer(), k = integer(), pos = integer(), primary = character(), reasons = character(),
              target = numeric(), strategy_target = numeric(), position = numeric(), resolved_price = numeric(),
@@ -536,18 +522,21 @@ lean_fold_envelope <- function(execution, output_handler) {
     close <- bars$close[, col]
     mk <- close
     m <- NULL
-    if (marked) {
-      m <- lean_marks_pulse(provider, mark_state, i, pulses_posix[[i]], pos, ids)
+    if (!is.null(s3$state)) {
+      m <- lean_marks_pulse(provider, s3$state, i, pulses_posix[[i]], pos, ids)
       st <- lean_marks_valuation_stop(m, pulses_posix[[i]])
       if (!is.null(st)) {
         # before the equity row; the pulse is not counted
-        hd_ndec[[i]] <<- 0L
         n_done <<- i
-        return(lean_loop_stop(i, st, "valuation_horizon_exhausted"))
+        lean_marks_stop(s3, i, st)
+        hd_all_explicit[[i]] <<- TRUE
+        status <<- "INCOMPLETE"
+        stop_reason <<- "valuation_horizon_exhausted"
+        return(list(stop = TRUE))
       }
-      fz <- lean_marks_frozen(m, frozen_set)
-      frozen_set <<- fz$set
-      for (g in fz$groups) lean_loop_add_rows(i, 1L, g)
+      fz <- lean_marks_frozen(m, s3$frozen)
+      s3$frozen <- fz$set
+      for (g in fz$groups) lean_marks_add_rows(s3, i, 1L, g)
       mk <- m$columns$mark
     }
     active <- pos != 0
@@ -566,6 +555,15 @@ lean_fold_envelope <- function(execution, output_handler) {
   # P2: a fresh context (Section 19.4), the strategy call, the checks on its
   # output, the pin's risk plan (slice 2) and the short-exposure refusal.
   lean_p2_decide <- function(i, v1) {
+    if (!is.null(s3$due) && !isTRUE(s3$due[[i]])) {
+      # A pulse the schedule does not decide (Section 19.11): no strategy
+      # call; the skip row and the evidence rows (marks.R), targets equal
+      # positions, no decision cells and no holds.
+      for (g in lean_marks_skip_rows(v1$m, ids, pos)) lean_marks_add_rows(s3, i, 1L, g)
+      hd_all_explicit[[i]] <<- TRUE
+      return(list(result = list(state_update = NULL), sq = pos, tq = pos, pos_start = pos, fields = NULL,
+                  risk_ids = character(), stop = FALSE, skip = TRUE))
+    }
     col <- v1$col
     close <- v1$close
     pv <- v1$pv
@@ -676,7 +674,11 @@ lean_fold_envelope <- function(execution, output_handler) {
           lean_loop_add_decisions(seq_len(n), i, sq, rep(NA_real_, n), pos,
             lean_marks_decision_fields(marks, ids, pulse_notes$sizing_skipped))
           processed <<- processed + 1L
-          return(lean_loop_stop(i, rs, "risk_mark_unavailable"))
+          lean_marks_stop(s3, i, rs)
+          hd_all_explicit[[i]] <<- TRUE
+          status <<- "INCOMPLETE"
+          stop_reason <<- "risk_mark_unavailable"
+          return(list(stop = TRUE))
         }
       }
       live$cur_stage <- "risk"
@@ -694,22 +696,11 @@ lean_fold_envelope <- function(execution, output_handler) {
       fields <- lean_marks_decision_fields(marks, ids, pulse_notes$sizing_skipped)
       sr <- lean_marks_stale_rows(marks, ids, sq, tq, pos)
       if (!is.null(sr)) {
-        lean_loop_add_rows(i, 2L, sr)
+        lean_marks_add_rows(s3, i, 2L, sr)
         risk_ids <- sr$instrument_id
       }
     }
     list(result = result, sq = sq, tq = tq, pos_start = pos_start, fields = fields, risk_ids = risk_ids, stop = FALSE)
-  }
-
-  # A pulse the schedule does not decide (Section 19.11): no strategy call;
-  # the skip row and the evidence rows (marks.R), targets equal positions,
-  # no decision cells and no holds.
-  lean_p2_skip <- function(i, v1) {
-    for (g in lean_marks_skip_rows(v1$m, ids, pos)) lean_loop_add_rows(i, 1L, g)
-    hd_ndec[[i]] <<- 0L
-    hd_all_explicit[[i]] <<- TRUE
-    list(result = list(state_update = NULL), sq = pos, tq = pos, pos_start = pos, fields = NULL, risk_ids = character(),
-         stop = FALSE, skip = TRUE)
   }
 
   # P3: the order plan, or the affordability reconciliation stop (cut review
@@ -919,7 +910,7 @@ lean_fold_envelope <- function(execution, output_handler) {
     for (i in seq_len(n_pulse)) {
       v1 <- lean_p1_value(i)
       if (v1$stop) break
-      v2 <- if (is.null(decision_due) || isTRUE(decision_due[[i]])) lean_p2_decide(i, v1) else lean_p2_skip(i, v1)
+      v2 <- lean_p2_decide(i, v1)
       if (v2$stop) break
       v3 <- lean_p3_plan(i, v1, v2)
       if (v3$stop) break
@@ -967,38 +958,15 @@ lean_fold_envelope <- function(execution, output_handler) {
     dr$target[rows] <<- sq[k]
     dr$target_after[rows] <<- tq[k]
     dr$position[rows] <<- position[k]
-    dr$mark[rows] <<- if (is.null(fields)) bars$close[k, pulse_cols[[i]]] else fields$mark[k]
-    for (f in c("source", "age", "reason", "reasons")) {
-      dr[[f]][rows] <<- if (is.null(fields)) rep_len(lean_marks_current[[f]], m) else fields[[f]][k]
+    # Mark fields only on a marked run; on complete planes they are the
+    # current close's, filled at publish (lean_loop_expand).
+    if (!is.null(s3$state)) {
+      dr$mark[rows] <<- if (is.null(fields)) bars$close[k, pulse_cols[[i]]] else fields$mark[k]
+      for (f in c("source", "age", "reason", "reasons")) {
+        dr[[f]][rows] <<- if (is.null(fields)) rep_len(lean_marks_current[[f]], m) else fields[[f]][k]
+      }
     }
     nd <<- nd + m
-  }
-
-  # A slice-3 stop (Section 19.11): the pulse's decision segment, if any, is
-  # explicit; the stop rows close it and the completion row records the
-  # affected exposure.
-  lean_loop_stop <- function(i, s, reason) {
-    lean_loop_add_rows(i, 3L, s$rows)
-    stop_affected <<- s$affected
-    hd_all_explicit[[i]] <<- TRUE
-    status <<- "INCOMPLETE"
-    stop_reason <<- reason
-    list(stop = TRUE)
-  }
-
-  # A group of slice-3 rows (marks.R) of one part, written by index; a field
-  # the group does not carry takes the pin's diagnostic default.
-  lean_loop_add_rows <- function(i, part, g) {
-    m <- length(g$instrument_id)
-    rows <- nx + seq_len(m)
-    if (nx + m > xcap) {
-      while (nx + m > xcap) xcap <<- xcap * 2L
-      xr <<- grow(xr, xcap)
-    }
-    xr$pulse[rows] <<- i
-    xr$part[rows] <<- part
-    for (f in names(xr)[-(1:2)]) xr[[f]][rows] <<- rep_len(g[[f]] %||% .ledgr_diagnostic_defaults[[f]], m)
-    nx <<- nx + m
   }
 
   # --- after the loop (Section 19.5; D3 Sections 1-3) ---------------------
@@ -1061,7 +1029,7 @@ lean_fold_envelope <- function(execution, output_handler) {
     if (full_run) {
       completion <- ledgr_availability_completion_row(run_id = run_id, pulses_posix = pulses_posix,
         status = status, stop_reason = stop_reason,
-        affected = stop_affected,
+        affected = s3$affected,
         last_fully_valued_ts_utc = .POSIXct(last_fully_valued, tz = "UTC"), last_executed_ts_utc = .POSIXct(last_executed, tz = "UTC"))
       output_handler$write_run_evidence(completion, diagnostics)
     } else {
@@ -1079,11 +1047,11 @@ lean_fold_envelope <- function(execution, output_handler) {
     # Slice 3 (Section 19.11): a pulse's logical rows are its opening rows
     # (valuation, skip and evidence), intent and sizing, its decision cells,
     # risk rows, rejections, fills, reconciliation and stop rows.
-    pc <- lean_marks_part_counts(xr$pulse[seq_len(nx)], xr$part[seq_len(nx)], np)
+    pc <- lean_marks_part_counts(s3, np)
     nopen <- pc$open
     nrisk <- pc$risk
     nstop <- as.integer(!is.na(hd_stop_detail[p])) + pc$stop
-    ndec <- hd_ndec[p]
+    ndec <- n * !pc$no_decision                   # none on a scheduled skip or a valuation stop
     logical_per <- nopen + hd_pre[p] + ndec + nrisk + hd_nrej[p] + hd_nfill[p] + nrec + nstop
     base <- c(0L, cumsum(logical_per))[p]
     pre0 <- base + nopen
@@ -1133,13 +1101,16 @@ lean_fold_envelope <- function(execution, output_handler) {
     r <- lean_rows_in(dr$pulse[seq_len(nd)], a, b)
     if (length(r)) {
       dp <- dr$pulse[r]; dk <- dr$k[r]
+      mf <- if (is.null(s3$state)) c(list(mark = bars$close[cbind(dk, pulse_cols[dp])]), lean_marks_current) else
+        list(mark = dr$mark[r], source = dr$source[r], age = dr$age[r], reason = dr$reason[r], reasons = dr$reasons[r])
       add(lay$dec0[dp] + dk, dp, list(instrument_id = ids[dk], stage = "decision", outcome = "recorded",
-        reason_code = dr$reason[r], reasons = dr$reasons[r], target = dr$target[r],
-        quantity = dr$position[r], price = dr$mark[r], mark_source = dr$source[r],
-        mark_age = dr$age[r], target_before_risk = dr$target[r], target_after_risk = dr$target_after[r],
+        reason_code = mf$reason, reasons = mf$reasons, target = dr$target[r],
+        quantity = dr$position[r], price = mf$mark, mark_source = mf$source,
+        mark_age = mf$age, target_before_risk = dr$target[r], target_after_risk = dr$target_after[r],
         position_before = dr$position[r], position_after = dr$position[r]))
     }
-    xx <- lean_rows_in(xr$pulse[seq_len(nx)], a, b)
+    xr <- s3$xr
+    xx <- lean_rows_in(xr$pulse[seq_len(s3$nx)], a, b)
     if (length(xx)) add(lean_marks_part_seq(xr$pulse[xx], xr$part[xx], lay), xr$pulse[xx], lapply(xr[-(1:2)], `[`, xx))
     rr <- lean_rows_in(rj$pulse, a, b)
     if (length(rr)) {
@@ -1316,7 +1287,7 @@ lean_fold_envelope <- function(execution, output_handler) {
   telemetry$t_loop <- ledgr_time_elapsed(loop_start, ledgr_time_now())
   hooks$fold_end(list(pulses = live$t_pulses, publish = live$t_publish,
     capacity = c(fills_used = nf, fills_allocated = fcap, decisions_used = nd, decisions_allocated = dcap,
-      sizing_used = nsz, sizing_allocated = scap, slice3_rows_used = nx, slice3_rows_allocated = xcap,
+      sizing_used = nsz, sizing_allocated = scap, slice3_rows_used = s3$nx, slice3_rows_allocated = s3$xcap,
       rejections = length(rj$k), pulse_headers = n_pulse, batches = live$batches, ranges = live$ranges,
       max_range_pulses = live$max_range_pulses)))
   telemetry$telemetry_samples <- as.integer(telemetry$telemetry_samples %||% 0L)
