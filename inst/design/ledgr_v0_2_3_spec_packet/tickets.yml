@@ -2516,12 +2516,23 @@ cuts:
       strategy and writes the pin's skip rows and a reconciliation row with
       targets equal to positions; no decision cells, no holds. A stop on a
       skip pulse keeps the pin's precedence.
-      (6) Declared sessions and history reads are coverage lifts only. The
-      membership refusal narrows to declared families other than sessions.
-      The history-read scan (lean_loop_scan_names) and the backstop stubs
-      in loop_harness.R are deleted, since no scanned name remains; the
-      eight backstop witnesses stay in the gate as history-read workloads
-      on their new lean path.
+      (6) Declared sessions and history reads are coverage lifts. Narrow
+      the membership refusal to declared families other than sessions.
+      Delete lean_loop_scan_names and the history-name binding stubs.
+      Retain the generic attempt-mark, callback check, RNG restoration and
+      whole-workload retry while lean_abort_attempt() remains a possible
+      coverage exit, including the context-axis refusal. Retire exactly the
+      32 backstop_off and rng_restore_off manifest rows for the eight
+      history witnesses, at debug 0 and 1, through
+      loop_variant_changes.csv, naming history coverage as the reason.
+      Keep those witnesses and their RNG comparisons on their new lean
+      paths. Record re-anchors for every surviving variant whose source
+      anchor changes, preserving its injected fault and detecting
+      consequence. Update Section 19.2's detection text and the
+      checklist's history-backstop obligation to describe this
+      disposition. LDG-3240 checks the effective manifest after these
+      recorded retirements and re-anchors, plus the slice-3 additions
+      (cut review R1).
       (7) Workloads. A new loop_workloads_slice3.R holds the probe's 16
       s3_ workloads, renamed or redescribed where the probe review (P8)
       found the name overstates what is reached, and the review's cases
@@ -2547,7 +2558,17 @@ cuts:
       or backstopped to lean), and avail_terminal_resume, avail_acquisition,
       avail_incomplete, walk_forward, failures and prep_fixture (refusal
       moved from declared sessions to a slice 4-5 feature). Any other moved
-      row fails.
+      row fails. The final freeze records exact fold counts and refusal
+      strings, including four lean folds for avail_incomplete and
+      failures. Axis boundaries (cut review R2): LDG-3237 adds bar and
+      feature history witnesses whose scoring start is later than data
+      start, and LDG-3238 adds offset, pre-scoring-gap and
+      execution-tail-gap runs; the valuation state receives the full
+      prepared bars and session axis and history_reader$pulse_columns.
+      Ordering and records (cut review R3): LDG-3238 adds simultaneous
+      freeze entry and exit, a multi-holding valuation stop, a
+      many-instrument many-gap workload and growth proofs for every new
+      record buffer.
       (8) Variants, recorded as additions in loop_variant_changes.csv, each
       reached and caught by its expected signal with debug off (and on
       where named): marks_from_close (holdings valued at the current
@@ -6055,6 +6076,8 @@ tickets:
       - "New dev/lean_core/parity/loop_workloads_slice3.R, sourced by loop_parity.R beside the slice-1 and slice-2 files, with public constructors and the pin as oracle: a declared-session run with complete bars; history reads of bars (matrix, frame, info) on a bar-native and on a declared-session run; history reads of features (matrix and long frame, probe review P5); each identical to the pin on every table with debug off and on, one lean fold and no refusal, registered in loop_freeze.csv"
       - "Branch reach from the pin's values (loop_reach): the declared-session run's execution times are the declared session opens; each history workload's targets depend on the values read (a predicate that fails when the reads are replaced by constants)"
       - "The eight backstop witnesses run on their new lean path and stay identical; their frozen rows move as decision 7 lists, at both debug settings"
+      - "Decision 6 (cut review R1): lean_loop_scan_names and the history-name binding stubs deleted; the generic attempt-mark, callback check, RNG restoration and whole-workload retry retained while lean_abort_attempt() remains a coverage exit (the context-axis refusal included); exactly the 32 backstop_off and rng_restore_off manifest rows for the eight history witnesses retired at debug 0 and 1 through loop_variant_changes.csv with history coverage named as the reason; the witnesses and their RNG comparisons kept on their new lean paths; a re-anchor recorded for every surviving variant whose source anchor changes, preserving its injected fault and detecting consequence; Section 19.2's detection text and loop_checklist.md's history-backstop obligation updated to this disposition"
+      - "History axis witnesses (cut review R2): bar and feature history witnesses whose scoring start is later than data start; targets depend on history before the first scoring pulse and on the current scoring cutoff. Assert from the pin that the first scoring column is greater than one, earlier observations contribute, and no later observation contributes. Keep the constant-read negative check"
       - "Full gate, batch one and inert hooks against the freeze identical with debug off and on; only the frozen rows decision 7 names move"
     evidence: []
   - id: "LDG-3238"
@@ -6081,6 +6104,9 @@ tickets:
       - "Batch one: a workload whose pulse with valuation, risk and stop rows spans terminal batches, identical with debug off and on; inert hooks on one marked workload"
       - "Records: no per-pulse list or growth by c() for the new rows; buffers preallocated, grown by doubling, written by index, with used and allocated rows reported"
       - "Variants recorded as additions, each reached and caught: marks_from_close, frozen_restriction_dropped, valuation_stop_counts_pulse, stop_affected_unspecified, stale_risk_rows_dropped, clean_rule_ignores_marks, reasons_not_defaulted"
+      - "Axis boundaries (cut review R2): an offset run complete over the prepared planes; an offset run whose first decision lacks a close and must retain a pre-scoring reference with its true session age; a run whose only gap is before scoring; and a run whose only gap is in the prepared execution column after the last scoring pulse, with an actionable final decision. Assert the prepared and scoring column indices, first-pulse source and age, and final execution_bar_missing. Each matches every pin table and the fold's status, processed and full_run with debug off and on, on a registered lean path. The valuation state receives the full prepared bars and session axis and history_reader$pulse_columns. Register a reached wrong-origin variant (the valuation state given scoring ordinals instead of prepared columns), caught by the offset witness, and a mark-metadata variant that changes age or source without changing the numeric mark; their metadata or codec consequence detects each with debug off"
+      - "Ordering, affected sets and records (cut review R3): simultaneous freeze entry and freeze exit on different instruments, with IDs ordered against the stage order; a valuation stop affecting at least two holdings while another holding is unaffected; and a small many-instrument, many-gap workload. Compare every pin table and the fold return with debug off and on. Assert transition group order and within-group order, every stopped ID, affected-exposure contributions and their total, accepted equity and event prefixes, and both last-valued and last-executed clocks. Run the mixed-row case at batch one. For each new record buffer with a growth branch, exercise growth after a nonempty prefix and show that the complete prefix and new rows survive, with typed columns preserved; a small direct witness may supply the capacity. Report used and allocated rows. Register reached variants that interleave the transition groups, omit one affected contribution while keeping the exposure specified, and lose an existing record at growth, each caught by its named output consequence"
+      - "Reach cross-check (cut review R3): a declared required-predicate list covers these cases and the slice-3 branch list; the cross-check refuses a missing predicate or a missing pin dump as well as an own-case failure or a predicate that never fails elsewhere (slice2_reach_cross.R skips missing dumps and loop_parity.R allows an absent predicate as NA; neither is acceptable here)"
       - "LR-23 extended in lean_core_rules_ledger.md to the clean-row rule on marks, with its witness; the loop calls ledgr_availability_valuation_state(), the provider's decision_view(), ledgr_availability_restrict_frozen(), ledgr_carrier_provider_view() and ledgr_availability_validate_strategy_targets() from the pin and copies none of them"
       - "Full gate, batch one and inert hooks against the freeze identical with debug off and on; only the frozen rows decision 7 names move"
     evidence: []
@@ -6098,7 +6124,7 @@ tickets:
       equal to positions, with no decision cells and no holds (decision 5).
     acceptance:
       - "Workloads in loop_workloads_slice3.R, each identical to the pin on every table with debug off and on and registered in loop_freeze.csv: a weekly schedule on complete bars; a weekly schedule with stale and frozen holdings; schedule queries in the strategy changing targets (probe review P6); a schedule with no decision pulse (ledgr_schedule_no_decision, compared as the pin's condition); a valuation stop on a scheduled-skip pulse, including one on the first missing session (P2); a max_pulses prefix on a schedule (P3); a one-worker sweep whose candidates resolve different schedules, one completing and one failing (P6); and momentum_40x504 on its new lean path"
-      - "Branch reach from the pin's values: scheduled_skip rows on the skipped pulses only; marked evidence rows for stale or frozen holdings on skip pulses; the stop on a skip pulse before its skip row with the pin's processed count; the candidate-specific refusal in the sweep. Cross-checked as in LDG-3238."
+      - "Branch reach from the pin's values: scheduled_skip rows on the skipped pulses only; marked evidence rows for stale or frozen holdings on skip pulses; on a pulse scheduled to skip that stops in P1, absence of scheduled_skip, marked evidence and reconciliation for that pulse, no equity row for it, and the pin's processed count and accepted prefix (cut review R3); the candidate-specific refusal in the sweep. Cross-checked as in LDG-3238."
       - "Variants recorded as additions, each reached and caught: skip_calls_strategy (the strategy called on a skip pulse), skip_evidence_dropped"
       - "Full gate, batch one and inert hooks against the freeze identical with debug off and on; only the frozen rows decision 7 names move"
     evidence: []
@@ -6115,7 +6141,7 @@ tickets:
       listed; the line budget and the timing record (decisions 9-10). No
       dev/lean_core change unless a check fails.
     acceptance:
-      - "Full gate, batch one and inert hooks against the freeze identical with debug off and on, every frozen path matched; each moved row (decision 7) listed before and after, at both debug settings; the variant driver passes with every manifest row CAUGHT and the three negative controls failing closed; loop_dispatch.R, the FIFO suites, the planner suites and cut18_witness.R pass as before"
+      - "Full gate, batch one and inert hooks against the freeze identical with debug off and on, every frozen path matched; each moved row (decision 7) listed before and after, at both debug settings; the variant driver passes with every row of the effective manifest CAUGHT (after decision 6's recorded retirements and re-anchors, plus the slice-3 additions) and the three negative controls failing closed; loop_dispatch.R, the FIFO suites, the planner suites and cut18_witness.R pass as before"
       - "Section 19.2's coverage table moves slice 3's features to covered and names what stays refused for slices 4-5; Section 19.11's status records acceptance and implementation; the deletion-readiness seed v2 gains a dated note recording the F3 correction"
       - "Lines (decision 9): loop.R production lines and the cut's production lines across dev/lean_core, by role, against bdeea449"
       - "Timing record cut19-loop-1 (decision 10): the pin against the final lean loop on Cut 15's four shapes and slice2_10x7200, eight alternating pairs, bound 1.0, checked by dev/bench/timing/check.R; one marked shape descriptive beside it"

@@ -1314,8 +1314,11 @@ What changes in the loop:
   - The membership refusal narrows to declared families other than
     `sessions`: the session calendar is always declared once availability
     is active.
-  - The history-read scan (`lean_loop_scan_names`) and the harness's
-    backstop stubs are deleted: no scanned name remains.
+  - The history-read scan (`lean_loop_scan_names`) and the history-name
+    binding stubs are deleted: no scanned name remains. The generic
+    attempt-mark, callback check, RNG restoration and whole-workload retry
+    stay while `lean_abort_attempt()` remains a coverage exit (the
+    context-axis refusal uses it).
 - **Marks (P1).** The pin's mark rule is used, not copied:
   - On a run whose prepared planes hold a missing bar or a non-finite
     close, P1 advances the pin's valuation state
@@ -1360,9 +1363,19 @@ What changes in the loop:
     doubling and written by index (the optimization coding style).
   - Explicit decision rows carry their mark, mark source, mark age, reason
     and reasons (a restriction or `sizing_unavailable`).
-  - Within a pulse the logical order is: valuation and skip rows, intent,
-    sizing, decision cells, risk rows, rejections, fills, reconciliation,
-    stop rows.
+  - Row order (cut review R3). On a normally valued pulse, emit newly
+    frozen rows in context order, then freeze-exit rows in the previous
+    frozen-set order. A skipped pulse then emits scheduled_skip, marked
+    holding evidence in context order, and reconciliation, with no
+    decision cells or implicit holds. A deciding pulse then follows the
+    pin's intent, sizing, decision, risk, rejection, fill and
+    reconciliation order. A valuation stop occurs before equity and
+    frozen-set transitions and emits no skip or decision segment. A
+    risk-mark stop retains the accepted P1 and intent/sizing prefix, the
+    whole explicit decision segment with missing post-risk targets, then
+    the risk-stop rows; it emits no ordinary stale-risk segment, fills or
+    reconciliation. Preserve the pin's logical sequence offsets and
+    processed counts on each path.
   - A row's `reasons` defaults to its reason code, as the pin's segment
     builder does.
   - A decision cell or fill is implicit only on a current-close mark of
