@@ -68,6 +68,38 @@ add(both(action = "add", mode = "batch1", workload = "s2_sizing_batch", lean_fol
 add(both(action = "add", mode = "inert", workload = "s2_sizing_rebalance", lean_folds = 0L, refused = "", backstop = "",
          reason = "Cut 16 R4: sizing with inert hooks, inert-mode count"))
 
+# Cut 19 decision 7: the existing gate rows slice 3 moves, before -> after,
+# at both debug settings (listed in LDG-3240's evidence). The history
+# witnesses run lean since LDG-3237 (history reads covered); the other rows'
+# refusal moves past declared sessions to the next uncovered feature.
+slice3_moves <- list(
+  list("avail_terminal_resume", 0L, "opening positions and imports; sweep workers"),
+  list("avail_acquisition", 0L, "corporate actions"),
+  list("avail_incomplete", 0L, "missing bars; sweep workers"),
+  list("walk_forward", 0L, "opening positions and imports; walk-forward"),
+  list("failures", 0L, "missing bars; sweep workers"),
+  list("prep_fixture", 0L, "opening positions and imports"))
+for (m in slice3_moves) {
+  add(both(action = "update", mode = "gate", workload = m[[1L]], lean_folds = m[[2L]], refused = m[[3L]],
+           backstop = "", reason = "Cut 19 decision 7: declared sessions covered; next uncovered feature named"))
+}
+for (w in c("witness_backstop", "witness_backstop_kind", "witness_caught_backstop", "witness_caught_rethrow",
+            "witness_outer_handler")) {
+  add(both(action = "update", mode = "gate", workload = w, lean_folds = 1L, refused = "", backstop = "",
+           reason = "Cut 19 decision 6: history reads covered; the witness runs lean, no backstop"))
+}
+for (w in c("witness_backstop_sweep", "witness_caught_backstop_sweep", "witness_caught_rethrow_sweep")) {
+  add(both(action = "update", mode = "gate", workload = w, lean_folds = 2L, refused = "", backstop = "",
+           reason = "Cut 19 decision 6: history reads covered; both candidates run lean, no backstop"))
+}
+# Cut 19 slice-3 workloads: declared paths.
+slice3 <- c(s3_sessions_full = 1L, s3_hist_bar_native = 1L, s3_hist_declared = 1L, s3_hist_offset_bar = 1L,
+            s3_hist_offset_feature = 1L)
+for (w in names(slice3)) {
+  add(both(action = "add", mode = "gate", workload = w, lean_folds = slice3[[w]], refused = "", backstop = "",
+           reason = "Cut 19 slice-3 workload, declared path"))
+}
+
 out <- do.call(rbind, rows)
 utils::write.csv(out, file.path(here, "loop_freeze_changes.csv"), row.names = FALSE)
 cat(nrow(out), "changes:", paste(names(table(out$action)), table(out$action), collapse = ", "), "\n")

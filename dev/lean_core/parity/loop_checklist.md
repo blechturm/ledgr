@@ -39,7 +39,7 @@ rounds 1-4 (C:/Users/maxth/ledgr-wt/ws30-close-out*).
 | --- | --- | --- | --- | --- |
 | 5 | Each uncovered feature refused before the first pulse, naming it, run whole on the pin | A3, S19.2 | gate refusals (recorded, not each asserted); asserted names: witness_checkpoint_control / _null, witness_walk_forward, witness_sweep_workers | entry_guard_off; workers_guard_off |
 | 6 | Orchestration exclusions the fold cannot see, refused at public entry by the harness: a checkpoint_every key, walk-forward, a sweep with workers. Section 19.1 records them as obligations for whoever wires the fold in | S19.1, S19.2, R3-3, R4-3 | witness_walk_forward, witness_checkpoint_null, witness_sweep_workers | entry_guard_off; workers_guard_off |
-| 7 | A missed history or sizing call aborts the whole attempt and reruns the complete workload on the pin with the caller's entry RNG state (seed or its absence, and the kinds), whether uncaught, caught by the strategy, caught then rethrown, or caught by the caller; sweeps included. The entry state is set outside the rerun workload | A2, S19.2, R1-1, R2-1, R3-2, R4-1 | witness_backstop(_sweep), witness_backstop_kind (no seed, non-default kind), witness_caught_backstop(_sweep), witness_caught_rethrow(_sweep), witness_outer_handler | backstop_off (mark ignored); rng_restore_off (rerun without restoring) |
+| 7 | (Cut 19 decision 6: history reads are covered and the history-name stubs deleted; the eight witnesses below run lean, their backstop_off and rng_restore_off rows retired; the mark, callback check and rerun remain for a coverage condition raised mid-run.) Before slice 3: a missed history or sizing call aborts the whole attempt and reruns the complete workload on the pin with the caller's entry RNG state (seed or its absence, and the kinds), whether uncaught, caught by the strategy, caught then rethrown, or caught by the caller; sweeps included. The entry state is set outside the rerun workload | A2, S19.2, R1-1, R2-1, R3-2, R4-1 | witness_backstop(_sweep), witness_backstop_kind (no seed, non-default kind), witness_caught_backstop(_sweep), witness_caught_rethrow(_sweep), witness_outer_handler | backstop_off (mark ignored); rng_restore_off (rerun without restoring) |
 
 ## D3 protocol
 
@@ -91,6 +91,6 @@ The open rows are owned by the switch cut's census (maintainer,
 | # | Obligation | Witness |
 | --- | --- | --- |
 | 15 | loop.R holds the fold only: no harness record, no witness branch; it reaches the harness through one hooks object whose default is inert | `grep lean_entry dev/lean_core/loop.R` is empty; the gate passes with inert hooks on covered workloads, and a variant loaded in that mode changes the output |
-| 16 | One backstop path: a stub or the loop marks the attempt; one check at the callback boundary; lean_loop_run reruns on any mark | code inspection; row 7 |
+| 16 | One backstop path: the loop marks the attempt (a stub did too before Cut 19); one check at the callback boundary; lean_loop_run reruns on any mark | code inspection; row 7 |
 | 17 | Variants are text patches applied at load; the tracked fold holds no variant branch | code inspection |
 | 18 | Production code within budget; debug and harness reported beside it | role count at close |

@@ -9,8 +9,11 @@
 # - the entry record (`lean_entry`): folds run lean, refusals, attempt marks;
 # - entry refusals the fold cannot see: a control$checkpoint_every key (D3
 #   Section 2), walk-forward and a sweep with workers (slice 5);
-# - backstop stubs (19.2 point 1) for history reads and sizing helpers the
-#   static scan missed, which mark the attempt for a rerun on the pin;
+# - the attempt mark and whole-workload retry (19.2 point 1): a coverage
+#   condition raised mid-run (lean_abort_attempt()) marks the attempt, and
+#   the complete workload reruns on the pin with the entry RNG restored.
+#   Slice 3 removed the history-name backstop stubs (Section 19.11): no
+#   strategy call is scanned any more;
 # - two detectors while pulses run: every call into the DuckDB backend
 #   bridges (any store statement, registration or relation) and every call
 #   to the fold's output handler (the terminal sink);
@@ -58,12 +61,7 @@ lean_harness_hooks <- function() list(
   fold_start = function(live) {
     lean_entry$lean_folds <- lean_entry$lean_folds + 1L
     lean_entry$uncovered <- character()
-    lean_stubs_bind(lean_stubs)
-    unwatch <- lean_watch_backend(live)
-    function() {
-      unwatch()
-      lean_stubs_bind()
-    }
+    lean_watch_backend(live)
   },
   handler = function(h, live) lean_watch_handler(h, live),
   uncovered = function() lean_entry$uncovered,
@@ -175,46 +173,6 @@ lean_walk_forward <- local({
   environment(w) <- list2env(list(lean_entry = lean_entry), parent = environment(lean_pin_walk_forward))
   w
 })
-
-# Backstop stubs (19.2 point 1): while a lean fold runs, a sizing helper or
-# history read the static scan missed marks the attempt for a rerun on the
-# pin, records itself for the fold's callback check and signals.
-lean_stubs <- lapply(stats::setNames(lean_loop_scan_names, lean_loop_scan_names), function(name) {
-  force(name)
-  function(...) {
-    feature <- sprintf("`%s()` in the strategy", name)
-    lean_mark(feature)
-    lean_entry$uncovered <- c(lean_entry$uncovered, feature)
-    lean_not_covered(feature)
-  }
-})
-lean_stub_homes <- function() {
-  homes <- list(asNamespace("ledgr"))
-  if ("package:ledgr" %in% search()) homes <- c(homes, list(as.environment("package:ledgr")))
-  homes
-}
-lean_stub_saved <- new.env(parent = emptyenv())
-# Binds `values` (a named list) in the namespace and the attached package,
-# saving the originals; with no argument, restores them.
-lean_stubs_bind <- function(values = NULL) {
-  for (home in lean_stub_homes()) {
-    key <- environmentName(home)
-    if (is.null(values)) {
-      if (is.null(lean_stub_saved[[key]])) next
-      values_here <- lean_stub_saved[[key]]
-      lean_stub_saved[[key]] <- NULL
-    } else {
-      names_here <- intersect(names(values), ls(home, all.names = TRUE))
-      lean_stub_saved[[key]] <- mget(names_here, envir = home)
-      values_here <- values[names_here]
-    }
-    for (name in names(values_here)) {
-      unlockBinding(name, home)
-      assign(name, values_here[[name]], envir = home)
-      lockBinding(name, home)
-    }
-  }
-}
 
 # The harness entry (19.2 point 1): runs `fn` (a complete public workload)
 # with the lean loop installed. If the attempt was marked, however it ended

@@ -61,10 +61,8 @@ lean_abort_attempt <- function(feature) {
 }
 
 # --- coverage ---------------------------------------------------------------
-
-lean_loop_scan_names <- c(
-  "ledgr_history_matrix", "ledgr_history_frame", "ledgr_history_info"
-)
+# Slice 3 (Section 19.11): declared session calendars and history reads in
+# the strategy are covered; no strategy body is scanned any more.
 
 lean_loop_coverage <- function(execution, entry = NULL) {
   if (!is.null(entry)) lean_not_covered(entry)
@@ -81,17 +79,17 @@ lean_loop_coverage <- function(execution, entry = NULL) {
   }
   if (!identical(as.integer(execution$start_idx), 1L)) lean_not_covered("restart")
   if (!is.null(execution$decision_due)) lean_not_covered("schedules")
-  if (!identical(substrate$clock_kind, "bar_native")) lean_not_covered("declared sessions")
   if (!is.null(execution$corporate_action_plan)) lean_not_covered("corporate actions")
   if (length(execution$opening_frozen) > 0L || length(execution$position_fact_unknown_basis) > 0L ||
       any(ledgr_fold_positions_to_vec(execution$state$positions, execution$instrument_ids) != 0) ||
       length(execution$state$lot_state$lot_qty %||% numeric()) > 0L ||
       !identical(as.integer(execution$event_seq_start), 1L)) lean_not_covered("opening positions and imports")
-  if (length(provider$identity()$declared_families) > 0L) {
+  # A declared session calendar is always a declared family once
+  # availability is active (slice 3); the other families are slice 4.
+  if (length(setdiff(provider$identity()$declared_families, "sessions")) > 0L) {
     lean_not_covered("membership, status or lifetime facts")
   }
   opp <- execution$execution_opportunities_posix
-  if (length(pulses) > 0L && !identical(as.numeric(opp), as.numeric(pulses[-1L]))) lean_not_covered("declared execution opportunities")
   if (length(opp) > 0L && n > 0L) {
     # The loop's constant execution view (checked per pulse in debug).
     view <- lean_plan_execution_view(provider, as.numeric(opp[[1L]]), execution$instrument_ids)
@@ -103,9 +101,6 @@ lean_loop_coverage <- function(execution, entry = NULL) {
   used <- used[used <= length(substrate$axis)]
   if (!all(substrate$bars$observed[, used])) lean_not_covered("missing bars")
   if (!all(is.finite(substrate$bars$close[, used]))) lean_not_covered("missing closes")
-  called <- all.names(body(execution$strategy_fn))
-  hit <- intersect(called, lean_loop_scan_names)
-  if (length(hit) > 0L) lean_not_covered(sprintf("`%s()` in the strategy", hit[[1L]]))
   invisible(cols)
 }
 

@@ -832,8 +832,10 @@ the fold only. It reaches a harness through one hooks object,
 `loop_harness.R` installs its own set. The harness answers entry refusals
 the fold cannot see (a `control$checkpoint_every` key; walk-forward,
 refused at `ledgr_walk_forward()` entry; a sweep with more than one worker,
-refused at sweep entry before dispatch, round 4), binds the backstop stubs, which
-mark the attempt for a complete rerun on the pin however the attempt ends,
+refused at sweep entry before dispatch, round 4), keeps the attempt mark, which
+sends the attempt to a complete rerun on the pin however the attempt ends
+(a coverage condition raised mid-run; the history-name stubs are gone since
+Cut 19, decision 6),
 and runs two detectors while pulses run: every call into the DuckDB
 backend bridges (`duckdb:::rapi_*`, which every statement, bind,
 registration and relation goes through) and every call to the fold's output
@@ -895,10 +897,16 @@ retained, not yet forced context fields; `max_pulses`.
 
 Decided by the maintainer (2026-11-09):
 
-1. **Detection.** Sizing helpers and history reads are found by scanning the
-   strategy's code before the first pulse. A call the scan missed (for
-   example inside a user helper) reaches a lean stub that signals the
-   coverage condition and aborts the whole lean attempt. Durable
+1. **Detection.** Until slice 3, sizing helpers (until slice 2) and history
+   reads were found by scanning the strategy's code before the first pulse,
+   and a call the scan missed reached a lean stub. Slice 3 covers history
+   reads, so no strategy body is scanned and the history-name stubs are
+   deleted (Cut 19 decision 6; the eight history witnesses run lean and
+   their 32 backstop_off and rng_restore_off variant rows are retired).
+   The attempt mark, the callback check and the rerun stay for any
+   coverage condition raised mid-run (`lean_abort_attempt()`, for example
+   the context-axis refusal of Section 19.11): it aborts the whole lean
+   attempt. Durable
    transactional writes roll back; a memory candidate's handler and all its
    retained state are discarded (the memory handler keeps writes on error,
    `R/output-handler.R:96-104`). The harness reruns the complete public
