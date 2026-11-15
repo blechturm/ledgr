@@ -1,0 +1,19 @@
+PASS
+
+Mode: focused re-review 1 of Cut 19's cut review; independent session at 4a3e9032, reviewing application of R1-R3 from 47b6c83c. No design reopening.
+
+| Finding | Application | Evidence (file:line at 4a3e9032) |
+| --- | --- | --- |
+| R1 | Applied faithfully and completely: history-only stubs removed, generic retry retained; exactly 32 retirements recorded, witnesses and RNG comparisons retained, surviving variants re-anchored without changing their faults; close checks the effective manifest. | [tickets.yml:2519](C:/Users/maxth/ledgr-wt/cut19-rereview/inst/design/ledgr_v0_2_3_spec_packet/tickets.yml:2519), [tickets.yml:6079](C:/Users/maxth/ledgr-wt/cut19-rereview/inst/design/ledgr_v0_2_3_spec_packet/tickets.yml:6079), [tickets.yml:6144](C:/Users/maxth/ledgr-wt/cut19-rereview/inst/design/ledgr_v0_2_3_spec_packet/tickets.yml:6144), [lean_core_interface.md:1317](C:/Users/maxth/ledgr-wt/cut19-rereview/inst/design/ledgr_v0_2_3_spec_packet/lean_core_interface.md:1317). |
+| R2 | Applied faithfully and completely: offset history witnesses, all four axis cases, full prepared inputs, pin-table/fold comparisons in both debug modes, and reached wrong-origin and metadata variants with debug-off detection. | [tickets.yml:2563](C:/Users/maxth/ledgr-wt/cut19-rereview/inst/design/ledgr_v0_2_3_spec_packet/tickets.yml:2563), [tickets.yml:6080](C:/Users/maxth/ledgr-wt/cut19-rereview/inst/design/ledgr_v0_2_3_spec_packet/tickets.yml:6080), [tickets.yml:6107](C:/Users/maxth/ledgr-wt/cut19-rereview/inst/design/ledgr_v0_2_3_spec_packet/tickets.yml:6107). |
+| R3 | Applied faithfully and completely: exact row-order semantics, simultaneous transitions, multi-holding affected-set checks, buffer growth after a prefix, detecting variants, required-predicate/missing-dump refusals, and the corrected skip-stop obligation. | [lean_core_interface.md:1366](C:/Users/maxth/ledgr-wt/cut19-rereview/inst/design/ledgr_v0_2_3_spec_packet/lean_core_interface.md:1366), [tickets.yml:2568](C:/Users/maxth/ledgr-wt/cut19-rereview/inst/design/ledgr_v0_2_3_spec_packet/tickets.yml:2568), [tickets.yml:6108](C:/Users/maxth/ledgr-wt/cut19-rereview/inst/design/ledgr_v0_2_3_spec_packet/tickets.yml:6108), [tickets.yml:6109](C:/Users/maxth/ledgr-wt/cut19-rereview/inst/design/ledgr_v0_2_3_spec_packet/tickets.yml:6109), [tickets.yml:6127](C:/Users/maxth/ledgr-wt/cut19-rereview/inst/design/ledgr_v0_2_3_spec_packet/tickets.yml:6127). |
+
+New findings: none. The applied text introduces no contradiction with the cut and no acceptance item that cannot fail. The witness assertions, named fault consequences and mandatory predicate/dump checks provide concrete failure conditions. Section 19.2's detection text and the checklist remain current implementation descriptions; LDG-3237 explicitly requires their update, so leaving them unchanged in this proposed cut is not an omission.
+
+What I checked:
+
+- Compared the full 47b6c83c..4a3e9032 diff with every replacement and addition in R1-R3; read surrounding Cut 19 decisions, ticket scopes/acceptance and Section 19.11.
+- Counted the existing manifest: exactly 32 relevant rows, eight witnesses, two variants, both debug settings. Checked the retirement/re-anchor mechanism, generic retry and current detection/checklist obligations.
+- Checked the pin's prepared-column initialization, transition ordering, valuation/risk-stop prefixes and scheduled-skip precedence against the applied wording.
+- Inspected the original review's probe script, axis/order/multi-stop/growth-shape outputs, wrong-origin negative result and input audit in C:/Users/maxth/ledgr-wt/cut19-review-out. These support feasibility; future implementation must supply its own required evidence.
+- Confirmed HEAD and a clean worktree; git diff --check passed. No R runs, tracked edits or commits. This review assesses the cut text, not Cut 19 implementation.

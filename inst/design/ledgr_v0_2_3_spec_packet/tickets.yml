@@ -2623,7 +2623,7 @@ cuts:
       disposition. A third correction round stops for maintainer
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
-    cut_review: null
+    cut_review: "CHANGES_REQUIRED in cut_review_19.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at 47b6c83c): R1-R3 required, all applied with the review's replacement text at 4a3e9032: the history stubs' 32 variant-manifest rows retired with a recorded reason, surviving variants re-anchored, the generic retry kept (R1); offset, pre-scoring-gap and execution-tail witnesses with wrong-origin and mark-metadata variants (R2); exact row order, simultaneous freeze entry and exit, a multi-holding stop, a many-gap workload, buffer-growth proofs and a reach cross-check that refuses missing predicates or dumps (R3). The review found no wrong answer in the probe on its added shapes and no maintainer question. Focused re-review 1 (cut_review_19_rereview_1.md, same setup, at 4a3e9032): PASS, R1-R3 applied, no new finding."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
