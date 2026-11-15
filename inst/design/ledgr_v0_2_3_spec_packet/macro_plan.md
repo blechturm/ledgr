@@ -1080,7 +1080,22 @@ execution-sensitive economics cuts are held to rule 17 instead.
      (`ledgr_validate_strategy_targets()` also serves
      `ledgr_signal_strategy()` and the strategy contracts);
   3. a rule implemented twice without a classification in the audit is a
-     switch blocker.
+     switch blocker;
+  4. (maintainer, 2026-11-15) the recorded pin outcomes that replace the
+     in-loop oracle after the switch (deletion-readiness Q1) cover the
+     lean fold core synthesis Section 5 parity families, not only the
+     Cut 18 witness cases. They are recorded from the live pin while both
+     cores exist;
+  5. (maintainer, 2026-11-15) the setup refusal of an unresolved risk
+     parameter (deletion-readiness Q3) is shown through `ledgr_run()` and
+     `ledgr_sweep()`, one case each, plus one case where another input is
+     also invalid, to fix the refusal precedence. It is recorded as a
+     deliberate difference from the pin.
+
+  Order (unchanged, revision 14, reconfirmed 2026-11-15): slices 3-5 port
+  the remaining features against the live pin; then the full public parity
+  gate; then the switch. Duplication between the lean fast paths and their
+  package fallbacks stays until the switch, as the differential oracle.
 - **Old-code citations (maintainer, 2026-11-04).** Before the switch cut
   deletes the current fold, it tags the last commit with the old core as
   `pre-lean-core` and adds one sentence to `inst/design/README.md`: code
