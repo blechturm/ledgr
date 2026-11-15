@@ -963,6 +963,29 @@ public behavior except the explicit pulse-plumbing ledger differences.
      abstractions before introducing compiled kernels, caches or fast-path
      frameworks; compiled execution stays a WS14 decision through a focused
      Type 2 review.
+- **Hashed-frame spike (maintainer, 2026-11-15).** Cut 19's close found
+  that `lean_fold_envelope`'s frame binds about 140 names and that R
+  searches a function frame one binding at a time for every name a pulse
+  stage looks up, its own state and every base or package function it
+  calls. Twelve empty bindings added to Cut 18's loop cost 12.4 us per pulse
+  on 20 x 23,400, spread over every stage; Cut 19 holds its slice-3 state in
+  one environment instead. A hashed environment finds a name in constant
+  time (a scratch demo: 310 ns per call at no extra bindings, 2,220 at 140
+  plain, 360 hashed at any count). Question: does running the envelope in a
+  hashed environment remove a material share of the per-pulse cost, with
+  identical results? Under the spike protocol, after Cut 19 closes and
+  before slice 4 is cut: the smallest change on a copy of `dev/lean_core`
+  (the envelope's setup and stage functions bound in a hashed environment,
+  every stage byte-compiled as today; `on.exit` and the error and rollback
+  paths unchanged); a runner timing each stage (P1-P5) and the pulse loop
+  against the unchanged loop on the four comparison shapes, alternating
+  arms; a diff checker showing every gate table identical with debug off
+  and on on a gate subset, the frozen paths included; and a gut
+  demonstration that the checker fails on a planted difference. It also
+  reports what the change does to the tooling that parses the envelope
+  (variant anchors, census and line counts). No product or lean-core change
+  in the spike. The maintainer then decides: a tuning cut, folding it into
+  the switch, or dropping it.
 - **Every family close (A2, A4).** For the first checkpoint; families after
   it use the family method above. WS16 uses frozen floor v1 and stage
   isolation under R11: each cut sets cost-above-floor budgets on both
