@@ -1280,3 +1280,100 @@ strategy targets' gross exposure when no risk step runs. The affordability
 priority walks the run's radix ID permutation (`lean_plan_id_perm()`) with
 `match()` instead of sorting each pulse (the pin's order: generators first,
 then ID order).
+
+### 19.11 Slice 3: sessions, marks, schedules and history reads (Cut 19)
+
+- Status: proposed with Cut 19 (2026-11-15). Slice 3 adds coverage with
+  no behaviour change against the pin and the contracts; it needs no RFC
+  under the family method (macro WS16).
+- Probe (2026-11-15, at `a0ca20e2`; `dev/spikes/slice3_probe/`, its
+  README, patch, result CSVs and probe review): with the slice-3 refusals
+  lifted, marks taken from the pin's valuation state and provider view,
+  and a skip pulse added, the final probe patch matched the pin on 17
+  slice-3 workloads (266 tables) and on the full gate of 90 workloads
+  (1,561 tables), each with debug off and on. The probe review added seven
+  cases (P1-P7), all identical on the patch. These are inputs, not
+  evidence: Cut 19 produces its own.
+
+Coverage moves in Section 19.2's table to covered:
+
+| Covered in slice 3 | Still refused (slice) |
+| --- | --- |
+| declared session calendars (`ledgr_facts_sessions()`), with the declared execution opportunities | membership, trading status and lifetime facts (4) |
+| missing bars and closes: stale and frozen marks, `ledgr_valuation_stale()` with `exhausted = "freeze"` or `"refuse"` | restrictions other than a frozen holding's (4) |
+| the stale-mark risk rows and the unavailable risk-mark stop | - |
+| sizing helpers that skip or liquidate an instrument at an unusable mark | - |
+| strategy schedules (`ledgr_schedule_*()`), schedule queries in the strategy | - |
+| `ledgr_history_matrix()`, `ledgr_history_frame()` and `ledgr_history_info()` in the strategy, bars and features | - |
+
+What changes in the loop:
+
+- **Coverage.**
+  - The refusals of declared sessions, schedules, declared execution
+    opportunities, missing bars, missing closes and history reads go.
+  - The membership refusal narrows to declared families other than
+    `sessions`: the session calendar is always declared once availability
+    is active.
+  - The history-read scan (`lean_loop_scan_names`) and the harness's
+    backstop stubs are deleted: no scanned name remains.
+- **Marks (P1).** The pin's mark rule is used, not copied:
+  - On a run whose prepared planes hold a missing bar or a non-finite
+    close, P1 advances the pin's valuation state
+    (`ledgr_availability_valuation_state()`, built once in E with the
+    provider's policy, as the pin builds it). It reads the provider's
+    decision view and applies the pin's
+    `ledgr_availability_restrict_frozen()` and
+    `ledgr_carrier_provider_view()`.
+  - A run with complete planes keeps the constant fixed-basket packet,
+    compared with the provider's view on every pulse with debug on.
+  - On a fixed basket the context axis is the run axis
+    (`R/availability-provider-prepared.R:472`); another axis is refused by
+    name.
+- **Valuation (P1).** Positions are valued at the marks.
+  - A holding with no usable mark stops the run with
+    `valuation_horizon_exhausted`, as the pin does. The stop comes before
+    the pulse's equity row, does not count the pulse, and records the
+    affected exposure in the completion row.
+  - `valuation_frozen` and `valuation_freeze_exited` rows record each
+    pulse's change in the frozen set, which the lean loop keeps across
+    pulses.
+- **Decision (P2).**
+  - The view is the provider's, with `risk_mark` set to the mark.
+  - Sizing evidence and the max-weight price use the marks.
+  - `ledgr_availability_validate_strategy_targets()` runs in production on
+    a marked run: a frozen holding may only be held or exited. This
+    corrects the deletion-readiness seed v2, finding F3: the call becomes
+    production in slice 3, not slice 4. Its class (retain) is unchanged.
+  - A new or larger long position at an unusable mark stops the run with
+    `risk_mark_unavailable`. The stop counts the pulse, the pulse's whole
+    decision segment is explicit with no post-risk target, and the
+    completion row records the affected exposure.
+  - Holdings and targets at a permissible stale mark get
+    `stale_mark_reduction` or `stale_mark_pass_through` risk rows.
+- **Schedules.** A pulse the schedule does not decide calls no strategy.
+  It writes the `scheduled_skip` row, a `marked` evidence row for each
+  holding at a stale or frozen close, and a reconciliation row with targets
+  equal to positions. It has no decision cells and no holds. A valuation
+  stop on a skip pulse keeps the pin's precedence.
+- **Records.**
+  - The new rows go to typed, preallocated, pulse-ordered records grown by
+    doubling and written by index (the optimization coding style).
+  - Explicit decision rows carry their mark, mark source, mark age, reason
+    and reasons (a restriction or `sizing_unavailable`).
+  - Within a pulse the logical order is: valuation and skip rows, intent,
+    sizing, decision cells, risk rows, rejections, fills, reconciliation,
+    stop rows.
+  - A row's `reasons` defaults to its reason code, as the pin's segment
+    builder does.
+  - A decision cell or fill is implicit only on a current-close mark of
+    age 0 with the plain decision reason and no risk row
+    (`ledgr_diagnostic_clean_hold()` and `_fill()`; LR-23 extended).
+  - Reconciliation gross exposures are taken at the marks.
+- **History reads.** No loop change: the lean context already carries the
+  pin's history view (`ctx$.history`).
+
+Switch obligations (deletion-readiness rule 4, macro plan): slice 3 copies
+no package rule. The lean loop calls the pin's valuation state, provider
+view, frozen restriction and strategy-target availability check as their
+owners. Each is "retain" unless the switch cut's scripted old-fold caller
+list shows otherwise.

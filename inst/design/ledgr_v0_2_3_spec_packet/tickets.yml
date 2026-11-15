@@ -2424,6 +2424,185 @@ cuts:
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
     cut_review: "CHANGES_REQUIRED in cut_review_18.md (independent clean-context Codex CLI, gpt-6.1-sol/high, at 6ece42c8): R1-R7 required, all applied with the review's replacement text: stage 2b qualified as an attribution input, not a guarantee oracle, and the state-cell remainder left to LDG-3234 (R1); an exhaustive source census with a bijection checker (R2); the proof for a check moved to debug under pulse-plumbing R1-R3 (R3); semantic hand-off mapping and re-anchored variants tied to their fault (R4); measurement and design files in scope (R5); the clocked rerun proven to measure the plain computation (R6); a decidable stop rule over an actionable worklist (R7). Re-review 1 PASS (cut_review_18_rereview_1.md, at d6be0ec2): R1-R7 resolved, no new finding. Amendment lean_owned review (cut_review_18_amendment.md, at babaae8d): CHANGES_REQUIRED, A1 (a required-case manifest and direct differential witnesses per replacement, including an order-sensitive repeated-fee case) and A2 (refusals keep their semantic condition payload) applied with the review's replacement text. Re-review 1 PASS (cut_review_18_amendment_rereview_1.md, at 585460a2): A1 and A2 resolved, no new finding."
+  - id: 19
+    name: "Lean loop slice 3: sessions, marks, schedules and history reads (macro WS16)"
+    cut: "2026-11-15"
+    status: "proposed"
+    opening: >-
+      Cut 18 closed (bdeea449); the end-to-end profile (053316af, d882ce02)
+      and the deletion-readiness audit (seed v2, accepted 2026-11-15) are
+      done, and the maintainer reconfirmed the order on 2026-11-15: slices
+      3-5 against the live pin, then the full parity gate, then the switch
+      (macro plan switch obligations 4-5). Slice 3 covers declared session
+      calendars, missing bars with stale and frozen marks and the valuation
+      policies, the stale-mark risk rows and the unavailable risk-mark stop,
+      sizing at an unusable mark, strategy schedules, and history reads in
+      the strategy. The maintainer chose one cut for the whole slice
+      (2026-11-15).
+    authority: >-
+      macro_plan.md WS16 compact-state points 2-3 (coverage by slices;
+      slice 3) and 8c (slices 3-5, then the switch); lean_core_interface.md
+      Section 19 (19.2 coverage, 19.4 one pulse, 19.5 after the last pulse,
+      19.9 slice 2, 19.10 lean-owned checks) and Section 19.11 (proposed
+      with this cut); lean_core_rules_ledger.md (LR-16, LR-23); the
+      deletion-readiness seed v2 (accepted 2026-11-15) Section 5;
+      inst/design/manual/optimization_coding_style.qmd (fold path);
+      dev/lean_core/parity/loop_checklist.md.
+    measured_input: >-
+      Probe at a0ca20e2 (dev/spikes/slice3_probe: README.md, probe.patch,
+      probe_step2.patch, result CSVs a-p, review/). Step 1 (pin only):
+      missing bars require an availability-aware run, and a valuation
+      policy requires a declared session calendar, so slice 3's features
+      form one block. Step 2 (refusals lifted one at a time, debug on):
+      declared sessions with complete bars identical after three
+      coverage-line changes; missing bars stop at the debug packet check;
+      schedules decide every pulse (momentum_40x504: 20,160 decisions
+      against the pin's 1,401). Steps 3-4: with the pin's valuation state
+      and provider view in P1, lean-side records, a skip pulse and history
+      reads lifted, 16 s3_ workloads plus momentum_40x504 are identical in
+      both debug modes (266 tables each; o_all_debug0.csv,
+      o_all_debug1.csv). Step 5: the full gate of 90 workloads against
+      loop_freeze.csv, 1,561 tables, 0 different, with debug off and on;
+      31 PATH verdicts, all expected (16 new workloads without a freeze
+      row; 8 backstop witnesses now lean; momentum_40x504 now lean; 6
+      workloads whose refusal moved from declared sessions to a slice 4-5
+      feature). Probe review (independent clean-context Codex CLI, Type 1,
+      review/slice3_probe_review.md): CHANGES_REQUIRED on coverage of the
+      measurement only, no wrong answer; seven cases P1-P7 that the probe
+      workloads did not reach, each identical on the patch in both modes
+      (review/review_probe.R and its outputs); P8 two workload names
+      overstate what they reach. The probe patch added 235 and removed 38
+      lines in loop.R, with the pin's mark rule reused. The probe is input,
+      not evidence: workstream 37 produces its own final-code evidence.
+    decisions: >-
+      (1) No behaviour change. Slice 3 reproduces the pin's results; every
+      table of every covered workload stays identical with debug on and
+      off. A rule a parity failure surfaces goes into the rules ledger in
+      the ticket that found it. Execution-code changes stay in
+      dev/lean_core; nothing in R/, tests/ or the store format changes.
+      (2) Reuse the pin for marks. On a run whose prepared planes hold a
+      missing bar or a non-finite close, P1 advances the pin's valuation
+      state (ledgr_availability_valuation_state(), built once in E with the
+      provider's policy as the pin builds it), reads the provider's
+      decision view and applies the pin's ledgr_availability_restrict_frozen()
+      and ledgr_carrier_provider_view(); it copies no mark rule. A run with
+      complete planes keeps the constant fixed-basket packet; with debug on
+      it is compared with the provider's view on every pulse, as today. On
+      a fixed basket the context axis is the run axis
+      (R/availability-provider-prepared.R:472); any other axis is refused
+      by name. Whether the lean core later owns the mark rule is a tuning
+      question under Cut 18's keep rule, not this cut's.
+      (3) Lean-owned records, no package function copied: valuation rows
+      (valuation_frozen, valuation_freeze_exited) from a frozen set the
+      loop keeps; the valuation stop and the risk-mark stop with the pin's
+      conditions, counts and affected exposure in the completion row;
+      stale-mark risk rows; the scheduled-skip row and marked evidence
+      rows; per-row mark, mark source, mark age, reason and reasons on
+      explicit decision rows. They are typed, preallocated, pulse-ordered
+      records grown by doubling and written by index; per-pulse lists or
+      growth by c() are not allowed (optimization coding style). Logical
+      order within a pulse follows the pin's staging (Section 19.11);
+      `reasons` defaults to the reason code as the pin's segment builder
+      does. The clean-row rule extends LR-23 to the pin's full predicate on
+      marks: a current-close mark of age 0, the plain reason and no risk
+      row (ledgr_diagnostic_clean_hold(), ledgr_diagnostic_clean_fill()).
+      (4) Checks. On a marked run ledgr_availability_validate_strategy_targets()
+      runs in production (a frozen holding may only be held or exited);
+      this corrects the deletion-readiness seed v2, finding F3, and its
+      class (retain) is unchanged. The checks on what the strategy
+      returns stay in production; LR-16's debug-only post-risk recheck is
+      unchanged.
+      (5) Schedules. A pulse the schedule does not decide calls no
+      strategy and writes the pin's skip rows and a reconciliation row with
+      targets equal to positions; no decision cells, no holds. A stop on a
+      skip pulse keeps the pin's precedence.
+      (6) Declared sessions and history reads are coverage lifts only. The
+      membership refusal narrows to declared families other than sessions.
+      The history-read scan (lean_loop_scan_names) and the backstop stubs
+      in loop_harness.R are deleted, since no scanned name remains; the
+      eight backstop witnesses stay in the gate as history-read workloads
+      on their new lean path.
+      (7) Workloads. A new loop_workloads_slice3.R holds the probe's 16
+      s3_ workloads, renamed or redescribed where the probe review (P8)
+      found the name overstates what is reached, and the review's cases
+      P1-P7: increasing a frozen holding (ledgr_restricted_target) and
+      liquidating one; a valuation stop on a scheduled-skip pulse,
+      including the first missing session; max_pulses prefixes on declared
+      sessions and on schedules; a session with no bars; closed sessions
+      (marks age by session); sizing helpers liquidating at stale and
+      frozen marks; history reads of features (matrix and long frame);
+      schedule queries in the strategy, a schedule with no decision pulse
+      (ledgr_schedule_no_decision) and a sweep whose candidates resolve
+      different schedules; a buy into a never-priced instrument. Each is
+      identical to the pin on every table with debug off and on and is
+      registered in loop_freeze.csv. Branch reach is asserted from the
+      pin's values (loop_reach; an empty matching set fails), and a
+      cross-check shows each predicate fails on at least one other slice-3
+      workload (as slice2_reach_cross.R). Batch one covers a pulse whose
+      valuation, risk and stop rows span terminal batches; inert hooks, a
+      one-worker sweep over missing bars and a scheduled sweep are
+      included. Existing frozen rows change only as the probe found, at
+      both debug settings, each listed before and after in LDG-3240's
+      evidence: momentum_40x504 and the eight backstop witnesses (refused
+      or backstopped to lean), and avail_terminal_resume, avail_acquisition,
+      avail_incomplete, walk_forward, failures and prep_fixture (refusal
+      moved from declared sessions to a slice 4-5 feature). Any other moved
+      row fails.
+      (8) Variants, recorded as additions in loop_variant_changes.csv, each
+      reached and caught by its expected signal with debug off (and on
+      where named): marks_from_close (holdings valued at the current
+      close), frozen_restriction_dropped, valuation_stop_counts_pulse,
+      stop_affected_unspecified, stale_risk_rows_dropped,
+      clean_rule_ignores_marks, skip_calls_strategy, skip_evidence_dropped,
+      reasons_not_defaulted.
+      (9) Lines. loop.R stays at or below 1,000 production lines (910 at
+      bdeea449); helpers that hold no loop state go to a new
+      dev/lean_core/marks.R, loaded by load.R like every lean file. The cut
+      adds at most 400 production lines across dev/lean_core (role count
+      as in LDG-3219). An overrun goes to the maintainer. Debug, witness
+      and harness lines are reported beside.
+      (10) Close. The full gate, batch one, inert hooks and the variant
+      driver pass with debug off and on; loop_dispatch.R, the FIFO suites,
+      the planner suites and cut18_witness.R pass as before. A timing
+      record (protocol folder cut19-loop-1: the pin against the final lean
+      loop on Cut 15's four shapes and slice2_10x7200, eight alternating
+      pairs, bound 1.0) shows complete-bar runs did not slow down. One
+      marked shape is timed beside it, descriptive only.
+    identity_and_release_impact: >-
+      None. No file in R/, tests/, DESCRIPTION, NAMESPACE, vignettes or the
+      store format changes, and no dependency is added. Design impact:
+      Section 19.11 (slice 3), Section 19.2's coverage table, the rules
+      ledger (LR-23 extended to marks; any rule a parity failure surfaces),
+      and a note in the deletion-readiness seed v2 recording the F3
+      correction.
+    sequencing: >-
+      One workstream, serial tickets: LDG-3237 (declared sessions and
+      history reads), LDG-3238 (marks: valuation, stops, risk rows,
+      records), LDG-3239 (schedules), LDG-3240 (slice-3 close). Serial so
+      that each ticket's gate run covers the one before it.
+    out_of_scope: >-
+      Any behaviour change; slices 4-5 (membership, trading status and
+      lifetime facts, restrictions other than a frozen holding's, terminal
+      dispositions, corporate actions, opening imports, sweeps with
+      workers, compiled FIFO, restart, walk-forward); owning the mark rule
+      in lean code; tuning (a later cut, scoped by a cost map); any change
+      in R/ or tests/; the terminal store write and envelope; feature
+      computation; compiled code (needs the maintainer's named decision).
+    workstreams: [37]
+    review_lifecycle: >-
+      An independent clean-context Codex CLI cut review, iterated to PASS.
+      Workstream 37 then receives one independent clean-context Type 1
+      close review of its whole diff and every acceptance item; it
+      verifies faithful implementation and contained scope and
+      independently asks whether the inputs are right; a design concern
+      returns NEEDS_TYPE_2. Findings receive one correction pass, with a
+      further round only for a wrong answer on a covered workload
+      (maintainer, 2026-11-11); that limit waives no acceptance item, and an
+      unresolved finding keeps the workstream open for maintainer
+      disposition. A third correction round stops for maintainer
+      disposition. Findings, reviewed ranges and consequential rejection
+      reasons are kept under rfc_cycle.md's record rule.
+    cut_review: null
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -2758,6 +2937,14 @@ workstreams:
     depends_on_workstream: 35
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 36, after LDG-3236", reason: "Every simplified stage is bit-identical to the pin on the full gate, batch one and inert hooks with debug on and off and on the frozen execution paths; every registered variant is reached and caught, re-anchored ones included; each removal is a forwarder by LDG-3234's inventory or kept by the 0.02 rule; contracted refusals, the fresh context and the debug comparisons are intact; each check moved to debug names its producer and guarantee; the line budget holds; and every number in the timing record, the paired comparison and the stage 2b rerun reproduces from its committed inputs."}
+  - id: 37
+    name: "Lean loop slice 3: sessions, marks, schedules and history reads"
+    cut: 19
+    status: "proposed"
+    close_review: null
+    depends_on_workstream: 36
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 37, after LDG-3240", reason: "Every covered slice-3 workload and the whole existing gate are identical to the pin with debug on and off, at batch one and with inert hooks; every frozen path matches, with only the declared moves; each named branch is reached on the pin and each reach predicate fails elsewhere; the loop calls the pin's valuation state, provider view, frozen restriction and strategy-target availability check rather than copies; the new records follow the pin's staging order and the coding style; every new variant names and reaches its intended fault; the refusals that stay for slices 4-5 are named; the line budget holds; and the timing record reproduces from its committed inputs."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -5850,3 +6037,86 @@ tickets:
       - "Cut-level paired comparison (evidence/cut18/timing/cut_compare_*; 0cb7e702 against the final code 7474044b, 7 rounds): loop 10x7200 2.03 -> 1.89 s (median saving 0.055, minimum 0.039), 20x23400 8.14 -> 7.39 s (0.082, minimum 0.067), 500x1260 0.72 -> 0.69 s (0.056, 5 of 7 at or above 0.02, minimum 0.014), slice2_10x7200 4.39 -> 3.92 s (0.109, minimum 0.100); whole ledgr_run() 3.28 -> 3.16, 11.94 -> 11.21, 3.78 -> 3.78 and 5.82 -> 5.31 s. No shape regresses (Cut 15's regression rule). The run against 6a3724a5 (commit e91e5607) gave loop savings 0.072, 0.072, 0.065 and 0.119."
       - "Stage 2b rerun on the final code (dev/spikes/r_floor/stage2b/evidence_cut18, committed alone in 0b68dbb1; run.R, 7 rounds, both original descriptors; reference, fixtures and the original evidence unchanged; host_identity.txt records the head 737cba1e (lean sources equal to 7474044b), source hashes, pin library, versions, command, plan and affinity): lean loop 286 -> 275 us per pulse (10x7200) and 611 -> 543 (slice2_10x7200); the full reference 107 and 340, the bare floor 53 and 119; lean / reference 2.64 -> 2.58 and 1.77 -> 1.60, loop plus publish 2.62 and 1.77. Clocked arm 18 and 26 us per pulse slower than the plain arm (aggregate, not subtracted from cells). Parity: economic, results and observable parity TRUE on both workloads and clocked_equals_plain TRUE; parity.csv and contract.csv unchanged. check.R --evidence=evidence_cut18 on 0b68dbb1: CHECK PASSED (rerun parity and contract identical, gutted reference fails parity on both workloads, a corrupted clocked record exits 1, a missing anchor and a misassigned crosswalk cell are refused, stage 2b commits stay in dev/spikes/r_floor; this is close review round 1's F6). The earlier run on 6a3724a5 (271 and 543 us, 2.54 and 1.60) is in commit dbef3caa. The records_*.rds stay local."
       - "The Balanced plan was restored after each timing session, the final-code session included (powercfg /getactivescheme: 381b4222, Balanced)."
+  - id: "LDG-3237"
+    title: "Cover declared sessions and history reads in the lean loop"
+    workstream: 37
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-3236"]
+    scope: >-
+      Section 19.11's coverage part for complete bars: remove the
+      declared-sessions and declared execution opportunities refusals;
+      narrow the membership refusal to declared families other than
+      sessions; remove the history-read refusals, the scan
+      (lean_loop_scan_names) and the backstop stubs in loop_harness.R
+      (decision 6). No mark, valuation or schedule change.
+    acceptance:
+      - "New dev/lean_core/parity/loop_workloads_slice3.R, sourced by loop_parity.R beside the slice-1 and slice-2 files, with public constructors and the pin as oracle: a declared-session run with complete bars; history reads of bars (matrix, frame, info) on a bar-native and on a declared-session run; history reads of features (matrix and long frame, probe review P5); each identical to the pin on every table with debug off and on, one lean fold and no refusal, registered in loop_freeze.csv"
+      - "Branch reach from the pin's values (loop_reach): the declared-session run's execution times are the declared session opens; each history workload's targets depend on the values read (a predicate that fails when the reads are replaced by constants)"
+      - "The eight backstop witnesses run on their new lean path and stay identical; their frozen rows move as decision 7 lists, at both debug settings"
+      - "Full gate, batch one and inert hooks against the freeze identical with debug off and on; only the frozen rows decision 7 names move"
+    evidence: []
+  - id: "LDG-3238"
+    title: "Cover missing bars, stale and frozen marks and the valuation policies"
+    workstream: 37
+    status: "pending"
+    priority: "P0"
+    effort: "L"
+    dependencies: ["LDG-3237"]
+    scope: >-
+      Section 19.11's marks, valuation, decision and records parts:
+      remove the missing-bar and missing-close refusals; on a run whose
+      planes hold a missing bar or non-finite close, P1 uses the pin's
+      valuation state and provider view (decision 2); the valuation stop,
+      the frozen set and its rows; marks for valuation, sizing, the risk
+      price and reconciliation; the strategy-target availability check in
+      production on marked runs (decision 4); the risk-mark stop;
+      stale-mark risk rows; per-row mark fields and reasons on explicit
+      decision rows; the clean-row rule on marks; typed records and the
+      pulse layout (decision 3); the completion row's affected exposure.
+    acceptance:
+      - "Workloads in loop_workloads_slice3.R, each identical to the pin on every table with debug off and on, one lean fold (two for the sweep) and no refusal, registered in loop_freeze.csv: an interior missing bar of a held instrument; held bars stopping under exhausted = freeze and under exhausted = refuse; a freeze followed by bars returning; a cap reduction on a stale mark and a stale pass-through; a missing execution bar; a sizing helper skipping an unpriced instrument; a buy into an instrument whose mark expired and one into an instrument never priced (probe review P7); increasing a frozen holding (ledgr_restricted_target) and liquidating one (P1); sizing helpers liquidating at stale and frozen marks (P4); a session with no bars and closed sessions (P3); a max_pulses prefix on declared sessions (P3); a one-worker sweep over missing bars"
+      - "Branch reach from the pin's values, an empty matching set failing: valuation_frozen, valuation_freeze_exited, valuation_horizon_exhausted (status INCOMPLETE, the stopped pulse not counted, affected exposure recorded), risk_mark_unavailable with an expired reference and with source missing (pulse counted), stale_mark_reduction with a strict reduction, stale_mark_pass_through, execution_bar_missing, sizing_unavailable, sizing_liquidation with no price, the ledgr_restricted_target refusal, a mark age that advances by session across closed calendar days, full_run FALSE on the prefix. A cross-check shows each predicate fails on at least one other slice-3 workload."
+      - "Batch one: a workload whose pulse with valuation, risk and stop rows spans terminal batches, identical with debug off and on; inert hooks on one marked workload"
+      - "Records: no per-pulse list or growth by c() for the new rows; buffers preallocated, grown by doubling, written by index, with used and allocated rows reported"
+      - "Variants recorded as additions, each reached and caught: marks_from_close, frozen_restriction_dropped, valuation_stop_counts_pulse, stop_affected_unspecified, stale_risk_rows_dropped, clean_rule_ignores_marks, reasons_not_defaulted"
+      - "LR-23 extended in lean_core_rules_ledger.md to the clean-row rule on marks, with its witness; the loop calls ledgr_availability_valuation_state(), the provider's decision_view(), ledgr_availability_restrict_frozen(), ledgr_carrier_provider_view() and ledgr_availability_validate_strategy_targets() from the pin and copies none of them"
+      - "Full gate, batch one and inert hooks against the freeze identical with debug off and on; only the frozen rows decision 7 names move"
+    evidence: []
+  - id: "LDG-3239"
+    title: "Cover strategy schedules in the lean loop"
+    workstream: 37
+    status: "pending"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3238"]
+    scope: >-
+      Section 19.11's schedules part: remove the schedules refusal; a
+      pulse the schedule does not decide calls no strategy and writes the
+      skip row, marked evidence rows and a reconciliation row with targets
+      equal to positions, with no decision cells and no holds (decision 5).
+    acceptance:
+      - "Workloads in loop_workloads_slice3.R, each identical to the pin on every table with debug off and on and registered in loop_freeze.csv: a weekly schedule on complete bars; a weekly schedule with stale and frozen holdings; schedule queries in the strategy changing targets (probe review P6); a schedule with no decision pulse (ledgr_schedule_no_decision, compared as the pin's condition); a valuation stop on a scheduled-skip pulse, including one on the first missing session (P2); a max_pulses prefix on a schedule (P3); a one-worker sweep whose candidates resolve different schedules, one completing and one failing (P6); and momentum_40x504 on its new lean path"
+      - "Branch reach from the pin's values: scheduled_skip rows on the skipped pulses only; marked evidence rows for stale or frozen holdings on skip pulses; the stop on a skip pulse before its skip row with the pin's processed count; the candidate-specific refusal in the sweep. Cross-checked as in LDG-3238."
+      - "Variants recorded as additions, each reached and caught: skip_calls_strategy (the strategy called on a skip pulse), skip_evidence_dropped"
+      - "Full gate, batch one and inert hooks against the freeze identical with debug off and on; only the frozen rows decision 7 names move"
+    evidence: []
+  - id: "LDG-3240"
+    title: "Close slice 3"
+    workstream: 37
+    status: "pending"
+    priority: "P0"
+    effort: "S"
+    dependencies: ["LDG-3239"]
+    scope: >-
+      Slice-3 close: Section 19.2's coverage table and Section 19.11's
+      status; the final check set on the final code; the frozen-row moves
+      listed; the line budget and the timing record (decisions 9-10). No
+      dev/lean_core change unless a check fails.
+    acceptance:
+      - "Full gate, batch one and inert hooks against the freeze identical with debug off and on, every frozen path matched; each moved row (decision 7) listed before and after, at both debug settings; the variant driver passes with every manifest row CAUGHT and the three negative controls failing closed; loop_dispatch.R, the FIFO suites, the planner suites and cut18_witness.R pass as before"
+      - "Section 19.2's coverage table moves slice 3's features to covered and names what stays refused for slices 4-5; Section 19.11's status records acceptance and implementation; the deletion-readiness seed v2 gains a dated note recording the F3 correction"
+      - "Lines (decision 9): loop.R production lines and the cut's production lines across dev/lean_core, by role, against bdeea449"
+      - "Timing record cut19-loop-1 (decision 10): the pin against the final lean loop on Cut 15's four shapes and slice2_10x7200, eight alternating pairs, bound 1.0, checked by dev/bench/timing/check.R; one marked shape descriptive beside it"
+    evidence: []
