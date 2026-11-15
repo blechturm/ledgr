@@ -369,3 +369,57 @@ samples and resolution:
 | Cut 16 final | slice2 10 x 7,200 | loop body, base code (residual) | 6 | 0.9 | 8 | rough |
 | Cut 16 final | slice2 10 x 7,200 | P2 risk | 33 | 5.4 | 46 | measured |
 | Cut 16 final | slice2 10 x 7,200 | P2 sizing | 12 | 2.0 | 17 | measured |
+
+## End-to-end after Cut 18: runs and sweeps (2026-11-15)
+
+Measurement only, no threshold. Lean arm at bdeea449 (lean sources of Cut
+18's final code 7474044b), pin d5b3a151, debug off, inert hooks,
+byte-compiled, High performance plan, P-core affinity. Runs:
+`cost_map.R --arms=lean` on the five descriptors, results equal to the
+pin's recorded signatures (`results/cost_map_cut18`). Sweeps: `sweep_map.R`,
+the crossover with both SMA windows as feature parameters, 8 candidates
+(fast 3, 5, 8, 12 x slow 20, 40), one worker, default retention; every
+lean sweep's result columns equal the pin's (clock columns excluded); 3
+clock reps, profile runs 1 and 2 (`results/sweep_map_cut18`). The frame
+map moved to `cells.R`, shared by both; Cut 18's fast paths keep the P2
+risk and sizing cells, the target check has its own. Loop estimates over
+the loop clock: runs 0.98-1.09, sweeps 0.99-1.03; no sweep sample fell to
+an unnamed cell. Rows below from `e2e_groups.R` (`results/e2e_cut18_groups.csv`):
+estimated seconds per run or per sweep of 8 candidates, and percent of it.
+
+| group | run 10x7200 | run 20x23400 | run slice2_10x7200 | run 500x1260 | run 1166x252 | sweep 10x7200 | sweep 500x1260 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| loop: planner | 0.40 (12%) | 1.66 (14%) | 0.69 (13%) | 0.18 (5%) | 0.04 (1%) | 1.62 (11%) | 1.21 (14%) |
+| loop: FIFO | 0.29 (9%) | 1.21 (10%) | 0.84 (15%) | 0.14 (4%) | 0.05 (2%) | 1.05 (7%) | 0.78 (9%) |
+| loop: fill records and position facts | 0.22 (7%) | 1.21 (10%) | 0.35 (6%) | 0.12 (3%) | 0.03 (1%) | 1.27 (9%) | 0.78 (9%) |
+| loop: strategy boundary | 0.71 (22%) | 2.16 (18%) | 1.33 (24%) | 0.14 (4%) | 0.03 (1%) | 4.52 (31%) | 0.89 (11%) |
+| loop: output checks | 0.12 (4%) | 0.64 (5%) | 0.48 (9%) | 0.05 (1%) | 0.01 (0%) | 1.15 (8%) | 0.40 (5%) |
+| loop: commit | 0.18 (5%) | 0.60 (5%) | 0.24 (4%) | 0.06 (1%) | 0.02 (1%) | 1.52 (10%) | 0.44 (5%) |
+| loop: valuation, advance, residual | 0.10 (3%) | 0.17 (1%) | 0.12 (2%) | 0.03 (1%) | 0.01 (0%) | 0.57 (4%) | 0.21 (2%) |
+| strategy's own code | 0.09 (3%) | 0.40 (3%) | 0.04 (1%) | 0.05 (1%) | 0.01 (1%) | 0.64 (4%) | 0.27 (3%) |
+| store write | 0.59 (18%) | 2.31 (20%) | 0.97 (18%) | 1.93 (50%) | 1.04 (40%) | 1.84 (13%) | 1.48 (18%) |
+| features | 0.27 (8%) | 0.97 (8%) | 0.09 (2%) | 0.82 (21%) | 1.05 (40%) | 0.27 (2%) | 1.70 (20%) |
+| setup | 0.25 (8%) | 0.44 (4%) | 0.24 (4%) | 0.33 (9%) | 0.29 (11%) | 0.14 (1%) | 0.19 (2%) |
+| finalise and result | 0.02 (1%) | 0.07 (1%) | 0.03 (1%) | 0.02 (1%) | 0.02 (1%) | - | - |
+| sweep bookkeeping | - | - | - | - | - | 0.05 (0%) | 0.07 (1%) |
+| other | - | - | - | - | - | - | - |
+| whole run or sweep (clock) | 3.23 | 11.82 | 5.42 | 3.86 | 2.60 | 14.63 | 8.43 |
+
+Groups: strategy boundary = P2 context build, ledgr calls from the
+strategy (context and state reads, hold(), result construction) and the
+call wrapper; output checks = P2's target, sizing and risk checks and the
+rest of P2; store write = the terminal transfer, its expansion and the
+envelope's setup and commit (in a sweep the transfer goes to the memory
+handler, so this is the envelope and expansion, not a store write);
+setup = bars substrate, store and registration, snapshot guard,
+preflight, config and provider. The snapshot open (0.13-0.58 s) is outside
+the run clock. The pin's sweeps took 142.46 s and 44.22 s (lean/pin 0.10
+and 0.19), one pin sweep per shape.
+
+Reading: narrow runs and sweeps are loop-bound (59-82 percent loop by the loop clock); the
+strategy boundary is the largest loop group there (18-31 percent),
+then the planner, FIFO and fill records together (27-34 percent). Wide
+runs are bound by the store write (40-50 percent) and features (21-40
+percent); their loop is under 20 percent. Outside the loop, whole-run
+seconds are close to Cut 14's (10x7200 3.40 -> 3.23 s, 500x1260 3.80 ->
+3.86, 1,166x252 2.58 -> 2.60): the cuts since then moved loop time only.
