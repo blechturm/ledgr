@@ -165,9 +165,9 @@ loop_mutations <- list(
   # the pin reports it.
   risk_not_applied = variant("differ", list(edit("checks.R", "lean_risk_apply", "  for (s in steps) {", "  for (s in list()) {")),
     tables = "^fills$|^ledger_events$|^run_diagnostic", error = "Lean risk plan differs from the pin's"),
-  implicit_row_old_rule = variant("differ", list(edit("loop.R", "lean_p4_apply",
-    "    differs <- which(!(is.finite(sq) & sq == pos & tq == sq & is.finite(close)))      # LR-23",
-    "    differs <- which(!(is.finite(sq) & sq == pos & is.finite(close)))")),
+  implicit_row_old_rule = variant("differ", list(edit("loop.R", "lean_p4_apply",   # Cut 19 re-anchor
+    "    differs <- which(!(is.finite(sq) & sq == pos & tq == sq & cleanc))",
+    "    differs <- which(!(is.finite(sq) & sq == pos & cleanc))")),
     error = "Diagnostic codec coverage is corrupt", tables = "^run_diagnostic"),
   # Cut 18 R2: the resolver's output-shape check runs in debug only; a lean
   # cost column of the wrong length must raise its original refusal there.
@@ -190,7 +190,7 @@ loop_mutations <- list(
   # row collides with another row's diagnostic sequence, and the store
   # aborts the run's transaction.
   sizing_rows_after_decisions = variant("differ", list(edit("loop.R", "lean_loop_expand",
-    "      add(lay$base[sp] + as.integer(!is.na(hd_intent[sp])) + within, sp, list(instrument_id = szr$id[sr],",
+    "      add(lay$pre0[sp] + as.integer(!is.na(hd_intent[sp])) + within, sp, list(instrument_id = szr$id[sr],",   # Cut 19 re-anchor
     "      add(lay$dec0[sp] + n + within, sp, list(instrument_id = szr$id[sr],")),
     error = "Current transaction is aborted", tables = "^run_diagnostic"),
   sizing_intent_dropped = variant("differ", list(edit("loop.R", "lean_loop_add_sizing",
@@ -203,9 +203,54 @@ loop_mutations <- list(
       "      }"), "before")),
     error = "Current transaction is aborted", tables = "^run_diagnostic"),
   sizing_skip_recorded = variant("differ", list(edit("loop.R", "lean_p2_decide",
-    "    if (.lean_debug && length(pulse_notes$sizing_skipped) > 0L) {",
+    "    if (.lean_debug && is.null(marks) && length(pulse_notes$sizing_skipped) > 0L) {",   # Cut 19 re-anchor
     "    pulse_notes$sizing_skipped <- ids[[1L]]", "before")),
     error = "Lean sizing skipped an instrument"),
+  # Cut 19, LDG-3238: marks, the valuation and risk-mark stops, stale-mark
+  # risk rows, the clean-row rule, row reasons and order, the valuation
+  # state's origin, mark metadata, affected exposure and record growth.
+  marks_from_close = variant("differ", list(edit("loop.R", "lean_p1_value", "      mk <- m$columns$mark",
+    "      mk <- close")), error = ".", tables = "."),
+  frozen_restriction_dropped = variant("differ", list(edit("marks.R", "lean_marks_pulse",
+    "  view <- ledgr_availability_restrict_frozen(view, valuation)")), lost = "Restricted targets must hold", error = "."),
+  valuation_stop_counts_pulse = variant("differ", list(edit("loop.R", "lean_p1_value",
+    "        return(lean_loop_stop(i, st, \"valuation_horizon_exhausted\"))", "        processed <<- processed + 1L", "before")),
+    tables = "^run_telemetry$|^runs$|^run_completion$"),
+  stop_affected_unspecified = variant("differ", list(edit("loop.R", "lean_loop_stop", "    stop_affected <<- s$affected")),
+    tables = "^run_completion$"),
+  stale_risk_rows_dropped = variant("differ", list(edit("loop.R", "lean_p2_decide", "        lean_loop_add_rows(i, 2L, sr)")),
+    tables = "^run_diagnostic", error = "."),
+  clean_rule_ignores_marks = variant("differ", list(edit("marks.R", "lean_marks_clean",
+    "  x <- d$source == \"current_close\" & !is.na(d$age) & d$age == 0L & is.finite(d$mark) &",
+    "  x <- is.finite(d$mark) &")), tables = "^run_diagnostic", error = "."),
+  reasons_not_defaulted = variant("differ", list(edit("marks.R", "lean_marks_group",
+    "  c(list(instrument_id = ids, stage = stage, outcome = outcome, reason_code = reason_code, reasons = reasons), list(...))",
+    "  c(list(instrument_id = ids, stage = stage, outcome = outcome, reason_code = reason_code, reasons = if (missing(reasons)) \"\" else reasons), list(...))")),
+    tables = "^run_diagnostics$"),
+  # the valuation state given scoring ordinals instead of prepared columns
+  wrong_origin = variant("differ", list(edit("marks.R", "lean_marks_state",
+    "  ledgr_availability_valuation_state(bars, ids, substrate$axis, as.integer(provider$valuation_policy$max_sessions),",
+    "  history_reader$pulse_columns <- seq_along(history_reader$pulse_columns)", "before")),
+    error = ".", tables = "."),
+  mark_metadata = variant("differ", list(edit("marks.R", "lean_marks_decision_fields",
+    "  list(mark = m$columns$mark, source = m$p2$mark_source, age = m$columns$mark_age, reason = reason, reasons = reasons)",
+    "  list(mark = m$columns$mark, source = m$p2$mark_source, age = m$columns$mark_age + 1L, reason = reason, reasons = reasons)")),
+    tables = "^run_diagnostics$", error = "."),
+  transition_groups_interleaved = variant("differ", list(edit("marks.R", "lean_marks_frozen",
+    "  list(set = now, groups = groups)", "  list(set = now, groups = rev(groups))")), tables = "^run_diagnostics$"),
+  affected_contribution_dropped = variant("differ", list(edit("marks.R", "lean_marks_valuation_stop",
+    "  list(affected = c(affected, list(ts_utc = ts_posix, specified = TRUE)),",
+    "  list(affected = c(ledgr_availability_affected_exposure(ids[-1L], m$full, v), list(ts_utc = ts_posix, specified = TRUE)),")),
+    tables = "^run_completion$"),
+  record_lost_at_growth = variant("differ", list(edit("loop.R", "lean_loop_add_rows", "      xr <<- grow(xr, xcap)",
+    "      nx <<- nx - 1L", "after")), tables = "^run_diagnostic", error = "."),
+  # Cut 19, LDG-3239: the strategy called on a pulse the schedule skips, and
+  # the skip pulse's evidence rows dropped.
+  skip_calls_strategy = variant("differ", list(edit("loop.R", "run_loop",
+    "      v2 <- if (is.null(decision_due) || isTRUE(decision_due[[i]])) lean_p2_decide(i, v1) else lean_p2_skip(i, v1)",
+    "      v2 <- lean_p2_decide(i, v1)")), tables = "^run_diagnostic", error = "."),
+  skip_evidence_dropped = variant("differ", list(edit("marks.R", "lean_marks_skip_rows", "  if (length(ev) > 0L) {",
+    "  if (FALSE) {")), tables = "^run_diagnostic", error = "."),
   # Round 4, finding 3: a sweep with workers not refused at entry.
   # Negative controls (loop_variants.R): each must NOT be caught.
   control_unrelated = variant("differ", list(edit("loop.R", "lean_p4_apply",
@@ -454,6 +499,11 @@ for (id in ids) {
   cap <- lean$lean_loop_last_times$capacity
   res$sizing_used <- if (is.null(cap) || is.na(cap["sizing_used"])) NA_integer_ else as.integer(cap[["sizing_used"]])
   res$sizing_allocated <- if (is.null(cap) || is.na(cap["sizing_allocated"])) NA_integer_ else as.integer(cap[["sizing_allocated"]])
+  # Cut 19 (LDG-3238): the slice-3 row record and the explicit decision record.
+  res$slice3_rows_used <- if (is.null(cap) || is.na(cap["slice3_rows_used"])) NA_integer_ else as.integer(cap[["slice3_rows_used"]])
+  res$slice3_rows_allocated <- if (is.null(cap) || is.na(cap["slice3_rows_allocated"])) NA_integer_ else as.integer(cap[["slice3_rows_allocated"]])
+  res$decisions_used <- if (is.null(cap) || is.na(cap["decisions_used"])) NA_integer_ else as.integer(cap[["decisions_used"]])
+  res$decisions_allocated <- if (is.null(cap) || is.na(cap["decisions_allocated"])) NA_integer_ else as.integer(cap[["decisions_allocated"]])
   res$lost_errors <- paste(lost_errors, collapse = " | ")
   res$new_errors <- paste(new_errors, collapse = " | ")
   res$verdict <- verdict

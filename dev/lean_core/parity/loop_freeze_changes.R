@@ -75,9 +75,9 @@ add(both(action = "add", mode = "inert", workload = "s2_sizing_rebalance", lean_
 slice3_moves <- list(
   list("avail_terminal_resume", 0L, "opening positions and imports; sweep workers"),
   list("avail_acquisition", 0L, "corporate actions"),
-  list("avail_incomplete", 0L, "missing bars; sweep workers"),
+  list("avail_incomplete", 4L, "sweep workers"),
   list("walk_forward", 0L, "opening positions and imports; walk-forward"),
-  list("failures", 0L, "missing bars; sweep workers"),
+  list("failures", 4L, "sweep workers"),
   list("prep_fixture", 0L, "opening positions and imports"))
 for (m in slice3_moves) {
   add(both(action = "update", mode = "gate", workload = m[[1L]], lean_folds = m[[2L]], refused = m[[3L]],
@@ -92,13 +92,34 @@ for (w in c("witness_backstop_sweep", "witness_caught_backstop_sweep", "witness_
   add(both(action = "update", mode = "gate", workload = w, lean_folds = 2L, refused = "", backstop = "",
            reason = "Cut 19 decision 6: history reads covered; both candidates run lean, no backstop"))
 }
+add(both(action = "update", mode = "gate", workload = "momentum_40x504", lean_folds = 1L, refused = "", backstop = "",
+         reason = "Cut 19 decision 7: schedules covered (LDG-3239); the workload runs lean"))
 # Cut 19 slice-3 workloads: declared paths.
 slice3 <- c(s3_sessions_full = 1L, s3_hist_bar_native = 1L, s3_hist_declared = 1L, s3_hist_offset_bar = 1L,
-            s3_hist_offset_feature = 1L)
+            s3_hist_offset_feature = 1L,
+            # LDG-3238
+            s3_gap_held = 1L, s3_freeze_held = 1L, s3_stop_refuse = 1L, s3_freeze_exit = 1L, s3_stale_reduction = 1L,
+            s3_exec_bar_missing = 1L, s3_sizing_unpriced = 1L, s3_risk_mark_expired = 1L, s3_risk_mark_never = 1L,
+            s3_frozen_increase = 1L, s3_frozen_liquidate = 1L, s3_sizing_liquidate_stale = 1L,
+            s3_sizing_liquidate_frozen = 1L, s3_no_bar_session = 1L, s3_closed_sessions = 1L, s3_prefix_declared = 1L,
+            s3_missing_sweep = 2L, s3_offset_full = 1L, s3_offset_first_stale = 1L, s3_prescoring_gap = 1L,
+            s3_tail_gap = 1L, s3_mixed_transition = 1L, s3_multi_stop = 1L, s3_many_gaps = 1L,
+            # LDG-3239 (s3_sched_none: the pin's no-decision refusal precedes any fold; the sweep's
+            # second candidate fails at entry)
+            s3_sched_full = 1L, s3_sched_stale = 1L, s3_sched_query = 1L, s3_sched_none = 0L, s3_skip_stop = 1L,
+            s3_skip_stop_first = 1L, s3_sched_prefix = 1L, s3_sched_sweep = 1L)
 for (w in names(slice3)) {
   add(both(action = "add", mode = "gate", workload = w, lean_folds = slice3[[w]], refused = "", backstop = "",
            reason = "Cut 19 slice-3 workload, declared path"))
 }
+# LDG-3238: valuation, risk and stop rows across terminal batches (batch
+# one), and a marked run with inert hooks (inert-mode count 0).
+for (w in c("s3_mixed_transition", "s3_multi_stop")) {
+  add(both(action = "add", mode = "batch1", workload = w, lean_folds = 1L, refused = "", backstop = "",
+           reason = "Cut 19 LDG-3238: slice-3 rows across terminal batches, declared path"))
+}
+add(both(action = "add", mode = "inert", workload = "s3_freeze_exit", lean_folds = 0L, refused = "", backstop = "",
+         reason = "Cut 19 LDG-3238: a marked run with inert hooks, inert-mode count"))
 
 out <- do.call(rbind, rows)
 utils::write.csv(out, file.path(here, "loop_freeze_changes.csv"), row.names = FALSE)
