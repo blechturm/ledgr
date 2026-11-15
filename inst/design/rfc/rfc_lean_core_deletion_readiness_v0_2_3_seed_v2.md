@@ -300,3 +300,14 @@ Taken on v1 while its Type 1 review was running:
   v2's corrected premise (2026-11-15): setup refuses an unresolved
   reference, landing in the switch cut with the risk merge.
 - Q4: the merges land in the switch cut itself.
+
+## 9. Note (2026-11-15, Cut 19)
+
+Correction to F3: `ledgr_availability_validate_strategy_targets()` becomes a
+production call in slice 3 (Cut 19, decision 4), not slice 4. A frozen
+holding under `exhausted = "freeze"` is restricted to hold or exit, so the
+check runs on every marked run. Its class (retain) and its switch
+obligation are unchanged. Slice 3 also calls, as their owners and without
+copying them, the pin's `ledgr_availability_valuation_state()`, the
+provider's `decision_view()`, `ledgr_availability_restrict_frozen()` and
+`ledgr_carrier_provider_view()` (lean_core_interface.md Section 19.11).

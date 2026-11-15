@@ -166,8 +166,8 @@ loop_mutations <- list(
   risk_not_applied = variant("differ", list(edit("checks.R", "lean_risk_apply", "  for (s in steps) {", "  for (s in list()) {")),
     tables = "^fills$|^ledger_events$|^run_diagnostic", error = "Lean risk plan differs from the pin's"),
   implicit_row_old_rule = variant("differ", list(edit("loop.R", "lean_p4_apply",   # Cut 19 re-anchor
-    "    differs <- which(!(is.finite(sq) & sq == pos & tq == sq & cleanc))",
-    "    differs <- which(!(is.finite(sq) & sq == pos & cleanc))")),
+    "    differs <- if (isTRUE(v2$skip)) integer() else which(!(is.finite(sq) & sq == pos & tq == sq & cleanc))",
+    "    differs <- if (isTRUE(v2$skip)) integer() else which(!(is.finite(sq) & sq == pos & cleanc))")),
     error = "Diagnostic codec coverage is corrupt", tables = "^run_diagnostic"),
   # Cut 18 R2: the resolver's output-shape check runs in debug only; a lean
   # cost column of the wrong length must raise its original refusal there.

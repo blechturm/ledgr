@@ -226,10 +226,14 @@ mutation_rows <- lapply(names(mutations), function(name) {
 mutations_out <- do.call(rbind, mutation_rows)
 utils::write.csv(mutations_out, file.path(out, "fifo_mutations.csv"), row.names = FALSE)
 
-# 4. Static calls into the ledgr namespace from the lean functions.
+# 4. Static calls into the ledgr namespace from the lean FIFO functions
+# (fifo.R). Cut 19: `^lean_state` narrowed to lean_state_invariant, the
+# only fifo.R function of that prefix; since Cut 18 the prefix also matched
+# checks.R's state fast paths (lean_state_apply, lean_state_value), which are
+# not FIFO code and call the state validators they shadow.
 allowed <- c("ledgr_lot_input", "ledgr_lot_applied", "ledgr_lot_book_problem", "ledgr_lot_book_validate",
              "ledgr_accounting_event_error", "ledgr_lot_blocks")
-lean_fns <- Filter(function(f) is.function(get(f, envir = lean)), grep("^lean_lot_|^lean_fill|^lean_invalid|^lean_state",
+lean_fns <- Filter(function(f) is.function(get(f, envir = lean)), grep("^lean_lot_|^lean_fill|^lean_invalid|^lean_state_invariant$",
                                                                          ls(lean, all.names = TRUE), value = TRUE))
 called <- sort(unique(unlist(lapply(lean_fns, function(f) {
   g <- codetools::findGlobals(get(f, envir = lean), merge = FALSE)$functions
