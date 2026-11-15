@@ -244,3 +244,19 @@ outside Section 19.10.
   switch cut. Merging before it would mean the old fold and the lean core
   call one merged function, so the in-loop oracle would compare the function
   with itself before Q1's recordings exist.
+
+## 8. Maintainer decisions (2026-11-15)
+
+The maintainer agreed to all four recommendations while the Type 1 review of
+this seed was running (that review is on `f9de1bb0`, before this section):
+
+- Q1: the oracle moves to recorded pin outcomes, one per witness case,
+  checked out of process; the in-loop comparisons for merged checks go.
+- Q2: the switch cut lists, by script, every `R/` function whose only
+  callers are the old fold.
+- Q3: setup refuses a compiled plan carrying an unresolved `ledgr_param()`
+  with `ledgr_invalid_risk_plan`.
+- Q4: the merges land in the switch cut itself.
+
+The classes in Section 4 are still open until the review's findings are
+dispositioned.
