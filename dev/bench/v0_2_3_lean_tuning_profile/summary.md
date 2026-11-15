@@ -397,7 +397,7 @@ estimated seconds per run or per sweep of 8 candidates, and percent of it.
 | loop: commit | 0.18 (5%) | 0.60 (5%) | 0.24 (4%) | 0.06 (1%) | 0.02 (1%) | 1.52 (10%) | 0.44 (5%) |
 | loop: valuation, advance, residual | 0.10 (3%) | 0.17 (1%) | 0.12 (2%) | 0.03 (1%) | 0.01 (0%) | 0.57 (4%) | 0.21 (2%) |
 | strategy's own code | 0.09 (3%) | 0.40 (3%) | 0.04 (1%) | 0.05 (1%) | 0.01 (1%) | 0.64 (4%) | 0.27 (3%) |
-| store write | 0.59 (18%) | 2.31 (20%) | 0.97 (18%) | 1.93 (50%) | 1.04 (40%) | 1.84 (13%) | 1.48 (18%) |
+| output publication | 0.59 (18%) | 2.31 (20%) | 0.97 (18%) | 1.93 (50%) | 1.04 (40%) | 1.84 (13%) | 1.48 (18%) |
 | features | 0.27 (8%) | 0.97 (8%) | 0.09 (2%) | 0.82 (21%) | 1.05 (40%) | 0.27 (2%) | 1.70 (20%) |
 | setup | 0.25 (8%) | 0.44 (4%) | 0.24 (4%) | 0.33 (9%) | 0.29 (11%) | 0.14 (1%) | 0.19 (2%) |
 | finalise and result | 0.02 (1%) | 0.07 (1%) | 0.03 (1%) | 0.02 (1%) | 0.02 (1%) | - | - |
@@ -408,18 +408,21 @@ estimated seconds per run or per sweep of 8 candidates, and percent of it.
 Groups: strategy boundary = P2 context build, ledgr calls from the
 strategy (context and state reads, hold(), result construction) and the
 call wrapper; output checks = P2's target, sizing and risk checks and the
-rest of P2; store write = the terminal transfer, its expansion and the
-envelope's setup and commit (in a sweep the transfer goes to the memory
-handler, so this is the envelope and expansion, not a store write);
+rest of P2; output publication = the terminal transfer, its expansion and
+the envelope's setup and commit (in a run, the DuckDB store write; in a
+sweep the transfer goes to the memory handler, so this is the envelope
+and expansion, with no store write);
 setup = bars substrate, store and registration, snapshot guard,
 preflight, config and provider. The snapshot open (0.13-0.58 s) is outside
-the run clock. The pin's sweeps took 142.46 s and 44.22 s (lean/pin 0.10
+the run clock. The rows are exhaustive: every profile sample inside the
+run or sweep falls to one group, and each column adds to its clock within
+rounding. The pin's sweeps took 142.46 s and 44.22 s (lean/pin 0.10
 and 0.19), one pin sweep per shape.
 
 Reading: narrow runs and sweeps are loop-bound (59-82 percent loop by the loop clock); the
 strategy boundary is the largest loop group there (18-31 percent),
 then the planner, FIFO and fill records together (27-34 percent). Wide
-runs are bound by the store write (40-50 percent) and features (21-40
+runs are bound by output publication, there the store write (40-50 percent), and features (21-40
 percent); their loop is under 20 percent. Outside the loop, whole-run
 seconds are close to Cut 14's (10x7200 3.40 -> 3.23 s, 500x1260 3.80 ->
 3.86, 1,166x252 2.58 -> 2.60): the cuts since then moved loop time only.

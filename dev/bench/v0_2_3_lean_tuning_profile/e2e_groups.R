@@ -9,7 +9,7 @@ arg <- function(name) sub(paste0("^--", name, "="), "", grep(paste0("^--", name,
 rd <- function(d, f) utils::read.csv(file.path(d, f), stringsAsFactors = FALSE)
 groups <- c("loop: planner", "loop: FIFO", "loop: fill records and position facts", "loop: strategy boundary",
             "loop: output checks", "loop: commit", "loop: valuation, advance, residual", "strategy's own code",
-            "store write", "features", "setup", "finalise and result", "sweep bookkeeping", "other")
+            "output publication", "features", "setup", "finalise and result", "sweep bookkeeping", "other")
 group_of <- function(cell) {
   if (cell == "P3") return("loop: planner")
   if (cell == "P4 FIFO") return("loop: FIFO")
@@ -19,7 +19,7 @@ group_of <- function(cell) {
   if (cell == "P5") return("loop: commit")
   if (cell %in% c("P1", "E advance") || startsWith(cell, "loop: ")) return("loop: valuation, advance, residual")
   if (cell == "strategy: own work") return("strategy's own code")
-  if (cell %in% c("transfer: write", "transfer: expand", "envelope: setup and commit")) return("store write")
+  if (cell %in% c("transfer: write", "transfer: expand", "envelope: setup and commit")) return("output publication")
   if (grepl("^pre: feature", cell)) return("features")
   if (startsWith(cell, "pre: ")) return("setup")
   if (startsWith(cell, "post: ")) return("finalise and result")
