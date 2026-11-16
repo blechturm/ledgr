@@ -432,18 +432,20 @@ seconds are close to Cut 14's (10x7200 3.40 -> 3.23 s, 500x1260 3.80 ->
 `feature_steps.R` splits the pin's feature path by Rprof sampling: the run
 path (compute, then projection) with SMA 5 and 10, and the sweep path
 (compute, the per-instrument payload split, the rebuild) with the union SMA
-3, 5, 8, 12, 20 and 40, three repetitions on each published crossover
-shape (`results/feature_steps.csv`). Descriptive only: another job shared
-the machine. Largest steps:
+3, 5, 8, 12, 20 and 40, five repetitions on each published crossover shape
+(`results/feature_steps.csv`; 96 to 964 samples per path). Children are
+classified before their residuals and residuals before their wrappers (the
+seed review's F1 corrected a first version that charged compute residual to
+the sweep's split). Cells are pooled sample-share estimates, not removable
+costs; another job shared the machine. Largest steps:
 
-- 10 x 7,200: formatting the pulse axis once per feature
-  (`ledgr_projection_pulse_names()`) is 0.12 of 0.25 s in a run and 0.31
-  of 0.59 s in a sweep.
-- 1,166 x 252 run (1.04 s): TTR raw call 0.33 (bare TTR 0.17), input
-  treatment 0.26, runs and carry 0.17, segment framing 0.09, plane
-  exceptions 0.09.
-- Sweeps: split and rebuild 0.13-0.20 s; certification and the causality
-  probe 0.01-0.03 s everywhere.
+- 10 x 7,200: formatting the pulse axis (D + 2 `format()` calls) is 0.19
+  of 0.30 s in a run and 0.43 of 0.80 s in a sweep.
+- 1,166 x 252 run (1.24 s): TTR raw call 0.37 (includes TTR itself), input
+  treatment 0.35, calculate bookkeeping 0.22, segment frame and rest 0.11,
+  plane exceptions 0.08.
+- Sweeps: split and rebuild 0.00-0.05 s; certification unresolved and the
+  causality probe 0.00-0.05 s.
 
 The reading and the proposal are in
-`inst/design/rfc/rfc_feature_engine_v0_2_3_seed.md`.
+`inst/design/rfc/rfc_feature_engine_v0_2_3_seed_v2.md`.

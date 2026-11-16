@@ -47,12 +47,16 @@ steps <- c(
   "ranges and bounds" = "ledgr_history_feature_ranges|ledgr_history_feature_bounds",
   "plane exceptions" = "ledgr_feature_plane_exceptions",
   "plane records" = "ledgr_feature_plane_records",
+  # residuals before the wrappers that contain them (seed review F1): the
+  # compute residual before the payload split, the runtime projection's own
+  # work before the sweep's rebuild
+  "compute other" = "ledgr_history_compute_feature_series",
   "projection index planes" = "ledgr_projection_index_planes",
   "projection pulse names" = "ledgr_projection_pulse_names",
-  "projection rebuild (sweep)" = "ledgr_projection_from_payload",
+  "projection axis format (direct)" = "format.POSIXct",
   "projection other" = "ledgr_projection_from_feature_matrix|ledgr_runtime_projection",
-  "payload split (sweep)" = "ledgr_history_precompute_payload",
-  "compute other" = "ledgr_history_compute_feature_series")
+  "projection rebuild (sweep)" = "ledgr_projection_from_payload",
+  "payload split (sweep)" = "ledgr_history_precompute_payload")
 
 profile_path <- function(f) {
   f()

@@ -1,0 +1,118 @@
+R: 4.6.1 
+ledgr: 0.2.2 
+TTR: 0.24.4 
+
+Classifier copied from feature_steps.R:68-69
+               plain_compute                   ns_compute 
+             "compute other"              "compute other" 
+                nested_probe               runtime_format 
+           "causality probe"           "projection other" 
+               sweep_compute                sweep_runtime 
+     "payload split (sweep)" "projection rebuild (sweep)" 
+
+Pin/checkout function body/formal comparisons
+history-features.R : 24 compared; differences:  
+history-substrate.R : 49 compared; differences:  
+runtime-projection.R : 14 compared; differences:  
+indicator-ttr.R : 29 compared; differences:  
+features-engine.R : 19 compared; differences:  
+
+Custom required_fields=close but callback observes volume
+certification: custom 
+full values: 101,102,103,104,105,106,107,108 
+pruned result:[1] "ledgr_invalid_feature_output"
+
+Simple close run: planes are not empty
+$segment_start
+[1] 1
+
+$segment_ready
+[1] 3
+
+$segment_end
+[1] 8
+
+values: NA,NA,12,13,14,15,16,17 
+direct TTR equals frame path: TRUE 
+
+One late run, no close carry or terminal
+$starts
+[1] 3
+
+$ends
+[1] 8
+
+$segment_start
+[1] 3
+
+$segment_ready
+[1] 5
+
+$segment_end
+[1] 8
+
+$reason_start
+[1] 1
+
+$reason_end
+[1] 2
+
+$reason_code
+[1] 1
+
+
+Fingerprint after wrapper body change equal: FALSE 
+
+Raw-call input for SMA and TTR formal defaults
+$x
+
+
+$n
+[1] 10
+
+$...
+
+
+do.call numeric vector and TTR direct identical: TRUE 
+
+Omitted helpers: changing their binding alone leaves engine hash unchanged
+ledgr_ttr_raw_call : TRUE 
+ledgr_ttr_build_input : TRUE 
+ledgr_ttr_select_output : TRUE 
+ledgr_feature_plane_exceptions : TRUE 
+ledgr_feature_plane_records : TRUE 
+ledgr_history_feature_bounds : TRUE 
+ledgr_history_feature_check_definition : TRUE 
+ledgr_projection_index_planes : TRUE 
+
+Step table independently regrouped from CSV, seconds
+crossover_10x7200 run wall= 0.25 samples= 50 
+  pulse_names      raw_call        inputs     calculate       segment 
+        0.120         0.010         0.020         0.015         0.005 
+       planes split_rebuild        checks         other 
+        0.000         0.000         0.010         0.070 
+crossover_10x7200 sweep wall= 0.59 samples= 115 
+  pulse_names      raw_call        inputs     calculate       segment 
+        0.313         0.015         0.026         0.026         0.031 
+       planes split_rebuild        checks         other 
+        0.015         0.133         0.026         0.005 
+crossover_500x1260 run wall= 0.74 samples= 152 
+  pulse_names      raw_call        inputs     calculate       segment 
+        0.015         0.141         0.258         0.151         0.063 
+       planes split_rebuild        checks         other 
+        0.024         0.000         0.010         0.078 
+crossover_500x1260 sweep wall= 1.78 samples= 345 
+  pulse_names      raw_call        inputs     calculate       segment 
+        0.052         0.366         0.273         0.423         0.304 
+       planes split_rebuild        checks         other 
+        0.124         0.201         0.010         0.026 
+crossover_1166x252 run wall= 1.04 samples= 200 
+  pulse_names      raw_call        inputs     calculate       segment 
+        0.005         0.333         0.255         0.172         0.094 
+       planes split_rebuild        checks         other 
+        0.094         0.000         0.005         0.083 
+crossover_1166x252 sweep wall= 2.56 samples= 490 
+  pulse_names      raw_call        inputs     calculate       segment 
+        0.016         0.904         0.329         0.632         0.308 
+       planes split_rebuild        checks         other 
+        0.167         0.178         0.005         0.021 
