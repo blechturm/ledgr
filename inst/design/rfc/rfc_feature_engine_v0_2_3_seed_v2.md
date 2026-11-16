@@ -2,7 +2,9 @@
 
 - Author: Claude, 2026-11-16, at the maintainer's request (macro plan, order
   after Cut 20, items b and c).
-- Status: seed v2. Applies every finding of the Type 2 review of v1. Binds
+- Status: seed v2. Applies every finding of the Type 2 review of v1, and
+  the three corrections C1-C3 of its Type 1 confirmation
+  ([confirmation](rfc_feature_engine_v0_2_3_seed_v2_confirmation.md)). Binds
   nothing. The maintainer's Section 7 answers (2026-11-16) stand; they are
   restated in Section 7.
 - Changes from v1: corrects every finding of the Type 2 review
@@ -179,9 +181,11 @@ semantic helpers are outside it, among them:
 - `ledgr_projection_index_planes`;
 - the TTR catalogue matching helpers.
 
-The review's probe changed each of these in a private copy, and the hash
-stayed the same. The contract binds every helper of the calculation
-(Availability-Aware Strict Features).
+The review's probe changed the eight individually named helpers above in a
+private copy, and the hash stayed the same. The catalogue matching helpers
+are also outside the named-helper hash, as source inspection shows; the
+probe did not mutate them. The contract binds every helper of the
+calculation (Availability-Aware Strict Features).
 
 ## 4. Constraints
 
@@ -191,13 +195,19 @@ stayed the same. The contract binds every helper of the calculation
   (Indicator Computation And Identity, Availability-Aware Strict Features,
   TTR Adapter, Feature Path) stay as they are unless an RFC changes them.
   The one intended new refusal is an old precompute object meeting a new
-  engine version (Section 6).
+  engine version (Section 6). The separately accepted post-warmup-NA chore
+  remains outside these neutral stages. If it lands first, retain its
+  deliberate oracle difference against `d5b3a151` in the rules ledger.
+  Compare against the pin with that recorded exception; do not absorb the
+  behaviour change into this removal cut.
 - **Constructor functions.** Catalogue rows are computed with the
   constructor's own functions. A faster path may call TTR differently, but
   may not substitute another implementation.
-- **The custom callback boundary.** Custom callbacks today receive the full
-  treated OHLCV frame, whatever their `required_fields` say. Narrowing
-  that needs a contract decision (F3).
+- **The custom callback boundary.** Custom callbacks receive the complete
+  instrument, time and OHLCV frame for their segment or window, using raw
+  fields when `input_carry = "excluded"` and policy-treated fields
+  otherwise. `required_fields` restricts admission, not callback columns.
+  Narrowing this boundary needs a contract decision (F3).
 - **Remove before adding** (maintainer, standing).
 - **No compiled code** without the maintainer's named decision.
 - **No backward compatibility** before CRAN: an in-memory precompute object
@@ -212,15 +222,18 @@ it is identical and faster:
 
 1. **Format the pulse axis once** per projection: one format instead of
    D + 2.
-2. **Narrow treatment only where it is unobservable** (F3). Compute the
-   field union from the certified canonical definitions, not from source
-   labels or claimed metadata. Keep the full treated frame whenever a
-   custom definition or an unregistered TTR form is present. Keep sharing
-   treatment across definitions within each instrument and knowledge
-   cutoff, and keep the probe's behaviour.
+2. **Narrow treatment only where certified constructor behaviour proves
+   omitted fields unobservable** (F3). Compute the field union from the
+   certified canonical definitions, not from source labels or claimed
+   metadata. Keep today's complete raw and treated callback inputs for
+   custom definitions, including unregistered TTR forms: all five fields
+   and the existing input-carry choice between raw and treated fields.
+   Share treatment across definitions only within each instrument and
+   knowledge cutoff, and keep the probe's behaviour. A broader restriction
+   needs an explicit contract decision outside this neutral cut.
 3. **Cut the TTR per-call overhead.** Resolve the TTR function once per
-   definition. For `input = "close"`, pass the treated close vector
-   directly: the current mapping already hands TTR `as.numeric(bars$close)`
+   definition. For `input = "close"`, pass the numeric close vector
+   selected by the existing input-carry rule directly: the current mapping already hands TTR `as.numeric(bars$close)`
    (`R/indicator-ttr.R:806-844`), and the review's probe shows identical
    output. Build a segment frame only on a raw-cache miss (F13). Output
    selection, derived outputs, the short-sample guard, canonical
