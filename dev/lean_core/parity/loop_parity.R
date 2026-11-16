@@ -55,6 +55,7 @@ mutation <- arg("mutation", "")
 inert <- identical(arg("inert", "0"), "1")   # bind the fold without the harness hooks (row 15)
 freeze_file <- arg("freeze", "")
 dump_dir <- arg("dump", "")                  # saves each workload's pin tables (slice2_reach_cross.R)
+dump_lean <- identical(arg("dump-lean", "0"), "1")   # slice 4: also the lean arm, as <id>_lean.rds
 witness_file <- arg("witness", "")           # Cut 20: a test-only file sourced into the lean environment (hashed_frame_witness.R)
 source(file.path(here, "loop_edits.R"))
 
@@ -233,6 +234,10 @@ loop_mutations <- list(
     "  c(list(instrument_id = ids, stage = stage, outcome = outcome, reason_code = reason_code, reasons = reasons), list(...))",
     "  c(list(instrument_id = ids, stage = stage, outcome = outcome, reason_code = reason_code, reasons = if (missing(reasons)) \"\" else reasons), list(...))")),
     tables = "^run_diagnostics$"),
+  # Cut 21, LDG-3243 (cut review R1): the carried frozen set ignored, so the
+  # window's first pulse records freeze entry a second time.
+  frozen_opening_ignored = variant("differ", list(edit("marks.R", "lean_marks_run_state", "  s3$frozen <- frozen",
+    "  s3$frozen <- character()")), tables = "^run_diagnostic"),
   # the valuation state given scoring ordinals instead of prepared columns
   wrong_origin = variant("differ", list(edit("marks.R", "lean_marks_state",
     "  ledgr_availability_valuation_state(bars, ids, substrate$axis, as.integer(provider$valuation_policy$max_sessions),",
@@ -333,6 +338,7 @@ crossover <- function(n_inst, n_days) function() {
 source(file.path(here, "loop_workloads.R"))
 source(file.path(here, "loop_workloads_slice2.R"))
 source(file.path(here, "loop_workloads_slice3.R"))
+source(file.path(here, "loop_workloads_slice4.R"))
 extra <- c(list(
   crossover_3x40 = crossover(3L, 40L),
   crossover_10x300 = crossover(10L, 300L),
@@ -357,7 +363,7 @@ extra <- c(list(
     collect_open(fx$snapshot, db, "lp-prep-fixture", fx$exp, seed = 1L,
                  params = utils::modifyList(lc_prep_fixture_params, list(trade = TRUE, lookback = 10L, n = 3L)))
   }
-), loop_constructed, loop_witnesses, loop_slice2, loop_slice3)
+), loop_constructed, loop_witnesses, loop_slice2, loop_slice3, loop_slice4)
 all_ids <- c(names(a0_workloads), names(extra))
 ids <- strsplit(arg("workloads", paste(all_ids, collapse = ",")), ",")[[1L]]
 if (length(bad <- setdiff(ids, all_ids))) stop("unknown workload(s): ", paste(bad, collapse = ", "), call. = FALSE)
@@ -437,6 +443,8 @@ for (id in ids) {
     run_tables(id)
   }), error = function(e) structure(list(value = escaped(e)), lean = as.list(lean$lean_entry)))
   t2 <- proc.time()[["elapsed"]]
+  # Slice 4: the lean arm too, for reach cross-checks and diagnosis.
+  if (nzchar(dump_dir) && dump_lean) saveRDS(attempt$value, file.path(dump_dir, paste0(id, "_lean.rds")))
   if (!is.null(loop_entry_rng[[id]])) RNGkind("default", "default", "default")
   candidate <- attempt$value
   rec <- attr(attempt, "lean")

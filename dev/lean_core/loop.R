@@ -13,8 +13,10 @@
 # hands them to the pin's handler and diagnostic writer in bounded batches
 # (diagnostic-records D3 synthesis, accepted 2026-11-10).
 #
-# Coverage (Section 19.2): anything outside slices 1-3 is refused before the
-# first pulse with `ledgr_lean_not_covered`; the harness then runs the pin.
+# Coverage (Section 19.2): anything outside slices 1-3 and the slice-4 parts
+# landed so far (Section 19.13: opening positions and carried openings,
+# LDG-3243) is refused before the first pulse with `ledgr_lean_not_covered`;
+# the harness then runs the pin.
 
 # The pin's marked gross exposure (ledgr_availability_marked_gross) without
 # ifelse(): a zero quantity contributes exactly 0.
@@ -80,10 +82,9 @@ lean_loop_coverage <- function(execution, entry = NULL) {
   }
   if (!identical(as.integer(execution$start_idx), 1L)) lean_not_covered("restart")
   if (!is.null(execution$corporate_action_plan)) lean_not_covered("corporate actions")
-  if (length(execution$opening_frozen) > 0L || length(execution$position_fact_unknown_basis) > 0L ||
-      any(ledgr_fold_positions_to_vec(execution$state$positions, execution$instrument_ids) != 0) ||
-      length(execution$state$lot_state$lot_qty %||% numeric()) > 0L ||
-      !identical(as.integer(execution$event_seq_start), 1L)) lean_not_covered("opening positions and imports")
+  # Opening positions and carried openings are covered (slice 4, LDG-3243):
+  # positions, lots, position facts and the opening event_seq come in
+  # through execution; the frozen set and the unknown-basis mask below.
   # A declared session calendar is always a declared family once
   # availability is active (slice 3); the other families are slice 4.
   if (length(setdiff(provider$identity()$declared_families, "sessions")) > 0L) {
@@ -237,7 +238,8 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   # missing bar or a non-finite close takes its marks from the pin's
   # valuation state; the schedule, the frozen set and the slice-3 rows. One
   # binding: each binding in this frame slows every lookup (marks.R).
-  s3 <- lean_marks_run_state(bars, ids, substrate, provider, history_reader, execution$decision_due)
+  s3 <- lean_marks_run_state(bars, ids, substrate, provider, history_reader, execution$decision_due,
+    as.character(execution$opening_frozen %||% character()))
   epochs <- as.numeric(execution$execution_opportunities_posix %||% pulses_posix[-1L])
   epoch_valid <- ledgr_plan_epoch_valid(epochs)
   max_events <- max(1L, n_pulse * n)
@@ -346,12 +348,17 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   capacity <- as.integer(hooks$capacity(max_events))
   # Reads during the run see the committed prefix (D3 Section 1;
   # maintainer 2026-11-10: the lean records answer them, the pin's
-  # handler stays the terminal sink).
+  # handler stays the terminal sink). The prefix starts with the events a
+  # retaining handler already holds at entry (a sweep's opening rows,
+  # R/sweep.R:1678; slice 4, decision 4(b)); a draining handler's opening
+  # rows are in the store and are not part of its pending count.
+  pre_events <- if (is.function(output_handler$events)) output_handler$events()
   hooks$committed(list(
-    count = function() n_committed,
+    count = function() NROW(pre_events) + n_committed,
     events = function() {
       h <- lean_pin_output_handler(ledgr_output_sink_memory(run_id))
-      h$init_buffers(max(1L, n_committed))
+      h$init_buffers(max(1L, NROW(pre_events) + n_committed))
+      h$append_event_rows(pre_events)
       if (n_committed > 0L) {
         r <- seq_len(n_committed)
         block <- h$write_fill_events(fill = fl, i = r, instrument_id = ids[fl$pos[r]],
@@ -385,7 +392,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   feature_values <- projection$feature_values
   name_lookup <- feature_lookup_state$name_lookup
   n_proj <- length(projection$instrument_index)
-  no_basis <- rep(FALSE, n)
+  no_basis <- ids %in% execution$position_fact_unknown_basis   # the pin's mask (R/fold-engine.R:1879)
   counts <- list(build = context_build_counts, prep = context_preparation_counts)
   schedule_fn <- function(i) { force(i); function(schedule) schedule_query(schedule, i) }
   # The pin's projection accessor composed with its context filter.

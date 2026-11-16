@@ -121,6 +121,36 @@ for (w in c("s3_mixed_transition", "s3_multi_stop")) {
 add(both(action = "add", mode = "inert", workload = "s3_freeze_exit", lean_folds = 0L, refused = "", backstop = "",
          reason = "Cut 19 LDG-3238: a marked run with inert hooks, inert-mode count"))
 
+# Cut 21, LDG-3243 (workstream 39's intermediate paths, decision 10 and cut
+# review R9): opening positions and carried openings covered, so the four
+# workloads that stopped at "opening positions and imports" move to their
+# next uncovered feature; their final slice-4 paths are LDG-3248's.
+for (u in list(list("dense_risk_features", 4L, "sweep workers"),
+               list("avail_terminal_resume", 0L, "membership, status or lifetime facts; sweep workers"),
+               list("walk_forward", 4L, "walk-forward"),
+               list("prep_fixture", 0L, "membership, status or lifetime facts"))) {
+  add(both(action = "update", mode = "gate", workload = u[[1L]], lean_folds = u[[2L]], refused = u[[3L]],
+           backstop = "", reason = "Cut 21 LDG-3243: opening positions covered; next uncovered feature named"))
+}
+slice4_3243 <- c(s4_opening = 1L, s4_opening_sessions = 1L, s4_carried = 0L, s4_carried_lots = 1L,
+                 s4_basis_unknown = 1L, s4_basis_known = 1L, s4_prefix_opening_sweep = 1L, s4_prefix_opening_run = 1L)
+for (w in names(slice4_3243)) {
+  add(both(action = "add", mode = "gate", workload = w, lean_folds = slice4_3243[[w]],
+           refused = if (w == "s4_carried") "corporate actions" else "", backstop = "",
+           reason = if (w == "s4_carried") "Cut 21 LDG-3243 workload; its pending entitlement needs the corporate-action plan (LDG-3244)" else
+             "Cut 21 LDG-3243 slice-4 workload, declared path"))
+}
+# Opening and carried rows across terminal batches (batch one), and a carried
+# window and a sweep with an opening under inert hooks (inert-mode count 0).
+for (w in c("s4_opening", "s4_carried_lots", "s4_prefix_opening_sweep")) {
+  add(both(action = "add", mode = "batch1", workload = w, lean_folds = 1L, refused = "", backstop = "",
+           reason = "Cut 21 LDG-3243: opening and carried rows across terminal batches, declared path"))
+}
+for (w in c("s4_carried_lots", "s4_basis_unknown")) {
+  add(both(action = "add", mode = "inert", workload = w, lean_folds = 0L, refused = "", backstop = "",
+           reason = "Cut 21 LDG-3243: an opening under inert hooks, inert-mode count"))
+}
+
 out <- do.call(rbind, rows)
 utils::write.csv(out, file.path(here, "loop_freeze_changes.csv"), row.names = FALSE)
 cat(nrow(out), "changes:", paste(names(table(out$action)), table(out$action), collapse = ", "), "\n")

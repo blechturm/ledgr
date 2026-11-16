@@ -16,11 +16,18 @@
 # a pulse in logical order (part 1 opens the pulse: valuation, scheduled-skip
 # and evidence rows; part 2 follows the decision cells: stale-mark risk rows;
 # part 3 closes it: stop rows).
-lean_marks_run_state <- function(bars, ids, substrate, provider, history_reader, due) {
+lean_marks_run_state <- function(bars, ids, substrate, provider, history_reader, due, frozen = character()) {
   s3 <- new.env(parent = emptyenv())
-  s3$state <- if (lean_marks_needed(bars)) lean_marks_state(bars, ids, substrate, provider, history_reader)
+  # Slice 4 (LDG-3243, decision 5): a carried opening's frozen holdings
+  # start the frozen set, as the pin's fold state does
+  # (R/fold-engine.R:1794), so freeze entry is not recorded twice; such a
+  # run takes the marked path, since only the valuation state can exit or
+  # keep a frozen holding.
+  s3$state <- if (lean_marks_needed(bars) || length(frozen) > 0L) {
+    lean_marks_state(bars, ids, substrate, provider, history_reader)
+  }
   s3$due <- due
-  s3$frozen <- character()
+  s3$frozen <- frozen
   s3$affected <- list(value = NA_real_, details = list(), ts_utc = as.POSIXct(NA, tz = "UTC"), specified = FALSE)
   s3$xcap <- cap <- 64L
   s3$xr <- list(pulse = integer(cap), part = integer(cap), instrument_id = character(cap), stage = character(cap),
