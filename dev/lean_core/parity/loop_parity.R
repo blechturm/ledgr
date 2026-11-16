@@ -285,6 +285,10 @@ loop_mutations <- list(
   # A captured block written whole, past the terminal batch bound.
   nonfill_block_unsplit = variant("unbounded", list(edit("facts.R", "lean_facts_emit_ca",
     "    e <- min(last, cur + bound - 1L)", "    e <- last")), tables = "^$"),
+  # Close review round 1, F1: the retaining handler's room not checked at
+  # the capture or the fill commit; the pin's capacity refusal is lost.
+  capacity_check_dropped = variant("differ", list(edit("facts.R", "lean_facts_capacity",
+    "  if (s4$retains && s4$nrows + incoming > 0L) {", "  if (FALSE) {")), error = ".", tables = "^sweep|^prefix_reads$"),
   # the valuation state given scoring ordinals instead of prepared columns
   wrong_origin = variant("differ", list(edit("marks.R", "lean_marks_state",
     "  ledgr_availability_valuation_state(bars, ids, substrate$axis, as.integer(provider$valuation_policy$max_sessions),",

@@ -244,14 +244,14 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   # binding: each binding in this frame slows every lookup (marks.R).
   s3 <- lean_marks_run_state(bars, ids, substrate, provider, history_reader, execution$decision_due,
     as.character(execution$opening_frozen %||% character()), marked = !is.null(execution$corporate_action_plan))
-  # Slice 4 (facts.R, Section 19.13): the corporate-action plan, its capture
-  # and the accepted rows; one binding, as s3. Built from the fold's own
-  # handler, before any harness wrapper.
-  s4 <- lean_facts_run_state(execution$corporate_action_plan, output_handler)
   epochs <- as.numeric(execution$execution_opportunities_posix %||% pulses_posix[-1L])
   epoch_valid <- ledgr_plan_epoch_valid(epochs)
   max_events <- max(1L, n_pulse * n)
   output_handler$init_buffers(max_events)
+  # Slice 4 (facts.R, Section 19.13): the corporate-action plan, its capture
+  # and the accepted rows; one binding, as s3. Built from the fold's own
+  # handler after init_buffers() (its room), before any harness wrapper.
+  s4 <- lean_facts_run_state(execution$corporate_action_plan, output_handler)
   projection_idx <- as.integer(unname(projection$pulse_index[ledgr_projection_pulse_names(pulses_posix)]))
   if (anyNA(projection_idx)) {
     rlang::abort("Runtime projection must cover every fold pulse.", class = "ledgr_invalid_fold_execution")
@@ -894,6 +894,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
       rlang::abort("Ledger event buffer exceeded the run's maximum event capacity.",
                    class = "ledgr_event_buffer_capacity_exceeded")
     }
+    if (!is.null(s4$plan)) s4$nfc <- lean_facts_capacity(s4, nf)   # a retaining handler also holds corporate-action rows
     n_committed <<- nf                # the pin flushes the pulse's fills here, before reconciliation
     if (!is.null(batch) && !isTRUE(cash == batch$expected_final_cash) && !isTRUE(all.equal(as.numeric(cash), as.numeric(batch$expected_final_cash),
                                              tolerance = ledgr_availability_cash_tolerance))) {

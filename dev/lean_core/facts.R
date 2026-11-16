@@ -15,15 +15,21 @@
 # with the fills (lean_facts_emit_ca), and read by the committed-prefix
 # reader as soon as they are accepted (decision 4(b)).
 
-# `handler` is the fold's own output handler, before any harness wrapper: the
-# capture starts from its append boundary (opening rows, a sweep's retained
-# rows), read from the handler's state (R/output-handler.R:466-477).
+# `handler` is the fold's own output handler after init_buffers(), before any
+# harness wrapper: the capture starts from its append boundary (opening rows,
+# a sweep's retained rows), read from the handler's state
+# (R/output-handler.R:466-477), and, for a retaining handler, from its event
+# count and maximum (:488-492; close review round 1, F1).
 lean_facts_run_state <- function(plan, handler, cap = 4L) {
   s4 <- new.env(parent = emptyenv())
   s4$plan <- plan
   st <- get0("state", envir = environment(handler$init_buffers), inherits = FALSE)
   s4$bseq <- if (is.environment(st)) st$last_event_seq
   s4$bts <- if (is.environment(st)) st$last_event_ts_utc
+  s4$retains <- is.function(handler$events) && is.environment(st)
+  s4$entry <- if (s4$retains) st$event_count else 0L
+  s4$hmax <- if (s4$retains) st$event_max_capacity
+  s4$nfc <- 0L        # fills the handler holds (committed in P5)
   s4$cap <- cap
   s4$blocks <- vector("list", cap)
   s4$nb <- 0L
@@ -42,6 +48,7 @@ lean_facts_accept <- function(s4, rows) {
   p <- ledgr_validate_accounting_append(rows, prior_event_seq = s4$bseq, prior_ts_utc = s4$bts)
   s4$bseq <- utils::tail(p$event_seq, 1L)
   s4$bts <- utils::tail(p$ts_utc, 1L)
+  lean_facts_capacity(s4, s4$nfc, nrow(rows))   # then the buffer's room, as the pin's append (:699-705)
   blocks <- s4$blocks
   s4$blocks <- NULL
   if (s4$nb == s4$cap) {
@@ -53,6 +60,20 @@ lean_facts_accept <- function(s4, rows) {
   s4$blocks <- blocks
   s4$nrows <- s4$nrows + nrow(rows)
   invisible(TRUE)
+}
+
+# A retaining handler's room (close review round 1, F1): its entry events,
+# the accepted corporate-action rows, `incoming` rows and `fills` held fills
+# against its maximum, refused by the package's owner with its condition
+# (ledgr_event_buffer_next_capacity(), R/fold-event-buffer.R:15). A
+# draining handler appends corporate-action rows to the store, outside its
+# count (R/output-handler.R:666-669), so its fills keep the loop's own check.
+# Returns `fills`.
+lean_facts_capacity <- function(s4, fills, incoming = 0L) {
+  if (s4$retains && s4$nrows + incoming > 0L) {
+    ledgr_event_buffer_next_capacity(0L, s4$entry + s4$nrows + incoming + fills, s4$hmax)
+  }
+  fills
 }
 
 # Accepted fills advance the boundary as the pin's staged fill block does

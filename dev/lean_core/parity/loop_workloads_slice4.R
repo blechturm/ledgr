@@ -169,6 +169,13 @@ s4_div <- function(id, parent, entitle, effective, cash = 0.5, known = 0L) {
   s4_action(id, "ordinary_cash_dividend", parent, entitle, effective, known, cash)
 }
 s4_policy <- function(...) ledgr::ledgr_corporate_actions(...)
+# Buys 2 A on day 1; a call on any later day fails (the capacity witnesses).
+s4_cap_strategy <- function(ctx, params) {
+  if (ctx$ts_utc != "2020-01-01T16:00:00Z") stop("lean witness: strategy reached after a refused append")
+  t <- ctx$hold()
+  t[["A"]] <- 12
+  t
+}
 # A one-worker sweep of one candidate over a snapshot with corporate actions.
 s4_ca_sweep <- function(name, closes, facts, exp) {
   db <- s4_snapshot(name, closes, facts)
@@ -271,6 +278,38 @@ loop_slice4 <- c(loop_slice4, list(
     s4_ca_sweep("s4_prefix_dividend_bought", s4_closes(), s4_ca_facts(s4_div("d1", "B", 4L, 7L)),
       s4_exp(s4_strategy(s4_plan(list(1L, c(B = 20)), list(8L, c(B = 0))))))),
   s4_prefix_dividend_run = function() lw_prefix_reads(memory = FALSE, workload = function() loop_slice4$s4_dividend()),
+  # The retaining handler's room (close review round 1, F1): a one-candidate
+  # sweep on A alone has room for its opening row and 3 more events (one
+  # per pulse). Twelve dividends on day 1 exceed it at their append, before
+  # the strategy (which fails if called); the prefix observer, with a
+  # holding strategy, sees no call. After a day-1 fill (2 events held), four
+  # dividends on day 2 exceed the 5. Three dividends on day 1 fill the room
+  # exactly, and day 1's fill then exceeds it when committed (P5).
+  s4_capacity_block = function() s4_ca_sweep("s4_capacity_block", list(A = 30 + 1:3),
+    s4_ca_facts(do.call(rbind, lapply(1:12, function(k) s4_div(paste0("d", k), "A", 1L, 2L)))),
+    s4_exp(function(ctx, params) stop("lean witness: strategy reached after a refused append"),
+      positions = c(A = 10), cost_basis = c(A = 28))),
+  s4_capacity_prefix = function() lw_prefix_reads(memory = TRUE, workload = function()
+    s4_ca_sweep("s4_capacity_prefix", list(A = 30 + 1:3),
+      s4_ca_facts(do.call(rbind, lapply(1:12, function(k) s4_div(paste0("d", k), "A", 1L, 2L)))),
+      s4_exp(s4_strategy(list()), positions = c(A = 10), cost_basis = c(A = 28)))),
+  s4_capacity_after_fill = function() lw_prefix_reads(memory = TRUE, workload = function()
+    s4_ca_sweep("s4_capacity_after_fill", list(A = 30 + 1:4),
+      s4_ca_facts(do.call(rbind, lapply(1:4, function(k) s4_div(paste0("d", k), "A", 2L, 3L)))),
+      s4_exp(s4_strategy(s4_plan(list(1L, c(A = 12)))), positions = c(A = 10), cost_basis = c(A = 28)))),
+  s4_capacity_fill = function() lw_prefix_reads(memory = TRUE, workload = function()
+    s4_ca_sweep("s4_capacity_fill", list(A = 30 + 1:3),
+      s4_ca_facts(do.call(rbind, lapply(1:3, function(k) s4_div(paste0("d", k), "A", 1L, 2L)))),
+      s4_exp(s4_strategy(s4_plan(list(1L, c(A = 12)))), positions = c(A = 10), cost_basis = c(A = 28)))),
+  # The same two refusals without the prefix observer (which needs the
+  # harness hooks), for inert hooks: the strategy buys on day 1 and fails if
+  # called on a later day.
+  s4_capacity_after_fill_run = function() s4_ca_sweep("s4_capacity_after_fill_run", list(A = 30 + 1:4),
+    s4_ca_facts(do.call(rbind, lapply(1:4, function(k) s4_div(paste0("d", k), "A", 2L, 3L)))),
+    s4_exp(s4_cap_strategy, positions = c(A = 10), cost_basis = c(A = 28))),
+  s4_capacity_fill_run = function() s4_ca_sweep("s4_capacity_fill_run", list(A = 30 + 1:3),
+    s4_ca_facts(do.call(rbind, lapply(1:3, function(k) s4_div(paste0("d", k), "A", 1L, 2L)))),
+    s4_exp(s4_cap_strategy, positions = c(A = 10), cost_basis = c(A = 28))),
   s4_prefix_dividend_stop = function() lw_prefix_reads(memory = TRUE, workload = function()
     s4_ca_sweep("s4_prefix_dividend_stop", s4_closes(), s4_ca_facts(s4_div("d1", "A", 4L, 6L)),
       s4_exp(function(ctx, params) {
@@ -369,6 +408,11 @@ s4_refusal_reach <- function(reason, ids, day) function(t) {
     s4_num(cmp$affected_exposure) > 0 && nrow(s4_cf(t)) == 0L
 }
 s4_condition_reach <- function(class) function(t) any(grepl(class, t$run$run_conditions$class, fixed = TRUE))
+s4_capacity_failed <- function(t) {
+  s <- t$sweep$sweep
+  NROW(s) == 1L && identical(as.character(s$status), "FAILED") &&
+    identical(as.character(s$error_class), "ledgr_event_buffer_capacity_exceeded")
+}
 # Count of events visible to the strategy call on `day` minus the previous
 # call's (prefix reads, decision 4(b)).
 s4_prefix_step <- function(t, path, day) {
@@ -453,5 +497,25 @@ loop_reach <- c(loop_reach, list(
   # A draining run's count leaves the dividend out (it is in the store).
   s4_prefix_dividend_run = function(t) isTRUE(s4_prefix_step(t, "run", "2020-01-03") == 0) && nrow(s4_cf(t)) == 1L,
   # The day-4 dividend is visible to the strategy call that then fails.
-  s4_prefix_dividend_stop = function(t) isTRUE(s4_prefix_step(t, "sweep", "2020-01-04") == 1)
+  s4_prefix_dividend_stop = function(t) isTRUE(s4_prefix_step(t, "sweep", "2020-01-04") == 1),
+  # Close review round 1, F1: the candidate fails with the retaining
+  # handler's capacity refusal, at the point each witness names.
+  s4_capacity_block = function(t) s4_capacity_failed(t),
+  s4_capacity_after_fill_run = function(t) s4_capacity_failed(t),
+  s4_capacity_fill_run = function(t) s4_capacity_failed(t),
+  # Refused at the day-1 append: no strategy or reconciliation observation.
+  s4_capacity_prefix = function(t) s4_capacity_failed(t) && NROW(t$sweep$prefix_reads) == 0L,
+  # Day 1 sees the opening row, its reconciliation the committed fill too;
+  # refused at the day-2 append, before that day's strategy call.
+  s4_capacity_after_fill = function(t) {
+    p <- t$sweep$prefix_reads
+    s4_capacity_failed(t) && NROW(p) == 2L && identical(p$ts_utc, c("2020-01-01T16:00:00Z", "reconciliation")) &&
+      identical(s4_num(p$events), c(1, 2))
+  },
+  # Day 1 sees the opening row and three dividends (the room is full);
+  # refused when its fill is committed, before reconciliation.
+  s4_capacity_fill = function(t) {
+    p <- t$sweep$prefix_reads
+    s4_capacity_failed(t) && NROW(p) == 1L && p$ts_utc == "2020-01-01T16:00:00Z" && s4_num(p$events) == 4
+  }
 ))

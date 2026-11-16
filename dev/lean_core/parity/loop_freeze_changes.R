@@ -181,6 +181,20 @@ for (w in c("s4_dividend", "s4_dividend_mixed")) {
            reason = "Cut 21 LDG-3244: corporate actions under inert hooks, inert-mode count"))
 }
 
+# Cut 21, LDG-3244 (close review round 1, F1): the retaining handler's room.
+cap <- c("s4_capacity_block", "s4_capacity_prefix", "s4_capacity_after_fill", "s4_capacity_fill",
+         "s4_capacity_after_fill_run", "s4_capacity_fill_run")
+for (w in cap) {
+  add(both(action = "add", mode = "gate", workload = w, lean_folds = 1L, refused = "", backstop = "",
+           reason = "Cut 21 LDG-3244 (close review round 1, F1) capacity witness, declared path"))
+  add(both(action = "add", mode = "batch1", workload = w, lean_folds = 1L, refused = "", backstop = "",
+           reason = "Cut 21 LDG-3244 (close review round 1, F1) capacity witness across terminal batches, declared path"))
+}
+for (w in c("s4_capacity_block", "s4_capacity_after_fill_run", "s4_capacity_fill_run")) {
+  add(both(action = "add", mode = "inert", workload = w, lean_folds = 0L, refused = "", backstop = "",
+           reason = "Cut 21 LDG-3244 (close review round 1, F1) capacity witness under inert hooks, inert-mode count"))
+}
+
 out <- do.call(rbind, rows)
 utils::write.csv(out, file.path(here, "loop_freeze_changes.csv"), row.names = FALSE)
 cat(nrow(out), "changes:", paste(names(table(out$action)), table(out$action), collapse = ", "), "\n")

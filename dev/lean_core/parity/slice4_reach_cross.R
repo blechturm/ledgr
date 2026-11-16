@@ -39,7 +39,10 @@ sets <- list(
            "s4_dividend", "s4_dividend_bought", "s4_dividend_sessions", "s4_dividend_skip", "s4_dividend_next_open",
            "s4_dividend_late", "s4_dividend_unheld", "s4_cash_refused", "s4_quantity_refused", "s4_cash_quantity_refused",
            "s4_quantity_reported", "s4_clock_missing", "s4_entitlement_missing", "s4_dividend_mixed", "s4_cash_overflow",
-           "s4_prefix_dividend_sweep", "s4_prefix_dividend_bought", "s4_prefix_dividend_run", "s4_prefix_dividend_stop"))
+           "s4_prefix_dividend_sweep", "s4_prefix_dividend_bought", "s4_prefix_dividend_run", "s4_prefix_dividend_stop",
+           # close review round 1, F1: the retaining handler's room
+           "s4_capacity_block", "s4_capacity_prefix", "s4_capacity_after_fill", "s4_capacity_fill",
+           "s4_capacity_after_fill_run", "s4_capacity_fill_run"))
 set <- arg("set")
 if (is.null(sets[[set]])) stop("unknown --set: ", set, call. = FALSE)
 required <- sets[[set]]
