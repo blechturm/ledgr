@@ -412,11 +412,11 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   frame is hashed. Keep the frame small. Group related state
   in one environment rather than adding bindings, as Cut 19 did for slice
   3, or use the hashed-frame pattern below.
-- **The hashed-frame pattern** (maintainer, 2026-11-16; production form
-  lands in the hashed-frame cut before slice 4, macro plan WS16). A large
-  envelope whose stages run per pulse keeps its body as an ordinary function
-  but runs it in a hashed environment (a sketch; the hashed-frame cut fixes
-  the final form):
+- **The hashed-frame pattern** (maintainer, 2026-11-16; Cut 20,
+  `dev/lean_core/loop.R`, interface Section 19.12). A large envelope whose
+  stages run per pulse keeps its body as an ordinary function but runs it in
+  a hashed environment (the compile call is shown without the
+  `topLevelEnvironment` workaround below):
 
   ```r
   lean_envelope_code <- compiler::compile(body(lean_fold_envelope_plain),
@@ -435,21 +435,37 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   results on 54 gate workloads with debug off and on.
   - Use it for a function whose frame holds many bindings and whose nested
     closures run per pulse, fill or event. A small function gains nothing.
-  - Inside the evaluated body, `on.exit()` attaches to the `eval()` call,
-    which ends when the body ends. `missing()`, `sys.call()`,
-    `sys.function()`, `match.call()`, `nargs()` and `parent.frame()` at the
-    body's top level see `eval()`, not the wrapper. Do not use them there.
+  - Inside the evaluated body, `on.exit()` is registered on the eval
+    context and runs when that context exits, normally or during unwinding;
+    `return()` exits that eval context, and the wrapper returns its value.
+    Do not use `missing()`, `sys.call()`, `sys.function()`, `match.call()`,
+    `nargs()` or `parent.frame()` directly at the body's top level. Ordinary
+    calls and lexical `<<-` updates from nested stage closures retain their
+    intended state semantics. A nested function still has its own function
+    frame, but code inspecting its caller, including a helper called from
+    the body's top level, can observe the hashed environment and eval
+    frames. Top-level `stop()` and `rlang::abort()` can consequently record
+    a different condition call; rlang backtraces and caller environments
+    are not identical. Audit any value that retains a call or environment
+    before treating it as a compared or persisted result. A static scan for
+    the six calls does not prove those indirect cases
+    (`../../../dev/lean_core/parity/hashed_frame_witness.R`, part C, records
+    the differences).
   - With the debug flag on, the envelope runs as the plain function. Then
     `debug()` and `debugonce()` step through it, and every parity run covers
-    both forms: hashed with debug off, plain with debug on. With debug off,
+    both forms: hashed with debug off, plain with debug on. A test-only
+    adapter also runs the hashed body with the debug assertions on, since a
+    fault only the hashed code has passes both normal modes (Cut 20 cut
+    review R1). With debug off,
     the call stack shows two extra `eval()` lines; the stages and the
     envelope's state stay reachable from `traceback()` and `recover()`
     (`../../../dev/spikes/hashed_frame/debug_probe.R`).
   - `compiler::compile()` called while `sys.source()` runs refuses a
     namespace above the target environment. Clear the
     `topLevelEnvironment` option for that call.
-  - Tools that read the envelope's body, environment or identity read the
-    plain function.
+  - The wrapper keeps the seat's name, so installs and identity checks are
+    unchanged; tools that read the envelope's body, or text edits to it,
+    name the plain function.
 - **Fast-path gates test plain character source operands** (Cut 17,
   2026-11-14). A fast path that replaces `setdiff()`, `union()`,
   `intersect()` or `match()` with index logic or `collapse::fmatch()` runs

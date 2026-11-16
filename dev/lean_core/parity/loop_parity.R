@@ -15,6 +15,11 @@
 #   Rscript dev/lean_core/parity/loop_parity.R --lib=<pinned library>
 #     --debug=0|1 --out=<csv> [--workloads=<id,...>] [--batch-rows=<n>]
 #     [--mutation=<name>] [--inert=1] [--freeze=<loop_freeze.csv>] [--dump=<dir>]
+#     [--witness=<file>]
+#
+# --witness sources one test-only file into the lean environment after
+# loading (Cut 20: the hashed-frame witness's adapter, which runs the
+# compiled envelope body in its hashed frame with debug assertions on).
 #
 # --freeze checks each lean arm's execution path (lean folds, refusals,
 # backstop marks) against the 4a3e08b8 freeze for this mode (gate, batch1
@@ -50,6 +55,7 @@ mutation <- arg("mutation", "")
 inert <- identical(arg("inert", "0"), "1")   # bind the fold without the harness hooks (row 15)
 freeze_file <- arg("freeze", "")
 dump_dir <- arg("dump", "")                  # saves each workload's pin tables (slice2_reach_cross.R)
+witness_file <- arg("witness", "")           # Cut 20: a test-only file sourced into the lean environment (hashed_frame_witness.R)
 source(file.path(here, "loop_edits.R"))
 
 # Variants. `expect` names the signal that must fire; `error` is a pattern
@@ -68,7 +74,7 @@ variant <- function(expect, edits, error = NULL, lost = NULL, tables = NULL, pat
 # run (unmarked), the marker inside the branch that runs the fault, and the
 # backend call that path must reach.
 store_variant <- function(call, path, prepare = FALSE, dead = NULL) variant("store", list(
-  edit("loop.R", "lean_fold_envelope", "  live$batches <- 0L", c(
+  edit("loop.R", "lean_fold_envelope_plain", "  live$batches <- 0L", c(   # Cut 20 re-anchor (rename)
     "  scratch <- DBI::dbConnect(duckdb::duckdb())",
     "  DBI::dbExecute(scratch, \"CREATE TABLE probe (value INTEGER)\")",
     if (prepare) "  stmt <- DBI::dbSendStatement(scratch, \"INSERT INTO probe VALUES (?)\")"), "after", mark = FALSE),
@@ -132,7 +138,7 @@ loop_mutations <- list(
   rng_restore_off = variant("differ", list(edit("loop_harness.R", "lean_loop_run", "    ledgr_rng_restore(rng)")),
     tables = "^rng_(entry|after)$|^sweep$"),
   # Round 4, finding 2: first-pulse state alignment on an empty execution.
-  zero_pulse_align = variant("differ", list(edit("loop.R", "lean_fold_envelope",
+  zero_pulse_align = variant("differ", list(edit("loop.R", "lean_fold_envelope_plain",   # Cut 20 re-anchor (rename)
     "  if (n_pulse > 0L && !identical(ids, state_axis)) {", "  if (!identical(ids, state_axis)) {")),
     tables = "^zero_pulses_reordered$"),
   # Cut 15 R2: the strategy error wrapped before the callback unwinds, and
@@ -277,6 +283,7 @@ if (nzchar(mutation)) {
                    marker = "lean_entry$variant_reached <- TRUE")
   lean$lean_entry$mutation <- mutation
 }
+if (nzchar(witness_file)) lean_core_source(lean, witness_file)
 
 repo <- normalizePath(file.path(here, "..", "..", ".."), winslash = "/")
 source(file.path(repo, "dev/bench/v0_2_3_ws16_entry/workloads.R"))

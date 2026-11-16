@@ -3,9 +3,13 @@ args <- commandArgs(TRUE)
 root <- "C:/Users/maxth/Documents/GitHub/ledgr"
 get_names <- function(spec) {
   txt <- if (file.exists(spec)) readLines(spec) else system2("git", c("-C", root, "show", paste0(spec, ":dev/lean_core/loop.R")), stdout = TRUE)
-  e <- new.env()
+  # Cut 20: the body is lean_fold_envelope_plain where it exists (the
+  # wrapper lean_fold_envelope binds nothing); earlier commits name it
+  # lean_fold_envelope.
+  defs <- list()
   for (x in parse(text = txt, keep.source = FALSE)) if (is.call(x) && identical(x[[1L]], as.name("<-")) &&
-      identical(x[[2L]], as.name("lean_fold_envelope"))) fn <- x[[3L]]
+      is.name(x[[2L]])) defs[[as.character(x[[2L]])]] <- x[[3L]]
+  fn <- if (!is.null(defs$lean_fold_envelope_plain)) defs$lean_fold_envelope_plain else defs$lean_fold_envelope
   b <- as.list(fn[[3L]])[-1L]
   out <- character()
   walk <- function(s) {

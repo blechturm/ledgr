@@ -6424,7 +6424,7 @@ tickets:
   - id: "LDG-3241"
     title: "Evaluate the lean envelope in a hashed frame"
     workstream: 38
-    status: "pending"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-3240"]
@@ -6443,6 +6443,12 @@ tickets:
       - "The two envelope-naming edits re-anchored to lean_fold_envelope_plain; reanchor rows in loop_variant_changes.csv for store_append, store_bind, store_execute, store_query and zero_pulse_align at debug 0 and 1 (26 manifest rows), each with the same fault and consequence, each reached and caught with debug off and on; control_wrong_store_path still fails closed"
       - "ebind.R reports the plain frame's binding count on the new code and the old count on 6e90a881"
       - "Gate with debug off against the freeze identical on every table, every frozen path matched (tiered proofs; the full set runs in LDG-3242)"
+    evidence:
+      - "Code (dev/lean_core/loop.R): the envelope is lean_fold_envelope_plain, its body text unchanged (two comment lines added above it); at the end of the file a comment block, lean_envelope_code (the plain body compiled once with compiler::compile(), the topLevelEnvironment option cleared for the call) and the wrapper lean_fold_envelope, which calls the plain function when .lean_debug is TRUE and otherwise evaluates lean_envelope_code in new.env(hash = TRUE, parent = environment()). The comment states the reason, the form, the body caveats in cut review R4's wording, how to debug, the compile workaround, the switch obligation and the manual pointer; the manual's pattern entry (optimization_coding_style.qmd) and Section 19.12 carry the same caveat statement, and the manual entry names the adapter."
+      - "Witness (dev/lean_core/parity/hashed_frame_witness.R; evidence/cut20/ldg3241/witness/, witness.log): PASS. Part A, crossover_3x40's data and experiment through the installed loop: with no fault every check passes with debug off (0 plain entries, hashed frame, bytecode, clean scan) and on (1 plain entry per fold, unhashed frame); the flag fault fails plain_entries and frame_hashed with debug on; the unhashed fault fails frame_hashed with debug off; the top-level sys.call() fails the scan in both modes (frame_checks.csv). Part B, the adapter (hashed_frame_adapter.R through the new loop_parity.R --witness= option; it evaluates the production-loaded compiled body in a hashed frame with .lean_debug TRUE and refuses the plain function): crossover_3x40, s2_sizing_rebalance and s3_freeze_exit 48 tables, 0 different, 3 of 3 frozen paths; hashed_frame_adapter_fault.R (.safety_state RED in the recompiled hashed body only) fails each of the three with 'Lean context .safety_state differs from the pin's at pulse 1', 13 of 16 tables different (adapter.csv and logs). Part C, semantics probe: 10 cases, 60 fields; return values, cleanup and signalling order (several and conditional on.exit(), an early return after on.exit(), unwinding under calling and exiting handlers) and condition class, message and fields equal; the five expected differences are the condition call of a top-level stop() or rlang::abort() (four cases: eval(code, new.env(...)) for f(x, log)) and a helper's view of its caller (semantics.csv)."
+      - "Re-anchors (dev/lean_core/parity/cut20_reanchor.R; evidence/cut20/ldg3241/reanchor/): loop_parity.R's store_variant() envelope edit and zero_pulse_align name lean_fold_envelope_plain; loop_variant_changes.csv adds 26 reanchor rows (store_append, store_bind, store_execute, store_query on crossover_3x40, reconciliation_stop and tight_cash at bound 8, zero_pulse_align on witness_zero_pulses, each at debug 0 and 1) with the fault and consequence named; all 26 CAUGHT, control_wrong_store_path MISSED with status 1."
+      - "Frame census (evidence/cut19/s3env/ebind.R, which now reads lean_fold_envelope_plain where it exists): 140 -> 140 names between 6e90a881 and the new loop.R."
+      - "Gate with debug off on this code (evidence/cut20/ldg3241/loop_gate_debug0.csv, .log): 111 workloads, 1,878 tables, 0 different, PASS 110 and PASS* 1, 111 of 111 frozen paths."
   - id: "LDG-3242"
     title: "Close the hashed-frame cut"
     workstream: 38

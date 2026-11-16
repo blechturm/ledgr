@@ -1,0 +1,14 @@
+A none      debug 0: all checks pass -> as expected
+A none      debug 1: all checks pass -> as expected
+A flag      debug 0: all checks pass -> as expected
+A flag      debug 1: fails plain_entries,frame_hashed -> as expected
+A unhashed  debug 0: fails frame_hashed -> as expected
+A unhashed  debug 1: all checks pass -> as expected
+A syscall   debug 0: fails scan -> as expected
+A syscall   debug 1: fails scan -> as expected
+B pass                       exit 0, 48 tables, 0 different, context failure FALSE -> as expected
+B fault_crossover_3x40       exit 1, 16 tables, 13 different, context failure TRUE -> as expected
+B fault_s2_sizing_rebalance  exit 1, 16 tables, 13 different, context failure TRUE -> as expected
+B fault_s3_freeze_exit       exit 1, 16 tables, 13 different, context failure TRUE -> as expected
+C 10 cases, 60 fields: 55 equal, 5 expected differences (top_stop_exiting, top_stop_calling, top_abort_exiting, top_abort_calling, caller_inspection); as expected
+hashed-frame witness: PASS

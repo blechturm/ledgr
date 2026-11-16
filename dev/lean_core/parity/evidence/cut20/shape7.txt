@@ -1,0 +1,7 @@
+Copies reported by tracemem() over 5 top-level and 5 closure writes into a 1e6 buffer
+(control rows: a second reference to the buffer exists, so the first write must copy):
+               copies total
+plain               0    95
+hashed              0    95
+plain_control       1    95
+hashed_control      1    95

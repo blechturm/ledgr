@@ -187,7 +187,9 @@ lean_ctx_helpers <- function(lookup) {
 
 # --- the loop ---------------------------------------------------------------
 
-lean_fold_envelope <- function(execution, output_handler) {
+# The envelope's body. lean_fold_envelope (at the end of this file) runs it
+# in a hashed frame, or calls this function as it stands with debug on.
+lean_fold_envelope_plain <- function(execution, output_handler) {
   execution <- ledgr_validate_execution_spec(execution)
   # A refusal before the first pulse runs the fold on the pin (19.2).
   hooks <- lean_hooks
@@ -1304,4 +1306,62 @@ lean_fold_envelope <- function(execution, output_handler) {
     next_event_seq = event_seq,
     equity_facts = equity
   )
+}
+
+# --- the hashed frame (Cut 20; interface Section 19.12) ---------------------
+#
+# Why. R searches an ordinary function frame name by name. The envelope's
+# frame holds about 140 names, and every lookup that passes them (base and
+# package functions, the lean helpers, state the stage closures read) costs
+# about 1 us per name per pulse. A hashed environment finds a name directly.
+# Evaluating the envelope's compiled body in one saved 40-47 us per pulse on
+# the comparison shapes with identical results (dev/spikes/hashed_frame).
+#
+# Form. lean_fold_envelope keeps the seat's name, so lean_loop_install(), the
+# installed check and the pin seat are unchanged. With debug off it evaluates
+# lean_envelope_code, the plain function's body compiled once below, in a
+# hashed child of its own call frame (so `execution` and `output_handler`
+# resolve as arguments). With debug on it calls lean_fold_envelope_plain
+# itself: every debug-on parity run checks the plain form, every debug-off run
+# the hashed one, and parity/hashed_frame_witness.R runs the hashed body with
+# the debug assertions on.
+#
+# Inside the evaluated body, on.exit() is registered on the eval context and
+# runs when that context exits, normally or during unwinding; return() exits
+# that eval context, and the wrapper returns its value. Do not use missing(),
+# sys.call(), sys.function(), match.call(), nargs() or parent.frame() directly
+# at the body's top level. Ordinary calls and lexical <<- updates from nested
+# stage closures retain their intended state semantics. A nested function
+# still has its own function frame, but code inspecting its caller, including
+# a helper called from the body's top level, can observe the hashed
+# environment and eval frames. Top-level stop() and rlang::abort() can
+# consequently record a different condition call; rlang backtraces and caller
+# environments are not identical. Audit any value that retains a call or
+# environment before treating it as a compared or persisted result. The
+# witness's static scan of the six calls does not prove those indirect cases.
+#
+# Debugging. Load with debug on (lean_core_load(lib, debug = TRUE)), then
+# debug() or debugonce() on lean_fold_envelope_plain. With debug off,
+# traceback() shows two eval() lines between lean_fold_envelope and the
+# stage, and recover() can still open the hashed frame and read its state.
+#
+# Compiling. sys.source() (lean_core_load, the timing protocols) sets the
+# topLevelEnvironment option to the lean environment, and the compiler then
+# refuses the namespace above it; the option is cleared for the compile.
+# A text edit to the plain function (a parity variant) is compiled with it.
+#
+# Switch obligation: when the loop moves into R/, the body is compiled when
+# the package is installed, this workaround goes, and the package's debug
+# mechanism keeps the plain function as the path that can be stepped through.
+# Pattern and caveats: inst/design/manual/optimization_coding_style.qmd, "The
+# hashed-frame pattern".
+lean_envelope_code <- local({
+  op <- options(topLevelEnvironment = NULL)
+  on.exit(options(op))
+  compiler::compile(body(lean_fold_envelope_plain), env = environment(lean_fold_envelope_plain))
+})
+
+lean_fold_envelope <- function(execution, output_handler) {
+  if (.lean_debug) return(lean_fold_envelope_plain(execution, output_handler))
+  eval(lean_envelope_code, new.env(hash = TRUE, parent = environment()))
 }
