@@ -2629,7 +2629,8 @@ cuts:
   - id: 20
     name: "Hashed envelope frame (macro WS16)"
     cut: "2026-11-16"
-    status: "proposed"
+    status: "accepted"
+    accepted: "2026-11-16 by the maintainer, after the cut review passed at re-review 1 (cut_review_20_rereview_1.md), as written. The maintainer asked for one Codex code review of the workstream at its close, iterated to green."
     opening: >-
       Cut 19 closed (6ceeb935). Its close found that the lean envelope's
       frame costs about 1 us per binding per pulse: R searches an unhashed
@@ -3206,7 +3207,8 @@ workstreams:
   - id: 38
     name: "Hashed envelope frame"
     cut: 20
-    status: "proposed"
+    status: "accepted"
+    accepted: "2026-11-16 by the maintainer with Cut 20."
     close_review: null
     depends_on_workstream: 37
     requires_review_acceptance: true
