@@ -1457,7 +1457,8 @@ list shows otherwise.
 
 ### 19.13 Slice 4: opening imports, corporate actions, facts and the context axis (Cut 21)
 
-- Status: proposed with Cut 21 on 2026-11-16. Slice 4 adds coverage with no
+- Status: accepted by the maintainer with Cut 21 on 2026-11-16, after the
+  cut review passed at re-review 2. Slice 4 adds coverage with no
   behaviour change against the pin and the contracts; it needs no RFC
   under the family method (macro WS16). The maintainer's decisions on the
   probe (2026-11-16): one cut, two workstreams (39 without facts, 40 with

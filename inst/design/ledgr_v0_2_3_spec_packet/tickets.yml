@@ -2865,7 +2865,8 @@ cuts:
   - id: 21
     name: "Lean loop slice 4: opening imports, corporate actions, facts and the context axis (macro WS16)"
     cut: "2026-11-16"
-    status: "proposed"
+    status: "accepted"
+    accepted: "2026-11-16 by the maintainer, after the cut review passed at re-review 2 (cut_review_21_rereview_2.md), as written."
     opening: >-
       Cut 20 closed (381c0d0c). The maintainer set the order after Cut 20
       (macro plan, 2026-11-16): the store-write levers moved to the switch
@@ -3598,14 +3599,16 @@ workstreams:
   - id: 39
     name: "Lean loop slice 4a: opening imports and corporate-action posting"
     cut: 21
-    status: "proposed"
+    status: "accepted"
+    accepted: "2026-11-16 by the maintainer with Cut 21."
     depends_on_workstream: 38
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 39, after LDG-3245", reason: "Every covered workload without facts (opening positions, carried openings, dividends and the corporate-action refusals) and the whole existing gate are identical to the pin with debug on and off, at batch one and with inert hooks; every frozen path matches, with only the declared moves; each named branch is reached on the pin and each reach predicate fails elsewhere; the loop calls the corporate-action plan rather than a copy and writes nothing to the store inside the loop; corporate-action and fill rows are published in event order without a per-row loop; the debug cash check catches a dropped corporate action; every new variant names and reaches its intended fault; the line budget holds."}
   - id: 40
     name: "Lean loop slice 4b: facts, dispositions and the context axis"
     cut: 21
-    status: "proposed"
+    status: "accepted"
+    accepted: "2026-11-16 by the maintainer with Cut 21."
     depends_on_workstream: 39
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 40, after LDG-3248", reason: "Every covered slice-4 workload and the whole existing gate are identical to the pin with debug on and off, at batch one and with inert hooks; every frozen path matches, with only the declared moves; each named branch is reached on the pin and each reach predicate fails elsewhere; the only coverage refusals left are slice 5's and the prepared-axis guard; the loop calls the package's owners (plan, terminal resolution, disposition posting, state alignment, provider views) rather than copies; P2, the planner and the records run on each pulse's context in the pin's order, with typed records and no per-pulse list; every new variant names and reaches its intended fault; the line budget holds; and the timing record reproduces from its committed inputs."}
@@ -6878,7 +6881,7 @@ tickets:
   - id: "LDG-3243"
     title: "Cover opening positions and carried openings in the lean loop"
     workstream: 39
-    status: "proposed"
+    status: "pending"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-3242"]
@@ -6898,7 +6901,7 @@ tickets:
   - id: "LDG-3244"
     title: "Post corporate actions through the package's plan with no store write in the loop"
     workstream: 39
-    status: "proposed"
+    status: "pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3243"]
@@ -6924,7 +6927,7 @@ tickets:
   - id: "LDG-3245"
     title: "Close workstream 39"
     workstream: 39
-    status: "proposed"
+    status: "pending"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-3244"]
@@ -6942,7 +6945,7 @@ tickets:
   - id: "LDG-3246"
     title: "Cover facts, the per-pulse views, the context axis and strategy state"
     workstream: 40
-    status: "proposed"
+    status: "pending"
     priority: "P0"
     effort: "L"
     dependencies: ["LDG-3245"]
@@ -6966,7 +6969,7 @@ tickets:
   - id: "LDG-3247"
     title: "Cover acquisitions, spin-offs, dispositions and terminal stops"
     workstream: 40
-    status: "proposed"
+    status: "pending"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3246"]
@@ -6990,7 +6993,7 @@ tickets:
   - id: "LDG-3248"
     title: "Close slice 4"
     workstream: 40
-    status: "proposed"
+    status: "pending"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-3247"]
