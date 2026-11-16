@@ -65,3 +65,12 @@ with `--workloads=<the 37 slice-3 workloads and 17 slice-1/2 and witness
 workloads>` and `--freeze`, debug 0 and 1; batch one on s3_mixed_transition
 and s3_multi_stop; each moved or touched variant with `--mutation=<name>
 --workloads=<its workload>`.
+
+Final runs on the final code (6e90a881, after close review round 2 PASS):
+proofs_final/ holds the same files as proofs/, written by the same commands
+with `proofs_final` in place of `proofs` (the gate with debug 1 last); lines on
+the final code by `Rscript dev/lean_core/parity/cut19_lines.R --base=bdeea449
+--final=WORKTREE --out=dev/lean_core/parity/evidence/cut19/lines_final.csv`.
+The timing record ws37-reviewed uses the runner and check commands above with
+`--label=ws37-reviewed` (High performance plan, P-core affinity through
+`pcore.ps1`, Balanced restored afterwards).
