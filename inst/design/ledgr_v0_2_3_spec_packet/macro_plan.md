@@ -985,14 +985,38 @@ public behavior except the explicit pulse-plumbing ledger differences.
   reports what the change does to the tooling that parses the envelope
   (variant anchors, census and line counts). No product or lean-core change
   in the spike. The maintainer then decides: a tuning cut, folding it into
-  the switch, or dropping it.
+  the switch, or dropping it. Outcome (2026-11-16,
+  `dev/spikes/hashed_frame/closeout.md`): green, 40-47 us per pulse saved
+  (7-17 percent of the pulse loop on the four shapes), identical results on
+  54 gate workloads with debug off and on.
+- **Hashed-frame cut (maintainer, 2026-11-16).** A tuning cut on
+  `dev/lean_core` only, after the optimization manual update and before
+  slice 4 is cut, so slices 4-5 are written and timed on the hashed frame.
+  The maintainer chose the spike's form: `loop.R` keeps the envelope as an
+  ordinary function, its body compiled once at load and evaluated in a
+  hashed environment whose parent is the call frame; with the lean debug
+  flag on, the envelope runs as the plain function, so `debug()` and
+  `debugonce()` step through it and every parity run exercises both forms
+  (hashed with debug off, plain with debug on). The wrapper is defined in
+  `loop.R` itself, with inline documentation of why it exists, what
+  changes inside the body (`on.exit()` attaches to `eval()`; `missing()`,
+  `sys.call()` and `parent.frame()` must not be used at its top level) and
+  how to debug it. The cut updates the tooling that reads the envelope's
+  body or identity (`loop_shortcuts.R`, `loop_workloads.R`, the frame
+  census), adds a witness that `debugonce()` steps into the plain envelope,
+  runs the full check set once on the final code and a timing record, and
+  records the switch obligation: the body compiled at package install once
+  the loop moves into `R/`. Measure, cut, Codex cut review, implement.
 - **Optimization manual update (maintainer, 2026-11-15).** Right after the
   hashed-frame spike, one documentation pass brings
   `inst/design/manual/optimization_coding_style.qmd` (last changed
   2026-11-06) and, where a finding is about measuring,
   `benchmark_methodology.qmd` up to what the lean-core work found since,
   each rule with its evidence: frame size as a per-pulse cost (Cut 19's
-  close and the spike's result); byte compilation in timings (sourced lean
+  close and the spike's result), with an entry for the hashed-frame pattern
+  the maintainer chose (2026-11-16: when to use it, its cost and saving, its
+  debug-flag fallback to the plain frame, and what changes inside the
+  evaluated body); byte compilation in timings (sourced lean
   code compiled before the clock, as the installed pin is); set-operation
   fast paths admitted only on plain character caller operands, ledgr's own
   universe trusted (workstream 35, Cut 17); the skeleton's own costs

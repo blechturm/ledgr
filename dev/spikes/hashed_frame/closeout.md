@@ -56,17 +56,40 @@ roughly 5-25 us. Publish is unchanged: it runs once, not per pulse.
 - Frame size stops being a per-pulse cost under this pattern. Cut 19's
   one-environment `s3` stays correct but is no longer needed for speed.
 
-## Open
+## Tooling that reads the envelope
 
-- Production form is the maintainer's decision. The options are to keep the
-  fork pattern (compile the body once at load, evaluate it in a hashed
-  environment) or to restructure the envelope so it allocates its state in a
-  hashed environment itself.
+The routing asked for this; it was added after the first closeout. Because
+`loop.R` is unchanged, variant anchors (text edits to `loop.R`) and line
+counts are unaffected. The fork itself adds 9 lines. Tools that read the
+envelope's body, environment or identity need small edits:
+`parity/loop_shortcuts.R` (line 176, body and environment of
+`lean_fold_envelope`), `parity/loop_workloads.R` (line 274, the installed
+check by identity) and the Cut 19 frame census `ebind.R`. The variant driver
+was not run on the fork.
+
+## Debugging
+
+`debug_probe.R` (`evidence/debug_probe.txt`) uses a toy envelope whose stage
+errors. The call stack under the hashed pattern is the plain one plus two
+`eval()` lines, the stage names stay visible, and the envelope's state can be
+read from a frame on the stack, as `recover()` would. What is lost is
+stepping through the envelope's top-level setup with `debug()` or
+`debugonce()`. `browser()` was not tested because the probe ran
+non-interactively.
+
+## Decision (maintainer, 2026-11-16)
+
+Production keeps this form: the wrapper defined in `loop.R` itself, with
+inline documentation. With the lean debug flag on, the envelope runs as the
+plain function, so `debug()` steps through it, and every parity run
+exercises both forms. It is routed as a hashed-frame cut after the
+optimization manual update and before slice 4, and the manual gets an entry
+for the pattern (macro plan WS16).
+
+## Open
 - The checks covered 54 of 111 gate workloads. Not run on the fork: the full
   gate, batch one, inert hooks, the variant driver, dispatch, FIFO, planner
   and the witness suites. A production cut runs the full set once on its
   final code.
-- `traceback()` and `browser()` inside the body show `eval()` frames. This
-  matters only for debugging.
 - The four shapes are the comparison shapes, not a matched peer suite. No
   public performance claim follows from this spike.

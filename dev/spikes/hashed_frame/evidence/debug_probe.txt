@@ -1,0 +1,22 @@
+plain:
+  call: tryCatchList(expr, classes, parentenv, handlers)
+  call: tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  call: doTryCatch(return(expr), name, parentenv, handler)
+  call: withCallingHandlers(f(0), error = function(e) {
+  call: f(0)
+  call: stage(i)
+  call: stop("boom in stage")
+  call: .handleSimpleError(function (e) 
+  stack frames holding the envelope's 'state': 1  value there: 7 
+hashed:
+  call: tryCatchList(expr, classes, parentenv, handlers)
+  call: tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  call: doTryCatch(return(expr), name, parentenv, handler)
+  call: withCallingHandlers(f(0), error = function(e) {
+  call: f(0)
+  call: eval(code, new.env(hash = TRUE, parent = environment()))
+  call: eval(code, new.env(hash = TRUE, parent = environment()))
+  call: stage(i)
+  call: stop("boom in stage")
+  call: .handleSimpleError(function (e) 
+  stack frames holding the envelope's 'state': 1  value there: 7 
