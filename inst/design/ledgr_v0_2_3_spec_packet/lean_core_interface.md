@@ -1454,3 +1454,86 @@ list shows otherwise.
   when the package is installed, the `topLevelEnvironment` workaround goes,
   and the package's debug mechanism keeps the plain function as the path
   that can be stepped through.
+
+### 19.13 Slice 4: opening imports, corporate actions, facts and the context axis (Cut 21)
+
+- Status: proposed with Cut 21 on 2026-11-16. Slice 4 adds coverage with no
+  behaviour change against the pin and the contracts; it needs no RFC
+  under the family method (macro WS16). The maintainer's decisions on the
+  probe (2026-11-16): one cut, two workstreams (39 without facts, 40 with
+  facts); the package's corporate-action plan is called, not copied; every
+  slice-4 feature is ported; a 300-line allowance with loop.R under its
+  cap; a debug cash check after corporate actions.
+- Probe (2026-11-16, at `5c70734b`; `dev/spikes/slice4_probe/`): the
+  final probe patch matched the pin on 16 workloads (362 tables) and on the
+  full gate of 121 workloads (2,038 tables), each with debug off and on.
+  With only the refusal lifted, a dividend was silently missed and debug
+  on did not catch it. These are inputs, not evidence: Cut 21 produces
+  its own.
+
+Coverage moves in Section 19.2's table to covered:
+
+| Covered in slice 4 | Still refused (slice) |
+| --- | --- |
+| opening positions, carried openings (frozen set, lots, pending entitlements, position facts), unknown-basis positions | sweep workers (5) |
+| corporate actions: ordinary cash dividends, cash, stock and mixed acquisitions, spin-offs, with the plan's refusals | compiled FIFO (5) |
+| membership, trading status and lifetime facts | restart (5) |
+| plan and terminal dispositions, every terminal outcome and its stop | walk-forward (5) |
+| execution restrictions, the empty public domain | the checkpoint control (5) |
+| a context axis that differs from the run axis | - |
+
+What changes in the loop:
+
+- **Which runs are marked.** Slice 3's marked path also covers a run that
+  declares a fact family other than sessions, carries a corporate-action
+  plan, or opens with a frozen set. Other runs keep the constant packet.
+  The frozen set starts from `execution$opening_frozen`.
+- **P1, in the pin's order** (`R/fold-engine.R:296-560`):
+  1. corporate-action clocks, posting and quantity effects;
+  2. the provider's decision view and the valuation;
+  3. the plan's dispositions, with the view re-read after any;
+  4. terminal dispositions of lifetime-inactive holdings
+     (`ledgr_terminal_resolve()`, `ledgr_terminal_mark_meta()`,
+     `ledgr_disposition_post()`); a blocked outcome stops the run;
+  5. the valuation stop;
+  6. the frozen-set rows, and strategy state aligned to the context when it
+     changed (`ledgr_strategy_state_align()`).
+
+  Every P1 stop takes one path, with the pin's reason codes, reasons,
+  counts and affected exposure. Settlement updates cash, positions, the lot
+  book and the position facts from the plan's returned state.
+- **No store write in the loop (D3).** The plan posts into a lean capture
+  handler (`append_event_rows()` only). After the loop the captured blocks
+  and the fill blocks are published in `event_seq` order. Each fill keeps
+  its own `event_seq`; a fill block splits where the numbering skips a
+  corporate-action row.
+- **The context axis (P2 and P3).**
+  - The strategy, the target and availability checks, sizing evidence,
+    risk and the marks rows run on the pulse's context. Targets are
+    embedded on the run axis: outside the context the target is the
+    position and nothing is actionable.
+  - State patches apply on the context axis.
+  - The planner gets the pin's arguments in the context frame
+    (`R/fold-engine.R:1117-1135`), including the provider's execution view
+    for the actionable instruments; fill and rejection keys map back to
+    run positions.
+  - The empty public domain calls the strategy and takes the target
+    fallback.
+- **Records.** Each pulse's context is kept as an offset and a length into
+  one typed position vector, grown by doubling. A decision row's number is
+  its ordinal in the context; `decision_order` is
+  `(ordinal - 1) * axis size + run position`, as the pin writes it.
+  Reconciliation gross is taken on the context.
+- **Debug.** A per-pulse check compares lean cash, positions and lots with
+  the plan's returned state after settlement and after dispositions. The
+  context check compares the lean context with the pin's builder.
+- **Code.** Stateless slice-4 helpers go to `dev/lean_core/facts.R`; the
+  slice-4 state lives in one environment, like slice 3's.
+
+Switch obligations (deletion-readiness rule 4, macro plan): slice 4 copies
+no package rule. The lean loop calls the corporate-action plan, terminal
+resolution, disposition posting, position-fact updates, state alignment
+and the provider's views as their owners. Each is "retain" unless the
+switch cut's scripted old-fold caller list shows otherwise. No public
+constructor sets `position_fact_unknown_basis`; only the sweep payload
+reads it from the experiment. The switch cut's caller list records this.

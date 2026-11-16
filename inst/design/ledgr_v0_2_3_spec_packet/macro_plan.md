@@ -1047,8 +1047,11 @@ public behavior except the explicit pulse-plumbing ledger differences.
      certified hold encoding (the durable-records synthesis, Section 3,
      allows absence as a hold assertion only within a valid encoding). Both
      change the stored format, so a schema version bump and an RFC.
-  b. **Slice 4** (membership, terminals, corporate actions, imports), next.
-     The **feature-engine RFC seed** (owed since point 6) is
+  b. **Slice 4** (membership, terminals, corporate actions, imports), next:
+     Cut 21 (workstreams 39 and 40), written on the probe
+     (`dev/spikes/slice4_probe`). The maintainer chose (2026-11-16) one
+     cut with two workstreams and to port every slice-4 feature, none left
+     refused. The **feature-engine RFC seed** (owed since point 6) is
      drafted alongside it: the feature path is package code read by the
      loop only through the projection (`R/runtime-projection.R:10-36`), so
      it does not conflict with slice 4's `dev/lean_core` work. The seed
