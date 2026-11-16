@@ -1,0 +1,115 @@
+"name","spelling","code","hits","expected","as_expected"
+"missing","direct","missing()",1,1,TRUE
+"missing","qualified","base::missing()",1,1,TRUE
+"missing","internal","base:::missing()",1,1,TRUE
+"missing","parens","(missing)()",1,1,TRUE
+"missing","parens_qualified","(base::missing)()",1,1,TRUE
+"missing","double_parens","((base:::missing))()",1,1,TRUE
+"missing","braces","{missing}()",1,1,TRUE
+"missing","braces_last","{1; missing}()",1,1,TRUE
+"missing","string_head","""missing""()",1,1,TRUE
+"missing","string_qualified","base::""missing""()",1,1,TRUE
+"missing","in_assignment","x <- missing()",1,1,TRUE
+"missing","in_condition","if (missing()) 1",1,1,TRUE
+"missing","in_argument","g(missing())",1,1,TRUE
+"missing","in_head","g(missing())(1)",1,1,TRUE
+"missing","nested","g <- function() missing()",0,0,TRUE
+"missing","nested_parens","g <- function() (base::missing)()",0,0,TRUE
+"missing","nested_called","(function() missing())()",0,0,TRUE
+"missing","by_string_do_call","do.call(""missing"", list())",0,0,TRUE
+"missing","by_string_get","get(""missing"")()",0,0,TRUE
+"sys.call","direct","sys.call()",1,1,TRUE
+"sys.call","qualified","base::sys.call()",1,1,TRUE
+"sys.call","internal","base:::sys.call()",1,1,TRUE
+"sys.call","parens","(sys.call)()",1,1,TRUE
+"sys.call","parens_qualified","(base::sys.call)()",1,1,TRUE
+"sys.call","double_parens","((base:::sys.call))()",1,1,TRUE
+"sys.call","braces","{sys.call}()",1,1,TRUE
+"sys.call","braces_last","{1; sys.call}()",1,1,TRUE
+"sys.call","string_head","""sys.call""()",1,1,TRUE
+"sys.call","string_qualified","base::""sys.call""()",1,1,TRUE
+"sys.call","in_assignment","x <- sys.call()",1,1,TRUE
+"sys.call","in_condition","if (sys.call()) 1",1,1,TRUE
+"sys.call","in_argument","g(sys.call())",1,1,TRUE
+"sys.call","in_head","g(sys.call())(1)",1,1,TRUE
+"sys.call","nested","g <- function() sys.call()",0,0,TRUE
+"sys.call","nested_parens","g <- function() (base::sys.call)()",0,0,TRUE
+"sys.call","nested_called","(function() sys.call())()",0,0,TRUE
+"sys.call","by_string_do_call","do.call(""sys.call"", list())",0,0,TRUE
+"sys.call","by_string_get","get(""sys.call"")()",0,0,TRUE
+"sys.function","direct","sys.function()",1,1,TRUE
+"sys.function","qualified","base::sys.function()",1,1,TRUE
+"sys.function","internal","base:::sys.function()",1,1,TRUE
+"sys.function","parens","(sys.function)()",1,1,TRUE
+"sys.function","parens_qualified","(base::sys.function)()",1,1,TRUE
+"sys.function","double_parens","((base:::sys.function))()",1,1,TRUE
+"sys.function","braces","{sys.function}()",1,1,TRUE
+"sys.function","braces_last","{1; sys.function}()",1,1,TRUE
+"sys.function","string_head","""sys.function""()",1,1,TRUE
+"sys.function","string_qualified","base::""sys.function""()",1,1,TRUE
+"sys.function","in_assignment","x <- sys.function()",1,1,TRUE
+"sys.function","in_condition","if (sys.function()) 1",1,1,TRUE
+"sys.function","in_argument","g(sys.function())",1,1,TRUE
+"sys.function","in_head","g(sys.function())(1)",1,1,TRUE
+"sys.function","nested","g <- function() sys.function()",0,0,TRUE
+"sys.function","nested_parens","g <- function() (base::sys.function)()",0,0,TRUE
+"sys.function","nested_called","(function() sys.function())()",0,0,TRUE
+"sys.function","by_string_do_call","do.call(""sys.function"", list())",0,0,TRUE
+"sys.function","by_string_get","get(""sys.function"")()",0,0,TRUE
+"match.call","direct","match.call()",1,1,TRUE
+"match.call","qualified","base::match.call()",1,1,TRUE
+"match.call","internal","base:::match.call()",1,1,TRUE
+"match.call","parens","(match.call)()",1,1,TRUE
+"match.call","parens_qualified","(base::match.call)()",1,1,TRUE
+"match.call","double_parens","((base:::match.call))()",1,1,TRUE
+"match.call","braces","{match.call}()",1,1,TRUE
+"match.call","braces_last","{1; match.call}()",1,1,TRUE
+"match.call","string_head","""match.call""()",1,1,TRUE
+"match.call","string_qualified","base::""match.call""()",1,1,TRUE
+"match.call","in_assignment","x <- match.call()",1,1,TRUE
+"match.call","in_condition","if (match.call()) 1",1,1,TRUE
+"match.call","in_argument","g(match.call())",1,1,TRUE
+"match.call","in_head","g(match.call())(1)",1,1,TRUE
+"match.call","nested","g <- function() match.call()",0,0,TRUE
+"match.call","nested_parens","g <- function() (base::match.call)()",0,0,TRUE
+"match.call","nested_called","(function() match.call())()",0,0,TRUE
+"match.call","by_string_do_call","do.call(""match.call"", list())",0,0,TRUE
+"match.call","by_string_get","get(""match.call"")()",0,0,TRUE
+"nargs","direct","nargs()",1,1,TRUE
+"nargs","qualified","base::nargs()",1,1,TRUE
+"nargs","internal","base:::nargs()",1,1,TRUE
+"nargs","parens","(nargs)()",1,1,TRUE
+"nargs","parens_qualified","(base::nargs)()",1,1,TRUE
+"nargs","double_parens","((base:::nargs))()",1,1,TRUE
+"nargs","braces","{nargs}()",1,1,TRUE
+"nargs","braces_last","{1; nargs}()",1,1,TRUE
+"nargs","string_head","""nargs""()",1,1,TRUE
+"nargs","string_qualified","base::""nargs""()",1,1,TRUE
+"nargs","in_assignment","x <- nargs()",1,1,TRUE
+"nargs","in_condition","if (nargs()) 1",1,1,TRUE
+"nargs","in_argument","g(nargs())",1,1,TRUE
+"nargs","in_head","g(nargs())(1)",1,1,TRUE
+"nargs","nested","g <- function() nargs()",0,0,TRUE
+"nargs","nested_parens","g <- function() (base::nargs)()",0,0,TRUE
+"nargs","nested_called","(function() nargs())()",0,0,TRUE
+"nargs","by_string_do_call","do.call(""nargs"", list())",0,0,TRUE
+"nargs","by_string_get","get(""nargs"")()",0,0,TRUE
+"parent.frame","direct","parent.frame()",1,1,TRUE
+"parent.frame","qualified","base::parent.frame()",1,1,TRUE
+"parent.frame","internal","base:::parent.frame()",1,1,TRUE
+"parent.frame","parens","(parent.frame)()",1,1,TRUE
+"parent.frame","parens_qualified","(base::parent.frame)()",1,1,TRUE
+"parent.frame","double_parens","((base:::parent.frame))()",1,1,TRUE
+"parent.frame","braces","{parent.frame}()",1,1,TRUE
+"parent.frame","braces_last","{1; parent.frame}()",1,1,TRUE
+"parent.frame","string_head","""parent.frame""()",1,1,TRUE
+"parent.frame","string_qualified","base::""parent.frame""()",1,1,TRUE
+"parent.frame","in_assignment","x <- parent.frame()",1,1,TRUE
+"parent.frame","in_condition","if (parent.frame()) 1",1,1,TRUE
+"parent.frame","in_argument","g(parent.frame())",1,1,TRUE
+"parent.frame","in_head","g(parent.frame())(1)",1,1,TRUE
+"parent.frame","nested","g <- function() parent.frame()",0,0,TRUE
+"parent.frame","nested_parens","g <- function() (base::parent.frame)()",0,0,TRUE
+"parent.frame","nested_called","(function() parent.frame())()",0,0,TRUE
+"parent.frame","by_string_do_call","do.call(""parent.frame"", list())",0,0,TRUE
+"parent.frame","by_string_get","get(""parent.frame"")()",0,0,TRUE

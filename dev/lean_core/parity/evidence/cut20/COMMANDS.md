@@ -52,3 +52,10 @@ then `Rscript dev/bench/timing/check.R --protocol=dev/bench/timing/protocols/cut
 | --- | --- |
 | review/keep_refusals/ | `Rscript dev/lean_core/parity/cut20_keep_refusals.R --out=dev/lean_core/parity/evidence/cut20/review/keep_refusals` |
 | review/witness/, witness.log | `Rscript dev/lean_core/parity/hashed_frame_witness.R --lib=<pin> --out=dev/lean_core/parity/evidence/cut20/review/witness` |
+
+## Close review round 2 corrections (review/)
+
+| file | command |
+| --- | --- |
+| review/witness_round2/, witness_round2.log | `Rscript dev/lean_core/parity/hashed_frame_witness.R --lib=<pin> --out=dev/lean_core/parity/evidence/cut20/review/witness_round2` |
+| review/scan_gut.txt | `Rscript dev/lean_core/parity/evidence/cut20/review/scan_gut.R <round-1 witness> dev/lean_core/parity/hashed_frame_witness.R`, the round-1 witness being `git show e83cf032:dev/lean_core/parity/hashed_frame_witness.R` saved to a file |

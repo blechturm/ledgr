@@ -52,12 +52,22 @@ sys.source(file.path(repo, "dev/spikes/r_floor/fixture.R"), envir = fixture)
 # --- A. frame checks ---------------------------------------------------------
 
 forbidden <- c("missing", "sys.call", "sys.function", "match.call", "nargs", "parent.frame")
-# A call head names a function either as a symbol or as base::f / base:::f
-# (close review round 1, F2: a qualified call is a direct call too).
+# The function a call head names: a symbol (a string head parses as one),
+# base::f or base:::f, seen through any wrapping ( ) or through the value
+# of { } (close review rounds 1 and 2, F2: each is a direct call). Any other
+# head (a call that computes a function) names none; the scan still descends
+# into it, so a forbidden call inside the head is found. Lookups by string,
+# such as do.call("sys.call") or get("sys.call")(), are outside the static
+# scan (decision 3's stated limit; recorded in scan_cases.csv).
+call_head <- function(h, op) is.call(h) && is.symbol(h[[1L]]) && as.character(h[[1L]]) %in% op
 head_name <- function(h) {
+  repeat {
+    if (call_head(h, "(") && length(h) == 2L) h <- h[[2L]]
+    else if (call_head(h, "{") && length(h) >= 2L) h <- h[[length(h)]]
+    else break
+  }
   if (is.symbol(h)) return(as.character(h))
-  if (is.call(h) && length(h) == 3L && is.symbol(h[[1L]]) && as.character(h[[1L]]) %in% c("::", ":::") &&
-      identical(as.character(h[[2L]]), "base")) return(as.character(h[[3L]]))
+  if (call_head(h, c("::", ":::")) && length(h) == 3L && identical(as.character(h[[2L]]), "base")) return(as.character(h[[3L]]))
   NA_character_
 }
 scan_body <- function(x) {
@@ -65,8 +75,25 @@ scan_body <- function(x) {
   h <- head_name(x[[1L]])
   if (identical(h, "function")) return(character())
   c(if (!is.na(h) && h %in% forbidden) h,
-    unlist(lapply(as.list(x)[-1L], scan_body), use.names = FALSE))
+    unlist(lapply(as.list(x), scan_body), use.names = FALSE))
 }
+# Scan cases: every forbidden name in every direct spelling at the top level
+# must be found once; inside a defined function, and by string lookup, none.
+scan_spellings <- c(direct = "F()", qualified = "base::F()", internal = "base:::F()",
+  parens = "(F)()", parens_qualified = "(base::F)()", double_parens = "((base:::F))()",
+  braces = "{F}()", braces_last = "{1; F}()", string_head = "\"F\"()", string_qualified = "base::\"F\"()",
+  in_assignment = "x <- F()", in_condition = "if (F()) 1", in_argument = "g(F())", in_head = "g(F())(1)")
+scan_controls <- c(nested = "g <- function() F()", nested_parens = "g <- function() (base::F)()",
+  nested_called = "(function() F())()", by_string_do_call = "do.call(\"F\", list())", by_string_get = "get(\"F\")()")
+scan_cases <- do.call(rbind, lapply(forbidden, function(f) {
+  run <- function(set, expected) do.call(rbind, lapply(names(set), function(k) {
+    hits <- scan_body(str2lang(paste0("{", gsub("F", f, set[[k]], fixed = TRUE), "}")))
+    data.frame(name = f, spelling = k, code = gsub("F", f, set[[k]], fixed = TRUE), hits = length(hits),
+               expected = expected, stringsAsFactors = FALSE)
+  }))
+  rbind(run(scan_spellings, 1L), run(scan_controls, 0L))
+}))
+scan_cases$as_expected <- scan_cases$hits == scan_cases$expected
 faults <- list(
   none = list(),
   flag = list(lean_edit("loop.R", "lean_fold_envelope",
@@ -78,6 +105,8 @@ faults <- list(
     "  execution <- ledgr_validate_execution_spec(execution)", "  sys.call()", "after", mark = FALSE)),
   syscall_qualified = list(lean_edit("loop.R", "lean_fold_envelope_plain",
     "  execution <- ledgr_validate_execution_spec(execution)", "  base::sys.call()", "after", mark = FALSE)),
+  syscall_parens = list(lean_edit("loop.R", "lean_fold_envelope_plain",
+    "  execution <- ledgr_validate_execution_spec(execution)", "  (base::sys.call)()", "after", mark = FALSE)),
   # Control: a forbidden call inside a function the body defines is out of
   # the scan's scope and must not fail it.
   nested_control = list(lean_edit("loop.R", "lean_fold_envelope_plain",
@@ -89,6 +118,7 @@ expect_fail <- list(none = list(off = character(), on = character()),
                     unhashed = list(off = "frame_hashed", on = character()),
                     syscall = list(off = "scan", on = "scan"),
                     syscall_qualified = list(off = "scan", on = "scan"),
+                    syscall_parens = list(off = "scan", on = "scan"),
                     nested_control = list(off = character(), on = character()))
 
 frame_run <- function(fault, debug) {
@@ -133,6 +163,10 @@ frame_run <- function(fault, debug) {
              expect_ok = !names(checks) %in% expect_fail[[fault]][[if (debug) "on" else "off"]],
              plain_entries = seen$count, stringsAsFactors = FALSE)
 }
+utils::write.csv(scan_cases, file.path(out, "scan_cases.csv"), row.names = FALSE)
+cat(sprintf("A scan cases: %d names x %d spellings found, %d controls not found; %d of %d as expected -> %s\n",
+            length(forbidden), length(scan_spellings), length(scan_controls), sum(scan_cases$as_expected), nrow(scan_cases),
+            if (all(scan_cases$as_expected)) "as expected" else "NOT AS EXPECTED"))
 frame <- do.call(rbind, lapply(names(faults), function(f) rbind(frame_run(f, FALSE), frame_run(f, TRUE))))
 frame$as_expected <- frame$ok == frame$expect_ok
 utils::write.csv(frame, file.path(out, "frame_checks.csv"), row.names = FALSE)
@@ -252,6 +286,6 @@ cat(sprintf("C %d cases, %d fields: %d equal, %d expected differences (%s); %s\n
             sum(!sem$expected_equal), paste(unique(sem$case[!sem$expected_equal]), collapse = ", "),
             if (all(sem$as_expected)) "as expected" else "NOT AS EXPECTED"))
 
-ok <- all(frame$as_expected) && all(adapter$as_expected) && all(sem$as_expected)
+ok <- all(scan_cases$as_expected) && all(frame$as_expected) && all(adapter$as_expected) && all(sem$as_expected)
 cat(if (ok) "hashed-frame witness: PASS\n" else "hashed-frame witness: FAIL\n")
 quit(status = if (ok) 0L else 1L)

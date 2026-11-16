@@ -1,0 +1,1 @@
+78 of 114 as expected; failing spellings: parens, parens_qualified, double_parens, braces, braces_last, in_head 
