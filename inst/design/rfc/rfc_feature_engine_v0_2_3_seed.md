@@ -2,7 +2,8 @@
 
 - Author: Claude, 2026-11-16, at the maintainer's request (macro plan, order
   after Cut 20, item b: drafted while Cut 21 is reviewed).
-- Status: seed, for the maintainer's reading and then a Type 2 review. Binds
+- Status: seed; the maintainer answered Section 7 on 2026-11-16 (end of the
+  file). Next: a Type 2 review. Binds
   nothing.
 - Required by: macro plan WS16 point 6 ("a feature-engine RFC seed follows
   the map's feature numbers") and the order after Cut 20, items b and c (a
@@ -257,3 +258,16 @@ shape may change with the engine version.
    A compiled kernel is out of scope unless you name it.
 4. **Engine-version gap.** Fix it in stage 1, as proposed, or treat it as a
    separate contract correction?
+
+### Maintainer answers (2026-11-16)
+
+1. **Stage 1 first,** as its own cut with the pin as oracle, after Cut 21
+   (slice 4). The RFC on stages 2-3 measures on the cleaned path.
+2. **Internal registry.** Only ledgr ships adapters for now. The interface
+   is written so it could be opened to sister packages later, but no public
+   adapter contract is promised before CRAN.
+3. **Plain R.** The simple-instrument path makes one direct adapter call
+   per instrument without the segment machinery. A matrix entry point is
+   considered only if a measured gap remains; compiled code is out of
+   scope.
+4. **The engine-version fix goes into stage 1.**

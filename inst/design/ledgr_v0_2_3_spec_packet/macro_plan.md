@@ -1058,7 +1058,11 @@ public behavior except the explicit pulse-plumbing ledger differences.
      keeps adapters pluggable (TTR now, TA-Lib later) and settles how sweeps
      prepare and reuse features across candidates.
   c. **Feature cut** implementing the accepted RFC, with its own oracle
-     against the pin (as Cut 17), before slice 5.
+     against the pin (as Cut 17), before slice 5. The maintainer chose
+     (2026-11-16, seed Section 7) to run the seed's stage 1 (removals with
+     the same values and no contract change, including the engine-version
+     fix) as its own cut right after Cut 21, before the RFC's stages 2-3
+     (an internal adapter registry; a plain-R path for simple instruments).
   d. **Slice 5** (sweeps and workers, restart, walk-forward) on the new
      feature path, since the sweep's feature preparation (precompute
      payload, per-instrument split and rebuild) is what the RFC may change.
