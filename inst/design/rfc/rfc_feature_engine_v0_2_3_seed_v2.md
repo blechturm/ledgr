@@ -2,11 +2,12 @@
 
 - Author: Claude, 2026-11-16, at the maintainer's request (macro plan, order
   after Cut 20, items b and c).
-- Status: seed v2. Applies every finding of the Type 2 review of v1, and
-  the three corrections C1-C3 of its Type 1 confirmation
-  ([confirmation](rfc_feature_engine_v0_2_3_seed_v2_confirmation.md)). Binds
-  nothing. The maintainer's Section 7 answers (2026-11-16) stand; they are
-  restated in Section 7.
+- Status: accepted by the maintainer on 2026-11-16, after its Type 1
+  confirmation ([confirmation](rfc_feature_engine_v0_2_3_seed_v2_confirmation.md);
+  C1-C3 applied verbatim at `c01e7445`). Binds the feature work: the
+  stage-1 removal cut after Cut 21, and the cut for stages 2-3 before
+  slice 5 (macro plan, order after Cut 20, item c). It implements nothing
+  itself. The maintainer's Section 7 answers are restated in Section 7.
 - Changes from v1: corrects every finding of the Type 2 review
   ([review](rfc_feature_engine_v0_2_3_seed_review.md), on v1 at `7eae4ac0`:
   REVISE_SEED, F1-F13, all accepted; its probe is kept in
