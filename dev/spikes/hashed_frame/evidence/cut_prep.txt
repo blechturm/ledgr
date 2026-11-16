@@ -1,0 +1,5 @@
+(a) x=-1: plain "refused" [early], hashed "refused" [early], identical TRUE
+(a) x=1: plain 2 [body,exit], hashed 2 [body,exit], identical TRUE
+(b) local length() and seq_len(): plain list(99, "mine"); cmpfun identical TRUE; compiled body identical TRUE
+(c) compile seconds, 5 runs: 0.34 0.36 0.37 0.34 0.34; median 0.34
+R 4.6.1; loop.R at a929b1fa

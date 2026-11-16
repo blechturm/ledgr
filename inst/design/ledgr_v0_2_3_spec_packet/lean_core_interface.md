@@ -1399,3 +1399,42 @@ no package rule. The lean loop calls the pin's valuation state, provider
 view, frozen restriction and strategy-target availability check as their
 owners. Each is "retain" unless the switch cut's scripted old-fold caller
 list shows otherwise.
+
+### 19.12 Hashed envelope frame (Cut 20)
+
+- Status: proposed with Cut 20 on 2026-11-16 (workstream 38, LDG-3241 and
+  LDG-3242). A tuning cut with no behaviour change; it needs no RFC under
+  the family method (macro WS16). The maintainer chose the form on
+  2026-11-16 (`dev/spikes/hashed_frame/closeout.md`, Decision).
+- Why. R searches an unhashed function frame name by name. The envelope
+  binds about 140 names, so every lookup of a name it does not bind (base
+  and package functions, the lean helpers) passes all of them, about 1 us
+  per binding per pulse (Cut 19's close). The spike evaluated the
+  envelope's compiled body in a hashed environment: 40 to 47 us per pulse
+  saved on the four comparison shapes, identical results.
+- Form. `loop.R` keeps the envelope as an ordinary function,
+  `lean_fold_envelope_plain`, unchanged inside. Its body is compiled once
+  when `loop.R` is sourced (`lean_envelope_code`). The seat,
+  `lean_fold_envelope(execution, output_handler)`, runs the plain function
+  when `.lean_debug` is TRUE and otherwise evaluates the compiled body in
+  `new.env(hash = TRUE, parent = environment())`, whose parent is the
+  wrapper's call frame, so `execution` and `output_handler` resolve as
+  before. Section 19.1's seat, install and return are unchanged.
+- Inside the body. `on.exit()` attaches to `eval()` and runs when the body
+  ends; `return()` at the top level returns from `eval()` with the same
+  value (the coverage refusal relies on this). `missing()`, `sys.call()`,
+  `sys.function()`, `match.call()`, `nargs()` and `parent.frame()` must not
+  be used at the body's top level: they would see `eval()`'s frame.
+  Functions defined in the body are unaffected. A witness scans for them.
+- Debugging. With debug on, the plain function runs, so `debug()` and
+  `debugonce()` on `lean_fold_envelope_plain` step through it, and every
+  parity run checks both forms (hashed with debug off, plain with debug
+  on). With debug off, `traceback()` shows two extra `eval()` lines and
+  `recover()` still reaches the envelope's state.
+- Loading. `lean_core_load()` and the timing protocol use `sys.source()`,
+  which sets the `topLevelEnvironment` option; the compile call clears it
+  for its duration. Compiling takes about 0.35 s per load.
+- Switch obligation. When the loop moves into `R/`, the body is compiled
+  when the package is installed, the `topLevelEnvironment` workaround goes,
+  and the package's debug mechanism keeps the plain function as the path
+  that can be stepped through.

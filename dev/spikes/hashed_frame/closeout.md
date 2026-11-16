@@ -67,6 +67,14 @@ envelope's body, environment or identity need small edits:
 check by identity) and the Cut 19 frame census `ebind.R`. The variant driver
 was not run on the fork.
 
+Correction (cut preparation, 2026-11-16). Production keeps the name
+`lean_fold_envelope` for the wrapper in the lean environment, so
+`loop_shortcuts.R:176` and `loop_workloads.R:274` need no edit. The edits
+that do follow the plain function's new name are the variant edits in
+`loop_parity.R` that name the envelope (`store_variant()` and
+`zero_pulse_align`) and `ebind.R`. `cut_prep.R` adds three checks the spike
+did not make (`evidence/cut_prep.txt`).
+
 ## Debugging
 
 `debug_probe.R` (`evidence/debug_probe.txt`) uses a toy envelope whose stage

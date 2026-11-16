@@ -1007,6 +1007,10 @@ public behavior except the explicit pulse-plumbing ledger differences.
   runs the full check set once on the final code and a timing record, and
   records the switch obligation: the body compiled at package install once
   the loop moves into `R/`. Measure, cut, Codex cut review, implement.
+  Cut 20 (proposed 2026-11-16, workstream 38) carries it; its cut
+  preparation found that only the variant edits naming the envelope and
+  the frame census need the new name (`loop_shortcuts.R` and
+  `loop_workloads.R` read the unchanged seat).
 - **Optimization manual update (maintainer, 2026-11-15).** Right after the
   hashed-frame spike, one documentation pass brings
   `inst/design/manual/optimization_coding_style.qmd` (last changed

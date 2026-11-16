@@ -23,6 +23,7 @@ The fork (`hashed.R`, sourced after `loop.R` into the lean environment) keeps
 | `probe.R` | prerequisite: compiled stages, hashed frame, one workload |
 | `run.R` | runner: per-stage and pulse-loop time per pulse, current lean against the fork, alternating, the four comparison shapes; writes `evidence/stages.csv`, `evidence/summary.csv` |
 | `debug_probe.R` | what the call stack and `recover()` see under the fork (closeout, Debugging) |
+| `cut_prep.R` | cut preparation (Cut 20): early `return()` and `on.exit()`, base-name shadowing, compile time; writes `evidence/cut_prep.txt` |
 | `check.R` | checker: the gate subset in a fork worktree with debug off and on against the freeze, a gutted fork that must fail, and the package-scope guard |
 
 Fork worktree: `git worktree add --detach C:/Users/maxth/ledgr-wt/hashed-frame <commit>`;
