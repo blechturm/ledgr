@@ -6,16 +6,16 @@
 #    a hashed environment (env.profile() of the frame fold_start sees is not
 #    NULL); debug on enters the plain function once per fold (so debug() and
 #    debugonce() stop there) in an unhashed frame; lean_envelope_code is
-#    bytecode; a static scan finds none of missing(), sys.call(),
-#    sys.function(), match.call(), nargs(), parent.frame() at the plain
-#    body's top level outside the formals and bodies of the functions it
-#    defines, however the call head is spelled (scan_cases.csv lists the
-#    spellings and controls). Six faults, applied as text edits
-#    (loop_edits.R), must each fail: the wrapper ignoring the flag (debug
-#    on), an unhashed environment (debug off), and at the top level
-#    sys.call(), base::sys.call(), (base::sys.call)() and
-#    ({ sys.call(); `function` })(NULL, 1) (both). A control,
-#    base::sys.call() inside a function the body defines, must fail no check.
+#    bytecode; a static scan finds no mention of missing, sys.call,
+#    sys.function, match.call, nargs or parent.frame, called or not, at the
+#    plain body's top level outside the formals and bodies of the functions
+#    it defines (scan_cases.csv lists the spellings and controls). Seven
+#    faults, applied as text edits (loop_edits.R), must each fail: the
+#    wrapper ignoring the flag (debug on), an unhashed environment (debug
+#    off), and at the top level sys.call(), base::sys.call(),
+#    (base::sys.call)(), ({ sys.call(); `function` })(NULL, 1) and
+#    (base::`(`)(sys.call)() (both). A control, base::sys.call() inside a
+#    function the body defines, must fail no check.
 # B. The test-only adapter (cut review R1): loop_parity.R --witness=
 #    hashed_frame_adapter.R with debug on runs the production-loaded compiled
 #    body in its hashed frame with the debug assertions on, on
@@ -54,42 +54,40 @@ sys.source(file.path(repo, "dev/spikes/r_floor/fixture.R"), envir = fixture)
 # --- A. frame checks ---------------------------------------------------------
 
 forbidden <- c("missing", "sys.call", "sys.function", "match.call", "nargs", "parent.frame")
-# The function a call head names: a symbol (a string head parses as one),
-# base::f or base:::f, seen through any wrapping ( ) or through the value
-# of { } (close review rounds 1 and 2, F2: each is a direct call). Any other
-# head (a call that computes a function) names none; the scan still descends
-# into it, so a forbidden call inside the head is found. Lookups by string,
-# such as do.call("sys.call") or get("sys.call")(), are outside the static
-# scan (decision 3's stated limit; recorded in scan_cases.csv).
-call_head <- function(h, op) is.call(h) && is.symbol(h[[1L]]) && as.character(h[[1L]]) %in% op
-head_name <- function(h) {
-  repeat {
-    if (call_head(h, "(") && length(h) == 2L) h <- h[[2L]]
-    else if (call_head(h, "{") && length(h) >= 2L) h <- h[[length(h)]]
-    else break
-  }
-  if (is.symbol(h)) return(as.character(h))
-  if (call_head(h, c("::", ":::")) && length(h) == 3L && identical(as.character(h[[2L]]), "base")) return(as.character(h[[3L]]))
-  NA_character_
-}
+# The scan flags every mention of the six names at the body's top level,
+# called or not: a symbol (a string call head parses as one) or the name
+# after any pkg:: or pkg:::, anywhere in the expression, call heads
+# included. Only the formals and body of a function the body defines are
+# skipped (a `function` or pkg::`function` call). Close review rounds 1-4
+# (F2) found call-head spellings that a rule recognising calls missed; a rule
+# on mentions has no such spelling, and catches an alias (f <- sys.call)
+# too. Lookups by string, such as do.call("sys.call") or get("sys.call")(),
+# stay outside the static scan (decision 3's stated limit; scan_cases.csv
+# records them as controls).
+is_namespaced <- function(x) is.call(x) && length(x) == 3L && is.symbol(x[[1L]]) && as.character(x[[1L]]) %in% c("::", ":::")
 scan_body <- function(x) {
+  if (is.symbol(x)) return(if (as.character(x) %in% forbidden) as.character(x) else character())
   if (!is.call(x)) return(character())
-  h <- head_name(x[[1L]])
-  # A function definition: its formals and body are skipped, but a head that
-  # computes `function` runs at the top level and is scanned (round 3, F2).
-  if (identical(h, "function")) return(scan_body(x[[1L]]))
-  c(if (!is.na(h) && h %in% forbidden) h,
-    unlist(lapply(as.list(x), scan_body), use.names = FALSE))
+  if (is_namespaced(x)) return(if (as.character(x[[3L]]) %in% forbidden) as.character(x[[3L]]) else character())
+  h <- x[[1L]]
+  if (identical(h, as.name("function")) || (is_namespaced(h) && identical(as.character(h[[3L]]), "function")))
+    return(character())
+  unlist(lapply(as.list(x), scan_body), use.names = FALSE)
 }
-# Scan cases: every forbidden name in every direct spelling at the top level
-# must be found once; inside a defined function, and by string lookup, none.
+# Scan cases: every forbidden name in every spelling at the top level must
+# be found once; in a defined function's formals or body, and by string
+# lookup, none.
 scan_spellings <- c(direct = "F()", qualified = "base::F()", internal = "base:::F()",
   parens = "(F)()", parens_qualified = "(base::F)()", double_parens = "((base:::F))()",
   braces = "{F}()", braces_last = "{1; F}()", string_head = "\"F\"()", string_qualified = "base::\"F\"()",
   in_assignment = "x <- F()", in_condition = "if (F()) 1", in_argument = "g(F())", in_head = "g(F())(1)",
-  in_function_head = "({ F(); `function` })(NULL, 1)", in_function_head_qualified = "({ F(); base::`function` })(NULL, 1)")
+  in_function_head = "({ F(); `function` })(NULL, 1)", in_function_head_qualified = "({ F(); base::`function` })(NULL, 1)",
+  paren_operator = "(`(`)(F)()", paren_operator_qualified = "(base::`(`)(F)()", brace_operator_qualified = "(base::`{`)(1, F)()",
+  selected_in_head = "(if (TRUE) F else identity)()", alias = "f <- F", as_value = "lapply(1, F)")
 scan_controls <- c(nested = "g <- function() F()", nested_parens = "g <- function() (base::F)()",
-  nested_called = "(function() F())()", by_string_do_call = "do.call(\"F\", list())", by_string_get = "get(\"F\")()")
+  nested_called = "(function() F())()", in_formals = "g <- function(a = F()) a",
+  nested_qualified_constructor = "base::`function`(as.pairlist(alist(a = )), quote(F()))",
+  by_string_do_call = "do.call(\"F\", list())", by_string_get = "get(\"F\")()")
 scan_cases <- do.call(rbind, lapply(forbidden, function(f) {
   run <- function(set, expected) do.call(rbind, lapply(names(set), function(k) {
     hits <- scan_body(str2lang(paste0("{", gsub("F", f, set[[k]], fixed = TRUE), "}")))
@@ -114,6 +112,8 @@ faults <- list(
     "  execution <- ledgr_validate_execution_spec(execution)", "  (base::sys.call)()", "after", mark = FALSE)),
   syscall_function_head = list(lean_edit("loop.R", "lean_fold_envelope_plain",
     "  execution <- ledgr_validate_execution_spec(execution)", "  ({ sys.call(); `function` })(NULL, 1)", "after", mark = FALSE)),
+  syscall_paren_operator = list(lean_edit("loop.R", "lean_fold_envelope_plain",
+    "  execution <- ledgr_validate_execution_spec(execution)", "  (base::`(`)(sys.call)()", "after", mark = FALSE)),
   # Control: a forbidden call inside a function the body defines is out of
   # the scan's scope and must not fail it.
   nested_control = list(lean_edit("loop.R", "lean_fold_envelope_plain",
@@ -127,6 +127,7 @@ expect_fail <- list(none = list(off = character(), on = character()),
                     syscall_qualified = list(off = "scan", on = "scan"),
                     syscall_parens = list(off = "scan", on = "scan"),
                     syscall_function_head = list(off = "scan", on = "scan"),
+                    syscall_paren_operator = list(off = "scan", on = "scan"),
                     nested_control = list(off = character(), on = character()))
 
 frame_run <- function(fault, debug) {

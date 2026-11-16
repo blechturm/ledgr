@@ -66,3 +66,10 @@ then `Rscript dev/bench/timing/check.R --protocol=dev/bench/timing/protocols/cut
 | --- | --- |
 | review/witness_round3/, witness_round3.log | `Rscript dev/lean_core/parity/hashed_frame_witness.R --lib=<pin> --out=dev/lean_core/parity/evidence/cut20/review/witness_round3` |
 | review/scan_gut.txt, scan_gut_round2.txt | `Rscript dev/lean_core/parity/evidence/cut20/review/scan_gut.R <earlier witness> dev/lean_core/parity/hashed_frame_witness.R`, the earlier witness being `git show e83cf032:...` (round 1's scan) or `git show e7627f34:...` (round 2's) of `dev/lean_core/parity/hashed_frame_witness.R`, saved to a file |
+
+## Close review round 4 correction (review/)
+
+| file | command |
+| --- | --- |
+| review/witness_round4/, witness_round4.log | `Rscript dev/lean_core/parity/hashed_frame_witness.R --lib=<pin> --out=dev/lean_core/parity/evidence/cut20/review/witness_round4` |
+| review/scan_gut.txt, scan_gut_round2.txt, scan_gut_round3.txt | `Rscript dev/lean_core/parity/evidence/cut20/review/scan_gut.R <earlier witness> dev/lean_core/parity/hashed_frame_witness.R` with the witness of e83cf032, e7627f34 and e39201fb respectively, saved to a file |
