@@ -1012,6 +1012,31 @@ public behavior except the explicit pulse-plumbing ledger differences.
   preparation found that only the variant edits naming the envelope and
   the frame census need the new name (`loop_shortcuts.R` and
   `loop_workloads.R` read the unchanged seat).
+- **Order after Cut 20 (maintainer, 2026-11-16).** The cost map on Cut 20's
+  code (`dev/bench/v0_2_3_lean_tuning_profile/results/cost_map_cut20`, at
+  381c0d0c) shows the time outside the pulse loop unchanged since Cut 16
+  (3.15 of 3.79 s on 500 x 1,260, 2.37 of 2.56 s on 1,166 x 252): the store
+  write after the loop 0.6-1.3 s (the R floor's batched write took 0.08-0.10
+  s), features 0.4-1.0 s, envelope setup and commit 0.3-0.9 s. Neither the
+  store write nor the feature path is code the switch rewrites. The order:
+  a. **Store-write tuning cut** on `dev/lean_core` (the write after the loop,
+     `lean_loop_publish` and the record expansion), before slice 4, so
+     slice 4's new record kinds (corporate-action events, terminal
+     dispositions) extend the tuned writer. Measure (a drill splitting R
+     row building from the DuckDB append), cut, Codex cut review, implement.
+  b. **Slice 4** (membership, terminals, corporate actions, imports) on the
+     tuned writer. The **feature-engine RFC seed** (owed since point 6) is
+     drafted alongside it: the feature path is package code read by the
+     loop only through the projection (`R/runtime-projection.R:10-36`), so
+     it does not conflict with slice 4's `dev/lean_core` work. The seed
+     keeps adapters pluggable (TTR now, TA-Lib later) and settles how sweeps
+     prepare and reuse features across candidates.
+  c. **Feature cut** implementing the accepted RFC, with its own oracle
+     against the pin (as Cut 17), before slice 5.
+  d. **Slice 5** (sweeps and workers, restart, walk-forward) on the new
+     feature path, since the sweep's feature preparation (precompute
+     payload, per-instrument split and rebuild) is what the RFC may change.
+  e. The switch.
 - **Optimization manual update (maintainer, 2026-11-15).** Right after the
   hashed-frame spike, one documentation pass brings
   `inst/design/manual/optimization_coding_style.qmd` (last changed
