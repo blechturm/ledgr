@@ -1,0 +1,28 @@
+crossover_3x40               PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 2.2 s  lean 3.7 s
+final_pulse_trades           PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 2.3 s  lean 1.9 s
+reconciliation_stop          PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.2 s  lean 1.4 s
+s2_sizing_batch              PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.7 s  lean 4.5 s
+s3_mixed_transition          PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.8 s  lean 5.6 s
+s3_multi_stop                PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.8 s  lean 3.1 s
+sell_buy_same_pulse          PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.5 s  lean 1.8 s
+tight_cash                   PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.5 s  lean 2.2 s
+witness_capacity             PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=0  pinned 0.9 s  lean 0.9 s
+witness_max_pulses           PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.2 s  lean 1.7 s
+witness_nonfinite            PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=0  pinned 0.9 s  lean 0.9 s
+witness_prefix_reads         PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.5 s  lean 1.8 s
+witness_prefix_reads_sweep   PASS      identical  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=1  pinned 1.0 s  lean 1.1 s
+witness_state_container      PASS      identical  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=0  pinned 1.5 s  lean 1.6 s
+witness_state_refusal        PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=0  pinned 0.9 s  lean 0.9 s
+witness_sweep                PASS      identical  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=1  pinned 0.8 s  lean 0.8 s
+witness_zero_pulses          PASS      identical  lean 3  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.5 s  lean 1.9 s
+s4_opening                   PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.4 s  lean 2.0 s
+s4_carried_lots              PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.5 s  lean 1.8 s
+s4_prefix_opening_sweep      PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=1  pinned 0.5 s  lean 0.5 s
+s4_dividend                  PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.6 s  lean 2.0 s
+s4_dividend_mixed            PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.6 s  lean 2.6 s
+s4_dividend_skip             PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.6 s  lean 1.9 s
+s4_cash_refused              PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.1 s  lean 1.2 s
+s4_prefix_dividend_sweep     PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=1  pinned 0.8 s  lean 0.6 s
+s4_carried                   PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 1.7 s  lean 1.9 s
+frozen paths (batch1, debug 0): 26 of 26 workloads checked
+396 tables, 0 different; verdicts: PASS 26
