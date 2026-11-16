@@ -1402,8 +1402,11 @@ list shows otherwise.
 
 ### 19.12 Hashed envelope frame (Cut 20)
 
-- Status: proposed with Cut 20 on 2026-11-16 (workstream 38, LDG-3241 and
-  LDG-3242). A tuning cut with no behaviour change; it needs no RFC under
+- Status: accepted by the maintainer with Cut 20 on 2026-11-16; implemented
+  in workstream 38 (LDG-3241 and LDG-3242), close outcome kept (decision 7:
+  speed and pulse-regression conditions met; the unresolved outside-loop
+  cells accepted by the maintainer as noise on 2026-11-16, see LDG-3242).
+  A tuning cut with no behaviour change; it needs no RFC under
   the family method (macro WS16). The maintainer chose the form on
   2026-11-16 (`dev/spikes/hashed_frame/closeout.md`, Decision).
 - Why. R searches an unhashed function frame name by name. The envelope
