@@ -252,8 +252,8 @@ loop_mutations <- list(
   # Captured rows lost or repeated after a correct installation: the event
   # tables, not the settlement check, catch them. The duplicate is the
   # captured tail after the last fill, written twice.
-  captured_row_dropped = variant("differ", list(edit("facts.R", "lean_facts_accept", "  s4$blocks[[s4$nb]] <- rows",
-    "  s4$blocks[[s4$nb]] <- rows[-1L, , drop = FALSE]")), tables = "^ledger_events$"),
+  captured_row_dropped = variant("differ", list(edit("facts.R", "lean_facts_accept", "  blocks[[s4$nb]] <- rows",
+    "  blocks[[s4$nb]] <- rows[-1L, , drop = FALSE]")), tables = "^ledger_events$"),
   captured_row_duplicated = variant("differ", list(edit("loop.R", "lean_loop_publish",
     "    lean_facts_emit_ca(output_handler, ca, cur, .Machine$integer.max, bound, tick)   # rows after the last fill",
     "    if (!is.null(ca)) lean_facts_emit_ca(output_handler, ca, nrow(ca), .Machine$integer.max, bound, tick)", "after")),
@@ -280,8 +280,8 @@ loop_mutations <- list(
     edit("loop.R", "lean_fold_envelope_plain", "      ca <- lean_facts_rows(s4)", "      ca <- NULL")),
     tables = "^prefix_reads$"),
   # The capture's growth loses the blocks already held.
-  capture_lost_at_growth = variant("differ", list(edit("facts.R", "lean_facts_accept", "    length(s4$blocks) <- s4$cap",
-    "    s4$blocks <- vector(\"list\", s4$cap)")), error = ".", tables = "^ledger_events$"),
+  capture_lost_at_growth = variant("differ", list(edit("facts.R", "lean_facts_accept", "    length(blocks) <- s4$cap",
+    "    blocks <- vector(\"list\", s4$cap)")), error = ".", tables = "^ledger_events$"),
   # A captured block written whole, past the terminal batch bound.
   nonfill_block_unsplit = variant("unbounded", list(edit("facts.R", "lean_facts_emit_ca",
     "    e <- min(last, cur + bound - 1L)", "    e <- last")), tables = "^$"),

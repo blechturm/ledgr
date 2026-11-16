@@ -34,18 +34,23 @@ lean_facts_run_state <- function(plan, handler, cap = 4L) {
   s4
 }
 
-# The capture's append: validate, advance the boundary, keep the block.
+# The capture's append: validate, advance the boundary, keep the block. The
+# block list is detached while written, so the write does not copy it
+# (optimization coding style, shape 7; as marks.R's row buffer).
 lean_facts_accept <- function(s4, rows) {
   if (is.null(rows) || nrow(rows) == 0L) return(invisible(TRUE))
   p <- ledgr_validate_accounting_append(rows, prior_event_seq = s4$bseq, prior_ts_utc = s4$bts)
   s4$bseq <- utils::tail(p$event_seq, 1L)
   s4$bts <- utils::tail(p$ts_utc, 1L)
+  blocks <- s4$blocks
+  s4$blocks <- NULL
   if (s4$nb == s4$cap) {
     s4$cap <- 2L * s4$cap
-    length(s4$blocks) <- s4$cap
+    length(blocks) <- s4$cap
   }
   s4$nb <- s4$nb + 1L
-  s4$blocks[[s4$nb]] <- rows
+  blocks[[s4$nb]] <- rows
+  s4$blocks <- blocks
   s4$nrows <- s4$nrows + nrow(rows)
   invisible(TRUE)
 }
