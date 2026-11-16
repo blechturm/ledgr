@@ -2897,9 +2897,12 @@ cuts:
       missed (cash 10005 against 10000, one CASHFLOW row short) and debug
       on does not stop it. With the pin's plan posting through a capture
       handler and its rows published after the loop in event order with the
-      fills: identical. Facts with only the refusal lifted: halts, delistings
-      and acquisitions stop at the debug check "Lean execution view differs
-      from the provider's at pulse 3". With a per-pulse execution view,
+      fills: identical. With the fact-family refusal lifted (cut review R6),
+      s4_halt stops at the execution-view debug check on pulse 3. In
+      e_facts_debug1.csv, s4_terminal instead silently misses its
+      disposition (day-7 cash 9846.25 against 9546.25); the acquisition
+      and v201 rows do not record that debug error. These are separate
+      failures requiring separate checks. With a per-pulse execution view,
       plan and terminal dispositions, the execution-restriction refusal
       lifted, and the strategy, planner and records on each pulse's
       context axis: identical. Final patch: 10 s4_ workloads and 6 affected
@@ -2930,7 +2933,18 @@ cuts:
       every terminal outcome (dispose, haircut, unlabeled, refuse, frozen
       fallback), execution restrictions and the empty public domain. Where
       the pin refuses an input, the lean loop refuses it with the same
-      condition. After this cut the only coverage refusals are slice 5's
+      condition. Coverage also includes (cut review R7): held and unheld
+      incomplete or refused corporate facts and unmodeled subtypes,
+      including report_only, refuse and no-effective-clock reporting;
+      effective_close and next_open cash posting, including late knowledge
+      and a no-op or unheld cash row; the quotation_only, status_unknown
+      and status_unknown_or_conflicting restrictions; and the
+      last_permissible, last_mark, write_off, haircut and refuse terminal
+      choices, exact-label and default matching, and the three frozen
+      fallback choices. The package owners' tests remain their semantic
+      oracle; small integration witnesses prove these routes receive the
+      correct inputs and that their rows and conditions reach the lean
+      output. After this cut the only coverage refusals are slice 5's
       (sweep workers, compiled FIFO, restart, walk-forward and the
       checkpoint control) and the prepared-axis guard.
       (3) Reuse the package's owners; copy no rule (maintainer,
@@ -2951,7 +2965,31 @@ cuts:
       in a typed column; a fill block is split where the numbering jumps
       over a corporate-action row, found by one vectorised comparison, not
       a per-fill loop. The output handler's strictly increasing event_seq
-      check is the order oracle.
+      check is the order oracle. Three further rules (cut review R2-R4):
+      (a) Acceptance. The capture append is the in-memory acceptance
+      boundary. Before accepting rows or allowing the caller to install
+      returned settlement state, it calls the package's accounting append
+      validator with the current mixed-event sequence and timestamp
+      boundary. The boundary advances only on acceptance, including
+      accepted fills; a refusal keeps the original condition and its
+      valuation-stage attribution. This validation stays in production and
+      reuses its owner rather than copying its predicates. Final transfer
+      validation does not replace this boundary.
+      (b) Committed prefix. The running fold's committed-prefix reader
+      covers the pre-loop opening boundary, each accepted P1 cash or
+      disposition append, and accepted fill ranges. Reads return exactly
+      the accepted mixed prefix with its original event_seq and rows,
+      without a sink call or store write. A non-fill acceptance is visible
+      before that pulse's strategy call, including on a pulse that later
+      stops. The fill-only capacity population and its P5 acceptance
+      boundary are unchanged.
+      (c) Position history. The position history used for implicit
+      records includes accepted P1 non-fill position changes as well as
+      fills. Exact installed book nets are recorded with their effective
+      pulse and stage, so a P1 disposition affects that pulse's decisions
+      and a P4 fill affects subsequent decisions, and they are carried
+      across terminal expansion ranges. The history is not reconstructed
+      from fills alone or by summing position deltas.
       (5) Which runs take the marked path. A run takes slice 3's marked
       path when its planes hold a missing bar or close (as now), when it
       declares any fact family other than sessions, when it carries a
@@ -2987,17 +3025,33 @@ cuts:
       the cell's ordinal in its context; decision_order is
       (ordinal - 1) x axis size + run position, as the pin writes it.
       Members come from the marks state. Reconciliation gross is taken on
-      the context. The empty public domain (no member) calls the strategy
-      and takes the target fallback (deletion-readiness seed v2, F3).
+      the context. Implicit records follow decision 4(c)'s position
+      history. Empty context (cut review R5) means zero decision-axis
+      instruments, not zero members. On a deciding empty context the loop
+      calls the strategy, accepts the pin's named zero-length target forms,
+      preserves portfolio state, aligns asset state to the empty axis and
+      emits the pin's one empty_public_domain decision row with its logical
+      sequence and summary contribution. With no members but held
+      nonmembers, those holdings stay on the context under the ordinary
+      holding and target rules (contracts.md, the empty public domain;
+      R/availability-provider-prepared.R:522; R/fold-engine.R:927).
       (8) The probe's shortcuts are replaced: the mechanical renaming of
       P2's variables, the per-pulse list of context positions with
       lengths() for the layout, the loop over pulses that built the ordinal
       matrix in the record expansion, and the probe's stop helper. The
       ordinals come from the typed context columns by vector operations.
-      (9) Debug. A new per-pulse debug check compares lean cash, positions
-      and lots after corporate-action settlement and after dispositions
-      with the plan's returned state (the probe's missed dividend passed
-      debug on). On a marked run the context check compares the lean
+      (9) Debug (cut review R6). At every entered P1 with an execution
+      corporate-action plan, debug verifies exactly one post invocation
+      and that its returned state was installed before valuation; after
+      each disposition call it likewise verifies installation before the
+      next view. The expectation survives omission of the production call
+      or installation: a per-pulse unset result and call witness is checked
+      independently of that branch. Cash, run-axis positions and the lot
+      book are compared without replaying a second mutable plan. All
+      assertion machinery stays debug-only. The probe's missed dividend
+      passed debug on; this check is what must catch an omitted post or
+      installation, while dropped or duplicated captured rows after a
+      correct installation are caught by the event tables. On a marked run the context check compares the lean
       context with the pin's builder, as slice 3 does. Debug-only code
       stays in the debug block.
       (10) Workloads, in a new loop_workloads_slice4.R. The probe's 10 s4_
@@ -3012,8 +3066,11 @@ cuts:
       each with its stop or disposition row; membership entry and exit
       (membership_changed_before_execution, a non-member exposure
       increase refused with ledgr_nonmember_exposure_increase); a
-      restricted target (ledgr_restricted_target, target_restricted); a
-      halt; the empty public domain; asset-scoped strategy state across a
+      restricted target (condition class ledgr_restricted_target with
+      reason = restricted_target, its class vector, message, reason and
+      affected instrument_ids compared against the pin; target_restricted
+      is the view column, cut review R7); a halt; the empty context and
+      the no-member context with held nonmembers (decision 7); asset-scoped strategy state across a
       context change; features and history reads on a changing context; a
       carried opening (frozen set, lots, pending entitlements and position
       facts) through the package's walk-forward opening constructor
@@ -3024,21 +3081,108 @@ cuts:
       loop_freeze.csv. Branch reach is asserted from the pin's values
       (loop_reach; an empty matching set fails), and a cross-check shows
       each predicate fails on at least one other slice-4 workload (as
-      slice3_reach_cross.R). Batch one covers corporate-action and
-      disposition rows that span terminal batches. Existing frozen rows
-      move only as the probe found (dense_dividend_state,
-      avail_acquisition, prep_fixture now lean; dense_risk_features,
-      avail_terminal_resume, walk_forward refused at slice 5), each listed
-      before and after in the closing ticket's evidence; any other moved
-      row fails.
+      slice3_reach_cross.R). slice4_reach_cross.R has an explicit required
+      workload and predicate list, refuses missing pin dumps or predicates,
+      requires nonempty own-case evidence and a false result on another
+      workload, and checks the growth, ordering and prefix cases below as
+      well as the feature routes (cut review R8). A CASHFLOW predicate
+      selects corporate_action_cash, not opening_position; witnesses assert
+      source and source_fact_id and the policy, choice, basis and
+      late-arrival fields as well as reason codes, and quantity-effect
+      witnesses assert the pin's report-only or refuse behaviour and
+      unchanged recipient positions (cut review R7).
+      P1 precedence (cut review R7) is frozen by collision witnesses: a
+      cash refusal together with a due quantity refusal; a scheduled
+      disposition blocked while lifetime policy would otherwise dispose; a
+      lifetime group containing both disposable and blocked holdings;
+      successful P1 cash and disposition effects followed by a valuation
+      stop in another holding; and a normally completing pulse with cash,
+      a plan disposition, a lifetime disposition and fills. The stopped
+      cases assert exact reason and reasons, affected IDs and exposure, the
+      accepted event and diagnostic prefixes, processed and full_run and
+      both clocks, with no stopped-pulse equity or P2-P5 effects; the
+      blocked lifetime group asserts no partial lifetime disposition. A
+      witness proves the view re-read removes a disposed nonmember from
+      that pulse's context, and others assert the initial entitlement
+      boundary and the next boundary after P1 dispositions but before P4
+      fills, including on a skipped decision pulse, with quantities that
+      distinguish wrong placement.
+      Records and prefixes (cut review R2-R5): a scheduled disposition
+      with no lifetime fact, current parent bars and subsequent clean
+      holds, repeated with another fill before or after it and at batch
+      one, asserting zero post-disposition implicit targets, quantities and
+      positions; the finite-input dividend-overflow witness (10 entitled
+      units, a gross dividend of 1e308), comparing the pin's condition
+      classes, message, pulse, stage and rolled-back output; memory-prefix
+      observations before the strategy call and at reconciliation on
+      dividend and disposition workloads, with and without openings and on
+      a later stop, comparing counts and full event digests; a context
+      that shrinks through zero and grows again, with an entrant and a
+      re-entering departed ID, asserting their defaults and portfolio-state
+      continuity through recorded strategy reads; a noncontiguous strict
+      subset of the run axis with distinct bar, feature and history values,
+      clean fills and holds, so the context ordinal differs from the run
+      position, asserting exact decision_seq and decision_order (on actual
+      implicit rows; an empty matching set fails), fill and rejection
+      mapping and no decisions or fills for non-context IDs; and a context
+      retained and read after a later context change.
+      Growth and batches (cut review R8): each new growth branch (captured
+      blocks, typed context positions, the position-transition record) is
+      exercised after a nonempty prefix, with used and allocated capacity
+      reported and the old prefix, incoming rows and typed columns shown
+      to survive; a small direct witness may lower initial capacity without
+      changing a registered workload's setup or oracle. Batch one includes
+      a single captured block longer than the bound, simultaneous actions
+      on several instruments, cash, disposition and fill interleaving, and
+      a trailing non-fill block after the last fill; every terminal append
+      and expansion range is bounded, captured blocks are split as well as
+      fill blocks, and each accepted row is transferred once in original
+      event order, with inert hooks and both debug settings. No per-event
+      R loop is introduced at publication.
+      Existing rows (cut review R9). Against the effective freeze at
+      381c0d0c, the final gate changes exactly these existing rows at each
+      debug setting (backstop stays empty): dense_dividend_state: 0 folds,
+      corporate actions -> 4 folds, no refusal; avail_acquisition: 0
+      folds, corporate actions -> 4 folds, no refusal; prep_fixture: 0
+      folds, opening positions and imports -> 1 fold, no refusal;
+      dense_risk_features and avail_terminal_resume: each 0 folds, opening
+      positions and imports; sweep workers -> 4 folds, sweep workers;
+      walk_forward: 0 folds, opening positions and imports; walk-forward
+      -> 4 folds, walk-forward. These are twelve existing gate-row updates
+      across debug 0 and 1. Exact intermediate workstream paths are
+      recorded separately before that workstream's freeze check; the
+      no-facts close does not require the final facts lift. Every new
+      workload, mode and debug row is registered, and batch-one and inert
+      rows are enumerated separately. Any other existing-row change is
+      rejected. Changes are applied and audited through
+      loop_freeze_changes.csv.
       (11) Variants, recorded as additions in loop_variant_changes.csv,
       each reached and caught by its expected signal with debug off (and
-      on where named): corporate_action_dropped (caught by the new debug
-      check with debug on and by the tables with debug off),
+      on where named): post_omitted and post_cash_not_installed (each, with
+      debug on, raises the named settlement assertion at that pulse before
+      any later generic error, and with debug off differs from the pin's
+      economic tables; decision 9); captured_row_dropped and
+      captured_row_duplicated (event-table difference);
       corporate_rows_after_fills, fill_seq_contiguous,
-      disposition_skipped, terminal_stop_counts_pulse,
-      execution_view_fixed, decision_on_run_axis,
-      decision_order_run_axis, state_not_aligned, frozen_opening_ignored.
+      capture_validation_deferred (the overflow refusal difference),
+      nonfill_commit_late (prefix_reads, even when final tables match),
+      nonfill_position_history_ignored (the implicit and decoded diagnostic
+      tables), disposition_skipped, terminal_stop_counts_pulse,
+      lifetime_after_blocked_scheduled, blocked_group_partial_disposal and
+      entitlement_bound_after_fills (each by its specific condition, event
+      or entitled-quantity consequence), execution_view_fixed,
+      decision_on_run_axis, decision_order_run_axis, state_not_aligned,
+      empty_domain_row_dropped, outside_context_actionable (each caught by
+      its intended records or condition), frozen_opening_ignored (it
+      introduces the repeated valuation/frozen transition), a lost record
+      at actual growth in each new buffer (its intended output
+      difference), nonfill_block_unsplit (the append-bound detector).
+      Every surviving variant whose anchor changes is re-anchored in
+      loop_variant_changes.csv with its fault and intended consequence
+      preserved, including valuation_stop_counts_pulse after the stop
+      unification; no existing row is retired merely because its code
+      moved. The effective driver reports each required row CAUGHT and the
+      three negative controls keep failing closed (cut review R8).
       (12) Lines. loop.R stays at or below 1,000 production lines (982 at
       381c0d0c). Slice-4 helpers that hold no loop state go to a new
       dev/lean_core/facts.R, loaded by load.R like every lean file; the
@@ -3096,6 +3240,7 @@ cuts:
       disposition. A third correction round stops for maintainer
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
+    cut_review: "CHANGES_REQUIRED in cut_review_21.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at dcc2fa9d): R1-R9 required, all applied with the review's replacement text: the carried-freeze predicate keeps the decision row and asserts lots, entry anchor and a pending entitlement (R1); implicit records take P1 non-fill position changes (R2; the probe published false hold targets after a disposition); the capture append keeps the pin's in-memory acceptance validation (R3; the probe deferred an overflow refusal and changed its class); the committed-prefix reader covers openings and P1 appends (R4); empty context distinguished from empty membership, with its record row (R5; the probe dropped three empty_public_domain rows); a debug settlement check that survives omission of the call, and the measured-input facts sentence corrected (R6); the remaining policy routes, P1 precedence collisions and the restricted-target reason (R7); growth, batch-one and re-anchor obligations (R8); the exact existing-row moves with fold counts (R9). No maintainer question; the maintainer's choices stand."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -6743,9 +6888,10 @@ tickets:
       entitlements reach the loop through the existing execution inputs.
       No corporate-action or facts change.
     acceptance:
-      - "New dev/lean_core/parity/loop_workloads_slice4.R, sourced by loop_parity.R beside the slice 1-3 files, with public constructors and the pin as oracle: the probe's s4_opening and s4_opening_sessions; a carried opening with a frozen set, carried lots and position facts built with ledgr_walk_forward_experiment_with_opening() and run by ledgr_run(); an unknown-basis position through the sweep payload's field (a one-worker sweep)"
-      - "Branch reach from the pin's values (loop_reach): the opening rows and the opening fills; no valuation_frozen row for a carried frozen holding on its first pulse; the unknown-basis position's facts differ from a known-basis control"
-      - "Variant frozen_opening_ignored (the frozen set starts empty) reached and caught with debug off"
+      - "New dev/lean_core/parity/loop_workloads_slice4.R, sourced by loop_parity.R beside the slice 1-3 files, with public constructors and the pin as oracle: the probe's s4_opening and s4_opening_sessions; a carried opening with a frozen set, carried FIFO lots, an entry anchor, position facts and a pending entitlement, built with the package helper ledgr_walk_forward_experiment_with_opening() (not exported, R/walk-forward.R:1142) and run by ledgr_run(); an unknown-basis position through the experiment's package payload field in a one-worker sweep (R/sweep.R:1402, 1746); no new public API and no slice-5 orchestrator"
+      - "Branch reach from the pin's values (loop_reach; cut review R1): the opening rows and the opening fills. On the carried holding's first pulse no row has stage = valuation, outcome = frozen and reason_code = valuation_frozen; its decision/recorded/valuation_frozen row and the pin's mark metadata are retained. The carried lot quantities and prices are asserted through a partial sale that distinguishes FIFO lots from one average-price lot, the carried entry anchor through entry_at and bars_since_entry, and a nonempty pending entitlement whose bound quantity differs from the opening holding. The unknown-basis position's strategy outcome differs from a known-basis control (review_prefix0 buys one B against two). All pin tables compared"
+      - "Variant frozen_opening_ignored (the frozen set starts empty) introduces the repeated valuation/frozen transition and is caught with debug off"
+      - "Committed prefix (decision 4(b)): the opening boundary is visible to a memory-prefix read on the first strategy call, matching the pin's count and event digest"
       - "Full gate, batch one and inert hooks against the freeze identical with debug off and on; only the frozen rows decision 10 names move"
   - id: "LDG-3244"
     title: "Post corporate actions through the package's plan with no store write in the loop"
@@ -6761,14 +6907,18 @@ tickets:
       the pin's order (decision 6); the capture handler, the typed fill
       event_seq column and the ordered publication (decision 4); a run
       with a corporate-action plan takes the marked path (decision 5); a
-      plan refusal stops through the P1 stop path; the debug cash check
-      (decision 9). New dev/lean_core/facts.R for the stateless helpers.
+      plan refusal stops through the P1 stop path; the capture acceptance
+      boundary and the committed-prefix reader for opening and P1 appends
+      (decision 4(a)-(b)); the debug settlement check (decision 9). New
+      dev/lean_core/facts.R for the stateless helpers.
     acceptance:
-      - "Workloads: the probe's s4_dividend, s4_dividend_bought and s4_dividend_sessions; a dividend on a scheduled skip pulse; corporate_action_cash_refused and corporate_action_quantity_refused on runs with no other facts; the missing-clock and missing-entitlement conditions (ledgr_corporate_action_clock_missing, ledgr_corporate_action_entitlement_missing) with the pin's class and message"
-      - "Branch reach from the pin's values: the CASHFLOW rows and their cash; each refusal's reason code, INCOMPLETE status and affected exposure; the event_seq of a fill numbered after a corporate-action row on the same pulse"
-      - "No store access during the loop (the harness's store-write detector) on every slice-4 workload; publication without a per-row loop (seven-shape walk)"
-      - "Variants corporate_action_dropped (caught by the debug cash check with debug on and by the tables with debug off), corporate_rows_after_fills and fill_seq_contiguous, each reached and caught"
-      - "Batch one: corporate-action and fill rows spanning terminal batches; full gate and inert hooks against the freeze identical with debug off and on"
+      - "Workloads: the probe's s4_dividend, s4_dividend_bought and s4_dividend_sessions; a dividend on a scheduled skip pulse; corporate_action_cash_refused and corporate_action_quantity_refused on runs with no other facts, the cash refusal together with a due quantity refusal; the missing-clock and missing-entitlement conditions (ledgr_corporate_action_clock_missing, ledgr_corporate_action_entitlement_missing) with the pin's class and message; the corporate-action routes of decision 2's R7 list that need no other facts (incomplete and unmodeled subtypes, report_only, refuse, no-effective-clock reporting, effective_close and next_open posting, late knowledge, a no-op or unheld cash row); simultaneous dividends on many instruments with fills on the same pulse"
+      - "Branch reach from the pin's values: CASHFLOW rows selected by corporate_action_cash, with their cash, source and source_fact_id; each refusal's reason code, INCOMPLETE status and affected exposure; the event_seq of a fill numbered after a corporate-action row on the same pulse; the initial entitlement boundary and the next one before P4 fills, with quantities that distinguish wrong placement"
+      - "Acceptance boundary (decision 4(a)): the finite-input dividend-overflow witness matches the pin's condition classes (ledgr_invalid_accounting_event, ledgr_invalid_ledger_meta), message, pulse, stage and rolled-back output with debug off and on; variant capture_validation_deferred is reached and fails on that difference"
+      - "Committed prefix (decision 4(b)): memory-prefix observations before the strategy call and at reconciliation on dividend workloads with and without openings and on a later stop, counts and full event digests equal to the pin's; variant nonfill_commit_late is caught by prefix_reads even when final tables match"
+      - "No store access during the loop (the harness's store-write detector) on every slice-4 workload; publication without a per-event loop (seven-shape walk)"
+      - "Debug settlement check (decision 9): variants post_omitted and post_cash_not_installed each raise the named settlement assertion at that pulse with debug on and differ from the pin's economic tables with debug off; captured_row_dropped and captured_row_duplicated each give an event-table difference; corporate_rows_after_fills and fill_seq_contiguous reached and caught"
+      - "Growth and batch one (decision 10): captured-block storage grown after a nonempty prefix with the prefix and incoming rows surviving, and a lost-record-at-growth variant caught; at batch one a single captured block longer than the bound, several instruments' actions, cash and fill interleaving and a trailing non-fill block after the last fill, every append bounded and every row transferred once in order; nonfill_block_unsplit caught by the append-bound detector; full gate and inert hooks against the freeze identical with debug off and on"
   - id: "LDG-3245"
     title: "Close workstream 39"
     workstream: 39
@@ -6783,8 +6933,8 @@ tickets:
       change unless a check fails. No timing record (LDG-3248 runs it for
       the cut).
     acceptance:
-      - "Full gate, batch one, inert hooks and the variant driver with debug off and on; every frozen path matched; each moved row listed before and after"
-      - "slice4_reach_cross.R: each workstream-39 predicate holds on its workload and fails on at least one other"
+      - "Full gate, batch one, inert hooks and the variant driver with debug off and on; every frozen path matched; the workstream's intermediate path moves recorded before its freeze check (decision 10, existing rows), each listed before and after; every required variant CAUGHT, re-anchors recorded, the three negative controls failing closed"
+      - "slice4_reach_cross.R over workstream 39's required list: each predicate holds with nonempty own-case evidence and fails on at least one other workload; missing dumps or predicates refuse"
       - "Lines by role against 381c0d0c; the hashed-frame witness passes on the new code"
       - "Type 1 close review of workstream 39 (review_lifecycle)"
   - id: "LDG-3246"
@@ -6801,14 +6951,15 @@ tickets:
       the actionable instruments; P2, the planner and the records on the
       pulse's context axis with typed context records (decision 7);
       strategy state aligned on every context change and patched on the
-      context; the empty public domain; the availability target check
-      (restricted target, non-member exposure increase) in production.
-      No disposition change.
+      context; the empty context and the no-member context (decision 7);
+      the availability target check (restricted target, non-member
+      exposure increase) in production. No disposition change.
     acceptance:
-      - "Workloads: the probe's s4_halt and s4_v201_default; membership entry and exit with membership_changed_before_execution; a non-member exposure increase refused (ledgr_nonmember_exposure_increase); a restricted target (ledgr_restricted_target and target_restricted); the empty public domain; asset-scoped strategy state across a context change; features and history reads on a changing context; stale marks together with facts; a one-worker sweep over facts"
-      - "Branch reach from the pin's values: the context's length changes between pulses; decision_seq and decision_order of a pulse whose context is a strict subset of the run axis; the asset-scoped state value carried over a context change and the default for an entrant"
-      - "Records: context positions in typed columns grown by doubling, no per-pulse list; the ordinals by vector operations (seven-shape walk)"
-      - "Variants execution_view_fixed, decision_on_run_axis, decision_order_run_axis and state_not_aligned, each reached and caught with debug off"
+      - "Workloads: the probe's s4_halt and s4_v201_default; membership entry and exit with membership_changed_before_execution; a non-member exposure increase refused (ledgr_nonmember_exposure_increase); a restricted target (class ledgr_restricted_target, reason = restricted_target; class vector, message, reason and affected instrument_ids compared); the quotation_only, status_unknown and status_unknown_or_conflicting restrictions; asset-scoped strategy state across a context change; features and history reads on a changing context; stale marks together with facts; a one-worker sweep over facts"
+      - "Empty context (decision 7, cut review R5): a context that shrinks through zero and grows again, with an entrant and a re-entering departed ID, the pin's empty_public_domain rows, sequences and summary contribution, defaults and portfolio-state continuity asserted through recorded strategy reads; separately, no members but held nonmembers"
+      - "Strict subset: a noncontiguous strict subset of the run axis with distinct bar, feature and history values, clean fills and holds; exact decision_seq and decision_order on actual implicit rows (an empty matching set fails), fill and rejection mapping, no decisions or fills for non-context IDs; a context retained and read after a later context change"
+      - "Records: context positions in typed columns grown by doubling, no per-pulse list, growth exercised after a nonempty prefix with a lost-record-at-growth variant caught; the ordinals by vector operations (seven-shape walk)"
+      - "Variants execution_view_fixed, decision_on_run_axis, decision_order_run_axis, state_not_aligned, empty_domain_row_dropped and outside_context_actionable, each reached and caught with debug off by its intended records or condition"
       - "Full gate, batch one and inert hooks against the freeze identical with debug off and on"
   - id: "LDG-3247"
     title: "Cover acquisitions, spin-offs, dispositions and terminal stops"
@@ -6823,11 +6974,16 @@ tickets:
       holdings through ledgr_terminal_resolve(),
       ledgr_terminal_mark_meta() and ledgr_disposition_post(); blocked
       outcomes stop the run; one P1 stop path for every P1 stop, slice 3's
-      valuation stop included (decision 6).
+      valuation stop included (decision 6); disposition appends in the
+      committed prefix (decision 4(b)); P1 non-fill position changes in the
+      position history for implicit records (decision 4(c)).
     acceptance:
-      - "Workloads: the probe's s4_cash_acquisition, s4_terminal and s4_v201_refuse; stock, mixed and cash acquisitions and a spin-off, each held and not held; terminal outcomes dispose, haircut, unlabeled, refuse and frozen fallback; a disposition and a valuation stop on the same pulse"
-      - "Branch reach from the pin's values: the DISPOSITION and CASHFLOW rows; terminal_disposition rows; each blocked outcome's reason code and reasons (terminal_settlement_unsupported, terminal_mark_unavailable with its choice) and INCOMPLETE status"
-      - "Variants disposition_skipped and terminal_stop_counts_pulse, each reached and caught with debug off"
+      - "Workloads: the probe's s4_cash_acquisition, s4_terminal and s4_v201_refuse; stock, mixed and cash acquisitions and a spin-off, each held and not held; the terminal choices last_permissible, last_mark, write_off, haircut and refuse, exact-label and default matching, and the three frozen fallback choices"
+      - "P1 precedence (decision 10, cut review R7): a scheduled disposition blocked while lifetime policy would otherwise dispose; a lifetime group with both disposable and blocked holdings (no partial disposition); successful P1 cash and disposition effects followed by a valuation stop in another holding; a normally completing pulse with cash, a plan disposition, a lifetime disposition and fills; the view re-read removing a disposed nonmember from that pulse's context; the entitlement boundary after P1 dispositions and before P4 fills, including on a skipped decision pulse. Stopped cases assert reason, reasons, affected IDs and exposure, accepted event and diagnostic prefixes, processed, full_run and both clocks, with no stopped-pulse equity or P2-P5 effects"
+      - "Branch reach from the pin's values: the DISPOSITION and CASHFLOW rows; terminal_disposition rows with policy, choice, basis and late-arrival fields; each blocked outcome's reason code and reasons (terminal_settlement_unsupported, terminal_mark_unavailable with its choice) and INCOMPLETE status"
+      - "Position history (decision 4(c), cut review R2): a scheduled disposition with no lifetime fact, current parent bars and subsequent clean holds, repeated with another fill before or after it and at batch one; zero post-disposition implicit targets, quantities and positions, every pin table identical in both debug modes; the position-transition record grown after a nonempty prefix; variant nonfill_position_history_ignored caught by the implicit and decoded diagnostic tables with debug off"
+      - "Committed prefix: memory-prefix observations on disposition workloads before the strategy call, at reconciliation and on a later stop, equal to the pin's"
+      - "Variants disposition_skipped, terminal_stop_counts_pulse, lifetime_after_blocked_scheduled, blocked_group_partial_disposal and entitlement_bound_after_fills, each reached and caught by its specific signal with debug off"
       - "Full gate, batch one and inert hooks against the freeze identical with debug off and on"
   - id: "LDG-3248"
     title: "Close slice 4"
@@ -6843,8 +6999,8 @@ tickets:
       deletion-readiness note on position_fact_unknown_basis. No
       dev/lean_core change unless a check fails.
     acceptance:
-      - "Full gate, batch one, inert hooks and the variant driver against the freeze identical with debug off and on, every frozen path matched; each moved row (decision 10) listed before and after; the hashed-frame witness, loop_dispatch.R, the FIFO and planner suites and cut18_witness.R pass"
-      - "slice4_reach_cross.R over all slice-4 predicates; the only coverage refusals left are slice 5's and the prepared-axis guard (a scan of the lean_not_covered() and lean_abort_attempt() calls)"
+      - "Full gate, batch one, inert hooks and the variant driver against the freeze identical with debug off and on, every frozen path matched; exactly the twelve existing-row updates of decision 10 (cut review R9), each listed before and after, every new row registered, batch-one and inert rows enumerated separately, any other existing-row change rejected; every required variant CAUGHT with its re-anchors recorded and the three negative controls failing closed; the hashed-frame witness, loop_dispatch.R, the FIFO and planner suites and cut18_witness.R pass"
+      - "slice4_reach_cross.R over its explicit required list of all slice-4 predicates, including the growth, ordering and prefix cases: nonempty own-case evidence, a false result on another workload, missing dumps or predicates refused; the only coverage refusals left are slice 5's and the prepared-axis guard (a scan of the lean_not_covered() and lean_abort_attempt() calls)"
       - "Section 19.2's coverage table moves slice 4's features to covered; Section 19.13's status records acceptance and implementation"
       - "Lines (decision 12): loop.R production lines and the cut's production lines across dev/lean_core, by role, against 381c0d0c"
       - "Timing record cut21-loop-1 (decision 13), checked by dev/bench/timing/check.R, and Cut 18's paired comparison against 381c0d0c on the four comparison shapes under Cut 15's 5 percent rule; one facts shape descriptive"

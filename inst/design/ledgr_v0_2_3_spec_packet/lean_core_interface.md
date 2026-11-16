@@ -1506,7 +1506,16 @@ What changes in the loop:
   handler (`append_event_rows()` only). After the loop the captured blocks
   and the fill blocks are published in `event_seq` order. Each fill keeps
   its own `event_seq`; a fill block splits where the numbering skips a
-  corporate-action row.
+  corporate-action row. Captured blocks are split at the terminal batch
+  bound too. Cut review R3-R4 added two rules:
+  - **Acceptance.** The capture append is the in-memory acceptance
+    boundary. It calls the package's accounting append validator before
+    the caller installs the returned settlement state, so a refusal keeps
+    the pin's condition, pulse and stage. This stays in production.
+  - **Committed prefix.** The running fold's committed-prefix reader
+    returns the accepted mixed prefix: the opening rows, each accepted P1
+    cash or disposition append (visible before that pulse's strategy call)
+    and the accepted fills, with their original `event_seq`.
 - **The context axis (P2 and P3).**
   - The strategy, the target and availability checks, sizing evidence,
     risk and the marks rows run on the pulse's context. Targets are
@@ -1517,16 +1526,28 @@ What changes in the loop:
     (`R/fold-engine.R:1117-1135`), including the provider's execution view
     for the actionable instruments; fill and rejection keys map back to
     run positions.
-  - The empty public domain calls the strategy and takes the target
-    fallback.
+  - An empty context means no decision-axis instrument, not no member
+    (cut review R5). On a deciding empty context the strategy is still
+    called, its zero-length target is accepted, portfolio state is kept,
+    asset state is aligned to the empty axis, and the pin's one
+    `empty_public_domain` decision row is written. With no members but
+    held nonmembers, those holdings stay on the context under the ordinary
+    rules.
 - **Records.** Each pulse's context is kept as an offset and a length into
   one typed position vector, grown by doubling. A decision row's number is
   its ordinal in the context; `decision_order` is
   `(ordinal - 1) * axis size + run position`, as the pin writes it.
-  Reconciliation gross is taken on the context.
-- **Debug.** A per-pulse check compares lean cash, positions and lots with
-  the plan's returned state after settlement and after dispositions. The
-  context check compares the lean context with the pin's builder.
+  Reconciliation gross is taken on the context. The position history
+  behind implicit records includes P1 non-fill position changes as well as
+  fills, recorded as exact book nets with their pulse and stage (cut review
+  R2), so a disposition shows in that pulse's holds.
+- **Debug.** At every P1 with a corporate-action plan, a debug check
+  verifies exactly one post call and that its returned state was installed
+  before valuation, and the same after each disposition call. The check
+  does not depend on the production branch it checks, so an omitted call
+  still fails it (cut review R6). Dropped or duplicated captured rows are
+  caught by the event tables, not by this check. The context check
+  compares the lean context with the pin's builder.
 - **Code.** Stateless slice-4 helpers go to `dev/lean_core/facts.R`; the
   slice-4 state lives in one environment, like slice 3's.
 
