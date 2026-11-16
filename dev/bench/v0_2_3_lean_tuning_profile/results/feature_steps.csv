@@ -1,0 +1,103 @@
+"shape","path","defs","wall_s","samples","step","share","seconds","engine_version_s","bare_ttr_6_defs_s"
+"crossover_10x7200","run",2,0.25,50,"causality probe",0.04,0.01,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"certification",0,0,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"TTR raw call",0.04,0.01,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"segment frame",0,0,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"segment other",0.02,0.005,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"calculate other (runs, carry)",0.06,0.015,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"input treatment",0.08,0.02,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"ranges and bounds",0,0,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"plane exceptions",0,0,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"plane records",0,0,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"projection index planes",0,0,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"projection pulse names",0.48,0.12,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"projection rebuild (sweep)",0,0,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"projection other",0.16,0.04,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"payload split (sweep)",0,0,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"compute other",0.1,0.025,0.01,0.01
+"crossover_10x7200","run",2,0.25,50,"other",0.02,0.005,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"causality probe",0.043,0.026,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"certification",0,0,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"TTR raw call",0.026,0.015,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"segment frame",0.035,0.021,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"segment other",0.017,0.01,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"calculate other (runs, carry)",0.043,0.026,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"input treatment",0.043,0.026,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"ranges and bounds",0,0,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"plane exceptions",0.026,0.015,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"plane records",0,0,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"projection index planes",0,0,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"projection pulse names",0.53,0.313,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"projection rebuild (sweep)",0.07,0.041,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"projection other",0,0,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"payload split (sweep)",0.157,0.092,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"compute other",0,0,0.01,0.01
+"crossover_10x7200","sweep",6,0.59,115,"other",0.009,0.005,0.01,0.01
+"crossover_500x1260","run",2,0.74,152,"causality probe",0.013,0.01,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"certification",0,0,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"TTR raw call",0.191,0.141,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"segment frame",0.039,0.029,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"segment other",0.046,0.034,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"calculate other (runs, carry)",0.204,0.151,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"input treatment",0.349,0.258,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"ranges and bounds",0.026,0.019,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"plane exceptions",0.033,0.024,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"plane records",0,0,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"projection index planes",0,0,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"projection pulse names",0.02,0.015,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"projection rebuild (sweep)",0,0,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"projection other",0.013,0.01,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"payload split (sweep)",0,0,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"compute other",0.059,0.044,0.007,0.233
+"crossover_500x1260","run",2,0.74,152,"other",0.007,0.005,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"causality probe",0.006,0.01,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"certification",0,0,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"TTR raw call",0.206,0.366,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"segment frame",0.081,0.144,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"segment other",0.09,0.16,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"calculate other (runs, carry)",0.238,0.423,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"input treatment",0.154,0.273,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"ranges and bounds",0.012,0.021,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"plane exceptions",0.07,0.124,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"plane records",0,0,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"projection index planes",0,0,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"projection pulse names",0.029,0.052,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"projection rebuild (sweep)",0.023,0.041,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"projection other",0,0,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"payload split (sweep)",0.09,0.16,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"compute other",0,0,0.007,0.233
+"crossover_500x1260","sweep",6,1.78,345,"other",0.003,0.005,0.007,0.233
+"crossover_1166x252","run",2,1.04,200,"causality probe",0.005,0.005,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"certification",0,0,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"TTR raw call",0.32,0.333,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"segment frame",0.04,0.042,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"segment other",0.05,0.052,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"calculate other (runs, carry)",0.165,0.172,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"input treatment",0.245,0.255,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"ranges and bounds",0.02,0.021,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"plane exceptions",0.09,0.094,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"plane records",0,0,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"projection index planes",0,0,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"projection pulse names",0.005,0.005,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"projection rebuild (sweep)",0,0,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"projection other",0,0,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"payload split (sweep)",0,0,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"compute other",0.055,0.057,0.01,0.477
+"crossover_1166x252","run",2,1.04,200,"other",0.005,0.005,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"causality probe",0.002,0.005,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"certification",0,0,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"TTR raw call",0.353,0.904,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"segment frame",0.055,0.141,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"segment other",0.065,0.167,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"calculate other (runs, carry)",0.247,0.632,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"input treatment",0.129,0.329,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"ranges and bounds",0.006,0.016,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"plane exceptions",0.065,0.167,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"plane records",0,0,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"projection index planes",0,0,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"projection pulse names",0.006,0.016,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"projection rebuild (sweep)",0.006,0.016,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"projection other",0,0,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"payload split (sweep)",0.063,0.162,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"compute other",0,0,0.01,0.477
+"crossover_1166x252","sweep",6,2.56,490,"other",0.002,0.005,0.01,0.477

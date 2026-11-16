@@ -426,3 +426,24 @@ runs are bound by output publication, there the store write (40-50 percent), and
 percent); their loop is under 20 percent. Outside the loop, whole-run
 seconds are close to Cut 14's (10x7200 3.40 -> 3.23 s, 500x1260 3.80 ->
 3.86, 1,166x252 2.58 -> 2.60): the cuts since then moved loop time only.
+
+## Feature steps (2026-11-16, input to the feature-engine seed)
+
+`feature_steps.R` splits the pin's feature path by Rprof sampling: the run
+path (compute, then projection) with SMA 5 and 10, and the sweep path
+(compute, the per-instrument payload split, the rebuild) with the union SMA
+3, 5, 8, 12, 20 and 40, three repetitions on each published crossover
+shape (`results/feature_steps.csv`). Descriptive only: another job shared
+the machine. Largest steps:
+
+- 10 x 7,200: formatting the pulse axis once per feature
+  (`ledgr_projection_pulse_names()`) is 0.12 of 0.25 s in a run and 0.31
+  of 0.59 s in a sweep.
+- 1,166 x 252 run (1.04 s): TTR raw call 0.33 (bare TTR 0.17), input
+  treatment 0.26, runs and carry 0.17, segment framing 0.09, plane
+  exceptions 0.09.
+- Sweeps: split and rebuild 0.13-0.20 s; certification and the causality
+  probe 0.01-0.03 s everywhere.
+
+The reading and the proposal are in
+`inst/design/rfc/rfc_feature_engine_v0_2_3_seed.md`.
