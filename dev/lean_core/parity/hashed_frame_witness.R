@@ -8,12 +8,14 @@
 #    debugonce() stop there) in an unhashed frame; lean_envelope_code is
 #    bytecode; a static scan finds none of missing(), sys.call(),
 #    sys.function(), match.call(), nargs(), parent.frame() at the plain
-#    body's top level outside the functions it defines (called by name or as
-#    base:: / base:::). Four faults, applied as text edits (loop_edits.R),
-#    must each fail: the wrapper ignoring the flag (debug on), an unhashed
-#    environment (debug off), a top-level sys.call() and a top-level
-#    base::sys.call() (both). A control, base::sys.call() inside a function
-#    the body defines, must fail no check.
+#    body's top level outside the formals and bodies of the functions it
+#    defines, however the call head is spelled (scan_cases.csv lists the
+#    spellings and controls). Six faults, applied as text edits
+#    (loop_edits.R), must each fail: the wrapper ignoring the flag (debug
+#    on), an unhashed environment (debug off), and at the top level
+#    sys.call(), base::sys.call(), (base::sys.call)() and
+#    ({ sys.call(); `function` })(NULL, 1) (both). A control,
+#    base::sys.call() inside a function the body defines, must fail no check.
 # B. The test-only adapter (cut review R1): loop_parity.R --witness=
 #    hashed_frame_adapter.R with debug on runs the production-loaded compiled
 #    body in its hashed frame with the debug assertions on, on
@@ -73,7 +75,9 @@ head_name <- function(h) {
 scan_body <- function(x) {
   if (!is.call(x)) return(character())
   h <- head_name(x[[1L]])
-  if (identical(h, "function")) return(character())
+  # A function definition: its formals and body are skipped, but a head that
+  # computes `function` runs at the top level and is scanned (round 3, F2).
+  if (identical(h, "function")) return(scan_body(x[[1L]]))
   c(if (!is.na(h) && h %in% forbidden) h,
     unlist(lapply(as.list(x), scan_body), use.names = FALSE))
 }
@@ -82,7 +86,8 @@ scan_body <- function(x) {
 scan_spellings <- c(direct = "F()", qualified = "base::F()", internal = "base:::F()",
   parens = "(F)()", parens_qualified = "(base::F)()", double_parens = "((base:::F))()",
   braces = "{F}()", braces_last = "{1; F}()", string_head = "\"F\"()", string_qualified = "base::\"F\"()",
-  in_assignment = "x <- F()", in_condition = "if (F()) 1", in_argument = "g(F())", in_head = "g(F())(1)")
+  in_assignment = "x <- F()", in_condition = "if (F()) 1", in_argument = "g(F())", in_head = "g(F())(1)",
+  in_function_head = "({ F(); `function` })(NULL, 1)", in_function_head_qualified = "({ F(); base::`function` })(NULL, 1)")
 scan_controls <- c(nested = "g <- function() F()", nested_parens = "g <- function() (base::F)()",
   nested_called = "(function() F())()", by_string_do_call = "do.call(\"F\", list())", by_string_get = "get(\"F\")()")
 scan_cases <- do.call(rbind, lapply(forbidden, function(f) {
@@ -107,6 +112,8 @@ faults <- list(
     "  execution <- ledgr_validate_execution_spec(execution)", "  base::sys.call()", "after", mark = FALSE)),
   syscall_parens = list(lean_edit("loop.R", "lean_fold_envelope_plain",
     "  execution <- ledgr_validate_execution_spec(execution)", "  (base::sys.call)()", "after", mark = FALSE)),
+  syscall_function_head = list(lean_edit("loop.R", "lean_fold_envelope_plain",
+    "  execution <- ledgr_validate_execution_spec(execution)", "  ({ sys.call(); `function` })(NULL, 1)", "after", mark = FALSE)),
   # Control: a forbidden call inside a function the body defines is out of
   # the scan's scope and must not fail it.
   nested_control = list(lean_edit("loop.R", "lean_fold_envelope_plain",
@@ -119,6 +126,7 @@ expect_fail <- list(none = list(off = character(), on = character()),
                     syscall = list(off = "scan", on = "scan"),
                     syscall_qualified = list(off = "scan", on = "scan"),
                     syscall_parens = list(off = "scan", on = "scan"),
+                    syscall_function_head = list(off = "scan", on = "scan"),
                     nested_control = list(off = character(), on = character()))
 
 frame_run <- function(fault, debug) {
