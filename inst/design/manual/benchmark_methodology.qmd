@@ -4,7 +4,9 @@ title: "Benchmark Methodology"
 
 **Status:** Maintainer manual, updated for v0.2.3: the shared harness for
 before/after regression gates (LDG-3155). The peer-clock sections date from
-the v0.2.0.1 four-phase peer clock (LDG-2732).
+the v0.2.0.1 four-phase peer clock (LDG-2732). In-process comparisons of
+lean-core code and three host habits added 2026-11-16 (macro plan WS16,
+"Optimization manual update").
 
 **Authority:** Synthesis plus implementation trace. Binding release scope
 remains in versioned spec packets and release-gate tickets. Public benchmark
@@ -211,6 +213,25 @@ summary, so a gate record shows the conditions it was measured under. A record
 whose summaries name another plan or an unpinned mask is not gate evidence on
 this host.
 
+Three further habits, each learned from a lost run:
+
+- **Check the plan before a timing run.** WS34's first baseline ran under
+  Balanced without affinity, so its loops took 2.9 s instead of 2.0. That
+  produced a false 3-6% slowdown in its paired comparisons (2026-11-13).
+  Launch in-process timings through
+  `dev/bench/v0_2_3_lean_tuning_profile/pcore.ps1`, which pins the affinity
+  first. Restore Balanced afterwards. In Git Bash, write
+  `powercfg.exe //setactive <guid>`; a single slash is rewritten as a path,
+  and the plan silently stays as it was.
+- **Never edit a script while an R process runs it.** R parses a sourced file
+  as it goes, so an edit made mid-run changes code the run has not reached
+  yet. Cut 19's first debug-on gate died in its final verdict code because
+  `loop_parity.R` was edited while it ran (LDG-3240). Give every step its own
+  log file.
+- **Give every timed repetition its own run identifier.** A repeated
+  `ledgr_run()` with the same `run_id` against one store came back at once
+  without running the fold. The hashed-frame runner first timed that cache, not the loop.
+
 ## Before/After Regression Gates
 
 > Pulse-plumbing amendment (2026-11-06): For the pending WS16 lean core only,
@@ -372,6 +393,41 @@ and bounded output expansion in the declared boundary; report loop and
 boundary clocks separately. Per-function samples supplement these gated
 comparisons; WS16 is excepted from the milestone-only rule. Paired gates use
 the unchanged shared harness/protocol rules.
+
+## In-Process Comparisons Of Lean-Core Code
+
+The lean core (`dev/lean_core/`) is sourced, not installed. Small changes to
+it are compared in one R process before a gate record is worth its window.
+These comparisons are evidence for a keep-or-drop decision in a cut, not
+gate records; the gate stays with the shared harness above.
+
+- **Compile before the clock.** An installed package is byte-compiled at
+  install. Sourced code is compiled by R's just-in-time compiler only after
+  its first calls, and an expression handed to `eval()` should be compiled
+  first with `compiler::compile()`, as the hashed-frame pattern does. Every
+  timing compiles each lean function with `compiler::cmpfun()` before timing
+  it, so the lean code and the installed pin are both compiled (the lean
+  timing protocols' `workloads.R` from `cut13-loop-1` on, and
+  `dev/lean_core/parity/loop_shortcuts.R`).
+  `typeof(.Internal(bodyCode(f))) == "bytecode"` confirms that a function is
+  compiled.
+- **Pair and alternate.** `loop_shortcuts.R --mode=compare` runs base and
+  candidate in alternating order for 7 rounds on the four comparison shapes.
+  It reports the median of the per-round differences and how many rounds the
+  candidate was faster. Two rules read it:
+  - Cut 15: a pulse-loop median regression above 5% blocks.
+  - Cut 18 (amendment item d): a shortcut is kept only if its median paired
+    saving is at least 0.02 of the pulse loop.
+
+  Cut 19's slowdown of +3.7 to +3.9% was under the 5% block, but the
+  candidate lost 7 of 7 rounds, and that was enough to find and fix the
+  cause (LDG-3240).
+- **Stage clocks change what they measure.** Clocks around each stage call
+  add their own calls and lookups to every pulse. In the hashed-frame spike,
+  the plain arm's pulse loop was 319 us per pulse with stage clocks and 282
+  without on 10 x 7,200, and the measured saving was 61 against 47 us. Use
+  stage clocks to attribute a difference. Take the number that decides from
+  a pass without them (`dev/spikes/hashed_frame/run.R`, its two passes).
 
 ## Attributing A Change With Profile Samples
 

@@ -6,7 +6,11 @@ title: "Optimization Coding Style"
 productionization (LDG-2732); rules revised 2026-10-30 after the v0.2.3
 PMwR, JSON and shape audits and an external review; the hot-loop POSIXct,
 kernel-to-context, boundary-helper and test-scaffolding rules added
-2026-11-03 after the WS20 timestamp re-parse.
+2026-11-03 after the WS20 timestamp re-parse; the lean-core rules (remove
+before adding, frame size, the hashed-frame pattern, plain-operand gates,
+exact-by-construction fast paths, lean-loop mechanism prices) added
+2026-11-16 from Cuts 15-19 and their spikes (macro plan WS16, "Optimization
+manual update").
 
 **Authority:** Synthesis plus implementation trace. Binding rules remain in the
 v0.1.8.9 spec (column-buffer write rule), `../contracts.md`, the accepted RFC
@@ -70,6 +74,10 @@ open to measurement. What changed was representation and the placement of loops.
 | O(n^2) membership conflict validator run at seal | 95.1% of the traced seal at 30,300 rows (about 1,200 s extrapolated from slices) | production grouped sweeps; 6,000 randomized equivalence comparisons passed; full-scale seal timing remains a Batch 8 measurement | sealing probe and LDG-2728/2729/2730 |
 | per-bar timestamp loop in the ingest dry run | 17 s for 426,191 bars | vectorised call already exists: 0.02 s | sealing probe |
 | one scalar `ledgr_utc(ctx$ts_utc)` re-parse per pulse, added by a review correction | about 0.3 s of a 9.8 s run (500 x 1,260), which cancelled the whole gain from retiring the context frames | numeric epoch passed from the decision packet: run 10.25 s to 9.31 s, decide-stage samples 123 to 75 | WS20 correction 5e21ba51, measured against cc73a9d8 with the fill-heavy probe (`../../../dev/bench/v0_2_3_fill_heavy_profile/`) |
+| sizing helper's set operations through base `setdiff()`, `union()`, `intersect()` | helper batches 5.09-7.13 s | match-based index logic on plain character operands, `collapse::fmatch()` from 32 IDs: helper 0.51-0.70 of the pin at 10 to 1,166 instruments | Cut 17, LDG-3233 (`../../../dev/bench/v0_2_3_helper/`, record `cut17-helper-1/ldg3233-close-6`) |
+| package checks called per pulse by the lean loop (targets, sizing evidence, risk plan, cost resolver, state patch) | about 107 us per pulse on slice2_10x7200 (LDG-3234 `package_costs.csv`) | lean-owned plain accept paths, every other input delegated to the package function, with the cut's hand-off removals: lean fold -2.0 to -10.2% on the five record shapes against Cut 16's record | Cut 18, LDG-3235/3236 (record `cut18-loop-1/ws36-final`); `../ledgr_v0_2_3_spec_packet/lean_core_interface.md` Section 19.10 |
+| twelve state variables added to the lean envelope's frame, and five mark columns written per decision row on runs that never use them | pulse loop +3.7 to +3.9% on three shapes, 7 of 7 rounds slower | state in one environment, mark columns written only on marked runs and filled once at publish otherwise: +1.5% residual | Cut 19, LDG-3240 (`../../../dev/lean_core/parity/evidence/cut19/timing/`, `s3env/`) |
+| the lean envelope's ~140 bindings searched one by one on every name lookup in every stage | pulse loop 282 / 325 / 571 / 556 us per pulse | body evaluated in a hashed environment: 232 / 285 / 540 / 510, 40-47 us saved per pulse, results identical | hashed-frame spike (`../../../dev/spikes/hashed_frame/closeout.md`) |
 
 After the production diagnostic block, the profiled 757-pulse spike attributed
 67.6% of captured in-loop samples to valuation, 20.7% to residual fold work,
@@ -322,7 +330,11 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   cases: timestamps re-validated per fill, positions recomputed from lots
   per fill, FIFO replayed in fold, finalisation and every reader, unchanged
   state re-encoded per pulse, terminal recovery replaying per pulse
-  (`../../../dev/spikes/json-hot-path-audit/`).
+  (`../../../dev/spikes/json-hot-path-audit/`). A value that is the same on
+  every row of a run is filled once at publish, not written per row: Cut 19
+  first wrote five mark columns on every decision row of runs that have no
+  marks; it now writes them only on marked runs and fills the constant
+  values once at publish on the others (LDG-3240).
 - **Preserve the production rule, move the loop to compile time.** When a
   resolver is replaced, resolve each segment once at build time with the
   exact production predicate (applicability, supersession, precedence,
@@ -372,6 +384,97 @@ still asks whether a one-caller extraction reduces risk or only adds surface.
   values; do not copy N-wide packets or reuse computed-output buffers. Write
   compact records carrying P3 effects; expand bounded committed chunks under
   R7-R10 and freeze recorder captures.
+- **Remove work before adding machinery** (maintainer, 2026-11-14, macro
+  plan WS16 point 8). Before adding a compiled kernel, a cache or a fast-path
+  framework, remove the work and the abstractions that are not needed. Stage
+  2b (`../../../dev/spikes/r_floor/stage2b/README.md`) shows why: a plain-R
+  loop that keeps every guarantee ran at 108 and 345 us per pulse where the
+  lean loop took 286 and 611. The difference sat in the order planner, the
+  declared-state update and the context build, call wrapper and stage
+  hand-offs, not in any guarantee. Cut 18 then removed hand-offs and moved
+  checks with no behaviour change. Compiled execution stays a WS14 decision
+  through a focused Type 2 review.
+- **Frame size is a per-pulse cost** (Cut 19, 2026-11-15). R keeps the
+  variables of a function call in an unhashed list and searches it one
+  binding at a time. Closures defined inside a function, like the lean
+  loop's stages inside `lean_fold_envelope`, search that frame for every
+  name they use: their own state, and every base or package function they
+  call before R reaches the hashed namespaces. A name bound early is found
+  quickly. A name bound late, or not bound at all (`length`, `is.null`,
+  every `ledgr_*` function), passes every binding. Each binding added to the
+  envelope's frame cost about 1 us per pulse spread over every stage (twelve
+  `NULL` bindings: 12.4 us per pulse on 20 x 23,400; 3.3 us when bound first,
+  where only names outside the frame pass them;
+  `../../../dev/lean_core/parity/evidence/cut19/s3env/stages.R`). The
+  scratch demo `s3env/frame_demo.R` times a small closure that reads one
+  frame variable and calls two base functions: about 310 ns per call with
+  no extra bindings, 2,220 ns with 140, and 360 ns at any count when the
+  frame is hashed. Keep the frame small. Group related state
+  in one environment rather than adding bindings, as Cut 19 did for slice
+  3, or use the hashed-frame pattern below.
+- **The hashed-frame pattern** (maintainer, 2026-11-16; production form
+  lands in the hashed-frame cut before slice 4, macro plan WS16). A large
+  envelope whose stages run per pulse keeps its body as an ordinary function
+  but runs it in a hashed environment (a sketch; the hashed-frame cut fixes
+  the final form):
+
+  ```r
+  lean_envelope_code <- compiler::compile(body(lean_fold_envelope_plain),
+                                          env = environment(lean_fold_envelope_plain))
+  lean_fold_envelope <- function(execution, output_handler) {
+    if (.lean_debug) return(lean_fold_envelope_plain(execution, output_handler))
+    eval(lean_envelope_code, new.env(hash = TRUE, parent = environment()))
+  }
+  ```
+
+  The body is compiled once, so its stage functions stay byte-compiled. The
+  parent is the call frame, so the arguments resolve as before. A lookup in
+  the hashed environment costs the same at any number of bindings. In the
+  spike (`../../../dev/spikes/hashed_frame/`), the pulse loop dropped by 40
+  to 47 us per pulse, 7 to 17% on the four comparison shapes, with identical
+  results on 54 gate workloads with debug off and on.
+  - Use it for a function whose frame holds many bindings and whose nested
+    closures run per pulse, fill or event. A small function gains nothing.
+  - Inside the evaluated body, `on.exit()` attaches to the `eval()` call,
+    which ends when the body ends. `missing()`, `sys.call()`,
+    `sys.function()`, `match.call()`, `nargs()` and `parent.frame()` at the
+    body's top level see `eval()`, not the wrapper. Do not use them there.
+  - With the debug flag on, the envelope runs as the plain function. Then
+    `debug()` and `debugonce()` step through it, and every parity run covers
+    both forms: hashed with debug off, plain with debug on. With debug off,
+    the call stack shows two extra `eval()` lines; the stages and the
+    envelope's state stay reachable from `traceback()` and `recover()`
+    (`../../../dev/spikes/hashed_frame/debug_probe.R`).
+  - `compiler::compile()` called while `sys.source()` runs refuses a
+    namespace above the target environment. Clear the
+    `topLevelEnvironment` option for that call.
+  - Tools that read the envelope's body, environment or identity read the
+    plain function.
+- **Fast-path gates test plain character source operands** (Cut 17,
+  2026-11-14). A fast path that replaces `setdiff()`, `union()`,
+  `intersect()` or `match()` with index logic or `collapse::fmatch()` runs
+  only when every operand it receives from a caller is a plain character
+  vector: `is.character()` and no attributes. Test the source operand, not a
+  value derived from it: a derived value can lose a matrix's dimensions or
+  hide a classed `names()`. Uniqueness comes from a check already made on
+  that value (`anyDuplicated()` at entry). Everything else keeps the base
+  operation, which dispatches through `mtfrm()` for classed objects. Strings
+  marked `"bytes"` are plain, but `fmatch()` refuses them where `match()`
+  accepts them. Ledgr's own universe is trusted: it is not rescanned for
+  encodings on every call; only caller operands are. Each of the close
+  review's three correction rounds found one more operand gated on a derived
+  value (LDG-3232/3233).
+- **Exact by construction: a plain accept path, the rest delegated** (Cut 18,
+  2026-11-14). A lean replacement for a package check accepts only the
+  plain common input, returns the package function's value there, and sends
+  every other input to that package function. The package function keeps
+  every refusal with its class, message, payload and precedence. Values that
+  cannot change during the run (a universe predicate, a resolver's identity,
+  the state's declared names) are evaluated once at setup. With debug on,
+  every result is compared with the package function's on every pulse. This
+  is the general fast-path rule above, with the canonical path kept as the
+  fallback; `../ledgr_v0_2_3_spec_packet/lean_core_interface.md` Section
+  19.10 lists each replacement, its accept path and its fallback.
 
 ## Reference Costs
 
@@ -432,6 +535,33 @@ the operation:
 - Never order ids with the locale default. `order(ids)` and `sort(ids)` are
   40 to 64x slower than `radixorder()` or `order(method = "radix")` and
   depend on the session locale.
+
+**Lean-loop mechanisms.** What the loop's own machinery costs, measured
+2026-11-12 in the skeleton-floor spike
+(`../../../dev/spikes/skeleton_floor/README.md`, compiled, P-cores), in
+nanoseconds per operation, independent of vector length from 1,000 to
+100,000 elements. The `<<-` prices were taken in the envelope's frame of
+that time, so they include its name lookups (see "Frame size is a per-pulse
+cost").
+
+| mechanism | ns per operation |
+| --- | ---: |
+| local write | 50 |
+| empty function call | 50 to 100 |
+| `<<-` element or column write (does not copy) | 300 to 400 |
+| `<<-` matrix-row write | 600 |
+| list hand-off between stages | 400 |
+| hook call | 400 |
+| `tryCatch()` with a prebuilt handler / with none | 3,350 / 1,100 |
+| `withCallingHandlers()`, same handler | 950 |
+| one `tryCatch()` around a whole loop, per iteration | about 100 |
+| `e$x[[j]] <- v` into a vector held in an environment (copies) | 1,400 / 18,000 / 118,000 at 1,000 / 10,000 / 100,000 |
+
+The whole skeleton (state containers, stage functions, hand-offs, recording,
+hooks) cost 26 to 63 us per pulse above the R floor, 12 to 19% of the lean
+loop at that time; running the body in one frame instead of named stages
+saved 13 to 21 us, which is the price of the required stage functions, not
+a proposal to drop them.
 
 ## Sealed Snapshot Guarantee Graph
 
@@ -801,6 +931,17 @@ One diagnostic block per pulse versus one frame per instrument:
   with locators excluded explicitly?
 - Which clock is the number: cold end to end, or warm iteration over a reused
   snapshot? Is the profiler share labelled as a decomposition?
+- Lean core: could unneeded work or an abstraction be removed before this
+  kernel, cache or fast path is added?
+- Lean core: does the change add bindings to a large frame whose closures
+  run per pulse? Can the state join an existing environment, or does the
+  frame run hashed?
+- Does a set-operation or `fmatch()` fast path gate on every caller operand
+  being plain character (`is.character()`, no attributes), tested on the
+  source operand rather than a derived one?
+- Does a lean replacement accept only a plain input and send every other
+  input, and every refusal, to the package function it replaces?
+- Is a value that is the same on every row of a run written per row?
 
 ## Source Links
 
@@ -820,6 +961,14 @@ One diagnostic block per pulse versus one frame per instrument:
   representations, fast paths with their differential oracles and removal
   conditions, and the execution-mode branch census; Cut 16 decision 17)
 - `performance_arc_v0_1_8_x.qmd`, `benchmark_methodology.qmd`, `execution_fold_core.qmd`
+- Lean-core findings (2026-11-16 update): `../../../dev/spikes/skeleton_floor/README.md`,
+  `../../../dev/spikes/r_floor/stage2b/README.md`,
+  `../../../dev/spikes/hashed_frame/closeout.md`,
+  `../../../dev/lean_core/parity/evidence/cut19/` (`s3env/`, `timing/`),
+  `../../../dev/bench/v0_2_3_helper/`,
+  `../ledgr_v0_2_3_spec_packet/lean_core_interface.md` Sections 19.10-19.11,
+  and the LDG-3232/3233, LDG-3234/3235 and LDG-3240 evidence in
+  `../ledgr_v0_2_3_spec_packet/tickets.yml`
 
 ## Where Next
 
