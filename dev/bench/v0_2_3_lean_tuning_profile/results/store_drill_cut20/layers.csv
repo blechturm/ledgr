@@ -1,0 +1,13 @@
+"shape","key","samples","share"
+"500x1260","duckdb native",531,0.585
+"500x1260","ledgr R",291,0.321
+"500x1260","DBI/duckdb R",85,0.094
+"1166x252","duckdb native",1080,0.579
+"1166x252","ledgr R",601,0.322
+"1166x252","DBI/duckdb R",184,0.099
+"20x23400","duckdb native",38,0.481
+"20x23400","ledgr R",32,0.405
+"20x23400","DBI/duckdb R",9,0.114
+"10x7200","ledgr R",30,0.455
+"10x7200","duckdb native",29,0.439
+"10x7200","DBI/duckdb R",7,0.106
