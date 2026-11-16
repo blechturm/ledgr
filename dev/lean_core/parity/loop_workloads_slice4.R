@@ -147,9 +147,138 @@ loop_slice4 <- list(
 )
 loop_slice4_opening <- loop_slice4$s4_opening
 
-# The pin refuses no slice-4 input here; the lean loop refuses what later
-# tickets cover (loop_expect_refused, loop_workloads.R).
-loop_expect_refused <- c(loop_expect_refused, list(s4_carried = "corporate actions"))
+# --- LDG-3244: corporate actions without other facts ----------------------------
+
+# One corporate-action fact (R/availability-facts.R:615). `entitle`,
+# `effective` and `known` are day numbers, NA for no clock; known = 0 is an
+# hour before the first session. An incomplete fact carries a refusal reason.
+s4_action <- function(id, subtype, parent, entitle = NA, effective = NA, known = 0L, cash = NA_real_,
+                      complete = TRUE) {
+  at <- function(k) if (is.na(k)) as.POSIXct(NA, tz = "UTC") else if (k == 0L) s4_at(1L) - 3600 else s4_at(k)
+  data.frame(fact_id = id, subtype = subtype, parent_instrument_id = parent, entitlement_time = at(entitle),
+    effective_time = at(effective), knowledge_time = at(known), complete = complete,
+    refusal_reason = if (complete) NA_character_ else "unverified", provenance_tier = "snapshot_bound",
+    gross_cash_per_parent_unit = cash, gross_cash_validated = !is.na(cash), recipient_identity_validated = FALSE,
+    recipient_quantity_validated = FALSE, source = "s4", stringsAsFactors = FALSE)
+}
+s4_ca_facts <- function(acts, sessions = NULL) {
+  f <- ledgr::ledgr_facts_equity_corporate_actions(acts)
+  if (is.null(sessions)) ledgr::ledgr_facts(f) else ledgr::ledgr_facts(s4_sessions(sessions), f)
+}
+s4_div <- function(id, parent, entitle, effective, cash = 0.5, known = 0L) {
+  s4_action(id, "ordinary_cash_dividend", parent, entitle, effective, known, cash)
+}
+s4_policy <- function(...) ledgr::ledgr_corporate_actions(...)
+# A one-worker sweep of one candidate over a snapshot with corporate actions.
+s4_ca_sweep <- function(name, closes, facts, exp) {
+  db <- s4_snapshot(name, closes, facts)
+  snapshot <- ledgr::ledgr_snapshot_open(db, name, verify = TRUE)
+  on.exit(ledgr::ledgr_snapshot_close(snapshot))
+  obs <- a0_observe_memory(ledgr::ledgr_sweep(exp(snapshot), ledgr::ledgr_grid_named(a = list(strategy = list(k = 1L))),
+    seed = 17L, workers = 1L, retain = a0_retain()))
+  list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value)))
+}
+# The mixed case (decision 10, cut review R8): eight held instruments with a
+# dividend each on day 3 (one block of eight rows, beside that pulse's
+# fills), single dividends on days 4, 5, 7 and 8 (six blocks: the capture
+# grows past its four slots after a nonempty prefix), fills decided on days
+# 2, 3 and 6, and a dividend on day 9, after the last fill.
+s4_mixed_ids <- sprintf("M%d", 1:8)
+s4_mixed <- function(name) {
+  closes <- stats::setNames(lapply(seq_along(s4_mixed_ids), function(k) 20 + k + seq_len(10L) / 5), s4_mixed_ids)
+  acts <- rbind(do.call(rbind, lapply(seq_along(s4_mixed_ids), function(k)
+    s4_div(paste0("d3-", k), s4_mixed_ids[[k]], 3L, 5L, cash = k / 10))),
+    s4_div("d4", "M1", 4L, 6L), s4_div("d5", "M2", 5L, 6L), s4_div("d7", "M3", 7L, 8L), s4_div("d8", "M4", 8L, 9L),
+    s4_div("d9", "M5", 9L, 10L))
+  s4_run(name, closes, s4_ca_facts(acts),
+    s4_exp(s4_strategy(s4_plan(list(2L, c(M6 = 4)), list(3L, c(M1 = 14, M7 = 2)), list(6L, c(M2 = 0, M8 = 15)))),
+      positions = stats::setNames(rep(10, 8L), s4_mixed_ids), cost_basis = stats::setNames(rep(20, 8L), s4_mixed_ids),
+      cash = 1e5))
+}
+
+loop_slice4 <- c(loop_slice4, list(
+  # A cash dividend on an opening holding, a buy between entitlement and pay date.
+  s4_dividend = function() s4_run("s4_dividend", s4_closes(), s4_ca_facts(s4_div("d1", "A", 3L, 6L)),
+    s4_exp(s4_strategy(s4_plan(list(4L, c(A = 15)))), positions = c(A = 10), cost_basis = c(A = 28))),
+  # A dividend on a position bought in the run (no opening positions).
+  s4_dividend_bought = function() s4_run("s4_dividend_bought", s4_closes(), s4_ca_facts(s4_div("d1", "B", 4L, 7L, 1.25)),
+    s4_exp(s4_strategy(s4_plan(list(1L, c(B = 20)), list(8L, c(B = 0)))))),
+  # Dividends under a declared calendar, entitled on day 1 (the run-start
+  # boundary: 10 held at the opening) and on day 3 (bound in day 2's P4
+  # before its fills: 10, not the 12 bought then).
+  s4_dividend_sessions = function() s4_run("s4_dividend_sessions", s4_closes(),
+    s4_ca_facts(rbind(s4_div("d0", "A", 1L, 2L, 0.25), s4_div("d1", "A", 3L, 5L)), sessions = 10L),
+    s4_exp(s4_strategy(s4_plan(list(2L, c(A = 12)))), positions = c(A = 10), cost_basis = c(A = 28))),
+  # A dividend posted on a pulse the schedule skips (decided on days 2 and 8).
+  s4_dividend_skip = function() s4_run("s4_dividend_skip", s4_closes(), s4_ca_facts(s4_div("d1", "A", 5L, 6L), sessions = 10L),
+    s4_exp(s4_strategy(s4_plan(list(2L, c(B = 4)), list(8L, c(A = 0)))), positions = c(A = 10), cost_basis = c(A = 28),
+      schedule = ledgr::ledgr_schedule_dates(s3_dates(10L)[c(2L, 8L)]))),
+  # Cash posted at the next open, a late-known dividend, and a dividend on
+  # an instrument never held beside a held one.
+  s4_dividend_next_open = function() s4_run("s4_dividend_next_open", s4_closes(), s4_ca_facts(s4_div("d1", "A", 3L, 6L)),
+    s4_exp(s4_strategy(list()), positions = c(A = 10), cost_basis = c(A = 28),
+      corporate_action_policy = s4_policy(cash_posting = "next_open"))),
+  s4_dividend_late = function() s4_run("s4_dividend_late", s4_closes(), s4_ca_facts(s4_div("d1", "A", 3L, 6L, known = 5L)),
+    s4_exp(s4_strategy(list()), positions = c(A = 10), cost_basis = c(A = 28))),
+  s4_dividend_unheld = function() s4_run("s4_dividend_unheld", s4_closes(),
+    s4_ca_facts(rbind(s4_div("d1", "A", 3L, 6L), s4_div("d2", "C", 3L, 6L, 2))),
+    s4_exp(s4_strategy(list()), positions = c(A = 10), cost_basis = c(A = 28))),
+  # Refusals (a typed stop at the valuation): a held dividend under
+  # cash_amount = "refuse"; a held unmodeled effect under
+  # unsupported_quantity = "refuse"; both due on one pulse, where the cash
+  # refusal comes first (R/fold-engine.R:383).
+  s4_cash_refused = function() s4_run("s4_cash_refused", s4_closes(), s4_ca_facts(s4_div("d1", "A", 3L, 6L)),
+    s4_exp(s4_strategy(list()), positions = c(A = 10), cost_basis = c(A = 28),
+      corporate_action_policy = s4_policy(cash_amount = "refuse"))),
+  s4_quantity_refused = function() s4_run("s4_quantity_refused", s4_closes(),
+    s4_ca_facts(s4_action("q1", "stock_split", "A", 3L, 4L)),
+    s4_exp(s4_strategy(list()), positions = c(A = 10), cost_basis = c(A = 28),
+      corporate_action_policy = s4_policy(unsupported_quantity = "refuse"))),
+  s4_cash_quantity_refused = function() s4_run("s4_cash_quantity_refused", s4_closes(),
+    s4_ca_facts(rbind(s4_div("d1", "A", 4L, 6L), s4_action("q1", "stock_split", "B", 3L, 4L))),
+    s4_exp(s4_strategy(list()), positions = c(A = 10, B = 5), cost_basis = c(A = 28, B = 47),
+      corporate_action_policy = ledgr::ledgr_corporate_actions_strict())),
+  # Reported, not refused (the default unsupported_quantity = "report_only"):
+  # a held spin-off, a held incomplete dividend, a held unmodeled effect, and
+  # an unmodeled effect with no effective clock.
+  s4_quantity_reported = function() s4_run("s4_quantity_reported", s4_closes(),
+    s4_ca_facts(rbind(s4_action("s1", "spin_off", "A", 3L, 4L), s4_action("i1", "ordinary_cash_dividend", "B", 3L, 5L,
+      cash = 1, complete = FALSE), s4_action("u1", "rights_issue", "C", 4L, 6L), s4_action("u2", "rights_issue", "A", 5L))),
+    s4_exp(s4_strategy(s4_plan(list(5L, c(A = 12)))), positions = c(A = 10, B = 5, C = 8),
+      cost_basis = c(A = 28, B = 47, C = 12))),
+  # Clock refusals (conditions, R/corporate-action-settlement.R:369-411): a
+  # knowable fact with no event clock, and a dividend with an effective but
+  # no entitlement clock.
+  s4_clock_missing = function() s4_run("s4_clock_missing", s4_closes(),
+    s4_ca_facts(s4_action("c1", "ordinary_cash_dividend", "A", known = 4L, cash = 0.5)),
+    s4_exp(s4_strategy(list()), positions = c(A = 10), cost_basis = c(A = 28))),
+  s4_entitlement_missing = function() s4_run("s4_entitlement_missing", s4_closes(),
+    s4_ca_facts(s4_div("e1", "A", NA, 5L)),
+    s4_exp(s4_strategy(list()), positions = c(A = 10), cost_basis = c(A = 28))),
+  s4_dividend_mixed = function() s4_mixed("s4_dividend_mixed"),
+  # A finite gross dividend whose cash delta overflows (cut review R3): the
+  # capture's acceptance refuses it in P1, as the pin's handler does.
+  s4_cash_overflow = function() s4_run("s4_cash_overflow", s4_closes(), s4_ca_facts(s4_div("d1", "A", 3L, 6L, 1e308)),
+    s4_exp(s4_strategy(list()), positions = c(A = 10), cost_basis = c(A = 28))),
+  # Committed prefix (decision 4(b), cut review R4): a dividend accepted in
+  # P1 is in the retaining handler before that pulse's strategy call, with
+  # and without an opening, on a run (outside the draining count), and on a
+  # pulse whose strategy then fails.
+  s4_prefix_dividend_sweep = function() lw_prefix_reads(memory = TRUE, workload = function()
+    s4_ca_sweep("s4_prefix_dividend_sweep", s4_closes(), s4_ca_facts(s4_div("d1", "A", 3L, 6L)),
+      s4_exp(s4_strategy(s4_plan(list(1L, c(B = 2)))), positions = c(A = 10), cost_basis = c(A = 28)))),
+  s4_prefix_dividend_bought = function() lw_prefix_reads(memory = TRUE, workload = function()
+    s4_ca_sweep("s4_prefix_dividend_bought", s4_closes(), s4_ca_facts(s4_div("d1", "B", 4L, 7L)),
+      s4_exp(s4_strategy(s4_plan(list(1L, c(B = 20)), list(8L, c(B = 0))))))),
+  s4_prefix_dividend_run = function() lw_prefix_reads(memory = FALSE, workload = function() loop_slice4$s4_dividend()),
+  s4_prefix_dividend_stop = function() lw_prefix_reads(memory = TRUE, workload = function()
+    s4_ca_sweep("s4_prefix_dividend_stop", s4_closes(), s4_ca_facts(s4_div("d1", "A", 4L, 6L)),
+      s4_exp(function(ctx, params) {
+        t <- ctx$hold()
+        if (ctx$ts_utc == "2020-01-04T16:00:00Z") t[["B"]] <- NA_real_
+        t
+      }, positions = c(A = 10), cost_basis = c(A = 28))))
+))
 
 # --- branch reach (on the pin's tables) -----------------------------------------
 
@@ -215,4 +344,112 @@ loop_reach <- c(loop_reach, list(
     p <- t$run$prefix_reads
     !is.null(p) && nrow(p) > 1L && s4_opening_reach(2L)(t)
   }
+))
+
+# LDG-3244 (decision 10, cut review R7): corporate-action CASHFLOW rows are
+# selected by source corporate_action_cash (not opening_position); each
+# predicate asserts the posting's day, quantity, cash and evidence fields.
+s4_num <- function(x) as.numeric(x)
+s4_cf <- function(t, path = "run") {
+  ev <- t[[path]]$ledger_events
+  if (is.null(ev)) ev <- t[[path]]$memory_events
+  ev[ev$event_type == "CASHFLOW" & ev$source %in% "corporate_action_cash", , drop = FALSE]
+}
+s4_day <- function(x) substr(x, 1L, 10L)
+s4_status <- function(t) as.character(t$run$runs$status)
+s4_stop_rows <- function(t, reason) {
+  d <- s4_diag(t)
+  d[d$stage == "valuation" & d$outcome == "stopped" & d$reason_code == reason, , drop = FALSE]
+}
+s4_refusal_reach <- function(reason, ids, day) function(t) {
+  s <- s4_stop_rows(t, reason)
+  cmp <- t$run$run_completion
+  identical(s4_status(t), "INCOMPLETE") && nrow(s) == length(ids) && setequal(s$instrument_id, ids) &&
+    all(s4_day(s$ts_utc) == day) && identical(as.character(cmp$stop_reason), reason) &&
+    s4_num(cmp$affected_exposure) > 0 && nrow(s4_cf(t)) == 0L
+}
+s4_condition_reach <- function(class) function(t) any(grepl(class, t$run$run_conditions$class, fixed = TRUE))
+# Count of events visible to the strategy call on `day` minus the previous
+# call's (prefix reads, decision 4(b)).
+s4_prefix_step <- function(t, path, day) {
+  p <- t[[path]]$prefix_reads
+  p <- p[p$ts_utc != "reconciliation", , drop = FALSE]
+  k <- which(s4_day(p$ts_utc) == day)
+  if (length(k) != 1L || k < 2L) return(NA_real_)
+  s4_num(p$events[[k]]) - s4_num(p$events[[k - 1L]])
+}
+
+loop_reach <- c(loop_reach, list(
+  # 10 x 0.5 entitled at the day-3 boundary, before the day-4 buy.
+  s4_dividend = function(t) {
+    cf <- s4_cf(t)
+    nrow(cf) == 1L && cf$instrument_id == "A" && s4_num(cf$entitled_quantity) == 10 && s4_num(cf$cash_delta) == 5 &&
+      s4_day(cf$ts_utc) == "2020-01-03" && cf$source_fact_id != ""
+  },
+  # 20 bought on day 1, entitled at day 4: 20 x 1.25.
+  s4_dividend_bought = function(t) {
+    cf <- s4_cf(t)
+    nrow(cf) == 1L && cf$instrument_id == "B" && s4_num(cf$entitled_quantity) == 20 && s4_num(cf$cash_delta) == 25
+  },
+  # Day 1: the opening's 10 bound at the run start; day 3: bound in day 2's
+  # P4 before its fills, 10 and not the 12 held after them.
+  s4_dividend_sessions = function(t) {
+    cf <- s4_cf(t)
+    nrow(cf) == 2L && all(s4_num(cf$entitled_quantity) == 10) && setequal(s4_day(cf$ts_utc), c("2020-01-01", "2020-01-03")) &&
+      any(t$run$fills$instrument_id == "A" & t$run$fills$side == "BUY" & s4_num(t$run$fills$qty) == 2)
+  },
+  # Posted on day 5, a pulse the schedule skips.
+  s4_dividend_skip = function(t) {
+    cf <- s4_cf(t)
+    d <- s4_diag(t)
+    skipped <- s4_day(d$ts_utc[d$reason_code == "scheduled_skip"])
+    nrow(cf) == 1L && s4_day(cf$ts_utc) == "2020-01-05" && "2020-01-05" %in% skipped
+  },
+  # Entitled on day 3, posted at the next open (day 4), under its policy.
+  s4_dividend_next_open = function(t) {
+    cf <- s4_cf(t)
+    nrow(cf) == 1L && s4_day(cf$ts_utc) == "2020-01-04" && grepl("next_open", cf$posting_policy_id)
+  },
+  # Known on day 5 after its day-3 entitlement: posted on day 5, late.
+  s4_dividend_late = function(t) {
+    cf <- s4_cf(t)
+    nrow(cf) == 1L && s4_day(cf$ts_utc) == "2020-01-05" && identical(as.character(cf$late_arrival), "TRUE")
+  },
+  # The unheld C row posts nothing; the held A row posts.
+  s4_dividend_unheld = function(t) {
+    cf <- s4_cf(t)
+    nrow(cf) == 1L && cf$instrument_id == "A"
+  },
+  s4_cash_refused = s4_refusal_reach("corporate_action_cash_refused", "A", "2020-01-03"),
+  s4_quantity_refused = s4_refusal_reach("corporate_action_quantity_refused", "A", "2020-01-04"),
+  # Both due on day 4: the cash refusal stops first; B's quantity is not checked.
+  s4_cash_quantity_refused = s4_refusal_reach("corporate_action_cash_refused", "A", "2020-01-04"),
+  # Reported effects: no stop, no CASHFLOW (the incomplete dividend settles
+  # nothing), and the day-5 trade still happens.
+  s4_quantity_reported = function(t) {
+    identical(s4_status(t), "DONE") && nrow(s4_cf(t)) == 0L && nrow(s4_stop_rows(t, "corporate_action_quantity_refused")) == 0L &&
+      any(t$run$fills$instrument_id == "A")
+  },
+  s4_clock_missing = s4_condition_reach("ledgr_corporate_action_clock_missing"),
+  s4_entitlement_missing = s4_condition_reach("ledgr_corporate_action_entitlement_missing"),
+  # Eight rows on day 3 (one block, beside fills decided that day), six
+  # posting pulses (capture growth), a CASHFLOW numbered right before a FILL,
+  # and CASHFLOW rows after the last FILL.
+  s4_dividend_mixed = function(t) {
+    ev <- t$run$ledger_events
+    ev <- ev[order(s4_num(ev$event_seq)), ]
+    cf <- ev$event_type == "CASHFLOW" & ev$source %in% "corporate_action_cash"
+    fill <- ev$event_type == "FILL"
+    sum(cf & s4_day(ev$ts_utc) == "2020-01-03") == 8L && length(unique(s4_day(ev$ts_utc[cf]))) == 6L &&
+      any(cf[-length(cf)] & fill[-1L]) && max(which(cf)) > max(which(fill))
+  },
+  s4_cash_overflow = s4_condition_reach("ledgr_invalid_accounting_event"),
+  # The dividend accepted on day 3 is visible to that day's strategy call:
+  # one more event than day 2's call, with no fill in between.
+  s4_prefix_dividend_sweep = function(t) isTRUE(s4_prefix_step(t, "sweep", "2020-01-03") == 1) && nrow(s4_cf(t, "sweep")) == 1L,
+  s4_prefix_dividend_bought = function(t) isTRUE(s4_prefix_step(t, "sweep", "2020-01-04") == 1) && nrow(s4_cf(t, "sweep")) == 1L,
+  # A draining run's count leaves the dividend out (it is in the store).
+  s4_prefix_dividend_run = function(t) isTRUE(s4_prefix_step(t, "run", "2020-01-03") == 0) && nrow(s4_cf(t)) == 1L,
+  # The day-4 dividend is visible to the strategy call that then fails.
+  s4_prefix_dividend_stop = function(t) isTRUE(s4_prefix_step(t, "sweep", "2020-01-04") == 1)
 ))

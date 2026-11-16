@@ -16,14 +16,16 @@
 # a pulse in logical order (part 1 opens the pulse: valuation, scheduled-skip
 # and evidence rows; part 2 follows the decision cells: stale-mark risk rows;
 # part 3 closes it: stop rows).
-lean_marks_run_state <- function(bars, ids, substrate, provider, history_reader, due, frozen = character()) {
+lean_marks_run_state <- function(bars, ids, substrate, provider, history_reader, due, frozen = character(),
+                                 marked = FALSE) {
   s3 <- new.env(parent = emptyenv())
   # Slice 4 (LDG-3243, decision 5): a carried opening's frozen holdings
   # start the frozen set, as the pin's fold state does
   # (R/fold-engine.R:1794), so freeze entry is not recorded twice; such a
   # run takes the marked path, since only the valuation state can exit or
-  # keep a frozen holding.
-  s3$state <- if (lean_marks_needed(bars) || length(frozen) > 0L) {
+  # keep a frozen holding. So does a run with a corporate-action plan
+  # (LDG-3244): its refusal stops at the valuation (R/fold-engine.R:383-392).
+  s3$state <- if (lean_marks_needed(bars) || length(frozen) > 0L || marked) {
     lean_marks_state(bars, ids, substrate, provider, history_reader)
   }
   s3$due <- due
@@ -104,17 +106,19 @@ lean_marks_group <- function(ids, stage, outcome, reason_code, ..., reasons = re
   c(list(instrument_id = ids, stage = stage, outcome = outcome, reason_code = reason_code, reasons = reasons), list(...))
 }
 
-# The valuation-horizon stop (R/fold-engine.R:338-361, :512-521): the held
-# instruments without a usable mark, their rows and the affected exposure
-# the completion row records. NULL when every holding is priced.
-lean_marks_valuation_stop <- function(m, ts_posix) {
-  ids <- names(m$full)[m$columns$held & !m$columns$priced]
+# A P1 stop (the pin's stop_valuation, R/fold-engine.R:338-361): by default
+# the valuation-horizon stop (:512-521), the held instruments without a
+# usable mark, NULL when every holding is priced; or a given stop, such as a
+# corporate-action refusal (:383-392). Its rows, reason and the affected
+# exposure the completion row records.
+lean_marks_valuation_stop <- function(m, ts_posix, ids = names(m$full)[m$columns$held & !m$columns$priced],
+                                      reason_code = "valuation_horizon_exhausted", reasons = reason_code) {
   if (length(ids) == 0L) return(NULL)
   v <- m$valuation
   affected <- ledgr_availability_affected_exposure(ids, m$full, v)
   q <- unname(m$full[ids])
-  list(affected = c(affected, list(ts_utc = ts_posix, specified = TRUE)),
-       rows = lean_marks_group(ids, "valuation", "stopped", "valuation_horizon_exhausted", quantity = q,
+  list(reason = reason_code, affected = c(affected, list(ts_utc = ts_posix, specified = TRUE)),
+       rows = lean_marks_group(ids, "valuation", "stopped", reason_code, reasons = reasons, quantity = q,
          price = unname(v$reference[ids]), mark_source = unname(v$source[ids]), mark_age = unname(v$age[ids]),
          position_before = q, position_after = q,
          detail_json = vapply(seq_along(ids), function(k) ledgr_availability_detail_json(affected$details[[k]]), "")))
@@ -197,12 +201,13 @@ lean_marks_current <- list(source = "current_close", age = 0L, reason = "decisio
 
 # The slice-3 rows of pulses 1..np by part (1 opens the pulse, 2 follows the
 # decision cells, 3 closes it), and the pulses without decision cells: a
-# scheduled skip and a valuation stop, each recognised by its row.
+# scheduled skip and a P1 stop (any reason: the valuation horizon, a
+# corporate-action refusal), each recognised by its row.
 lean_marks_part_counts <- function(s3, np) {
   k <- seq_len(s3$nx)
   pulse <- s3$xr$pulse[k]
   part <- s3$xr$part[k]
-  none <- s3$xr$reason_code[k] %in% c("scheduled_skip", "valuation_horizon_exhausted")
+  none <- s3$xr$reason_code[k] == "scheduled_skip" | (s3$xr$stage[k] == "valuation" & s3$xr$outcome[k] == "stopped")
   list(open = tabulate(pulse[part == 1L], np), risk = tabulate(pulse[part == 2L], np),
        stop = tabulate(pulse[part == 3L], np), no_decision = tabulate(pulse[none], np) > 0L)
 }

@@ -151,6 +151,36 @@ for (w in c("s4_carried_lots", "s4_basis_unknown")) {
            reason = "Cut 21 LDG-3243: an opening under inert hooks, inert-mode count"))
 }
 
+# Cut 21, LDG-3244 (workstream 39's intermediate paths, decision 10 and cut
+# review R9): corporate actions covered but for scheduled dispositions, so
+# the carried window with its pending entitlement and the dense dividend run
+# go lean, and the acquisition run moves to its next uncovered feature; its
+# final path is LDG-3248's.
+for (u in list(list("s4_carried", 1L, ""), list("dense_dividend_state", 4L, ""),
+               list("avail_acquisition", 0L, "corporate-action dispositions"))) {
+  add(both(action = "update", mode = "gate", workload = u[[1L]], lean_folds = u[[2L]], refused = u[[3L]],
+           backstop = "", reason = "Cut 21 LDG-3244: corporate actions covered but for scheduled dispositions"))
+}
+slice4_3244 <- c("s4_dividend", "s4_dividend_bought", "s4_dividend_sessions", "s4_dividend_skip", "s4_dividend_next_open",
+  "s4_dividend_late", "s4_dividend_unheld", "s4_cash_refused", "s4_quantity_refused", "s4_cash_quantity_refused",
+  "s4_quantity_reported", "s4_clock_missing", "s4_entitlement_missing", "s4_dividend_mixed", "s4_cash_overflow",
+  "s4_prefix_dividend_sweep", "s4_prefix_dividend_bought", "s4_prefix_dividend_run", "s4_prefix_dividend_stop")
+for (w in slice4_3244) {
+  add(both(action = "add", mode = "gate", workload = w, lean_folds = 1L, refused = "", backstop = "",
+           reason = "Cut 21 LDG-3244 slice-4 workload, declared path"))
+}
+# Corporate-action and fill rows across terminal batches (batch one), and
+# corporate actions under inert hooks (inert-mode count 0).
+for (w in c("s4_dividend", "s4_dividend_mixed", "s4_dividend_skip", "s4_cash_refused", "s4_prefix_dividend_sweep",
+            "s4_carried")) {
+  add(both(action = "add", mode = "batch1", workload = w, lean_folds = 1L, refused = "", backstop = "",
+           reason = "Cut 21 LDG-3244: corporate-action rows across terminal batches, declared path"))
+}
+for (w in c("s4_dividend", "s4_dividend_mixed")) {
+  add(both(action = "add", mode = "inert", workload = w, lean_folds = 0L, refused = "", backstop = "",
+           reason = "Cut 21 LDG-3244: corporate actions under inert hooks, inert-mode count"))
+}
+
 out <- do.call(rbind, rows)
 utils::write.csv(out, file.path(here, "loop_freeze_changes.csv"), row.names = FALSE)
 cat(nrow(out), "changes:", paste(names(table(out$action)), table(out$action), collapse = ", "), "\n")

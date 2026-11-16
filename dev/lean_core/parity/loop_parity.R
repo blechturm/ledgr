@@ -83,8 +83,8 @@ store_variant <- function(call, path, prepare = FALSE, dead = NULL) variant("sto
     paste0("      if (nf == n_fill) { lean_entry$variant_reached <- TRUE; ", if (!is.null(dead)) paste0("if (FALSE) ", dead, "; "),
            call, " }"), "after", mark = FALSE)), tables = "^$", path = path)
 loop_mutations <- list(
-  fill_price_ulp = variant("differ", list(edit("loop.R", "lean_loop_publish", "    src <- fl",
-    "    if (nf > 0L) src$price[[1L]] <- src$price[[1L]] * (1 + .Machine$double.eps)", "after")),
+  fill_price_ulp = variant("differ", list(edit("loop.R", "lean_loop_publish", "    ca <- lean_facts_rows(s4)   # accepted corporate-action rows (slice 4)",   # Cut 21 re-anchor
+    "    if (nf > 0L) fl$price[[1L]] <<- fl$price[[1L]] * (1 + .Machine$double.eps)", "after")),
     error = "FILL cash and position deltas do not reconcile"),
   drop_hold = variant("differ", list(edit("loop.R", "lean_loop_expand", "      hc <- which(hold)",
     "      if (a == 1L && any(hold)) hold[which(hold)[[1L]]] <- FALSE", "before")),
@@ -221,7 +221,7 @@ loop_mutations <- list(
   frozen_restriction_dropped = variant("differ", list(edit("marks.R", "lean_marks_pulse",
     "  view <- ledgr_availability_restrict_frozen(view, valuation)")), lost = "Restricted targets must hold", error = "."),
   valuation_stop_counts_pulse = variant("differ", list(edit("loop.R", "lean_p1_value",
-    "        stop_reason <<- \"valuation_horizon_exhausted\"", "        processed <<- processed + 1L", "before")),
+    "        stop_reason <<- st$reason", "        processed <<- processed + 1L", "before")),   # Cut 21 re-anchor
     tables = "^run_telemetry$|^runs$|^run_completion$"),
   stop_affected_unspecified = variant("differ", list(edit("marks.R", "lean_marks_stop", "  s3$affected <- s$affected")),
     tables = "^run_completion$"),
@@ -238,6 +238,53 @@ loop_mutations <- list(
   # window's first pulse records freeze entry a second time.
   frozen_opening_ignored = variant("differ", list(edit("marks.R", "lean_marks_run_state", "  s3$frozen <- frozen",
     "  s3$frozen <- character()")), tables = "^run_diagnostic"),
+  # Cut 21, LDG-3244 (decision 11; cut review R3, R4, R6, R8): the plan's
+  # post call omitted, and its cash not installed: with debug on the
+  # settlement check names the fault at that pulse; with debug off the
+  # economic tables differ.
+  post_omitted = variant("differ", list(edit("loop.R", "lean_p1_value",
+    "      posted <- lean_facts_post(s4, i, run_id, event_seq, cash, pos, book, ids, close)",
+    "      posted <- list(state = list(cash = cash, positions = stats::setNames(pos, ids), lot_state = book), next_event_seq = event_seq)")),
+    error = "Lean corporate-action settlement ran 0 post calls", tables = "^ledger_events$"),
+  post_cash_not_installed = variant("differ", list(edit("loop.R", "lean_p1_value", "      lean_settle(posted$state, i)",
+    "      lean_settle(utils::modifyList(posted$state, list(cash = cash)), i)")),
+    error = "Lean corporate-action settlement was not installed", tables = "^equity_curve$"),
+  # Captured rows lost or repeated after a correct installation: the event
+  # tables, not the settlement check, catch them. The duplicate is the
+  # captured tail after the last fill, written twice.
+  captured_row_dropped = variant("differ", list(edit("facts.R", "lean_facts_accept", "  s4$blocks[[s4$nb]] <- rows",
+    "  s4$blocks[[s4$nb]] <- rows[-1L, , drop = FALSE]")), tables = "^ledger_events$"),
+  captured_row_duplicated = variant("differ", list(edit("loop.R", "lean_loop_publish",
+    "    lean_facts_emit_ca(output_handler, ca, cur, .Machine$integer.max, bound, tick)   # rows after the last fill",
+    "    if (!is.null(ca)) lean_facts_emit_ca(output_handler, ca, nrow(ca), .Machine$integer.max, bound, tick)", "after")),
+    error = "strictly increasing", tables = "^ledger_events$"),
+  # Publication order: captured rows after every fill, and fills numbered
+  # as if no captured row came between them.
+  corporate_rows_after_fills = variant("differ", list(edit("loop.R", "lean_loop_emit",
+    "      cur <- lean_facts_emit_ca(h, ca, cur, ev[[r[[1L]]]], bound, tick)")),
+    error = "strictly increasing", tables = "^ledger_events$"),
+  fill_seq_contiguous = variant("differ", list(edit("loop.R", "lean_p4_apply",
+    "      fl$evseq[rows] <<- event_seq + seq_len(n_fill) - 1L",
+    "      fl$evseq[rows] <<- as.integer(execution$event_seq_start) + rows - 1L")),
+    error = ".", tables = "^ledger_events$"),
+  # The capture's acceptance check skipped: the pin's P1 refusal of an
+  # overflowing cash delta is lost and a later failure takes its place.
+  capture_validation_deferred = variant("differ", list(edit("facts.R", "lean_facts_accept",
+    "  p <- ledgr_validate_accounting_append(rows, prior_event_seq = s4$bseq, prior_ts_utc = s4$bts)",
+    "  p <- list(event_seq = rows$event_seq, ts_utc = rows$ts_utc)")),
+    error = ".", tables = "^run_conditions$"),
+  # Accepted corporate-action rows kept out of the committed prefix.
+  nonfill_commit_late = variant("differ", list(
+    edit("loop.R", "lean_fold_envelope_plain", "    count = function() NROW(pre_events) + retains * s4$nrows + n_committed,",
+      "    count = function() NROW(pre_events) + n_committed,", mark = FALSE),   # inside list(): the next edit marks the reach
+    edit("loop.R", "lean_fold_envelope_plain", "      ca <- lean_facts_rows(s4)", "      ca <- NULL")),
+    tables = "^prefix_reads$"),
+  # The capture's growth loses the blocks already held.
+  capture_lost_at_growth = variant("differ", list(edit("facts.R", "lean_facts_accept", "    length(s4$blocks) <- s4$cap",
+    "    s4$blocks <- vector(\"list\", s4$cap)")), error = ".", tables = "^ledger_events$"),
+  # A captured block written whole, past the terminal batch bound.
+  nonfill_block_unsplit = variant("unbounded", list(edit("facts.R", "lean_facts_emit_ca",
+    "    e <- min(last, cur + bound - 1L)", "    e <- last")), tables = "^$"),
   # the valuation state given scoring ordinals instead of prepared columns
   wrong_origin = variant("differ", list(edit("marks.R", "lean_marks_state",
     "  ledgr_availability_valuation_state(bars, ids, substrate$axis, as.integer(provider$valuation_policy$max_sessions),",
@@ -250,8 +297,8 @@ loop_mutations <- list(
   transition_groups_interleaved = variant("differ", list(edit("marks.R", "lean_marks_frozen",
     "  list(set = now, groups = groups)", "  list(set = now, groups = rev(groups))")), tables = "^run_diagnostics$"),
   affected_contribution_dropped = variant("differ", list(edit("marks.R", "lean_marks_valuation_stop",
-    "  list(affected = c(affected, list(ts_utc = ts_posix, specified = TRUE)),",
-    "  list(affected = c(ledgr_availability_affected_exposure(ids[-1L], m$full, v), list(ts_utc = ts_posix, specified = TRUE)),")),
+    "  list(reason = reason_code, affected = c(affected, list(ts_utc = ts_posix, specified = TRUE)),",   # Cut 21 re-anchor
+    "  list(reason = reason_code, affected = c(ledgr_availability_affected_exposure(ids[-1L], m$full, v), list(ts_utc = ts_posix, specified = TRUE)),")),
     tables = "^run_completion$"),
   # The growth copy loses the last record already written (close review
   # round 1, F1): it takes the padding's NA in every column.

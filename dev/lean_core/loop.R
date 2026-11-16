@@ -15,8 +15,9 @@
 #
 # Coverage (Section 19.2): anything outside slices 1-3 and the slice-4 parts
 # landed so far (Section 19.13: opening positions and carried openings,
-# LDG-3243) is refused before the first pulse with `ledgr_lean_not_covered`;
-# the harness then runs the pin.
+# LDG-3243; corporate actions without dispositions, LDG-3244) is refused
+# before the first pulse with `ledgr_lean_not_covered`; the harness then
+# runs the pin.
 
 # The pin's marked gross exposure (ledgr_availability_marked_gross) without
 # ifelse(): a zero quantity contributes exactly 0.
@@ -81,7 +82,10 @@ lean_loop_coverage <- function(execution, entry = NULL) {
     lean_not_covered("a checkpoint_every control")
   }
   if (!identical(as.integer(execution$start_idx), 1L)) lean_not_covered("restart")
-  if (!is.null(execution$corporate_action_plan)) lean_not_covered("corporate actions")
+  # Corporate actions are covered (LDG-3244, facts.R) but for scheduled
+  # dispositions (acquisitions), workstream 40.
+  ca <- execution$corporate_action_plan
+  if (!is.null(ca) && isTRUE(ca$has_disposition())) lean_not_covered("corporate-action dispositions")
   # Opening positions and carried openings are covered (slice 4, LDG-3243):
   # positions, lots, position facts and the opening event_seq come in
   # through execution; the frozen set and the unknown-basis mask below.
@@ -239,7 +243,11 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   # valuation state; the schedule, the frozen set and the slice-3 rows. One
   # binding: each binding in this frame slows every lookup (marks.R).
   s3 <- lean_marks_run_state(bars, ids, substrate, provider, history_reader, execution$decision_due,
-    as.character(execution$opening_frozen %||% character()))
+    as.character(execution$opening_frozen %||% character()), marked = !is.null(execution$corporate_action_plan))
+  # Slice 4 (facts.R, Section 19.13): the corporate-action plan, its capture
+  # and the accepted rows; one binding, as s3. Built from the fold's own
+  # handler, before any harness wrapper.
+  s4 <- lean_facts_run_state(execution$corporate_action_plan, output_handler)
   epochs <- as.numeric(execution$execution_opportunities_posix %||% pulses_posix[-1L])
   epoch_valid <- ledgr_plan_epoch_valid(epochs)
   max_events <- max(1L, n_pulse * n)
@@ -312,7 +320,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
              planned_position_after = numeric(fcap), clean = logical(fcap), info = character(fcap),
              infos = character(fcap), target = numeric(fcap), strategy_target = numeric(fcap),
              close_qty = numeric(fcap), open_qty = numeric(fcap), realized_close = numeric(fcap),
-             net_after = numeric(fcap))
+             net_after = numeric(fcap), evseq = integer(fcap))   # evseq: numbered around corporate-action rows
   nf <- 0L
   # explicit decision residuals: (pulse, k, strategy target, target, position)
   # Sizing evidence rows (slice 2, Section 19.9), pulse-ordered.
@@ -351,22 +359,21 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   # handler stays the terminal sink). The prefix starts with the events a
   # retaining handler already holds at entry (a sweep's opening rows,
   # R/sweep.R:1678; slice 4, decision 4(b)); a draining handler's opening
-  # rows are in the store and are not part of its pending count.
+  # rows are in the store and are not part of its pending count. Accepted
+  # corporate-action rows join it at once (P1, before that pulse's strategy
+  # call); a draining handler appends them to the store, outside its count.
   pre_events <- if (is.function(output_handler$events)) output_handler$events()
+  retains <- is.function(output_handler$events)
   hooks$committed(list(
-    count = function() NROW(pre_events) + n_committed,
+    count = function() NROW(pre_events) + retains * s4$nrows + n_committed,
     events = function() {
       h <- lean_pin_output_handler(ledgr_output_sink_memory(run_id))
-      h$init_buffers(max(1L, NROW(pre_events) + n_committed))
+      h$init_buffers(max(1L, NROW(pre_events) + s4$nrows + n_committed))
       h$append_event_rows(pre_events)
-      if (n_committed > 0L) {
-        r <- seq_len(n_committed)
-        block <- h$write_fill_events(fill = fl, i = r, instrument_id = ids[fl$pos[r]],
-          event_seq = as.integer(execution$event_seq_start), use_transaction = FALSE)
-        h$record_accounting_fact(block = block, applied = list(close_qty = fl$close_qty[r],
-          open_qty = fl$open_qty[r], realized_close = fl$realized_close[r]))
-        h$flush_pulse_events()
-      }
+      ca <- lean_facts_rows(s4)
+      all <- max(1L, s4$nrows + n_committed)
+      cur <- lean_loop_emit(h, seq_len(n_committed), ca, 1L, all)
+      lean_facts_emit_ca(h, ca, cur, .Machine$integer.max, all, function() NULL)
       h$events()
     }))
   on.exit(hooks$committed(NULL), add = TRUE)
@@ -521,26 +528,50 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   # pulse returned, and writes by index into the run-long state above. The
   # loop body only calls them in order.
 
-  # P1: valuation at the marks (the close, or on a marked run the pin's
-  # marks: the valuation stop, the frozen set's rows) and the equity row.
+  # A settlement's returned state installed by the pin's own installer
+  # (cash, positions, lot book; position facts of changed positions).
+  lean_settle <- function(value, i) {
+    fs <- list2env(list(positions = pos, position_facts = position_facts), parent = emptyenv())
+    ledgr_carrier_settlement_install(fs, value, projection_idx[[i]])
+    cash <<- fs$cash
+    pos <<- fs$positions
+    book <<- fs$lot_state
+    position_facts <<- fs$position_facts
+  }
+
+  # P1: corporate actions (slice 4), then valuation at the marks (the close,
+  # or on a marked run the pin's marks: the valuation stop, the frozen set's
+  # rows) and the equity row.
   lean_p1_value <- function(i) {
     ts <- ts_num[[i]]
     live$cur_ts <- ts
     live$cur_stage <- "valuation"
     col <- pulse_cols[[i]]
     close <- bars$close[, col]
+    refused <- NULL
+    if (!is.null(s4$plan)) {
+      # The plan's clocks, cash posting into the capture and quantity
+      # checks, in the pin's order (R/fold-engine.R:363-382; facts.R).
+      posted <- lean_facts_post(s4, i, run_id, event_seq, cash, pos, book, ids, close)
+      lean_settle(posted$state, i)
+      event_seq <<- posted$next_event_seq
+      refused <- posted$stopped %||% s4$plan$check_quantity_effects(i)
+    }
+    if (.lean_debug && !is.null(s4$plan)) lean_facts_debug_settled(s4, i, cash, pos, book)
     mk <- close
     m <- NULL
     if (!is.null(s3$state)) {
       m <- lean_marks_pulse(provider, s3$state, i, pulses_posix[[i]], pos, ids)
-      st <- lean_marks_valuation_stop(m, pulses_posix[[i]])
+      st <- if (is.null(refused)) lean_marks_valuation_stop(m, pulses_posix[[i]]) else
+        lean_marks_valuation_stop(m, pulses_posix[[i]], refused$ids, refused$reason_code,
+          rep(refused$reasons, length(refused$ids)))
       if (!is.null(st)) {
         # before the equity row; the pulse is not counted
         n_done <<- i
         lean_marks_stop(s3, i, st)
         hd_all_explicit[[i]] <<- TRUE
         status <<- "INCOMPLETE"
-        stop_reason <<- "valuation_horizon_exhausted"
+        stop_reason <<- st$reason
         return(list(stop = TRUE))
       }
       fz <- lean_marks_frozen(m, s3$frozen)
@@ -767,6 +798,9 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
     d <- v2$fields
     cleanc <- lean_marks_clean(d, close, ids, v2$risk_ids)
     differs <- if (isTRUE(v2$skip)) integer() else which(!(is.finite(sq) & sq == pos & tq == sq & cleanc))
+    # The next pulse's entitled holder of record, before fills (slice 4,
+    # R/fold-engine.R:1401-1409).
+    if (!is.null(s4$plan) && i < n_pulse) s4$plan$bind_boundary(i + 1L, ledgr_fold_positions_snapshot(pos, ids))
     n_fill <- if (is.null(batch)) 0L else length(batch$fill$k)
     n_rej <- if (is.null(batch)) 0L else length(batch$rejection$k)
     clean_k <- integer()
@@ -817,8 +851,10 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
       fl$close_qty[rows] <<- a$close_qty
       fl$open_qty[rows] <<- a$open_qty
       fl$realized_close[rows] <<- a$realized_close
+      fl$evseq[rows] <<- event_seq + seq_len(n_fill) - 1L
       nf <<- nf + n_fill
       event_seq <<- event_seq + n_fill
+      if (!is.null(s4$plan)) lean_facts_fills_accepted(s4, event_seq - 1L, fill$exec_ts[[n_fill]])
       pos[fill$pos] <<- book$net_by_inst[fill$pos]
       fl$net_after[rows] <<- book$net_by_inst[fill$pos]
       cash <<- ledgr_cash_scan(cash, fill$cash_delta)[[n_fill]]
@@ -916,6 +952,8 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
     live$t_start <- ledgr_time_now()
     live$in_pulses <- TRUE
     on.exit(live$in_pulses <- FALSE)   # also when an error unwinds the loop, before rollback
+    # The first pulse's entitled holder of record (R/fold-engine.R:1921-1926).
+    if (!is.null(s4$plan) && n_pulse > 0L) s4$plan$bind_boundary(1L, ledgr_fold_positions_snapshot(pos, ids))
     for (i in seq_len(n_pulse)) {
       v1 <- lean_p1_value(i)
       if (v1$stop) break
@@ -1000,7 +1038,8 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
     tick <- function() {
       live$batches <- live$batches + 1L
     }
-    src <- fl
+    ca <- lean_facts_rows(s4)   # accepted corporate-action rows (slice 4)
+    cur <- 1L
     carry <- state0$positions
     cs <- cumsum(lay$rows)
     a <- 1L
@@ -1008,18 +1047,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
       b <- max(a, findInterval(cs[[a]] - lay$rows[[a]] + bound, cs))
       ex <- lean_loop_expand(a, b, lay, carry)
       carry <- ex$carry
-      for (r in pieces(length(ex$fill_rows))) {
-        tick()
-        rows <- ex$fill_rows[r]
-        block <- output_handler$write_fill_events(fill = src, i = rows, instrument_id = ids[src$pos[rows]],
-          event_seq = as.integer(execution$event_seq_start) + rows[[1L]] - 1L, use_transaction = FALSE)
-        if (is.function(output_handler$record_accounting_fact)) {
-          output_handler$record_accounting_fact(block = block, applied = list(close_qty = src$close_qty[rows],
-            open_qty = src$open_qty[rows], realized_close = src$realized_close[rows]))
-        }
-        output_handler$flush_pulse_events()
-        if (output_handler$pending_event_count() > 0L) output_handler$flush_pending()
-      }
+      cur <- lean_loop_emit(output_handler, ex$fill_rows, ca, cur, bound, tick)
       for (r in pieces(length(ex$explicit$diagnostic_seq))) {
         tick()
         writer$append_block(lapply(ex$explicit, `[`, r))
@@ -1032,6 +1060,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
       a <- b + 1L
     }
     if (nf == 0L) output_handler$flush_pulse_events()
+    lean_facts_emit_ca(output_handler, ca, cur, .Machine$integer.max, bound, tick)   # rows after the last fill
     writer$record_coverage(as.integer(sum(lay$logical_per)))
     if (output_handler$pending_event_count() > 0L) output_handler$flush_pending()
     diagnostics <- writer$drain()
@@ -1045,6 +1074,31 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
       output_handler$write_run_diagnostics(diagnostics)
     }
     writer$release()
+  }
+
+  # Fill rows `fr` (ascending) to handler `h` in event_seq order: each run of
+  # contiguous fill numbers in appends of at most `bound` rows, preceded by
+  # the accepted corporate-action rows `ca` numbered below it, from row
+  # `cur` (slice 4, decision 4). Returns the next corporate-action row.
+  lean_loop_emit <- function(h, fr, ca, cur, bound, tick = function() NULL) {
+    if (length(fr) == 0L) return(cur)
+    ev <- fl$evseq[fr]
+    for (r in split(seq_along(fr), cumsum(c(TRUE, diff(ev) != 1L)))) {
+      cur <- lean_facts_emit_ca(h, ca, cur, ev[[r[[1L]]]], bound, tick)
+      for (s in seq.int(1L, length(r), by = bound)) {
+        tick()
+        rows <- fr[r[seq.int(s, min(length(r), s + bound - 1L))]]
+        block <- h$write_fill_events(fill = fl, i = rows, instrument_id = ids[fl$pos[rows]],
+          event_seq = fl$evseq[[rows[[1L]]]], use_transaction = FALSE)
+        if (is.function(h$record_accounting_fact)) {
+          h$record_accounting_fact(block = block, applied = list(close_qty = fl$close_qty[rows],
+            open_qty = fl$open_qty[rows], realized_close = fl$realized_close[rows]))
+        }
+        h$flush_pulse_events()
+        if (h$pending_event_count() > 0L) h$flush_pending()
+      }
+    }
+    cur
   }
 
   # Per pulse: logical rows and sequence offsets, and the rows a pulse can
@@ -1137,7 +1191,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
       add(lay$fill0[fp] + xf - hd_fill_start[fp], fp, list(instrument_id = ids[fl$pos[xf]],
         stage = "execution", outcome = "filled", reason_code = fl$info[xf], reasons = fl$infos[xf],
         target = fl$target[xf], quantity = fl$qty[xf], price = fl$price[xf], execution_ts_utc = fl$exec_ts[xf],
-        event_seq = as.integer(execution$event_seq_start) + xf - 1L, target_before_risk = fl$strategy_target[xf],
+        event_seq = fl$evseq[xf], target_before_risk = fl$strategy_target[xf],
         target_after_risk = fl$target[xf], position_before = fl$position_before[xf],
         position_after = fl$planned_position_after[xf]))
     }
@@ -1196,7 +1250,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
         fill_quantity = c(fl$qty[cf], rep(NA_real_, length(hc)))[ord],
         fill_price = c(fl$price[cf], rep(NA_real_, length(hc)))[ord],
         execution_ts_utc = c(fl$exec_ts[cf], rep(NA_real_, length(hc)))[ord],
-        event_seq = c(as.integer(execution$event_seq_start) + cf - 1L, rep(NA_integer_, length(hc)))[ord],
+        event_seq = c(fl$evseq[cf], rep(NA_integer_, length(hc)))[ord],
         position_after = c(fl$planned_position_after[cf], hpos)[ord]
       )
     }
