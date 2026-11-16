@@ -2658,10 +2658,13 @@ cuts:
       the call stack gains two eval() lines and recover() still reaches the
       envelope's state; only stepping with debug() or debugonce() is lost.
       Cut preparation (dev/spikes/hashed_frame/cut_prep.R,
-      evidence/cut_prep.txt, at a929b1fa): (a) an early return() in a
-      non-tail if-block of the compiled body, as at loop.R:198 where the
-      coverage refusal hands the fold to the pin, returns from eval() with
-      the plain function's value, and on.exit() runs at the same point;
+      evidence/cut_prep.txt, at a929b1fa): (a) the early return in a
+      non-tail if-block returns the same value from the compiled eval
+      (loop.R:198, the coverage refusal handing the fold to the pin); this
+      branch registers no on.exit(), like the envelope's pre-pulse pin
+      hand-off. A separate normal-return branch runs its registered
+      cleanup. This probe does not test cleanup during error unwinding
+      (cut review R4);
       (b) a body-local binding named like a base function (length,
       seq_len) is not inlined as the base function by compiler::compile(),
       the same as under cmpfun(); (c) compiling the envelope's body takes
@@ -2695,12 +2698,22 @@ cuts:
       and the pin seat do not change.
       (3) Inline documentation. A comment block above the wrapper in
       loop.R states why it exists (frame lookup cost, the spike's saving),
-      what changes inside the body (on.exit() attaches to eval() and runs
-      when the body ends; return() at the body's top level returns from
-      eval(); missing(), sys.call(), sys.function(), match.call(), nargs()
-      and parent.frame() must not be used at the body's top level because
-      they see eval()'s frame; functions defined in the body are
-      unaffected), how to debug (debug on, then debug() or debugonce() on
+      what changes inside the body (cut review R4: inside the evaluated
+      body, on.exit() is registered on the eval context and runs when that
+      context exits, normally or during unwinding; return() exits that eval
+      context, and the wrapper returns its value. Do not use missing(),
+      sys.call(), sys.function(), match.call(), nargs() or parent.frame()
+      directly at the body's top level. Ordinary calls and lexical <<-
+      updates from nested stage closures retain their intended state
+      semantics. A nested function still has its own function frame, but
+      code inspecting its caller, including a helper called from the body's
+      top level, can observe the hashed environment and eval frames.
+      Top-level stop() and rlang::abort() can consequently record a
+      different condition call; rlang backtraces and caller environments
+      are not identical. Audit any value that retains a call or environment
+      before treating it as a compared or persisted result. The static
+      six-call scan does not prove those indirect cases. The same statement
+      goes into Section 19.12 and the manual's pattern entry), how to debug (debug on, then debug() or debugonce() on
       lean_fold_envelope_plain; with debug off, traceback() shows two
       eval() lines and recover() reaches the state), why the compile clears
       topLevelEnvironment, and the switch obligation (decision 9). It
@@ -2719,23 +2732,66 @@ cuts:
       the functions it defines. The witness is shown to fail on three
       faults applied as text edits: the wrapper ignoring the flag, the body
       evaluated in an unhashed environment, and a sys.call() added at the
-      body's top level.
-      (6) Tooling. store_variant()'s envelope edit and zero_pulse_align are
+      body's top level. Cut review R1: in addition to the production
+      wrapper's debug-off hashed and debug-on plain runs, the witness has a
+      test-only adapter that evaluates the production-loaded
+      lean_envelope_code in the same hashed child of its argument frame
+      with .lean_debug = TRUE. It does not compile a separate reference
+      body or add a production execution option. On crossover_3x40,
+      s2_sizing_rebalance and s3_freeze_exit, this adapter must reach a
+      lean fold, run the existing internal comparisons and match the pin's
+      tables and frozen execution path. Record these runs on the final
+      code. A fault changing only the hashed code's lean_context
+      .safety_state from GREEN to RED must fail specifically on the
+      existing context comparison; restoring that field must pass.
+      Production debug dispatch remains unchanged. Cut review R4: add a
+      small plain-versus-hashed semantics probe covering multiple and
+      conditionally registered on.exit() handlers, stage <<- updates,
+      normal and early returns, and top-level and called-function
+      stop()/rlang::abort() under calling and exiting handlers. Compare
+      return values, cleanup and signalling order, and semantic condition
+      fields; record the expected differences in top-level condition calls
+      and caller inspection explicitly. Retain the real installed-loop
+      error/rollback and pin-hand-off cases in the final gate. Do not
+      weaken an existing call comparison to obtain agreement.
+      (6) Tooling. The two source edits that name the envelope
+      (store_variant()'s envelope edit and zero_pulse_align) are
       re-anchored to lean_fold_envelope_plain on the same anchor line, with
-      the same fault and consequence, recorded as reanchor rows in
-      loop_variant_changes.csv at debug 0 and 1; with debug off these
+      the same fault and consequence. They serve five manifest variants
+      (store_append, store_bind, store_execute, store_query and
+      zero_pulse_align, 26 manifest rows across both debug settings); each
+      affected key gets reanchor rows in loop_variant_changes.csv at debug
+      0 and 1, and the negative control control_wrong_store_path, which
+      shares the store helper, is kept (cut review, re-anchors). With debug off these
       variants now act through the compiled body, which is compiled from
       the edited text. ebind.R reads lean_fold_envelope_plain where it
       exists and lean_fold_envelope on earlier commits. The spike's own
       tools (hashed.R, run.R, check.R) and Cut 18's cut18_clocks.R are
       evidence at their commits and are neither changed nor rerun.
-      (7) Keep rule. Cut 18's paired method (loop_shortcuts.R
-      --mode=compare, the lean sources at 6e90a881 against the final code,
-      7 alternating rounds, the four comparison shapes, High performance
-      plan and P-core affinity, Balanced restored after): the change is kept
-      only if some shape saves at least 0.02 of the loop at the median and
-      no shape is slower by more than 5 percent (Cut 15's regression rule).
-      Otherwise the change is reverted and the cut closes on that finding.
+      (7) Keep rule (cut review R2). Use loop_shortcuts.R --mode=compare
+      with every lean source at base 6e90a881 and at the immutable final
+      candidate, seven alternating pairs after the existing warm-up, on
+      exactly 10x7200, 20x23400, 500x1260 and slice2_10x7200. Keep its
+      compilation, inert hooks, result-signature check, GC and host policy:
+      High performance plan, P-core affinity, Balanced restored afterwards.
+      Retain the source identities, command, host record and raw paired
+      rows. Refuse missing, duplicate, non-finite or non-positive pulse
+      timings and incomplete pairs. For each shape let b and c be the
+      paired base and candidate pulse-loop seconds. Report median((b-c)/b),
+      its minimum and all seven paired savings, and the base and candidate
+      medians for pulse loop, envelope and whole run. The speed condition
+      is median((b-c)/b) >= 0.02 on at least one shape. The pulse
+      regression condition is median(c)/median(b) <= 1.05 on every shape.
+      Also report, by round, (candidate envelope - candidate pulses) -
+      (base envelope - base pulses), and the corresponding whole-run delta,
+      with their medians and counts of positive rounds. Use
+      outside_loop.R's computation on this cut's raw rows, not its
+      historical fixed inputs. Cut 15's displaced-regression rule remains:
+      a regression outside the loop blocks until fixed or explicitly
+      accepted by the maintainer; an unresolved result stays open for
+      disposition and is not recorded as no regression. The change is kept
+      only when these conditions are satisfied; a speed or
+      pulse-regression failure takes decision 10's reverted outcome.
       Expected, not a gate: 40 to 47 us per pulse.
       (8) Lines. loop.R stays at or below 1,000 production lines (974 at
       6e90a881). The cut adds at most 15 production lines across
@@ -2757,7 +2813,23 @@ cuts:
       comparison, and a timing record (protocol folder cut20-loop-1, the
       method of cut19-loop-1 unchanged: the pin against the final lean loop
       on Cut 15's four shapes and slice2_10x7200, eight alternating pairs,
-      bound 1.0, marked_10x7200 descriptive) as slice 4's baseline.
+      bound 1.0, marked_10x7200 descriptive) as slice 4's baseline. There
+      are two close outcomes (cut review R3). Kept: all hashed-form
+      acceptance items apply, including the witness and the full
+      final-code proof set. Reverted for failing the speed or
+      pulse-regression condition: restore the pre-cut execution sources and
+      the dependent variant anchor names; record the failed comparison, the
+      revert commit and the source diff against 6e90a881. Retain the
+      attempted implementation and witness results as historical evidence,
+      not proof of the restored tree. On the restored final tree run the
+      existing full check set of decision 10, including the effective
+      variant manifest and its negative controls, with both debug settings
+      where specified. The hashed-form witness is not applicable to that
+      restored tree. Section 19.12 records the optimization as evaluated
+      and reverted, not implemented. The line count and the
+      pin-versus-final timing record still describe the code left as slice
+      4's baseline. LDG-3242's acceptance items are evaluated under this
+      named outcome. No other acceptance item is waived.
     identity_and_release_impact: >-
       None. No file in R/, tests/, DESCRIPTION, NAMESPACE, vignettes or the
       store format changes, and no dependency is added (compiler is a base
@@ -2787,6 +2859,7 @@ cuts:
       disposition. A third correction round stops for maintainer
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
+    cut_review: "CHANGES_REQUIRED in cut_review_20.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at 2d869ec0): R1-R4 required, all applied with the review's replacement text: a test-only adapter running the hashed body with debug assertions on, since a hashed-only context fault passed both normal modes (R1); the keep rule's statistic, input refusals and Cut 15's displaced-regression check (R2); named kept and reverted close outcomes (R3); the body caveats (caller inspection, top-level condition calls) and cut_prep's limits, with a semantics probe (R4); the re-anchors name all five affected variants (26 rows). No wrong result found in the production form on the probed workloads."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -6361,9 +6434,11 @@ tickets:
       census lookup. No other change inside the envelope.
     acceptance:
       - "loop.R: the diff against 6e90a881 is the rename line and the added block (the compiled body, the wrapper and its comment); the envelope's body text is otherwise unchanged"
-      - "The comment above the wrapper covers every item of decision 3: why, the body's caveats (on.exit(), return(), the six frame calls that must not be used at the top level), how to debug, the topLevelEnvironment workaround, the switch obligation, and a pointer to the manual's entry"
+      - "The comment above the wrapper covers every item of decision 3: why, the body caveats in cut review R4's wording (on.exit() on the eval context, return(), the six direct top-level calls, caller inspection through helpers, top-level condition calls, the audit rule, the limit of the static scan), how to debug, the topLevelEnvironment workaround, the switch obligation, and a pointer to the manual's entry; the manual's pattern entry and Section 19.12 carry the same caveat statement"
       - "dev/lean_core/parity/hashed_frame_witness.R passes with debug off and on as decision 5 states, and fails on each of its three faults (the flag ignored, an unhashed environment, a top-level sys.call()); the failing runs are committed beside the passing ones"
-      - "store_variant()'s envelope edit and zero_pulse_align re-anchored to lean_fold_envelope_plain, recorded as reanchor rows in loop_variant_changes.csv at debug 0 and 1 with the same fault and consequence; each re-anchored variant reached and caught with debug off and on"
+      - "The witness's test-only adapter (cut review R1) evaluates the production-loaded lean_envelope_code in a hashed child of its argument frame with .lean_debug = TRUE on crossover_3x40, s2_sizing_rebalance and s3_freeze_exit: each reaches a lean fold, runs the internal comparisons and matches the pin's tables and frozen path; the .safety_state fault (GREEN to RED in the hashed code only) fails on the context comparison and passes when restored; no production execution option is added"
+      - "The plain-versus-hashed semantics probe (cut review R4) records equal return values, cleanup and signalling order and semantic condition fields for its listed cases, and lists the expected differences in top-level condition calls and caller inspection; no existing call comparison is weakened"
+      - "The two envelope-naming edits re-anchored to lean_fold_envelope_plain; reanchor rows in loop_variant_changes.csv for store_append, store_bind, store_execute, store_query and zero_pulse_align at debug 0 and 1 (26 manifest rows), each with the same fault and consequence, each reached and caught with debug off and on; control_wrong_store_path still fails closed"
       - "ebind.R reports the plain frame's binding count on the new code and the old count on 6e90a881"
       - "Gate with debug off against the freeze identical on every table, every frozen path matched (tiered proofs; the full set runs in LDG-3242)"
   - id: "LDG-3242"
@@ -6379,8 +6454,8 @@ tickets:
       Section 19.12's status and the seven-shape walk. No dev/lean_core
       change unless a check fails or the keep rule reverts the change.
     acceptance:
-      - "Full gate, batch one and inert hooks against the freeze identical with debug off and on, every frozen path matched, no frozen row moved; the variant driver passes with every row of the effective manifest CAUGHT (after LDG-3241's re-anchors) and the three negative controls failing closed; loop_dispatch.R, the FIFO suites, the planner suites, cut18_witness.R, slice2_reach_cross.R and slice3_reach_cross.R pass as before; the witness passes"
-      - "Paired comparison (decision 7; evidence/cut20/timing/): medians, per-round savings and the minimum per shape, with the keep rule's verdict; if it fails, the revert commit and its gate with debug off are recorded instead"
+      - "Full gate, batch one and inert hooks against the freeze identical with debug off and on, every frozen path matched, no frozen row moved; the variant driver passes with every row of the effective manifest CAUGHT (after LDG-3241's re-anchors) and the three negative controls failing closed; loop_dispatch.R, the FIFO suites, the planner suites, cut18_witness.R, slice2_reach_cross.R and slice3_reach_cross.R pass as before; the witness passes and its adapter runs (cut review R1) are recorded on the final code"
+      - "Decision 7's comparison, inputs, paired and arm statistics, outside-loop deltas and keep verdict are recorded under evidence/cut20/timing/. A speed or pulse-regression failure takes the reverted-outcome branch of decision 10. Any unresolved or unaccepted displaced regression keeps the workstream open (cut review R2)"
       - "Timing record cut20-loop-1 (decision 10), checked by dev/bench/timing/check.R, every cell's two arms returning one work string; the plan and affinity on every slot; Balanced restored after"
       - "Lines (decision 8): loop.R production lines and the cut's production lines across dev/lean_core, by role, against 6e90a881; comment, witness and harness lines beside"
-      - "Section 19.12's status records acceptance and implementation; the seven shapes of the optimization coding style walked verbatim for the changed code and recorded"
+      - "Section 19.12's status records acceptance and implementation (under the reverted outcome: the optimization as evaluated and reverted); the seven shapes of the optimization coding style walked verbatim for the changed code and recorded. Every LDG-3242 item is evaluated under the named close outcome of decision 10 (cut review R3)"

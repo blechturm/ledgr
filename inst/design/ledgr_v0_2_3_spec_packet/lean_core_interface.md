@@ -1420,12 +1420,25 @@ list shows otherwise.
   `new.env(hash = TRUE, parent = environment())`, whose parent is the
   wrapper's call frame, so `execution` and `output_handler` resolve as
   before. Section 19.1's seat, install and return are unchanged.
-- Inside the body. `on.exit()` attaches to `eval()` and runs when the body
-  ends; `return()` at the top level returns from `eval()` with the same
-  value (the coverage refusal relies on this). `missing()`, `sys.call()`,
-  `sys.function()`, `match.call()`, `nargs()` and `parent.frame()` must not
-  be used at the body's top level: they would see `eval()`'s frame.
-  Functions defined in the body are unaffected. A witness scans for them.
+- Inside the body (cut review R4). Inside the evaluated body, `on.exit()`
+  is registered on the eval context and runs when that context exits,
+  normally or during unwinding; `return()` exits that eval context, and the
+  wrapper returns its value. Do not use `missing()`, `sys.call()`,
+  `sys.function()`, `match.call()`, `nargs()` or `parent.frame()` directly
+  at the body's top level. Ordinary calls and lexical `<<-` updates from
+  nested stage closures retain their intended state semantics. A nested
+  function still has its own function frame, but code inspecting its
+  caller, including a helper called from the body's top level, can observe
+  the hashed environment and eval frames. Top-level `stop()` and
+  `rlang::abort()` can consequently record a different condition call;
+  rlang backtraces and caller environments are not identical. Audit any
+  value that retains a call or environment before treating it as a
+  compared or persisted result. The static six-call scan does not prove
+  those indirect cases.
+- Proof of the hashed form with assertions on (cut review R1). A test-only
+  witness adapter evaluates the production-loaded body in a hashed frame
+  with `.lean_debug = TRUE`, so the internal comparisons also run on the
+  hashed form; production dispatch is unchanged.
 - Debugging. With debug on, the plain function runs, so `debug()` and
   `debugonce()` on `lean_fold_envelope_plain` step through it, and every
   parity run checks both forms (hashed with debug off, plain with debug
