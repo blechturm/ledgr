@@ -1,0 +1,128 @@
+"shape","cell","est_run_s","owner","share_of_run","rank"
+"10x7200","P3",0.365513513513513,"Cut 15 (loop tuning)",0.124324324324324,1
+"10x7200","strategy: ledgr callees",0.307243243243243,"Cut 15 (loop tuning)",0.104504504504504,2
+"10x7200","transfer: write",0.280756756756757,"store-write RFC",0.0954954954954956,3
+"10x7200","envelope: setup and commit",0.264864864864865,"store-write RFC",0.0900900900900902,4
+"10x7200","P4 other",0.227783783783784,"Cut 15 (loop tuning)",0.0774774774774776,5
+"10x7200","P4 FIFO",0.227783783783784,"Cut 15 (loop tuning)",0.0774774774774776,6
+"10x7200","P2 context",0.169513513513513,"Cut 15 (loop tuning)",0.0576576576576575,7
+"10x7200","pre: feature projection",0.169513513513513,"feature-engine RFC",0.0576576576576575,8
+"10x7200","snapshot open and verification (measured)",0.139999999999986,"none",NA,9
+"10x7200","P5",0.132432432432432,"Cut 15 (loop tuning)",0.0450450450450449,10
+"10x7200","pre: bars substrate",0.121837837837838,"none",0.0414414414414415,11
+"10x7200","pre: features",0.11654054054054,"feature-engine RFC",0.0396396396396395,12
+"10x7200","P2 other",0.111243243243243,"Cut 15 (loop tuning)",0.0378378378378378,13
+"10x7200","pre: store and registration",0.105945945945946,"none",0.0360360360360361,14
+"10x7200","strategy: own work",0.0847567567567567,"none (the strategy's own code)",0.0288288288288288,15
+"10x7200","P1",0.0582702702702702,"Cut 15 (loop tuning)",0.0198198198198198,16
+"10x7200","transfer: expand",0.0582702702702702,"Cut 15 (loop tuning)",0.0198198198198198,17
+"10x7200","strategy: call wrapper",0.0476756756756756,"Cut 15 (loop tuning)",0.0162162162162162,18
+"10x7200","post: finalise",0.0264864864864865,"none",0.00900900900900902,19
+"10x7200","pre: snapshot guard",0.0211891891891892,"none",0.00720720720720722,20
+"10x7200","pre: strategy preflight",0.0158918918918919,"none",0.00540540540540541,21
+"10x7200","E advance",0.00529729729729729,"Cut 15 (loop tuning)",0.0018018018018018,22
+"10x7200","P2 sizing",0.00529729729729729,"Cut 15 (loop tuning)",0.0018018018018018,23
+"10x7200","loop: residual",0.00529729729729729,"Cut 15 (loop tuning)",0.0018018018018018,24
+"10x7200","P2 targets",0.00529729729729729,"Cut 15 (loop tuning)",0.0018018018018018,25
+"10x7200","post: telemetry",0.00529729729729729,"none",0.0018018018018018,26
+"1166x252","pre: features",1.04191092618277,"feature-engine RFC",0.406996455540144,1
+"1166x252","transfer: write",0.636745261211281,"store-write RFC",0.248728617660657,2
+"1166x252","envelope: setup and commit",0.295885344429034,"store-write RFC",0.115580212667591,3
+"1166x252","snapshot open and verification (measured)",0.29000000000002,"none",NA,4
+"1166x252","pre: bars substrate",0.126638927415627,"none",0.0494683310217293,5
+"1166x252","pre: store and registration",0.095472337802435,"none",0.0372938819540762,6
+"1166x252","transfer: expand",0.0733795654184004,"Cut 15 (loop tuning)",0.0286638927415626,7
+"1166x252","P4 FIFO",0.0461581137309293,"Cut 15 (loop tuning)",0.0180305131761442,8
+"1166x252","pre: snapshot guard",0.0453690861457852,"none",0.0177222992756973,9
+"1166x252","P3",0.0453690861457852,"Cut 15 (loop tuning)",0.0177222992756973,10
+"1166x252","P4 other",0.0268269378948991,"Cut 15 (loop tuning)",0.010479272615195,11
+"1166x252","strategy: ledgr callees",0.01735860687317,"Cut 15 (loop tuning)",0.00678070580983203,12
+"1166x252","post: finalise",0.0161750654954539,"none",0.00631838495916168,13
+"1166x252","strategy: own work",0.0157805517028818,"none (the strategy's own code)",0.0061642780089382,14
+"1166x252","pre: strategy preflight",0.0122299275697334,"none",0.00477731545692711,15
+"1166x252","P5",0.0122299275697334,"Cut 15 (loop tuning)",0.00477731545692711,16
+"1166x252","P2 other",0.0114408999845893,"Cut 15 (loop tuning)",0.00446910155648019,17
+"1166x252","P2 context",0.0110463861920173,"Cut 15 (loop tuning)",0.00431499460625676,18
+"1166x252","pre: config",0.00631222068115273,"none",0.00246571120357528,19
+"1166x252","pre: feature projection",0.00631222068115273,"feature-engine RFC",0.00246571120357528,20
+"1166x252","P1",0.00631222068115273,"Cut 15 (loop tuning)",0.00246571120357528,21
+"1166x252","post: telemetry",0.00552319309600863,"none",0.00215749730312837,22
+"1166x252","pre: feature declarations",0.00276159654800432,"feature-engine RFC",0.00107874865156419,23
+"1166x252","strategy: call wrapper",0.00118354137771614,"Cut 15 (loop tuning)",0.000462320850670367,24
+"1166x252","loop: residual",0.000789027585144091,"Cut 15 (loop tuning)",0.00030821390044691,25
+"1166x252","loop: ledgr_time_elapsed",0.000394513792572045,"Cut 15 (loop tuning)",0.000154106950223455,26
+"1166x252","E advance",0.000394513792572045,"Cut 15 (loop tuning)",0.000154106950223455,27
+"20x23400","P3",1.63198804185351,"Cut 15 (loop tuning)",0.153961136023916,1
+"20x23400","P4 FIFO",1.26756352765321,"Cut 15 (loop tuning)",0.119581464872945,2
+"20x23400","transfer: write",1.0457399103139,"store-write RFC",0.0986547085201794,3
+"20x23400","strategy: ledgr callees",1.01405082212257,"Cut 15 (loop tuning)",0.0956651718983558,4
+"20x23400","envelope: setup and commit",0.934828101644245,"store-write RFC",0.0881913303437968,5
+"20x23400","P4 other",0.728849028400598,"Cut 15 (loop tuning)",0.0687593423019433,6
+"20x23400","P5",0.570403587443946,"Cut 15 (loop tuning)",0.0538116591928252,7
+"20x23400","pre: feature projection",0.570403587443946,"feature-engine RFC",0.0538116591928252,8
+"20x23400","snapshot open and verification (measured)",0.560000000000002,"none",NA,9
+"20x23400","P2 context",0.538714499252615,"Cut 15 (loop tuning)",0.0508221225710015,10
+"20x23400","P2 other",0.538714499252615,"Cut 15 (loop tuning)",0.0508221225710015,11
+"20x23400","pre: features",0.411958146487294,"feature-engine RFC",0.038863976083707,12
+"20x23400","pre: bars substrate",0.332735426008968,"none",0.031390134529148,13
+"20x23400","strategy: own work",0.237668161434977,"none (the strategy's own code)",0.0224215246636771,14
+"20x23400","transfer: expand",0.205979073243647,"Cut 15 (loop tuning)",0.0194319880418535,15
+"20x23400","strategy: call wrapper",0.142600896860986,"Cut 15 (loop tuning)",0.0134529147982062,16
+"20x23400","loop: residual",0.126756352765321,"Cut 15 (loop tuning)",0.0119581464872944,17
+"20x23400","P1",0.126756352765321,"Cut 15 (loop tuning)",0.0119581464872944,18
+"20x23400","pre: store and registration",0.095067264573991,"none",0.00896860986547086,19
+"20x23400","post: finalise",0.0475336322869955,"none",0.00448430493273543,20
+"20x23400","E advance",0.0158445440956652,"Cut 15 (loop tuning)",0.00149476831091181,21
+"20x23400","pre: snapshot guard",0.0158445440956652,"none",0.00149476831091181,22
+"500x1260","transfer: write",1.31499784761085,"store-write RFC",NA,1
+"500x1260","pre: features",0.79617735686612,"feature-engine RFC",NA,2
+"500x1260","snapshot open and verification (measured)",0.579999999999998,"none",NA,3
+"500x1260","envelope: setup and commit",0.492716315109771,"store-write RFC",NA,4
+"500x1260","pre: bars substrate",0.19904433921653,"none",NA,5
+"500x1260","P3",0.156625053809728,"Cut 15 (loop tuning)",NA,6
+"500x1260","P4 other",0.120731812311666,"Cut 15 (loop tuning)",NA,7
+"500x1260","transfer: expand",0.114205768402927,"Cut 15 (loop tuning)",NA,8
+"500x1260","pre: store and registration",0.102785191562634,"none",NA,9
+"500x1260","strategy: ledgr callees",0.0962591476538956,"Cut 15 (loop tuning)",NA,10
+"500x1260","P4 FIFO",0.0962591476538956,"Cut 15 (loop tuning)",NA,11
+"500x1260","P5",0.0522083512699095,"Cut 15 (loop tuning)",NA,12
+"500x1260","P2 context",0.0456823073611708,"Cut 15 (loop tuning)",NA,13
+"500x1260","P2 other",0.0391562634524321,"Cut 15 (loop tuning)",NA,14
+"500x1260","strategy: own work",0.0375247524752474,"none (the strategy's own code)",NA,15
+"500x1260","pre: feature projection",0.0326302195436934,"feature-engine RFC",NA,16
+"500x1260","pre: snapshot guard",0.0261041756349547,"none",NA,17
+"500x1260","post: finalise",0.0179466207490314,"none",NA,18
+"500x1260","P1",0.0130520878174774,"Cut 15 (loop tuning)",NA,19
+"500x1260","post: telemetry",0.00978906586310803,"none",NA,20
+"500x1260","pre: config",0.00978906586310803,"none",NA,21
+"500x1260","strategy: call wrapper",0.00652604390873869,"Cut 15 (loop tuning)",NA,22
+"500x1260","pre: strategy preflight",0.00489453293155401,"none",NA,23
+"500x1260","P2 targets",0.00163151097718467,"Cut 15 (loop tuning)",NA,24
+"500x1260","pre: feature declarations",0.00163151097718467,"feature-engine RFC",NA,25
+"500x1260","loop: residual",0.00163151097718467,"Cut 15 (loop tuning)",NA,26
+"500x1260","E advance",NA,"Cut 15 (loop tuning)",NA,27
+"slice2_10x7200","P4 FIFO",0.931120418848165,"Cut 15 (loop tuning)",NA,1
+"slice2_10x7200","strategy: ledgr callees",0.845005235602092,"Cut 15 (loop tuning)",NA,2
+"slice2_10x7200","P3",0.699685863874344,"Cut 15 (loop tuning)",NA,3
+"slice2_10x7200","transfer: write",0.559748691099475,"store-write RFC",NA,4
+"slice2_10x7200","P4 other",0.349842931937172,"Cut 15 (loop tuning)",NA,5
+"slice2_10x7200","envelope: setup and commit",0.333696335078533,"store-write RFC",NA,6
+"slice2_10x7200","P5",0.199141361256544,"Cut 15 (loop tuning)",NA,7
+"slice2_10x7200","P2 other",0.188376963350785,"Cut 15 (loop tuning)",NA,8
+"slice2_10x7200","P2 sizing",0.177612565445026,"Cut 15 (loop tuning)",NA,9
+"slice2_10x7200","P2 context",0.166848167539267,"Cut 15 (loop tuning)",NA,10
+"slice2_10x7200","snapshot open and verification (measured)",0.159999999999997,"none",NA,11
+"slice2_10x7200","pre: bars substrate",0.12379057591623,"none",NA,12
+"slice2_10x7200","pre: store and registration",0.102261780104712,"none",NA,13
+"slice2_10x7200","P2 risk",0.0968795811518322,"Cut 15 (loop tuning)",NA,14
+"slice2_10x7200","pre: feature projection",0.0914973821989526,"feature-engine RFC",NA,15
+"slice2_10x7200","transfer: expand",0.0861151832460731,"Cut 15 (loop tuning)",NA,16
+"slice2_10x7200","strategy: call wrapper",0.0430575916230365,"Cut 15 (loop tuning)",NA,17
+"slice2_10x7200","P1",0.037675392670157,"Cut 15 (loop tuning)",NA,18
+"slice2_10x7200","P2 targets",0.0322931937172774,"Cut 15 (loop tuning)",NA,19
+"slice2_10x7200","strategy: own work",0.0269109947643978,"none (the strategy's own code)",NA,20
+"slice2_10x7200","post: finalise",0.0161465968586387,"none",NA,21
+"slice2_10x7200","loop: residual",0.0161465968586387,"Cut 15 (loop tuning)",NA,22
+"slice2_10x7200","post: telemetry",0.0107643979057591,"none",NA,23
+"slice2_10x7200","pre: snapshot guard",0.00538219895287957,"none",NA,24
+"slice2_10x7200","E advance",NA,"Cut 15 (loop tuning)",NA,25
