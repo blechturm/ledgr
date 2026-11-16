@@ -1017,15 +1017,38 @@ public behavior except the explicit pulse-plumbing ledger differences.
   381c0d0c) shows the time outside the pulse loop unchanged since Cut 16
   (3.15 of 3.79 s on 500 x 1,260, 2.37 of 2.56 s on 1,166 x 252): the store
   write after the loop 0.6-1.3 s (the R floor's batched write took 0.08-0.10
-  s), features 0.4-1.0 s, envelope setup and commit 0.3-0.9 s. Neither the
+  s; it wrote no per-holding trace), features 0.4-1.0 s, envelope setup and
+  commit 0.3-0.9 s. Neither the
   store write nor the feature path is code the switch rewrites. The order:
-  a. **Store-write tuning cut** on `dev/lean_core` (the write after the loop,
+  a. **Store-write tuning cut** (closed without a cut; see below) on `dev/lean_core` (the write after the loop,
      `lean_loop_publish` and the record expansion), before slice 4, so
      slice 4's new record kinds (corporate-action events, terminal
      dispositions) extend the tuned writer. Measure (a drill splitting R
      row building from the DuckDB append), cut, Codex cut review, implement.
-  b. **Slice 4** (membership, terminals, corporate actions, imports) on the
-     tuned writer. The **feature-engine RFC seed** (owed since point 6) is
+     Drill (2026-11-16, `results/store_drill_cut20`, 60d9ce97): on
+     500 x 1,260 the write is about 1.37 s: appends 45 percent (mostly about
+     630,000 implicit diagnostic rows), the diagnostic summary's read-back
+     22 percent (`ledgr_diagnostic_summary_from_store` rebuilds the logical
+     rows in SQL to count them), ledgr R about 25 percent. The cut's scope
+     (maintainer, 2026-11-16) is what needs no stored-format change: the
+     summary from the loop's own records, fewer and larger appends, the R
+     side. **Moved to the switch (maintainer, 2026-11-16):** cut preparation
+     found that these levers sit behind the pin's interfaces, not in
+     lean-core code: the summary runs inside the package writer's
+     `drain()` through a handler method that takes no row and keeps the
+     connection private; the appends are bounded by the D3 batch bound and
+     carry duckdb's per-call metadata queries; the fill-event and
+     accounting work is package code. The lean-owned part
+     (`lean_loop_expand`, `lean_loop_positions_at`) is about 7 percent of
+     the write. They are switch obligation 7 below, and item a closes
+     without a cut. **Parked as a separate RFC question, not blocking slice 4:** the
+     implicit table's two indexes (`R/db-schema-current.R:346-347`; a probe
+     put them at about 0.28 s of 0.66 s for 630,000 rows) and a more compact
+     certified hold encoding (the durable-records synthesis, Section 3,
+     allows absence as a hold assertion only within a valid encoding). Both
+     change the stored format, so a schema version bump and an RFC.
+  b. **Slice 4** (membership, terminals, corporate actions, imports), next.
+     The **feature-engine RFC seed** (owed since point 6) is
      drafted alongside it: the feature path is package code read by the
      loop only through the projection (`R/runtime-projection.R:10-36`), so
      it does not conflict with slice 4's `dev/lean_core` work. The seed
@@ -1186,7 +1209,20 @@ execution-sensitive economics cuts are held to rule 17 instead.
      parameter (deletion-readiness Q3) is shown through `ledgr_run()` and
      `ledgr_sweep()`, one case each, plus one case where another input is
      also invalid, to fix the refusal precedence. It is recorded as a
-     deliberate difference from the pin.
+     deliberate difference from the pin;
+  6. (maintainer, 2026-11-16) the body of the lean envelope compiled at
+     package install (Cut 20, Section 19.12);
+  7. (maintainer, 2026-11-16) the store-write levers the drill found behind
+     the pin's interfaces (`results/store_drill_cut20`; "Order after Cut
+     20", item a): the diagnostic summary computed from the fold's own
+     records and handed to the handler, in place of
+     `ledgr_diagnostic_summary_from_store()`'s read-back, which stays as the
+     test oracle (identical row and hash, sums in diagnostic sequence
+     order); the append path (per-call metadata queries in duckdb's
+     `dbAppendTable()`, the batch bound of the D3 synthesis); and the
+     package R work in fill events and accounting rows. The parked
+     stored-format RFC question (implicit-table indexes, compact hold
+     encoding) is decided before or with this item.
 
   Order (unchanged, revision 14, reconfirmed 2026-11-15): slices 3-5 port
   the remaining features against the live pin; then the full public parity
