@@ -1018,8 +1018,8 @@ public behavior except the explicit pulse-plumbing ledger differences.
   (3.15 of 3.79 s on 500 x 1,260, 2.37 of 2.56 s on 1,166 x 252): the store
   write after the loop 0.6-1.3 s (the R floor's batched write took 0.08-0.10
   s; it wrote no per-holding trace), features 0.4-1.0 s, envelope setup and
-  commit 0.3-0.9 s. Neither the
-  store write nor the feature path is code the switch rewrites. The order:
+  commit 0.3-0.9 s. The feature path is not code the switch rewrites; the
+  store write's levers turned out to sit behind the pin's interfaces (item a). The order:
   a. **Store-write tuning cut** (closed without a cut; see below) on `dev/lean_core` (the write after the loop,
      `lean_loop_publish` and the record expansion), before slice 4, so
      slice 4's new record kinds (corporate-action events, terminal
