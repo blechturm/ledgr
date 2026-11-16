@@ -1326,6 +1326,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   hooks$fold_end(list(pulses = live$t_pulses, publish = live$t_publish,
     capacity = c(fills_used = nf, fills_allocated = fcap, decisions_used = nd, decisions_allocated = dcap,
       sizing_used = nsz, sizing_allocated = scap, slice3_rows_used = s3$nx, slice3_rows_allocated = s3$xcap,
+      capture_blocks_used = s4$nb, capture_blocks_allocated = s4$cap,
       rejections = length(rj$k), pulse_headers = n_pulse, batches = live$batches, ranges = live$ranges,
       max_range_pulses = live$max_range_pulses)))
   telemetry$telemetry_samples <- as.integer(telemetry$telemetry_samples %||% 0L)

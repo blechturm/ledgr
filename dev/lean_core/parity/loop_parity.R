@@ -569,6 +569,9 @@ for (id in ids) {
   res$slice3_rows_allocated <- if (is.null(cap) || is.na(cap["slice3_rows_allocated"])) NA_integer_ else as.integer(cap[["slice3_rows_allocated"]])
   res$decisions_used <- if (is.null(cap) || is.na(cap["decisions_used"])) NA_integer_ else as.integer(cap[["decisions_used"]])
   res$decisions_allocated <- if (is.null(cap) || is.na(cap["decisions_allocated"])) NA_integer_ else as.integer(cap[["decisions_allocated"]])
+  # Cut 21 (LDG-3244, cut review R8): the corporate-action capture's blocks.
+  res$capture_blocks_used <- if (is.null(cap) || is.na(cap["capture_blocks_used"])) NA_integer_ else as.integer(cap[["capture_blocks_used"]])
+  res$capture_blocks_allocated <- if (is.null(cap) || is.na(cap["capture_blocks_allocated"])) NA_integer_ else as.integer(cap[["capture_blocks_allocated"]])
   res$lost_errors <- paste(lost_errors, collapse = " | ")
   res$new_errors <- paste(new_errors, collapse = " | ")
   res$verdict <- verdict

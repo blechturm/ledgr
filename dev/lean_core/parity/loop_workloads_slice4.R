@@ -425,10 +425,12 @@ loop_reach <- c(loop_reach, list(
   # Both due on day 4: the cash refusal stops first; B's quantity is not checked.
   s4_cash_quantity_refused = s4_refusal_reach("corporate_action_cash_refused", "A", "2020-01-04"),
   # Reported effects: no stop, no CASHFLOW (the incomplete dividend settles
-  # nothing), and the day-5 trade still happens.
+  # nothing), and A's day-4 spin-off leaves A unchanged, so the day-5 target
+  # of 12 buys exactly 2 (cut review R7: unchanged positions).
   s4_quantity_reported = function(t) {
+    f <- t$run$fills
     identical(s4_status(t), "DONE") && nrow(s4_cf(t)) == 0L && nrow(s4_stop_rows(t, "corporate_action_quantity_refused")) == 0L &&
-      any(t$run$fills$instrument_id == "A")
+      sum(f$instrument_id == "A") == 1L && s4_num(f$qty[f$instrument_id == "A"]) == 2
   },
   s4_clock_missing = s4_condition_reach("ledgr_corporate_action_clock_missing"),
   s4_entitlement_missing = s4_condition_reach("ledgr_corporate_action_entitlement_missing"),
