@@ -1067,6 +1067,27 @@ public behavior except the explicit pulse-plumbing ledger differences.
      feature path, since the sweep's feature preparation (precompute
      payload, per-instrument split and rebuild) is what the RFC may change.
   e. The switch.
+  f. **Sweep-architecture RFC (maintainer, 2026-11-16).** After the switch
+     makes the lean core the only engine, a seed on making large sweeps and
+     simulations fast with every guarantee kept. Its design principle: pay
+     for each guarantee once, at the narrowest point that still enforces it
+     (preparation, promotion or the boundary), and not per pulse when that
+     is not needed. Measure first, on a large sweep shape (thousands of
+     candidates) and the WS14 checkpoint's phase clocks, before any design
+     is chosen. Questions for the seed:
+     - **Shared preparation:** a candidate pays only for what its
+       parameters change; the prepared axis, marks, execution views and
+       fact masks are shared, as features already are.
+     - **Results:** metrics by default for a sweep, with a candidate's full
+       durable record produced by an exact deterministic rerun at
+       promotion. This must have a product reason, not a benchmark one
+       (WS14: no public ephemeral mode merely to create a benchmark
+       counterfactual).
+     - **Batching:** N candidates through one loop over the shared pulse
+       axis, with their state stored as arrays across candidates.
+     - **Order:** workers after single-core speed; compiled kernels only by
+       the maintainer's named decision.
+     Route: rfc/README.md row `sweep-architecture`.
 - **Optimization manual update (maintainer, 2026-11-15).** Right after the
   hashed-frame spike, one documentation pass brings
   `inst/design/manual/optimization_coding_style.qmd` (last changed
