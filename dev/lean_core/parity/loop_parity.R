@@ -260,8 +260,8 @@ loop_mutations <- list(
     error = "strictly increasing", tables = "^ledger_events$"),
   # Publication order: captured rows after every fill, and fills numbered
   # as if no captured row came between them.
-  corporate_rows_after_fills = variant("differ", list(edit("loop.R", "lean_loop_emit",
-    "      cur <- lean_facts_emit_ca(h, ca, cur, ev[[r[[1L]]]], bound, tick)")),
+  corporate_rows_after_fills = variant("differ", list(edit("facts.R", "lean_facts_emit",
+    "    cur <- lean_facts_emit_ca(h, ca, cur, ev[[r[[1L]]]], bound, tick)")),
     error = "strictly increasing", tables = "^ledger_events$"),
   fill_seq_contiguous = variant("differ", list(edit("loop.R", "lean_p4_apply",
     "      fl$evseq[rows] <<- event_seq + seq_len(n_fill) - 1L",

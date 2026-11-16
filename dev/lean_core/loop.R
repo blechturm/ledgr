@@ -372,7 +372,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
       h$append_event_rows(pre_events)
       ca <- lean_facts_rows(s4)
       all <- max(1L, s4$nrows + n_committed)
-      cur <- lean_loop_emit(h, seq_len(n_committed), ca, 1L, all)
+      cur <- lean_facts_emit(h, fl, ids, seq_len(n_committed), ca, 1L, all, function() NULL)
       lean_facts_emit_ca(h, ca, cur, .Machine$integer.max, all, function() NULL)
       h$events()
     }))
@@ -1047,7 +1047,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
       b <- max(a, findInterval(cs[[a]] - lay$rows[[a]] + bound, cs))
       ex <- lean_loop_expand(a, b, lay, carry)
       carry <- ex$carry
-      cur <- lean_loop_emit(output_handler, ex$fill_rows, ca, cur, bound, tick)
+      cur <- lean_facts_emit(output_handler, fl, ids, ex$fill_rows, ca, cur, bound, tick)
       for (r in pieces(length(ex$explicit$diagnostic_seq))) {
         tick()
         writer$append_block(lapply(ex$explicit, `[`, r))
@@ -1074,31 +1074,6 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
       output_handler$write_run_diagnostics(diagnostics)
     }
     writer$release()
-  }
-
-  # Fill rows `fr` (ascending) to handler `h` in event_seq order: each run of
-  # contiguous fill numbers in appends of at most `bound` rows, preceded by
-  # the accepted corporate-action rows `ca` numbered below it, from row
-  # `cur` (slice 4, decision 4). Returns the next corporate-action row.
-  lean_loop_emit <- function(h, fr, ca, cur, bound, tick = function() NULL) {
-    if (length(fr) == 0L) return(cur)
-    ev <- fl$evseq[fr]
-    for (r in split(seq_along(fr), cumsum(c(TRUE, diff(ev) != 1L)))) {
-      cur <- lean_facts_emit_ca(h, ca, cur, ev[[r[[1L]]]], bound, tick)
-      for (s in seq.int(1L, length(r), by = bound)) {
-        tick()
-        rows <- fr[r[seq.int(s, min(length(r), s + bound - 1L))]]
-        block <- h$write_fill_events(fill = fl, i = rows, instrument_id = ids[fl$pos[rows]],
-          event_seq = fl$evseq[[rows[[1L]]]], use_transaction = FALSE)
-        if (is.function(h$record_accounting_fact)) {
-          h$record_accounting_fact(block = block, applied = list(close_qty = fl$close_qty[rows],
-            open_qty = fl$open_qty[rows], realized_close = fl$realized_close[rows]))
-        }
-        h$flush_pulse_events()
-        if (h$pending_event_count() > 0L) h$flush_pending()
-      }
-    }
-    cur
   }
 
   # Per pulse: logical rows and sequence offsets, and the rows a pulse can

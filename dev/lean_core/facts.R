@@ -98,6 +98,32 @@ lean_facts_rows <- function(s4) {
   out
 }
 
+# Fill rows `fr` (ascending) of the typed fill records `fl` to handler `h` in
+# event_seq order: each run of contiguous fill numbers in appends of at most
+# `bound` rows, preceded by the accepted corporate-action rows `ca` numbered
+# below it, from row `cur` (decision 4). Returns the next corporate-action
+# row. Loops over runs and batches, not over events.
+lean_facts_emit <- function(h, fl, ids, fr, ca, cur, bound, tick) {
+  if (length(fr) == 0L) return(cur)
+  ev <- fl$evseq[fr]
+  for (r in split(seq_along(fr), cumsum(c(TRUE, diff(ev) != 1L)))) {
+    cur <- lean_facts_emit_ca(h, ca, cur, ev[[r[[1L]]]], bound, tick)
+    for (s in seq.int(1L, length(r), by = bound)) {
+      tick()
+      rows <- fr[r[seq.int(s, min(length(r), s + bound - 1L))]]
+      block <- h$write_fill_events(fill = fl, i = rows, instrument_id = ids[fl$pos[rows]],
+        event_seq = fl$evseq[[rows[[1L]]]], use_transaction = FALSE)
+      if (is.function(h$record_accounting_fact)) {
+        h$record_accounting_fact(block = block, applied = list(close_qty = fl$close_qty[rows],
+          open_qty = fl$open_qty[rows], realized_close = fl$realized_close[rows]))
+      }
+      h$flush_pulse_events()
+      if (h$pending_event_count() > 0L) h$flush_pending()
+    }
+  }
+  cur
+}
+
 # Writes accepted rows `cur`.. numbered below `below` to `h`, in appends of at
 # most `bound` rows; returns the next row to write.
 lean_facts_emit_ca <- function(h, ca, cur, below, bound, tick) {

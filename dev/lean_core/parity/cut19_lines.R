@@ -17,8 +17,9 @@ opt <- function(name, default = NULL) {
 here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/"))
 repo <- normalizePath(file.path(here, "..", "..", ".."), winslash = "/")
 source(file.path(here, "loop_edits.R"))
-debug_functions <- c("lean_loop_debug_packet", "lean_loop_pin_ctx", "lean_loop_debug_ctx", "lean_debug_same")
-files <- c("loop.R", "plan.R", "checks.R", "fifo.R", "prepare.R", "loop_harness.R", "marks.R")
+debug_functions <- c("lean_loop_debug_packet", "lean_loop_pin_ctx", "lean_loop_debug_ctx", "lean_debug_same",
+                     "lean_facts_debug_settled")   # Cut 21: called only from a .lean_debug branch
+files <- c("loop.R", "plan.R", "checks.R", "fifo.R", "prepare.R", "loop_harness.R", "marks.R", "facts.R")   # facts.R: Cut 21
 
 count <- function(x) {
   pd <- utils::getParseData(parse(text = x, keep.source = TRUE))
