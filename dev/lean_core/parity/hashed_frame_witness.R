@@ -8,10 +8,12 @@
 #    debugonce() stop there) in an unhashed frame; lean_envelope_code is
 #    bytecode; a static scan finds none of missing(), sys.call(),
 #    sys.function(), match.call(), nargs(), parent.frame() at the plain
-#    body's top level outside the functions it defines. Three faults, applied
-#    as text edits (loop_edits.R), must each fail: the wrapper ignoring the
-#    flag (debug on), an unhashed environment (debug off), a top-level
-#    sys.call() (both).
+#    body's top level outside the functions it defines (called by name or as
+#    base:: / base:::). Four faults, applied as text edits (loop_edits.R),
+#    must each fail: the wrapper ignoring the flag (debug on), an unhashed
+#    environment (debug off), a top-level sys.call() and a top-level
+#    base::sys.call() (both). A control, base::sys.call() inside a function
+#    the body defines, must fail no check.
 # B. The test-only adapter (cut review R1): loop_parity.R --witness=
 #    hashed_frame_adapter.R with debug on runs the production-loaded compiled
 #    body in its hashed frame with the debug assertions on, on
@@ -50,11 +52,19 @@ sys.source(file.path(repo, "dev/spikes/r_floor/fixture.R"), envir = fixture)
 # --- A. frame checks ---------------------------------------------------------
 
 forbidden <- c("missing", "sys.call", "sys.function", "match.call", "nargs", "parent.frame")
+# A call head names a function either as a symbol or as base::f / base:::f
+# (close review round 1, F2: a qualified call is a direct call too).
+head_name <- function(h) {
+  if (is.symbol(h)) return(as.character(h))
+  if (is.call(h) && length(h) == 3L && is.symbol(h[[1L]]) && as.character(h[[1L]]) %in% c("::", ":::") &&
+      identical(as.character(h[[2L]]), "base")) return(as.character(h[[3L]]))
+  NA_character_
+}
 scan_body <- function(x) {
   if (!is.call(x)) return(character())
-  h <- x[[1L]]
-  if (is.symbol(h) && identical(as.character(h), "function")) return(character())
-  c(if (is.symbol(h) && as.character(h) %in% forbidden) as.character(h),
+  h <- head_name(x[[1L]])
+  if (identical(h, "function")) return(character())
+  c(if (!is.na(h) && h %in% forbidden) h,
     unlist(lapply(as.list(x)[-1L], scan_body), use.names = FALSE))
 }
 faults <- list(
@@ -65,13 +75,21 @@ faults <- list(
     "  eval(lean_envelope_code, new.env(hash = TRUE, parent = environment()))",
     "  eval(lean_envelope_code, new.env(hash = FALSE, parent = environment()))", mark = FALSE)),
   syscall = list(lean_edit("loop.R", "lean_fold_envelope_plain",
-    "  execution <- ledgr_validate_execution_spec(execution)", "  sys.call()", "after", mark = FALSE))
+    "  execution <- ledgr_validate_execution_spec(execution)", "  sys.call()", "after", mark = FALSE)),
+  syscall_qualified = list(lean_edit("loop.R", "lean_fold_envelope_plain",
+    "  execution <- ledgr_validate_execution_spec(execution)", "  base::sys.call()", "after", mark = FALSE)),
+  # Control: a forbidden call inside a function the body defines is out of
+  # the scan's scope and must not fail it.
+  nested_control = list(lean_edit("loop.R", "lean_fold_envelope_plain",
+    "  execution <- ledgr_validate_execution_spec(execution)", "  witness_nested <- function() base::sys.call()", "after", mark = FALSE))
 )
 # Which checks each fault must break, by debug setting (none: no check).
 expect_fail <- list(none = list(off = character(), on = character()),
                     flag = list(off = character(), on = c("plain_entries", "frame_hashed")),
                     unhashed = list(off = "frame_hashed", on = character()),
-                    syscall = list(off = "scan", on = "scan"))
+                    syscall = list(off = "scan", on = "scan"),
+                    syscall_qualified = list(off = "scan", on = "scan"),
+                    nested_control = list(off = character(), on = character()))
 
 frame_run <- function(fault, debug) {
   lean <- lean_core_load(lib, debug = debug)

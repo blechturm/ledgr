@@ -45,3 +45,10 @@ Timing record cut20-loop-1
 (dev/bench/timing/records/cut20-loop-1/ws38-final/attempt-1), under pcore.ps1:
 `dev/bench/timing/runner.R --protocol=dev/bench/timing/protocols/cut20-loop-1 --base=d5b3a151 --candidate=d5b3a151 --label=ws38-final --candidate-overlay=dev/lean_core,dev/bench/v0_2_3_lean_tuning_profile/descriptors.R,dev/spikes/r_floor/fixture.R`,
 then `Rscript dev/bench/timing/check.R --protocol=dev/bench/timing/protocols/cut20-loop-1 --record=dev/bench/timing/records/cut20-loop-1/ws38-final/attempt-1`.
+
+## Close review round 1 corrections (review/)
+
+| file | command |
+| --- | --- |
+| review/keep_refusals/ | `Rscript dev/lean_core/parity/cut20_keep_refusals.R --out=dev/lean_core/parity/evidence/cut20/review/keep_refusals` |
+| review/witness/, witness.log | `Rscript dev/lean_core/parity/hashed_frame_witness.R --lib=<pin> --out=dev/lean_core/parity/evidence/cut20/review/witness` |

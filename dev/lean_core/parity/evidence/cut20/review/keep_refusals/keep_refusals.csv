@@ -1,0 +1,12 @@
+"case","expected","outcome","ok"
+"original","verdict: open","verdict: open",TRUE
+"synthetic_complete","verdict: keep","verdict: keep",TRUE
+"fractional_round","refusal","Error: cut20_keep: round values must be present, finite and integral",TRUE
+"fractional_round_synthetic","refusal","Error: cut20_keep: round values must be present, finite and integral",TRUE
+"replaced_round","refusal","Error: cut20_keep: 10x7200 candidate: rounds 2,3,4,5,6,7,8, expected 1..7",TRUE
+"na_round","refusal","Error: cut20_keep: round values must be present, finite and integral",TRUE
+"missing_row","refusal","Error: cut20_keep: 10x7200 candidate: rounds 2,3,4,5,6,7, expected 1..7",TRUE
+"duplicate_row","refusal","Error: cut20_keep: duplicate rows: 10x7200 candidate 1",TRUE
+"na_pulse","refusal","Error: cut20_keep: missing, non-finite or non-positive pulses_s",TRUE
+"zero_pulse","refusal","Error: cut20_keep: missing, non-finite or non-positive pulses_s",TRUE
+"no_round_column","refusal","Error: cut20_keep: round values must be present, finite and integral",TRUE

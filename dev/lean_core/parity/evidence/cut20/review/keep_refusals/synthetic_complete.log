@@ -1,0 +1,23 @@
+          shape saving_median saving_min base_pulses_median
+        10x7200           0.1        0.1                100
+       20x23400           0.1        0.1                100
+       500x1260           0.1        0.1                100
+ slice2_10x7200           0.1        0.1                100
+ candidate_pulses_median pulse_ratio
+                      90         0.9
+                      90         0.9
+                      90         0.9
+                      90         0.9
+          shape outside_of median_change_s rounds_slower result
+        10x7200   envelope               0             0   none
+        10x7200      whole               0             0   none
+       20x23400   envelope               0             0   none
+       20x23400      whole               0             0   none
+       500x1260   envelope               0             0   none
+       500x1260      whole               0             0   none
+ slice2_10x7200   envelope               0             0   none
+ slice2_10x7200      whole               0             0   none
+speed condition (median paired saving >= 0.02 on some shape): TRUE
+pulse regression condition (median ratio <= 1.05 on every shape): TRUE
+displaced check (every shape and clock 'none'): TRUE
+verdict: keep

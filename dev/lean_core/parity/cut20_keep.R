@@ -4,7 +4,8 @@
 #
 # Refuses: shapes other than exactly 10x7200, 20x23400, 500x1260 and
 # slice2_10x7200; a round count other than --rounds (7); a missing,
-# duplicate or incomplete pair; a missing, non-finite or non-positive clock.
+# duplicate or incomplete pair; a missing, non-finite or non-integral round;
+# a missing, non-finite or non-positive clock.
 #
 # Per shape, with b and c the paired base and candidate pulse-loop seconds:
 # median((b-c)/b), its minimum and all paired savings; the base and candidate
@@ -44,11 +45,16 @@ for (clock in c("pulses_s", "envelope_s", "whole_s")) {
   v <- raw[[clock]]
   if (is.null(v) || anyNA(v) || !all(is.finite(v)) || any(v <= 0)) refuse("missing, non-finite or non-positive ", clock)
 }
+# Round keys are checked before any coercion (close review round 1, F1): each
+# must be present, finite and integral, and each arm must hold exactly the
+# rounds 1..rounds, so both arms carry the same keys and rows pair on them.
+if (!is.numeric(raw$round) || anyNA(raw$round) || !all(is.finite(raw$round)) || any(raw$round != round(raw$round)))
+  refuse("round values must be present, finite and integral")
 k <- paste(raw$shape, raw$arm, raw$round)
 if (anyDuplicated(k)) refuse("duplicate rows: ", paste(unique(k[duplicated(k)]), collapse = "; "))
 for (s in shapes) for (a in c("base", "candidate")) {
   r <- sort(raw$round[raw$shape == s & raw$arm == a])
-  if (!identical(as.integer(r), seq_len(rounds))) refuse(s, " ", a, ": rounds ", paste(r, collapse = ","), ", expected 1..", rounds)
+  if (length(r) != rounds || any(r != seq_len(rounds))) refuse(s, " ", a, ": rounds ", paste(r, collapse = ","), ", expected 1..", rounds)
 }
 
 rows <- list()
@@ -56,8 +62,9 @@ displaced <- list()
 for (s in shapes) {
   b <- raw[raw$shape == s & raw$arm == "base", ]
   c <- raw[raw$shape == s & raw$arm == "candidate", ]
-  b <- b[order(b$round), ]
-  c <- c[order(c$round), ]
+  b <- b[match(seq_len(rounds), b$round), ]
+  c <- c[match(seq_len(rounds), c$round), ]
+  stopifnot(identical(b$round, c$round))
   saving <- (b$pulses_s - c$pulses_s) / b$pulses_s
   rows[[s]] <- data.frame(shape = s, rounds = rounds,
     saving_median = stats::median(saving), saving_min = min(saving),

@@ -1,0 +1,4 @@
+speed condition (median paired saving >= 0.02 on some shape): TRUE
+pulse regression condition (median ratio <= 1.05 on every shape): TRUE
+displaced check (every shape and clock 'none'): FALSE
+verdict: open
