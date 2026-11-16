@@ -3161,8 +3161,10 @@ cuts:
       on where named): post_omitted and post_cash_not_installed (each, with
       debug on, raises the named settlement assertion at that pulse before
       any later generic error, and with debug off differs from the pin's
-      economic tables; decision 9); captured_row_dropped and
-      captured_row_duplicated (event-table difference);
+      economic tables; decision 9); captured_row_dropped (event-table
+      difference); captured_row_duplicated, which must reach and duplicate
+      a captured tail after the last fill in the batch-one mixed workload
+      and fail event parity (re-review 1, F1);
       corporate_rows_after_fills, fill_seq_contiguous,
       capture_validation_deferred (the overflow refusal difference),
       nonfill_commit_late (prefix_reads, even when final tables match),
@@ -6917,7 +6919,7 @@ tickets:
       - "Acceptance boundary (decision 4(a)): the finite-input dividend-overflow witness matches the pin's condition classes (ledgr_invalid_accounting_event, ledgr_invalid_ledger_meta), message, pulse, stage and rolled-back output with debug off and on; variant capture_validation_deferred is reached and fails on that difference"
       - "Committed prefix (decision 4(b)): memory-prefix observations before the strategy call and at reconciliation on dividend workloads with and without openings and on a later stop, counts and full event digests equal to the pin's; variant nonfill_commit_late is caught by prefix_reads even when final tables match"
       - "No store access during the loop (the harness's store-write detector) on every slice-4 workload; publication without a per-event loop (seven-shape walk)"
-      - "Debug settlement check (decision 9): variants post_omitted and post_cash_not_installed each raise the named settlement assertion at that pulse with debug on and differ from the pin's economic tables with debug off; captured_row_dropped and captured_row_duplicated each give an event-table difference; corporate_rows_after_fills and fill_seq_contiguous reached and caught"
+      - "Debug settlement check (decision 9): variants post_omitted and post_cash_not_installed each raise the named settlement assertion at that pulse with debug on and differ from the pin's economic tables with debug off; captured_row_dropped gives an event-table difference; captured_row_duplicated duplicates a captured tail after the last fill in the batch-one mixed workload and fails event parity; corporate_rows_after_fills and fill_seq_contiguous reached and caught"
       - "Growth and batch one (decision 10): captured-block storage grown after a nonempty prefix with the prefix and incoming rows surviving, and a lost-record-at-growth variant caught; at batch one a single captured block longer than the bound, several instruments' actions, cash and fill interleaving and a trailing non-fill block after the last fill, every append bounded and every row transferred once in order; nonfill_block_unsplit caught by the append-bound detector; full gate and inert hooks against the freeze identical with debug off and on"
   - id: "LDG-3245"
     title: "Close workstream 39"
