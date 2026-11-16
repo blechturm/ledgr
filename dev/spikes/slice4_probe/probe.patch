@@ -1,0 +1,954 @@
+diff --git a/dev/lean_core/loop.R b/dev/lean_core/loop.R
+index d7c180b5..5e1baeba 100644
+--- a/dev/lean_core/loop.R
++++ b/dev/lean_core/loop.R
+@@ -79,21 +79,23 @@ lean_loop_coverage <- function(execution, entry = NULL) {
+     lean_not_covered("a checkpoint_every control")
+   }
+   if (!identical(as.integer(execution$start_idx), 1L)) lean_not_covered("restart")
+-  if (!is.null(execution$corporate_action_plan)) lean_not_covered("corporate actions")
+-  if (length(execution$opening_frozen) > 0L || length(execution$position_fact_unknown_basis) > 0L ||
+-      any(ledgr_fold_positions_to_vec(execution$state$positions, execution$instrument_ids) != 0) ||
+-      length(execution$state$lot_state$lot_qty %||% numeric()) > 0L ||
+-      !identical(as.integer(execution$event_seq_start), 1L)) lean_not_covered("opening positions and imports")
++  # slice-4 probe: corporate actions lifted
++  # if (!is.null(execution$corporate_action_plan)) lean_not_covered("corporate actions")
++  # slice-4 probe: opening positions lifted (frozen and unknown-basis openings stay refused)
++  if (length(execution$opening_frozen) > 0L || length(execution$position_fact_unknown_basis) > 0L) {
++    lean_not_covered("opening positions and imports")
++  }
+   # A declared session calendar is always a declared family once
+   # availability is active (slice 3); the other families are slice 4.
+-  if (length(setdiff(provider$identity()$declared_families, "sessions")) > 0L) {
++  if (FALSE && length(setdiff(provider$identity()$declared_families, "sessions")) > 0L) {   # slice-4 probe: lifted
+     lean_not_covered("membership, status or lifetime facts")
+   }
+   opp <- execution$execution_opportunities_posix
+   if (length(opp) > 0L && n > 0L) {
+     # The loop's constant execution view (checked per pulse in debug).
+     view <- lean_plan_execution_view(provider, as.numeric(opp[[1L]]), execution$instrument_ids)
+-    if (!isTRUE(all(view$member)) || !isTRUE(!any(view$restricted))) lean_not_covered("execution restrictions")
++    # slice-4 probe: execution restrictions lifted
++    # if (!isTRUE(all(view$member)) || !isTRUE(!any(view$restricted))) lean_not_covered("execution restrictions")
+   }
+   cols <- unname(substrate$pulse_index[ledgr_projection_pulse_names(as.POSIXct(pulses, tz = "UTC"))])
+   if (anyNA(cols)) lean_not_covered("pulses outside the prepared axis")
+@@ -238,6 +240,9 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+   # valuation state; the schedule, the frozen set and the slice-3 rows. One
+   # binding: each binding in this frame slows every lookup (marks.R).
+   s3 <- lean_marks_run_state(bars, ids, substrate, provider, history_reader, execution$decision_due)
++  # slice-4 probe: membership, status or lifetime facts take the provider path every pulse
++  facts_active <- length(setdiff(provider$identity()$declared_families, "sessions")) > 0L
++  if (facts_active && is.null(s3$state)) s3$state <- lean_marks_state(bars, ids, substrate, provider, history_reader)
+   epochs <- as.numeric(execution$execution_opportunities_posix %||% pulses_posix[-1L])
+   epoch_valid <- ledgr_plan_epoch_valid(epochs)
+   max_events <- max(1L, n_pulse * n)
+@@ -297,6 +302,28 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+   processed <- 0L
+   full_run <- TRUE
+   event_seq <- as.integer(execution$event_seq_start)
++  # slice-4 probe: corporate actions through the pin's plan (a stand-in, as
++  # slice 3 took marks from the pin's valuation state). Settlement installs
++  # cash, positions and the lot book back, and position facts for changed
++  # positions, as ledgr_carrier_settlement_install() does.
++  ca_plan <- execution$corporate_action_plan
++  # The plan's event rows are captured, not written, and published after the
++  # loop in event order with the fills (no store write in the loop, D3).
++  ca_rows <- list()
++  ca_capture <- list(append_event_rows = function(rows) {
++    if (!is.null(rows) && nrow(rows) > 0L) ca_rows[[length(ca_rows) + 1L]] <<- rows
++    invisible(TRUE)
++  })
++  lean_settle <- function(value, bar_index) {
++    np <- as.numeric(value$positions)
++    changed <- which(abs(pos - np) > 1e-12)
++    if (length(changed)) {
++      position_facts <<- ledgr_position_facts_apply(position_facts, changed, pos[changed], np[changed], bar_index, FALSE)
++    }
++    cash <<- value$cash
++    pos <<- np
++    book <<- value$lot_state
++  }
+   last_fully_valued <- NA_real_          # epoch seconds
+   last_executed <- NA_real_             # epoch seconds
+   eq <- list(ts = numeric(n_pulse), cash = numeric(n_pulse), positions_value = numeric(n_pulse),
+@@ -310,7 +337,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+              planned_position_after = numeric(fcap), clean = logical(fcap), info = character(fcap),
+              infos = character(fcap), target = numeric(fcap), strategy_target = numeric(fcap),
+              close_qty = numeric(fcap), open_qty = numeric(fcap), realized_close = numeric(fcap),
+-             net_after = numeric(fcap))
++             net_after = numeric(fcap), evseq = integer(fcap))   # slice-4 probe: evseq
+   nf <- 0L
+   # explicit decision residuals: (pulse, k, strategy target, target, position)
+   # Sizing evidence rows (slice 2, Section 19.9), pulse-ordered.
+@@ -339,6 +366,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+   hd_recon <- matrix(NA_real_, n_pulse, 6L)
+   hd_has_recon <- logical(n_pulse)
+   hd_stop_detail <- rep(NA_character_, n_pulse)
++  hd_cpos <- vector("list", n_pulse)   # slice-4 probe: each pulse's context positions (facts runs)
+   n_done <- 0L                        # pulses with a header
+   n_committed <- 0L                   # fill events of completed P5s
+   # The run's fill-event limit, as the pin hands it to init_buffers()
+@@ -401,15 +429,19 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+ 
+   # The pulse context: the pin's class, raw-field order and lookup service,
+   # filled directly from the prepared planes.
+-  lean_context <- function(i, col, close, pv, positions_snapshot, view, counts) {
++  lean_context <- function(i, col, close, pv, positions_snapshot, view, counts, members = members0) {
+     fv <- feature_fn(projection_idx[[i]])
++    # slice-4 probe: on a facts run the context axis is this pulse's (close is already on it)
++    rs <- if (facts_active) ctx_pos else seq_len(n)
++    cu <- if (facts_active) ids[ctx_pos] else ids
+     lookup <- list2env(list(
+       feature_lookup = feature_lookup_state, feature_vector = fv, projection_idx = projection_idx[[i]],
+       cutoff_num = ts_num[[i]], readable_feature_names = feature_lookup_state$readable_names,
+-      bars = list(open = as.numeric(bars$open[, col]), high = as.numeric(bars$high[, col]),
+-                  low = as.numeric(bars$low[, col]), close = as.numeric(close),
+-                  volume = as.numeric(bars$volume[, col])),
+-      positions = positions_snapshot, universe = ids, id_to_idx = id_to_idx, bar_index = integer(),
++      bars = list(open = as.numeric(bars$open[rs, col]), high = as.numeric(bars$high[rs, col]),
++                  low = as.numeric(bars$low[rs, col]), close = as.numeric(close),
++                  volume = as.numeric(bars$volume[rs, col])),
++      positions = positions_snapshot, universe = cu,
++      id_to_idx = if (facts_active) ledgr_pulse_context_id_to_idx(cu) else id_to_idx, bar_index = integer(),
+       availability = view, bars_aligned = TRUE, positions_aligned = TRUE, availability_aligned = TRUE,
+       position_facts = list(entry_bar = position_facts$entry_bar, exit_bar = position_facts$exit_bar,
+         cost_basis = book$cost_basis_by_inst, position = pos, current_bar = projection_idx[[i]],
+@@ -419,11 +451,11 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+     lookup$preparation_counts <- counts$prep
+     helpers <- lean_ctx_helpers(lookup)
+     ctx <- list(
+-      run_id = run_id, ts_utc = pulses_iso[[i]], universe = ids, .positions = positions_snapshot,
++      run_id = run_id, ts_utc = pulses_iso[[i]], universe = if (facts_active) ids[ctx_pos] else ids, .positions = positions_snapshot,   # slice-4 probe
+       cash = cash, equity = cash + pv, seed = seed,
+       pulse_seed = if (is.null(pulse_seeds)) NULL else pulse_seeds[[i]],
+       state = lean_strategy_view(strategy_state), .safety_state = "GREEN",
+-      .schedule_query = schedule_fn(i), members = members0, .history = history_reader$view(i),
++      .schedule_query = schedule_fn(i), members = members, .history = history_reader$view(i),   # slice-4 probe: members
+       .pulse_lookup = lookup, flat = helpers$flat, hold = helpers$hold, .feature_vector = fv,
+       .notes = pulse_notes)
+     class(ctx) <- "ledgr_pulse_context"
+@@ -435,7 +467,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+     pf_source <- ledgr_position_fact_source(position_facts, book, pos, current_bar = projection_idx[[i]],
+       bar_axis = bar_axis, context_pos = ctx_pos, unknown_basis = no_basis)
+     ctx <- list(
+-      run_id = run_id, ts_utc = pulses_iso[[i]], universe = ids, .positions = positions_snapshot,
++      run_id = run_id, ts_utc = pulses_iso[[i]], universe = if (facts_active) ids[ctx_pos] else ids, .positions = positions_snapshot,   # slice-4 probe
+       cash = cash, equity = cash + pv, seed = seed,
+       pulse_seed = if (is.null(pulse_seeds)) NULL else pulse_seeds[[i]],
+       state = ledgr_strategy_state_view(strategy_state), .safety_state = "GREEN",
+@@ -443,16 +475,18 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+     ctx$members <- p2$members
+     ctx$.history <- history_reader$view(i)
+     class(ctx) <- "ledgr_pulse_context"
++    rs <- if (facts_active) ctx_pos else seq_len(n)   # slice-4 probe: the pulse's context axis
++    cu <- ids[rs]
+     ctx <- ledgr_update_pulse_context_helpers(ctx,
+-      bars = list(open = bars$open[, col], high = bars$high[, col], low = bars$low[, col],
+-                  close = close, volume = bars$volume[, col]),
+-      features = data.frame(), positions = positions_snapshot, universe = ids, projection = projection,
++      bars = list(open = bars$open[rs, col], high = bars$high[rs, col], low = bars$low[rs, col],
++                  close = close, volume = bars$volume[rs, col]),
++      features = data.frame(), positions = positions_snapshot, universe = cu, projection = projection,
+       pulse_idx = projection_idx[[i]], cutoff_num = ts_num[[i]], feature_ids = def_ids,
+       active_alias_map = active_alias_map, feature_name_state = feature_name_state,
+       feature_lookup_state = feature_lookup_state, id_to_idx = NULL, availability = p2$view,
+       position_facts = pf_source, build_counts = NULL, preparation_counts = NULL,
+       bars_aligned = TRUE, positions_aligned = TRUE, availability_aligned = TRUE)
+-    ctx <- ledgr_filter_pulse_context_features(ctx, ids, ids, context_pos = ctx_pos)
++    ctx <- ledgr_filter_pulse_context_features(ctx, cu, ids, context_pos = ctx_pos)   # slice-4 probe
+     ctx$.notes <- pulse_notes
+     ctx
+   }
+@@ -516,16 +550,87 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+ 
+   # P1: valuation at the marks (the close, or on a marked run the pin's
+   # marks: the valuation stop, the frozen set's rows) and the equity row.
++  # slice-4 probe: a P1 stop (terminal, disposition or corporate action), as
++  # the valuation stop: before the equity row, the pulse not counted.
++  p1_stop <- function(i, m, stop_ids, reason_code, reasons) {
++    n_done <<- i
++    lean_marks_stop(s3, i, lean_s4_stop(m, stop_ids, reason_code, reasons, pulses_posix[[i]]))
++    hd_all_explicit[[i]] <<- TRUE
++    status <<- "INCOMPLETE"
++    stop_reason <<- reason_code
++    list(stop = TRUE)
++  }
+   lean_p1_value <- function(i) {
+     ts <- ts_num[[i]]
+     live$cur_ts <- ts
+     live$cur_stage <- "valuation"
+     col <- pulse_cols[[i]]
+     close <- bars$close[, col]
++    # slice-4 probe: corporate actions post first (R/fold-engine.R:363-393)
++    if (!is.null(ca_plan)) {
++      ca_plan$check_clocks(i)
++      posted <- ca_plan$post(index = i, run_id = run_id, event_seq = event_seq, output_handler = ca_capture,
++        state_value = list(cash = cash, positions = stats::setNames(pos, ids), lot_state = book),
++        marks = stats::setNames(as.numeric(close), ids))
++      lean_settle(posted$state, projection_idx[[i]])
++      event_seq <<- posted$next_event_seq
++      refused <- posted$stopped %||% ca_plan$check_quantity_effects(i)
++      if (!is.null(refused)) {
++        if (is.null(s3$state)) lean_abort_attempt("a corporate-action refusal without marks (slice-4 probe)")
++        return(p1_stop(i, lean_marks_pulse(provider, s3$state, i, pulses_posix[[i]], pos, ids), refused$ids,
++          refused$reason_code, rep(refused$reasons, length(refused$ids))))
++      }
++    }
+     mk <- close
+     m <- NULL
+     if (!is.null(s3$state)) {
+       m <- lean_marks_pulse(provider, s3$state, i, pulses_posix[[i]], pos, ids)
++      # slice-4 probe: the plan's dispositions, then terminal dispositions of
++      # held inactive instruments, before the valuation stop (R/fold-engine.R:396-505)
++      if (!is.null(ca_plan) && isTRUE(ca_plan$has_disposition())) {
++        disposed <- ca_plan$post_disposition(index = i, run_id = run_id, event_seq = event_seq,
++          output_handler = ca_capture, state_value = list(cash = cash, positions = stats::setNames(pos, ids),
++          lot_state = book), valuation = m$valuation)
++        lean_settle(disposed$state, projection_idx[[i]])
++        event_seq <<- disposed$next_event_seq
++        if (!is.null(disposed$stopped)) return(p1_stop(i, m, disposed$stopped$ids, disposed$stopped$reason_code, disposed$stopped$reasons))
++        if (disposed$dispositions > 0L) m <- lean_marks_pulse(provider, s3$state, i, pulses_posix[[i]], pos, ids)
++      }
++      held_ids <- m$cids[m$columns$held]
++      inactive <- held_ids[as.character(m$view$lifetime[held_ids]) %in% "known_inactive"]
++      if (length(inactive) > 0L) {
++        labels <- as.character(m$view$terminal_event[inactive])
++        resolved <- ledgr_terminal_resolve(execution$corporate_action_policy, inactive, labels, m$valuation)
++        resolved$outcome[!nzchar(labels)] <- "unlabeled"
++        blocked <- resolved$outcome != "dispose"
++        if (any(blocked)) {   # the pin's terminal stop reasons (R/fold-engine.R:437-461)
++          unsupported <- resolved$outcome %in% c("unlabeled", "refuse")
++          reasons <- ifelse(resolved$outcome == "unlabeled", "terminal_settlement_unsupported|terminal_label_missing",
++            ifelse(resolved$outcome == "refuse", ifelse(resolved$basis == "frozen_fallback",
++              "terminal_settlement_unsupported|frozen_terminal_refuse", "terminal_settlement_unsupported"),
++              paste("terminal_mark_unavailable", resolved$choice, sep = "|")))
++          return(p1_stop(i, m, inactive[blocked],
++            if (any(unsupported)) "terminal_settlement_unsupported" else "terminal_mark_unavailable", reasons[blocked]))
++        }
++        mm <- ledgr_terminal_mark_meta(resolved, m$valuation, pulses_posix[[i]])
++        posted <- ledgr_disposition_post(ids = inactive, price = resolved$price,
++          source = rep("lifetime_terminal_disposition", length(inactive)),
++          source_fact_id = as.character(m$view$lifetime_fact_id[inactive]), terminal_event = labels,
++          matched_label = resolved$matched_label, disposition_policy_id = resolved$policy_id,
++          disposition_choice = resolved$choice, disposition_basis = resolved$basis, mark_source = mm$source,
++          mark_source_ts_utc = mm$source_ts, mark_age = mm$age,
++          haircut_fraction = ifelse(resolved$choice == "haircut", resolved$haircut, NA_real_),
++          ts = pulses_posix[[i]], run_id = run_id, event_seq = event_seq, output_handler = ca_capture,
++          state_value = list(cash = cash, positions = stats::setNames(pos, ids), lot_state = book),
++          instrument_ids = ids, exposure_mark = resolved$reference)
++        lean_settle(posted$state, projection_idx[[i]])
++        event_seq <<- posted$next_event_seq
++        lean_marks_add_rows(s3, i, 1L, lean_marks_group(inactive, "valuation", "disposed", "terminal_disposition",
++          reasons = paste("terminal_disposition", resolved$choice, resolved$basis, sep = "|"),
++          quantity = abs(posted$before), price = resolved$price, mark_source = mm$source, mark_age = mm$age,
++          event_seq = posted$event_seq, position_before = posted$before, position_after = 0))
++        m <- lean_marks_pulse(provider, s3$state, i, pulses_posix[[i]], pos, ids)
++      }
+       st <- lean_marks_valuation_stop(m, pulses_posix[[i]])
+       if (!is.null(st)) {
+         # before the equity row; the pulse is not counted
+@@ -540,9 +645,14 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+       s3$frozen <- fz$set
+       for (g in fz$groups) lean_marks_add_rows(s3, i, 1L, g)
+       mk <- m$columns$mark
++      if (facts_active) {   # slice-4 probe: this pulse's context axis
++        ctx_pos <<- m$columns$context_pos
++        hd_cpos[[i]] <<- ctx_pos
++      }
+     }
+-    active <- pos != 0
+-    pv <- if (any(active)) sum(pos[active] * mk[active]) else 0
++    pc <- if (facts_active) pos[ctx_pos] else pos   # slice-4 probe: marks are on the context axis
++    active <- pc != 0
++    pv <- if (any(active)) sum(pc[active] * mk[active]) else 0
+     last_fully_valued <<- ts
+     n_eq <<- n_eq + 1L
+     eq$ts[[n_eq]] <<- ts_num[[i]]
+@@ -557,50 +667,60 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+   # P2: a fresh context (Section 19.4), the strategy call, the checks on its
+   # output, the pin's risk plan (slice 2) and the short-exposure refusal.
+   lean_p2_decide <- function(i, v1) {
++    # slice-4 probe: the strategy, its checks, sizing, risk and the marks rows
++    # run on this pulse's context axis; targets are embedded on the run axis
++    # (outside the context: the position, never actionable).
++    P_rp <- if (facts_active) ctx_pos else seq_len(n)
++    P_ids <- ids[P_rp]
++    P_pos <- pos[P_rp]
++    P_n <- length(P_rp)
++    P_close <- v1$close[P_rp]
++    P_attr <- if (facts_active) list(names = P_ids) else ids_attr
++    P_ok <- if (facts_active) lean_targets_axis_ok(P_ids) else ids_ok
+     if (!is.null(s3$due) && !isTRUE(s3$due[[i]])) {
+       # A pulse the schedule does not decide (Section 19.11): no strategy
+       # call; the skip row and the evidence rows (marks.R), targets equal
+       # positions, no decision cells and no holds.
+-      for (g in lean_marks_skip_rows(v1$m, ids, pos)) lean_marks_add_rows(s3, i, 1L, g)
++      for (g in lean_marks_skip_rows(v1$m, P_ids, P_pos)) lean_marks_add_rows(s3, i, 1L, g)
+       hd_all_explicit[[i]] <<- TRUE
+       return(list(result = list(state_update = NULL), sq = pos, tq = pos, pos_start = pos, fields = NULL,
+                   risk_ids = character(), stop = FALSE, skip = TRUE))
+     }
+     col <- v1$col
+-    close <- v1$close
+     pv <- v1$pv
+     mk <- v1$mk
+     marks <- v1$m
+     pos_start <- pos
+-    positions_snapshot <- pos
+-    names(positions_snapshot) <- ids
++    positions_snapshot <- P_pos
++    names(positions_snapshot) <- P_ids
+     if (is.null(marks)) {
+       view <- view0
+-      view$held[] <- pos != 0
+-      view$risk_mark[] <- close
++      view$held[] <- P_pos != 0
++      view$risk_mark[] <- P_close
+     } else {
+       view <- marks$p2$view
+-      if (.lean_debug) lean_loop_debug_ctx(lean_context(i, col, close, pv, positions_snapshot, view, NULL),
+-        lean_loop_pin_ctx(i, col, close, pv, positions_snapshot, marks$p2), i)
++      if (.lean_debug) lean_loop_debug_ctx(lean_context(i, col, P_close, pv, positions_snapshot, view, NULL, marks$p2$members),
++        lean_loop_pin_ctx(i, col, P_close, pv, positions_snapshot, marks$p2), i)
+     }
+     if (.lean_debug && is.null(marks)) {
+       packet <- list(
+         pulse_idx = i, ts = ts_num[[i]], context_pos = ctx_pos, cash = cash, positions_value = pv,
+-        position = pos, member = rep(TRUE, n), held = pos != 0, buyable = rep(TRUE, n),
+-        target_restricted = rep(FALSE, n), restriction_offset = integer(n), restriction_count = integer(n),
+-        restriction_code = integer(), status = rep(3L, n), lifetime = rep(1L, n),
+-        terminal_event = rep("", n), lifetime_fact_id = rep("", n), mark = close, reference = close,
+-        source_ts = rep(ts_num[[i]], n), mark_age = integer(n), mark_source = rep(3L, n),
+-        priced = rep(TRUE, n), permissible = rep(TRUE, n), frozen = rep(FALSE, n))
+-      lean_loop_debug_packet(packet, provider, pulses_posix[[i]], pos, ids, i, substrate, history_reader)
+-      p2 <- ledgr_carrier_p2_input(packet, ids)
++        position = P_pos, member = rep(TRUE, P_n), held = P_pos != 0, buyable = rep(TRUE, P_n),
++        target_restricted = rep(FALSE, P_n), restriction_offset = integer(P_n), restriction_count = integer(P_n),
++        restriction_code = integer(), status = rep(3L, P_n), lifetime = rep(1L, P_n),
++        terminal_event = rep("", P_n), lifetime_fact_id = rep("", P_n), mark = P_close, reference = P_close,
++        source_ts = rep(ts_num[[i]], P_n), mark_age = integer(P_n), mark_source = rep(3L, P_n),
++        priced = rep(TRUE, P_n), permissible = rep(TRUE, P_n), frozen = rep(FALSE, P_n))
++      lean_loop_debug_packet(packet, provider, pulses_posix[[i]], P_pos, P_ids, i, substrate, history_reader)
++      p2 <- ledgr_carrier_p2_input(packet, P_ids)
+       if (!identical(p2$view, view) || !identical(p2$members, members0)) {
+         rlang::abort(sprintf("Lean availability view differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
+       }
+-      lean_loop_debug_ctx(lean_context(i, col, close, pv, positions_snapshot, view, NULL),
+-        lean_loop_pin_ctx(i, col, close, pv, positions_snapshot, p2), i)
++      lean_loop_debug_ctx(lean_context(i, col, P_close, pv, positions_snapshot, view, NULL),
++        lean_loop_pin_ctx(i, col, P_close, pv, positions_snapshot, p2), i)
+     }
+-    ctx <- lean_context(i, col, close, pv, positions_snapshot, view, counts)
++    ctx <- lean_context(i, col, P_close, pv, positions_snapshot, view, counts,
++      members = if (is.null(marks)) members0 else marks$p2$members)
+     pulse_notes$sizing_skipped <- character()
+     result <- tryCatch({
+       live$cur_stage <- "strategy"
+@@ -628,9 +748,9 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+     # Targets (checks.R, lean_targets): the plain and helper accept paths,
+     # or the pin's validator.
+     targets <- if (.lean_debug) {
+-      lean_debug_same(function() lean_targets(raw_targets, ids, ids_attr, ids_ok),
+-        function() ledgr_validate_strategy_targets(raw_targets, ids, allow_empty = TRUE), "target validation", i)
+-    } else lean_targets(raw_targets, ids, ids_attr, ids_ok)
++      lean_debug_same(function() lean_targets(raw_targets, P_ids, P_attr, P_ok),
++        function() ledgr_validate_strategy_targets(raw_targets, P_ids, allow_empty = TRUE), "target validation", i)
++    } else lean_targets(raw_targets, P_ids, P_attr, P_ok)
+     sq <- as.numeric(targets)
+     pre <- 0L
+     if (!is.null(intent_reason)) { hd_intent[[i]] <<- intent_reason; pre <- pre + 1L }
+@@ -638,10 +758,10 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+     # validated evidence, or NULL (none, or stale) for the raw path; zero
+     # rows write nothing.
+     sizing_evidence <- if (.lean_debug) {
+-      lean_debug_same(function() lean_sizing_evidence(sizing_evidence, targets, ids, pos, mk),
+-        function() ledgr_validate_sizing_evidence(sizing_evidence, targets = targets, context_ids = ids, position = pos,
++      lean_debug_same(function() lean_sizing_evidence(sizing_evidence, targets, P_ids, P_pos, mk),
++        function() ledgr_validate_sizing_evidence(sizing_evidence, targets = targets, context_ids = P_ids, position = P_pos,
+           mark = mk), "sizing evidence", i)
+-    } else lean_sizing_evidence(sizing_evidence, targets, ids, pos, mk)
++    } else lean_sizing_evidence(sizing_evidence, targets, P_ids, P_pos, mk)
+     # On complete planes no sizing helper can skip an instrument (Section
+     # 19.9); on a marked run a skip is the pin's sizing_unavailable path.
+     if (.lean_debug && is.null(marks) && length(pulse_notes$sizing_skipped) > 0L) {
+@@ -659,7 +779,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+     }
+     hd_pre[[i]] <<- pre
+     tq <- sq
+-    if (n > 0L) {
++    if (P_n > 0L) {
+       # A fixed basket has no restricted or nonmember instrument. The risk
+       # plan (lean steps in checks.R, or the pin's for a plan they do not
+       # take) transforms the targets; its post-risk quantity recheck runs in
+@@ -670,11 +790,11 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+       # pin's availability check runs in production (Cut 19 decision 4).
+       if (.lean_debug || !is.null(marks)) ledgr_availability_validate_strategy_targets(targets, positions_snapshot, view)
+       if (!is.null(marks)) {
+-        rs <- lean_marks_risk_stop(marks, ids, sq, pos, pulses_posix[[i]])
++        rs <- lean_marks_risk_stop(marks, P_ids, sq, P_pos, pulses_posix[[i]])
+         if (!is.null(rs)) {
+           # the whole decision segment, no post-risk target, then the stop rows
+-          lean_loop_add_decisions(seq_len(n), i, sq, rep(NA_real_, n), pos,
+-            lean_marks_decision_fields(marks, ids, pulse_notes$sizing_skipped))
++          lean_loop_add_decisions(seq_len(P_n), i, sq, rep(NA_real_, P_n), P_pos, kr = P_rp,
++            lean_marks_decision_fields(marks, P_ids, pulse_notes$sizing_skipped))
+           processed <<- processed + 1L
+           lean_marks_stop(s3, i, rs)
+           hd_all_explicit[[i]] <<- TRUE
+@@ -686,22 +806,27 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+       live$cur_stage <- "risk"
+       if (has_risk) {
+         tq <- if (.lean_debug) {
+-          lean_debug_same(function() lean_risk_targets(sq, targets, pos, positions_snapshot, risk_steps, cash + pv, mk, ids,
++          lean_debug_same(function() lean_risk_targets(sq, targets, P_pos, positions_snapshot, risk_steps, cash + pv, mk, P_ids,
+             risk_plan, ctx), function() lean_risk_pin(targets, positions_snapshot, risk_plan, ctx), "risk plan", i)
+-        } else lean_risk_targets(sq, targets, pos, positions_snapshot, risk_steps, cash + pv, mk, ids, risk_plan, ctx)
+-        if (.lean_debug) ledgr_validate_post_risk_quantities(stats::setNames(tq, ids), n)
+-      } else if (any(sq < 0 & sq < pos)) ledgr_availability_validate_short_exposure(targets, positions_snapshot)
++        } else lean_risk_targets(sq, targets, P_pos, positions_snapshot, risk_steps, cash + pv, mk, P_ids, risk_plan, ctx)
++        if (.lean_debug) ledgr_validate_post_risk_quantities(stats::setNames(tq, P_ids), P_n)
++      } else if (any(sq < 0 & sq < P_pos)) ledgr_availability_validate_short_exposure(targets, positions_snapshot)
+     }
+     fields <- NULL
+     risk_ids <- character()
+     if (!is.null(marks)) {
+-      fields <- lean_marks_decision_fields(marks, ids, pulse_notes$sizing_skipped)
+-      sr <- lean_marks_stale_rows(marks, ids, sq, tq, pos)
++      fields <- lean_marks_decision_fields(marks, P_ids, pulse_notes$sizing_skipped)
++      sr <- lean_marks_stale_rows(marks, P_ids, sq, tq, P_pos)
+       if (!is.null(sr)) {
+         lean_marks_add_rows(s3, i, 2L, sr)
+         risk_ids <- sr$instrument_id
+       }
+     }
++    if (facts_active) {   # slice-4 probe: embed on the run axis
++      sq_r <- pos; sq_r[P_rp] <- sq; sq <- sq_r
++      tq_r <- pos; tq_r[P_rp] <- tq; tq <- tq_r
++      if (!is.null(fields)) fields <- lapply(fields, function(v) { r <- v[rep(NA_integer_, n)]; r[P_rp] <- v; r })
++    }
+     list(result = result, sq = sq, tq = tq, pos_start = pos_start, fields = fields, risk_ids = risk_ids, stop = FALSE)
+   }
+ 
+@@ -714,30 +839,46 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+     tq <- v2$tq
+     live$cur_stage <- "execution"
+     actionable <- which(abs(tq - pos) > act_tol)
++    if (facts_active) actionable <- ctx_pos[sort(match(actionable, ctx_pos))]   # slice-4 probe: context (planner) order
+     exec_ts <- if (i <= length(epochs)) epochs[[i]] else NA_real_
+     batch <- NULL
+     if (length(actionable) > 0L) {
+       next_col <- if (i < n_pulse) pulse_cols[[i + 1L]] else col + 1L
+       has_next <- next_col <= length(bar_axis)
+-      view <- if (!is.na(exec_ts)) lean_exec_view(length(actionable))
++      view <- if (!is.na(exec_ts)) {   # slice-4 probe: the provider's view when facts are declared
++        if (facts_active) lean_plan_execution_view(provider, exec_ts, ids[actionable]) else lean_exec_view(length(actionable))
++      }
+       if (.lean_debug && !is.na(exec_ts)) {
+         pv_view <- lean_plan_execution_view(provider, exec_ts, ids[actionable])
+         if (!identical(lapply(unclass(pv_view)[names(view)], unname), view)) {
+           rlang::abort(sprintf("Lean execution view differs from the provider's at pulse %d.", i), class = "ledgr_internal_error")
+         }
+       }
+-      batch <- lean_plan_pulse(context_pos = ctx_pos, target_qty = tq, position = pos,
+-        actionable_k = actionable, member = member_all, exec_ts = exec_ts,
+-        next_open = if (has_next) bars$open[, next_col] else rep(NA_real_, n),
+-        execution_view = view, epoch_valid = i > length(epochs) || epoch_valid[[i]],
+-        cost_resolver = cost_resolver, cash = cash, instrument_ids = ids, cost_steps = cost_steps)
++      # slice-4 probe: on a facts run the planner works on the context axis, as
++      # the pin's (ordinals ascending, R/fold-engine.R:1086-1135); its fill and
++      # rejection keys are mapped back to run positions for the records.
++      if (facts_active) {
++        batch <- lean_plan_pulse(context_pos = ctx_pos, target_qty = tq[ctx_pos], position = pos[ctx_pos],
++          actionable_k = match(actionable, ctx_pos), member = v1$m$columns$member, exec_ts = exec_ts,
++          next_open = if (has_next) bars$open[, next_col] else rep(NA_real_, n),
++          execution_view = view, epoch_valid = i > length(epochs) || epoch_valid[[i]],
++          cost_resolver = cost_resolver, cash = cash, instrument_ids = ids, cost_steps = cost_steps)
++        batch$fill$k <- ctx_pos[batch$fill$k]
++        batch$rejection$k <- ctx_pos[batch$rejection$k]
++      } else {
++        batch <- lean_plan_pulse(context_pos = ctx_pos, target_qty = tq, position = pos,
++          actionable_k = actionable, member = member_all, exec_ts = exec_ts,
++          next_open = if (has_next) bars$open[, next_col] else rep(NA_real_, n),
++          execution_view = view, epoch_valid = i > length(epochs) || epoch_valid[[i]],
++          cost_resolver = cost_resolver, cash = cash, instrument_ids = ids, cost_steps = cost_steps)
++      }
+       fill <- batch$fill
+       recorded <- cash + sum(fill$cash_delta)
+       if (!isTRUE(recorded == batch$expected_final_cash) &&
+           !isTRUE(all.equal(as.numeric(recorded), as.numeric(batch$expected_final_cash),
+                             tolerance = ledgr_availability_cash_tolerance))) {
+         hd_all_explicit[[i]] <<- TRUE
+-        lean_loop_add_decisions(seq_len(n), i, sq, tq, pos, v2$fields)
++        lean_loop_add_decisions(if (facts_active) ctx_pos else seq_len(n), i, sq, tq, pos, v2$fields)   # slice-4 probe
+         hd_stop_detail[[i]] <<- canonical_json(list(cash_before = cash,
+           virtual_final_cash = batch$expected_final_cash, recorded_final_cash = recorded))
+         status <<- "INCOMPLETE"
+@@ -760,9 +901,12 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+     d <- v2$fields
+     cleanc <- lean_marks_clean(d, close, ids, v2$risk_ids)
+     differs <- if (isTRUE(v2$skip)) integer() else which(!(is.finite(sq) & sq == pos & tq == sq & cleanc))
++    if (facts_active) differs <- differs[differs %in% ctx_pos]   # slice-4 probe: decision cells are the context's
+     n_fill <- if (is.null(batch)) 0L else length(batch$fill$k)
+     n_rej <- if (is.null(batch)) 0L else length(batch$rejection$k)
+     clean_k <- integer()
++    # slice-4 probe: the holder of record at the next boundary, before fills (R/fold-engine.R:1401-1408)
++    if (!is.null(ca_plan) && i < n_pulse) ca_plan$bind_boundary(i + 1L, ledgr_fold_positions_snapshot(pos, ids))
+     if (n_fill > 0L) {
+       fill <- batch$fill
+       fr <- ledgr_carrier_segment_text(fill$info_offset, fill$info_count, fill$info_code, .ledgr_plan_reason_levels)
+@@ -811,6 +955,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+       fl$open_qty[rows] <<- a$open_qty
+       fl$realized_close[rows] <<- a$realized_close
+       nf <<- nf + n_fill
++      fl$evseq[rows] <<- event_seq + seq_len(n_fill) - 1L   # slice-4 probe
+       event_seq <<- event_seq + n_fill
+       pos[fill$pos] <<- book$net_by_inst[fill$pos]
+       fl$net_after[rows] <<- book$net_by_inst[fill$pos]
+@@ -844,8 +989,8 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+   # declared-state update.
+   lean_p5_commit <- function(i, v1, v2, batch, n_fill) {
+     close <- v1$mk   # gross exposures at the decision marks
+-    sq <- v2$sq
+-    tq <- v2$tq
++    sq <- if (facts_active) v2$sq[ctx_pos] else v2$sq   # slice-4 probe: gross on the context
++    tq <- if (facts_active) v2$tq[ctx_pos] else v2$tq
+     live$cur_stage <- "accounting"
+     if (nf > capacity) {
+       rlang::abort("Ledger event buffer exceeded the run's maximum event capacity.",
+@@ -861,14 +1006,14 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+     fill_cash <- if (n_fill > 0L) batch$fill$cash_delta else numeric()
+     gross_sq <- lean_gross(sq, close)
+     recon <- c(
+-      lean_gross(pos, close),
++      lean_gross(if (facts_active) pos[ctx_pos] else pos, close),   # slice-4 probe
+       cash - sum(fill_cash),
+       gross_sq,
+       if (has_risk) lean_gross(tq, close) else gross_sq,   # Cut 18 F3: no second gross without a risk step
+       cash,
+       expected)
+     ledgr_fold_reconciliation_check(recon[[2L]], recon[[6L]], recon[[5L]], recon[[3L]], recon[[4L]], recon[[1L]])
+-    if (.lean_debug && !identical(recon[c(1L, 3L, 4L)], c(ledgr_availability_marked_gross(pos, close),
++    if (.lean_debug && !identical(recon[c(1L, 3L, 4L)], c(ledgr_availability_marked_gross(if (facts_active) pos[ctx_pos] else pos, close),
+         ledgr_availability_marked_gross(sq, close), ledgr_availability_marked_gross(tq, close)))) {
+       rlang::abort(sprintf("Lean gross exposure differs from the pin's at pulse %d.", i), class = "ledgr_internal_error")
+     }
+@@ -909,6 +1054,8 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+     live$t_start <- ledgr_time_now()
+     live$in_pulses <- TRUE
+     on.exit(live$in_pulses <- FALSE)   # also when an error unwinds the loop, before rollback
++    # slice-4 probe: the first boundary (R/fold-engine.R:1921-1925)
++    if (!is.null(ca_plan) && n_pulse > 0L) ca_plan$bind_boundary(1L, ledgr_fold_positions_snapshot(pos, ids))
+     for (i in seq_len(n_pulse)) {
+       v1 <- lean_p1_value(i)
+       if (v1$stop) break
+@@ -948,7 +1095,9 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+ 
+   # Explicit decision rows; `fields` (marks.R) carries a marked pulse's
+   # per-cell mark, source, age and reasons, NULL the current close's.
+-  lean_loop_add_decisions <- function(k, i, sq, tq, position, fields = NULL) {
++  # slice-4 probe: `kr` maps context ordinals `k` to the run positions stored
++  # (a stop's whole segment is given on the context axis); NULL: k is the run position.
++  lean_loop_add_decisions <- function(k, i, sq, tq, position, fields = NULL, kr = NULL) {
+     m <- length(k)
+     rows <- nd + seq_len(m)
+     if (nd + m > dcap) {
+@@ -956,14 +1105,14 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+       dr <<- grow(dr, dcap)
+     }
+     dr$pulse[rows] <<- i
+-    dr$k[rows] <<- k
++    dr$k[rows] <<- if (is.null(kr)) k else kr[k]
+     dr$target[rows] <<- sq[k]
+     dr$target_after[rows] <<- tq[k]
+     dr$position[rows] <<- position[k]
+     # Mark fields only on a marked run; on complete planes they are the
+     # current close's, filled at publish (lean_loop_expand).
+     if (!is.null(s3$state)) {
+-      dr$mark[rows] <<- if (is.null(fields)) bars$close[k, pulse_cols[[i]]] else fields$mark[k]
++      dr$mark[rows] <<- if (is.null(fields)) bars$close[dr$k[rows], pulse_cols[[i]]] else fields$mark[k]   # slice-4 probe: run positions
+       for (f in c("source", "age", "reason", "reasons")) {
+         dr[[f]][rows] <<- if (is.null(fields)) rep_len(lean_marks_current[[f]], m) else fields[[f]][k]
+       }
+@@ -994,6 +1143,14 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+       live$batches <- live$batches + 1L
+     }
+     src <- fl
++    # slice-4 probe: captured corporate-action rows numbered below `s` go first
++    ca_next <- 1L
++    ca_before <- function(s) {
++      while (ca_next <= length(ca_rows) && ca_rows[[ca_next]]$event_seq[[1L]] < s) {
++        output_handler$append_event_rows(ca_rows[[ca_next]])
++        ca_next <<- ca_next + 1L
++      }
++    }
+     carry <- state0$positions
+     cs <- cumsum(lay$rows)
+     a <- 1L
+@@ -1003,15 +1160,20 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+       carry <- ex$carry
+       for (r in pieces(length(ex$fill_rows))) {
+         tick()
+-        rows <- ex$fill_rows[r]
+-        block <- output_handler$write_fill_events(fill = src, i = rows, instrument_id = ids[src$pos[rows]],
+-          event_seq = as.integer(execution$event_seq_start) + rows[[1L]] - 1L, use_transaction = FALSE)
+-        if (is.function(output_handler$record_accounting_fact)) {
+-          output_handler$record_accounting_fact(block = block, applied = list(close_qty = src$close_qty[rows],
+-            open_qty = src$open_qty[rows], realized_close = src$realized_close[rows]))
++        # slice-4 probe: fills are numbered around corporate-action events, so
++        # a block is written as runs of contiguous event numbers.
++        all_rows <- ex$fill_rows[r]
++        for (rows in split(all_rows, cumsum(c(1L, diff(src$evseq[all_rows]) != 1L)))) {
++          ca_before(src$evseq[[rows[[1L]]]])
++          block <- output_handler$write_fill_events(fill = src, i = rows, instrument_id = ids[src$pos[rows]],
++            event_seq = src$evseq[[rows[[1L]]]], use_transaction = FALSE)
++          if (is.function(output_handler$record_accounting_fact)) {
++            output_handler$record_accounting_fact(block = block, applied = list(close_qty = src$close_qty[rows],
++              open_qty = src$open_qty[rows], realized_close = src$realized_close[rows]))
++          }
++          output_handler$flush_pulse_events()
++          if (output_handler$pending_event_count() > 0L) output_handler$flush_pending()
+         }
+-        output_handler$flush_pulse_events()
+-        if (output_handler$pending_event_count() > 0L) output_handler$flush_pending()
+       }
+       for (r in pieces(length(ex$explicit$diagnostic_seq))) {
+         tick()
+@@ -1025,6 +1187,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+       a <- b + 1L
+     }
+     if (nf == 0L) output_handler$flush_pulse_events()
++    ca_before(.Machine$integer.max)   # slice-4 probe: the rest after the last fill
+     writer$record_coverage(as.integer(sum(lay$logical_per)))
+     if (output_handler$pending_event_count() > 0L) output_handler$flush_pending()
+     diagnostics <- writer$drain()
+@@ -1053,7 +1216,8 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+     nopen <- pc$open
+     nrisk <- pc$risk
+     nstop <- as.integer(!is.na(hd_stop_detail[p])) + pc$stop
+-    ndec <- n * !pc$no_decision                   # none on a scheduled skip or a valuation stop
++    nctx <- if (facts_active) lengths(hd_cpos[p]) else n   # slice-4 probe: cells per pulse
++    ndec <- nctx * !pc$no_decision                   # none on a scheduled skip or a valuation stop
+     logical_per <- nopen + hd_pre[p] + ndec + nrisk + hd_nrej[p] + hd_nfill[p] + nrec + nstop
+     base <- c(0L, cumsum(logical_per))[p]
+     pre0 <- base + nopen
+@@ -1063,7 +1227,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+     nd_p <- tabulate(dr$pulse[seq_len(nd)], np)
+     xf_p <- tabulate(fl$pulse[seq_len(nf)][!fl$clean[seq_len(nf)]], np)
+     rows <- nopen + hd_pre[p] + nd_p + nrisk + hd_nrej[p] + xf_p + nrec + nstop + hd_nfill[p] +
+-      if (can_encode) n * !hd_all_explicit[p] else 0L
++      if (can_encode) nctx * !hd_all_explicit[p] else 0L   # slice-4 probe
+     list(np = np, logical_per = logical_per, base = base, pre0 = pre0, dec0 = dec0, risk0 = dec0 + ndec,
+          rej0 = rej0, fill0 = fill0, stop0 = fill0 + hd_nfill[p] + nrec, rows = rows)
+   }
+@@ -1080,6 +1244,14 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+   # then holds). `carry` holds each instrument's position entering pulse a;
+   # the returned carry enters pulse b + 1.
+   lean_loop_expand <- function(a, b, lay, carry) {
++    # slice-4 probe: a cell's context ordinal (its decision number within the
++    # pulse); on a run without facts the context is the run axis.
++    om <- NULL
++    if (facts_active) {
++      om <- matrix(NA_integer_, n, b - a + 1L)
++      for (j in seq.int(a, b)) if (length(hd_cpos[[j]])) om[hd_cpos[[j]], j - a + 1L] <- seq_along(hd_cpos[[j]])
++    }
++    ordinal <- function(k, p) if (is.null(om)) k else om[cbind(k, p - a + 1L)]
+     live$ranges <- live$ranges + 1L
+     live$max_range_pulses <- max(live$max_range_pulses, b - a + 1L)
+     p <- seq.int(a, b)
+@@ -1105,7 +1277,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+       dp <- dr$pulse[r]; dk <- dr$k[r]
+       mf <- if (is.null(s3$state)) c(list(mark = bars$close[cbind(dk, pulse_cols[dp])]), lean_marks_current) else
+         list(mark = dr$mark[r], source = dr$source[r], age = dr$age[r], reason = dr$reason[r], reasons = dr$reasons[r])
+-      add(lay$dec0[dp] + dk, dp, list(instrument_id = ids[dk], stage = "decision", outcome = "recorded",
++      add(lay$dec0[dp] + ordinal(dk, dp), dp, list(instrument_id = ids[dk], stage = "decision", outcome = "recorded",   # slice-4 probe
+         reason_code = mf$reason, reasons = mf$reasons, target = dr$target[r],
+         quantity = dr$position[r], price = mf$mark, mark_source = mf$source,
+         mark_age = mf$age, target_before_risk = dr$target[r], target_after_risk = dr$target_after[r],
+@@ -1130,7 +1302,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+       add(lay$fill0[fp] + xf - hd_fill_start[fp], fp, list(instrument_id = ids[fl$pos[xf]],
+         stage = "execution", outcome = "filled", reason_code = fl$info[xf], reasons = fl$infos[xf],
+         target = fl$target[xf], quantity = fl$qty[xf], price = fl$price[xf], execution_ts_utc = fl$exec_ts[xf],
+-        event_seq = as.integer(execution$event_seq_start) + xf - 1L, target_before_risk = fl$strategy_target[xf],
++        event_seq = fl$evseq[xf], target_before_risk = fl$strategy_target[xf],   # slice-4 probe: evseq
+         target_after_risk = fl$target[xf], position_before = fl$position_before[xf],
+         position_after = fl$planned_position_after[xf]))
+     }
+@@ -1157,7 +1329,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+     implicit <- NULL
+     if (can_encode) {
+       w <- b - a + 1L
+-      hold <- matrix(TRUE, n, w)
++      hold <- if (is.null(om)) matrix(TRUE, n, w) else !is.na(om)   # slice-4 probe: the context's cells
+       hold[, hd_all_explicit[p]] <- FALSE
+       if (length(r)) hold[cbind(dr$k[r], dr$pulse[r] - a + 1L)] <- FALSE
+       cf <- fr[fl$clean[fr]]
+@@ -1169,16 +1341,17 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+       hp <- (hc - 1L) %/% n + a
+       hpos <- lean_loop_positions_at(hk, hp, a, b, fr, carry)
+       fk <- fl$k[cf]; fpl <- fl$pulse[cf]
+-      ord <- order(c(fpl, hp), c(rep(0L, length(cf)), rep(1L, length(hc))), method = "radix")
++      ko <- ordinal(c(fk, hk), c(fpl, hp))   # slice-4 probe: context ordinals
++      ord <- order(c(fpl, hp), c(rep(0L, length(cf)), rep(1L, length(hc))), ko, method = "radix")
+       kk <- c(fk, hk)[ord]
+       pp <- c(fpl, hp)[ord]
+       m <- length(ord)
+       implicit <- list(
+         n = m,
+         run_id = rep_len(as.character(run_id), m),
+-        decision_seq = as.integer(lay$dec0[pp] + kk),
++        decision_seq = as.integer(lay$dec0[pp] + ko[ord]),   # slice-4 probe
+         execution_seq = as.integer(c(lay$fill0[fpl] + cf - hd_fill_start[fpl], rep(NA_integer_, length(hc)))[ord]),
+-        decision_order = as.numeric((kk - 1) * n + kk),
++        decision_order = as.numeric((ko[ord] - 1) * n + kk),   # slice-4 probe: (ordinal - 1) * axis + run position
+         ts_utc = ts_num[pp],
+         instrument_id = ids[kk],
+         target = c(fl$target[cf], hpos)[ord],
+@@ -1189,7 +1362,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
+         fill_quantity = c(fl$qty[cf], rep(NA_real_, length(hc)))[ord],
+         fill_price = c(fl$price[cf], rep(NA_real_, length(hc)))[ord],
+         execution_ts_utc = c(fl$exec_ts[cf], rep(NA_real_, length(hc)))[ord],
+-        event_seq = c(as.integer(execution$event_seq_start) + cf - 1L, rep(NA_integer_, length(hc)))[ord],
++        event_seq = c(fl$evseq[cf], rep(NA_integer_, length(hc)))[ord],   # slice-4 probe: evseq
+         position_after = c(fl$planned_position_after[cf], hpos)[ord]
+       )
+     }
+diff --git a/dev/lean_core/marks.R b/dev/lean_core/marks.R
+index e1bb6c21..c8236cd3 100644
+--- a/dev/lean_core/marks.R
++++ b/dev/lean_core/marks.R
+@@ -27,7 +27,7 @@ lean_marks_run_state <- function(bars, ids, substrate, provider, history_reader,
+     outcome = character(cap), reason_code = character(cap), reasons = character(cap), target = numeric(cap),
+     quantity = numeric(cap), price = numeric(cap), mark_source = character(cap), mark_age = integer(cap),
+     target_before_risk = numeric(cap), target_after_risk = numeric(cap), position_before = numeric(cap),
+-    position_after = numeric(cap), detail_json = character(cap))
++    position_after = numeric(cap), detail_json = character(cap), event_seq = rep(NA_integer_, cap))   # slice-4 probe: event_seq
+   s3$nx <- 0L
+   s3
+ }
+@@ -87,8 +87,9 @@ lean_marks_pulse <- function(provider, vs, i, ts_posix, pos, ids) {
+   valuation <- vs$advance(i, axis, held = as.logical(view$held[axis]))
+   view <- ledgr_availability_restrict_frozen(view, valuation)
+   columns <- ledgr_carrier_provider_view(view, valuation)
+-  if (!identical(columns$context_pos, seq_along(ids))) lean_abort_attempt("a context axis other than the run axis")
+-  list(columns = columns, valuation = valuation, full = full, p2 = ledgr_carrier_p2_input(columns, ids))
++  # slice-4 probe: a context axis other than the run axis is lifted (cids below)
++  list(columns = columns, valuation = valuation, full = full, p2 = ledgr_carrier_p2_input(columns, ids[columns$context_pos]),   # slice-4 probe: context ids
++       view = view, cids = ids[columns$context_pos])   # slice-4 probe: view (lifetime, terminal_event), context ids
+ }
+ 
+ # A group of diagnostic rows (one per entry of `ids`), with the pin's segment
+@@ -101,7 +102,7 @@ lean_marks_group <- function(ids, stage, outcome, reason_code, ..., reasons = re
+ # instruments without a usable mark, their rows and the affected exposure
+ # the completion row records. NULL when every holding is priced.
+ lean_marks_valuation_stop <- function(m, ts_posix) {
+-  ids <- names(m$full)[m$columns$held & !m$columns$priced]
++  ids <- m$cids[m$columns$held & !m$columns$priced]   # slice-4 probe: context ids
+   if (length(ids) == 0L) return(NULL)
+   v <- m$valuation
+   affected <- ledgr_availability_affected_exposure(ids, m$full, v)
+@@ -117,7 +118,7 @@ lean_marks_valuation_stop <- function(m, ts_posix) {
+ # newly frozen holdings in context order, then holdings that left the frozen
+ # set in the previous set's order. Returns the new set and the row groups.
+ lean_marks_frozen <- function(m, before) {
+-  ids <- names(m$full)
++  ids <- m$cids   # slice-4 probe: context ids
+   now <- ids[m$columns$held & m$columns$frozen]
+   entered <- setdiff(now, before)
+   exited <- setdiff(before, now)
+@@ -195,7 +196,8 @@ lean_marks_part_counts <- function(s3, np) {
+   k <- seq_len(s3$nx)
+   pulse <- s3$xr$pulse[k]
+   part <- s3$xr$part[k]
+-  none <- s3$xr$reason_code[k] %in% c("scheduled_skip", "valuation_horizon_exhausted")
++  none <- s3$xr$reason_code[k] %in% c("scheduled_skip", "valuation_horizon_exhausted") |
++    (s3$xr$stage[k] == "valuation" & s3$xr$outcome[k] == "stopped")   # slice-4 probe: every P1 stop
+   list(open = tabulate(pulse[part == 1L], np), risk = tabulate(pulse[part == 2L], np),
+        stop = tabulate(pulse[part == 3L], np), no_decision = tabulate(pulse[none], np) > 0L)
+ }
+@@ -235,3 +237,16 @@ lean_marks_stale_rows <- function(m, ids, sq, tq, pos) {
+     price = m$columns$mark[st], mark_source = m$p2$mark_source[st], mark_age = age[st], target_before_risk = sq[st],
+     target_after_risk = tq[st], position_before = pos[st], position_after = pos[st])
+ }
++
++# slice-4 probe: the pin's stop_valuation() for any reason (R/fold-engine.R:338-361):
++# a terminal or corporate-action stop with the valuation stop's rows.
++lean_s4_stop <- function(m, ids, reason_code, reasons, ts_posix) {
++  v <- m$valuation
++  affected <- ledgr_availability_affected_exposure(ids, m$full, v)
++  q <- unname(m$full[ids])
++  list(affected = c(affected, list(ts_utc = ts_posix, specified = TRUE)),
++       rows = lean_marks_group(ids, "valuation", "stopped", reason_code, reasons = reasons, quantity = q,
++         price = unname(v$reference[ids]), mark_source = unname(v$source[ids]), mark_age = unname(v$age[ids]),
++         position_before = q, position_after = q,
++         detail_json = vapply(seq_along(ids), function(k) ledgr_availability_detail_json(affected$details[[k]]), "")))
++}
+diff --git a/dev/lean_core/parity/loop_parity.R b/dev/lean_core/parity/loop_parity.R
+index f1916981..ea8bbc74 100644
+--- a/dev/lean_core/parity/loop_parity.R
++++ b/dev/lean_core/parity/loop_parity.R
+@@ -333,6 +333,7 @@ crossover <- function(n_inst, n_days) function() {
+ source(file.path(here, "loop_workloads.R"))
+ source(file.path(here, "loop_workloads_slice2.R"))
+ source(file.path(here, "loop_workloads_slice3.R"))
++source(file.path(here, "loop_workloads_slice4.R"))   # slice-4 probe
+ extra <- c(list(
+   crossover_3x40 = crossover(3L, 40L),
+   crossover_10x300 = crossover(10L, 300L),
+@@ -357,7 +358,7 @@ extra <- c(list(
+     collect_open(fx$snapshot, db, "lp-prep-fixture", fx$exp, seed = 1L,
+                  params = utils::modifyList(lc_prep_fixture_params, list(trade = TRUE, lookback = 10L, n = 3L)))
+   }
+-), loop_constructed, loop_witnesses, loop_slice2, loop_slice3)
++), loop_constructed, loop_witnesses, loop_slice2, loop_slice3, loop_slice4)   # slice-4 probe: loop_slice4
+ all_ids <- c(names(a0_workloads), names(extra))
+ ids <- strsplit(arg("workloads", paste(all_ids, collapse = ",")), ",")[[1L]]
+ if (length(bad <- setdiff(ids, all_ids))) stop("unknown workload(s): ", paste(bad, collapse = ", "), call. = FALSE)
+@@ -437,6 +438,7 @@ for (id in ids) {
+     run_tables(id)
+   }), error = function(e) structure(list(value = escaped(e)), lean = as.list(lean$lean_entry)))
+   t2 <- proc.time()[["elapsed"]]
++  if (nzchar(dump_dir)) saveRDS(attempt$value, file.path(dump_dir, paste0(id, "_lean.rds")))   # slice-4 probe
+   if (!is.null(loop_entry_rng[[id]])) RNGkind("default", "default", "default")
+   candidate <- attempt$value
+   rec <- attr(attempt, "lean")
+diff --git a/dev/lean_core/parity/loop_workloads_slice4.R b/dev/lean_core/parity/loop_workloads_slice4.R
+new file mode 100644
+index 00000000..bfdb1cc0
+--- /dev/null
++++ b/dev/lean_core/parity/loop_workloads_slice4.R
+@@ -0,0 +1,134 @@
++# Slice-4 probe workloads (2026-11-16; probe only, not product): opening
++# positions, corporate actions, membership, trading status and lifetime
++# facts, built with public constructors, the pin as oracle. Sourced by
++# loop_parity.R after loop_workloads_slice3.R (whose helpers build, collect,
++# s3_dates and s3_snapshot it uses).
++
++s4_at <- function(k, time = "16:00:00") as.POSIXct(paste(s3_dates(max(k))[k], time), tz = "UTC")
++s4_iso <- function(k) format(s4_at(k), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
++# Targets from a per-day table: list(day, named quantities); other days hold.
++s4_strategy <- function(plan) {
++  force(plan)
++  function(ctx, params) {
++    target <- ctx$hold()
++    step <- plan[[ctx$ts_utc]]
++    if (!is.null(step)) for (id in intersect(names(step), names(target))) target[[id]] <- step[[id]]
++    target
++  }
++}
++s4_plan <- function(...) {
++  steps <- list(...)
++  stats::setNames(lapply(steps, `[[`, 2L), vapply(steps, function(p) s4_iso(p[[1L]]), ""))
++}
++s4_bars <- function(closes) {
++  do.call(rbind, lapply(names(closes), function(id) {
++    k <- which(!is.na(closes[[id]]))
++    data.frame(ts_utc = s4_at(k), instrument_id = id, open = closes[[id]][k], high = closes[[id]][k] + 1,
++               low = closes[[id]][k] - 1, close = closes[[id]][k], volume = 1000, stringsAsFactors = FALSE)
++  }))
++}
++s4_sessions <- function(n_days) {
++  d <- s3_dates(n_days)
++  ledgr::ledgr_facts_sessions(data.frame(session_date = d, status = "open", session_open = "09:30:00",
++    session_close = "16:00:00", knowledge_time = as.POSIXct(d, tz = "UTC") - 1, stringsAsFactors = FALSE),
++    venue_id = "XNYS")
++}
++s4_snapshot <- function(name, closes, facts = NULL) build(name, function(db) {
++  ledgr::ledgr_snapshot_from_df(s4_bars(closes), instruments_df = data.frame(instrument_id = names(closes)),
++    facts = facts, price_basis = "split_adjusted", db_path = db, snapshot_id = name)
++})
++s4_closes <- function(n_days = 10L) list(A = 30 + seq_len(n_days) / 4, B = 45 - seq_len(n_days) / 5,
++                                         C = 12 + (seq_len(n_days) %% 3))
++s4_run <- function(name, closes, facts, exp, seed = 21L) {
++  db <- s4_snapshot(name, closes, facts)
++  collect(db, name, paste0("s4-", name), exp, seed = seed)
++}
++s4_exp <- function(strategy, positions = NULL, cost_basis = NULL, cash = 1e4, ...) function(snapshot) {
++  ledgr::ledgr_experiment(snapshot, strategy, opening = ledgr::ledgr_opening(cash = cash, positions = positions,
++    cost_basis = cost_basis), cost_model = ledgr::ledgr_cost_zero(), ...)
++}
++s4_dividend <- function(parent, entitle, effective, cash = 0.5, id = "div-1") {
++  data.frame(fact_id = id, subtype = "ordinary_cash_dividend", parent_instrument_id = parent,
++    entitlement_time = s4_at(entitle), effective_time = s4_at(effective), knowledge_time = s4_at(1L) - 3600,
++    complete = TRUE, provenance_tier = "snapshot_bound", gross_cash_per_parent_unit = cash,
++    gross_cash_validated = TRUE, recipient_identity_validated = FALSE, recipient_quantity_validated = FALSE,
++    source = "s4", stringsAsFactors = FALSE)
++}
++
++# The v0.2.0.1 availability witness (tests/testthat): membership sets,
++# halts and a delisting, defined in an environment whose parent is ledgr's
++# namespace so the helper's unqualified calls resolve.
++s4_v201 <- new.env(parent = asNamespace("ledgr"))
++sys.source(file.path(here, "..", "..", "..", "tests", "testthat", "helper-availability-v0-2-0-1-witnesses.R"),
++           envir = s4_v201)
++s4_v201_run <- function(name, ...) {
++  fx <- s4_v201$availability_v201_fold_fixture()
++  db <- build(name, function(db) ledgr::ledgr_snapshot_from_df(fx$bars, instruments_df = fx$instruments,
++    db_path = db, snapshot_id = name, facts = fx$facts, price_basis = "split_adjusted"))
++  collect(db, name, paste0("s4-", name), function(snapshot) ledgr::ledgr_experiment(snapshot,
++    s4_v201$availability_v201_fold_strategy, universe = ledgr::ledgr_universe_members("U"),
++    cost_model = ledgr::ledgr_cost_zero(), opening = ledgr::ledgr_opening(cash = 1e6), ...), seed = 7L)
++}
++
++loop_slice4 <- list(
++  # Opening positions with a cost basis, complete bars, no facts: held,
++  # added to, partly sold (FIFO through the opening lot), liquidated.
++  s4_opening = function() s4_run("s4_opening", s4_closes(), NULL,
++    s4_exp(s4_strategy(s4_plan(list(3L, c(A = 14)), list(5L, c(B = 2)), list(8L, c(A = 0, C = 3)))),
++           positions = c(A = 10, B = 5), cost_basis = c(A = 28, B = 47))),
++  # Opening positions under a declared calendar (availability active).
++  s4_opening_sessions = function() s4_run("s4_opening_sessions", s4_closes(), ledgr::ledgr_facts(s4_sessions(10L)),
++    s4_exp(s4_strategy(s4_plan(list(4L, c(A = 6, C = 2)))), positions = c(A = 10), cost_basis = c(A = 28))),
++  # A cash dividend on an opening holding, a buy between entitlement and pay date.
++  s4_dividend = function() s4_run("s4_dividend", s4_closes(),
++    ledgr::ledgr_facts(ledgr::ledgr_facts_equity_corporate_actions(s4_dividend("A", 3L, 6L))),
++    s4_exp(s4_strategy(s4_plan(list(4L, c(A = 15)))), positions = c(A = 10), cost_basis = c(A = 28))),
++  # A dividend on a position bought in the run (no opening positions).
++  s4_dividend_bought = function() s4_run("s4_dividend_bought", s4_closes(),
++    ledgr::ledgr_facts(ledgr::ledgr_facts_equity_corporate_actions(s4_dividend("B", 4L, 7L, cash = 1.25))),
++    s4_exp(s4_strategy(s4_plan(list(1L, c(B = 20)), list(8L, c(B = 0)))))),
++  # A dividend under a declared calendar.
++  s4_dividend_sessions = function() s4_run("s4_dividend_sessions", s4_closes(),
++    ledgr::ledgr_facts(s4_sessions(10L), ledgr::ledgr_facts_equity_corporate_actions(s4_dividend("A", 3L, 5L))),
++    s4_exp(s4_strategy(s4_plan(list(2L, c(A = 12)))), positions = c(A = 10), cost_basis = c(A = 28))),
++  # A cash acquisition of a held instrument, then its lifetime ends.
++  s4_cash_acquisition = function() {
++    closes <- s4_closes(); closes$A[6:10] <- NA
++    life <- ledgr::ledgr_facts_lifetime(data.frame(instrument_id = "A", effective_from = s4_at(6L),
++      knowledge_time = s4_at(6L) - 1, assertion = "known_inactive", terminal_event = "acquired", stringsAsFactors = FALSE))
++    act <- ledgr::ledgr_facts_equity_corporate_actions(data.frame(fact_id = "acq-1", subtype = "cash_acquisition",
++      parent_instrument_id = "A", entitlement_time = s4_at(6L), effective_time = s4_at(6L), knowledge_time = s4_at(1L),
++      complete = TRUE, provenance_tier = "snapshot_bound", gross_cash_per_parent_unit = 40, gross_cash_validated = TRUE,
++      recipient_identity_validated = FALSE, recipient_quantity_validated = FALSE, stringsAsFactors = FALSE))
++    s4_run("s4_cash_acquisition", closes, ledgr::ledgr_facts(s4_sessions(10L), life, act),
++      s4_exp(s4_strategy(s4_plan(list(2L, c(B = 10)))), positions = c(A = 10), cost_basis = c(A = 28),
++             valuation_policy = ledgr::ledgr_valuation_stale(1L)))
++  },
++  # A delisting of a held instrument with no corporate action: the default
++  # policy's modeled terminal outcome.
++  s4_terminal = function() {
++    closes <- s4_closes(); closes$C[7:10] <- NA
++    life <- ledgr::ledgr_facts_lifetime(data.frame(instrument_id = "C", effective_from = s4_at(7L),
++      knowledge_time = s4_at(7L) - 1, assertion = "known_inactive", terminal_event = "delisted", stringsAsFactors = FALSE))
++    s4_run("s4_terminal", closes, ledgr::ledgr_facts(s4_sessions(10L), life),
++      s4_exp(s4_strategy(s4_plan(list(2L, c(C = 25, A = 5)))), valuation_policy = ledgr::ledgr_valuation_stale(2L)))
++  },
++  # Trading status only: B halted on days 4-6, learned after the day-3
++  # decision, so its day-3 buy meets the halt at execution; held while halted.
++  s4_halt = function() {
++    status <- ledgr::ledgr_facts_trading_status(data.frame(fact_id = c("a", "b", "c", "b-halt"),
++      instrument_id = c("A", "B", "C", "B"), effective_from = c(rep(s4_at(1L, "00:00:00"), 3L), s4_at(4L, "00:00:00")),
++      effective_to = c(rep(as.POSIXct(NA, tz = "UTC"), 3L), s4_at(7L, "00:00:00")),
++      knowledge_time = c(rep(s4_at(1L, "00:00:00") - 3600, 3L), s4_at(3L) + 3600), status = c(rep("active", 3L), "halted"),
++      source = "s4", precedence = c(0L, 0L, 0L, 5L), stringsAsFactors = FALSE))
++    s4_run("s4_halt", s4_closes(), ledgr::ledgr_facts(s4_sessions(10L), status),
++      s4_exp(s4_strategy(s4_plan(list(2L, c(B = 5)), list(3L, c(B = 9)), list(8L, c(B = 0))))))
++  },
++  # The v0.2.0.1 witness: membership changes, halts, a delisting, with the
++  # witness's refusing policies and with the defaults.
++  s4_v201_refuse = function() s4_v201_run("s4_v201_refuse",
++    valuation_policy = ledgr::ledgr_valuation_stale(max_sessions = 2L, exhausted = "refuse"),
++    corporate_action_policy = ledgr::ledgr_corporate_actions(held_terminal_position = "refuse")),
++  s4_v201_default = function() s4_v201_run("s4_v201_default",
++    valuation_policy = ledgr::ledgr_valuation_stale(max_sessions = 2L))
++)

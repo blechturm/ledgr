@@ -1,0 +1,182 @@
+== s4_cash_acquisition
+   CASHFLOW DISPOSITION        FILL 
+          1           1           1 
+k
+               decision/recorded/decision_recorded 
+                                                25 
+reconciliation/reconciled/affordability_reconciled 
+                                                10 
+               decision/recorded/lifetime_inactive 
+                                                 5 
+                                 execution/filled/ 
+                                                 1 
+      sizing/unavailable/sizing_intent_unavailable 
+                                                 1 
+status: DONE NA 
+completion: DONE NA 
+== s4_dividend
+CASHFLOW     FILL 
+       2        1 
+k
+               decision/recorded/decision_recorded 
+                                                30 
+reconciliation/reconciled/affordability_reconciled 
+                                                10 
+                                 execution/filled/ 
+                                                 1 
+      sizing/unavailable/sizing_intent_unavailable 
+                                                 1 
+status: DONE NA 
+completion: DONE NA 
+== s4_dividend_bought
+CASHFLOW     FILL 
+       1        2 
+k
+               decision/recorded/decision_recorded 
+                                                30 
+reconciliation/reconciled/affordability_reconciled 
+                                                10 
+                                 execution/filled/ 
+                                                 2 
+      sizing/unavailable/sizing_intent_unavailable 
+                                                 1 
+status: DONE NA 
+completion: DONE NA 
+== s4_dividend_sessions
+CASHFLOW     FILL 
+       2        1 
+k
+               decision/recorded/decision_recorded 
+                                                30 
+reconciliation/reconciled/affordability_reconciled 
+                                                10 
+                                 execution/filled/ 
+                                                 1 
+      sizing/unavailable/sizing_intent_unavailable 
+                                                 1 
+status: DONE NA 
+completion: DONE NA 
+== s4_halt
+FILL 
+   2 
+k
+               decision/recorded/decision_recorded 
+                                                27 
+reconciliation/reconciled/affordability_reconciled 
+                                                10 
+                  decision/recorded/trading_halted 
+                                                 3 
+                                 execution/filled/ 
+                                                 2 
+                  execution/no_fill/trading_halted 
+                                                 1 
+      sizing/unavailable/sizing_intent_unavailable 
+                                                 1 
+status: DONE NA 
+completion: DONE NA 
+== s4_opening
+CASHFLOW     FILL 
+       2        4 
+k
+               decision/recorded/decision_recorded 
+                                                30 
+reconciliation/reconciled/affordability_reconciled 
+                                                10 
+                                 execution/filled/ 
+                                                 4 
+      sizing/unavailable/sizing_intent_unavailable 
+                                                 1 
+status: DONE NA 
+completion: DONE NA 
+== s4_opening_sessions
+CASHFLOW     FILL 
+       1        2 
+k
+               decision/recorded/decision_recorded 
+                                                30 
+reconciliation/reconciled/affordability_reconciled 
+                                                10 
+                                 execution/filled/ 
+                                                 2 
+      sizing/unavailable/sizing_intent_unavailable 
+                                                 1 
+status: DONE NA 
+completion: DONE NA 
+== s4_terminal
+DISPOSITION        FILL 
+          1           2 
+k
+               decision/recorded/decision_recorded 
+                                                26 
+reconciliation/reconciled/affordability_reconciled 
+                                                10 
+               decision/recorded/lifetime_inactive 
+                                                 4 
+                                 execution/filled/ 
+                                                 2 
+      sizing/unavailable/sizing_intent_unavailable 
+                                                 1 
+           valuation/disposed/terminal_disposition 
+                                                 1 
+status: DONE NA 
+completion: DONE NA 
+== s4_v201_default
+DISPOSITION        FILL 
+          1          43 
+k
+                 decision/recorded/decision_recorded 
+                                                  51 
+                                   execution/filled/ 
+                                                  42 
+  reconciliation/reconciled/affordability_reconciled 
+                                                  12 
+                    decision/recorded/trading_halted 
+                                                   4 
+          execution/no_fill/final_pulse_no_execution 
+                                                   4 
+                 decision/recorded/lifetime_inactive 
+                                                   3 
+                    execution/no_fill/trading_halted 
+                                                   2 
+execution/filled/membership_changed_before_execution 
+                                                   1 
+             execution/no_fill/execution_bar_missing 
+                                                   1 
+                 execution/no_fill/lifetime_inactive 
+                                                   1 
+                 risk/passed/stale_mark_pass_through 
+                                                   1 
+        sizing/unavailable/sizing_intent_unavailable 
+                                                   1 
+             valuation/disposed/terminal_disposition 
+                                                   1 
+status: DONE NA 
+completion: DONE NA 
+== s4_v201_refuse
+FILL 
+  35 
+k
+                 decision/recorded/decision_recorded 
+                                                  39 
+                                   execution/filled/ 
+                                                  34 
+  reconciliation/reconciled/affordability_reconciled 
+                                                   9 
+                    decision/recorded/trading_halted 
+                                                   4 
+                    execution/no_fill/trading_halted 
+                                                   2 
+execution/filled/membership_changed_before_execution 
+                                                   1 
+             execution/no_fill/execution_bar_missing 
+                                                   1 
+                 execution/no_fill/lifetime_inactive 
+                                                   1 
+                 risk/passed/stale_mark_pass_through 
+                                                   1 
+        sizing/unavailable/sizing_intent_unavailable 
+                                                   1 
+   valuation/stopped/terminal_settlement_unsupported 
+                                                   1 
+status: INCOMPLETE NA 
+completion: INCOMPLETE terminal_settlement_unsupported 
