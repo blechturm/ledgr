@@ -1,0 +1,8 @@
+check.R --pin=<pin> --candidate=<reordered_causality>: exit 1
+SIGNAL route 20  (candidate differs from the corpus; first: compute | hostile_carry2|data_start|close_with_lookahead)
+SIGNAL callback 102  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_volume)
+SIGNAL causality 296  (candidate differs from pin; first: compute | hostile_carry2|data_start|close)
+SIGNAL refusal 34  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_lookahead)
+SIGNAL route 20  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_lookahead)
+cases 548 (refusing on the pin 57), observations pin 6039 candidate 6039
+CHECK FAIL: 5 signal(s)

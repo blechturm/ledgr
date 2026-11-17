@@ -1,0 +1,2 @@
+check.R --pin=<pin> --candidate=<missing_arm>: exit 2
+REFUSED: missing arm: no observations.csv in  C:/Users/maxth/ledgr-wt/ws41-scratch/oracle/final_faults/no_such_arm 

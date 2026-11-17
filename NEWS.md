@@ -1,5 +1,9 @@
 # ledgr (development version)
 
+- The feature engine version changes: it now binds every helper that prepares
+  feature values, evidence or the prepared representation. Objects from
+  `ledgr_precompute_features()` made before this change must be regenerated;
+  `ledgr_sweep()` refuses them with `ledgr_precomputed_engine_mismatch`.
 - `ledgr_target_rebalance()` and `ledgr_target_adjust()` are faster: about
   twice as fast at 10 instruments and about 1.7 times at 500 to 1,166, per
   call on a pulse context. Their instrument-ID checks no longer go through base R's
