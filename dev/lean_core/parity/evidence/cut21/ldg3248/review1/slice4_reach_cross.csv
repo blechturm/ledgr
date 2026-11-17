@@ -1,0 +1,76 @@
+"predicate","own","fails_elsewhere","holds_elsewhere","holds_on","ok"
+"s4_opening",TRUE,70,4,"s4_carried s4_carried_lots s4_prefix_opening_run s4_bound_dispose",TRUE
+"s4_opening_sessions",TRUE,68,6,"s4_dividend s4_dividend_sessions s4_dividend_skip s4_prefix_dividend_run s4_cash_acquisition s4_acq_fills",TRUE
+"s4_carried",TRUE,74,0,"",TRUE
+"s4_carried_lots",TRUE,74,0,"",TRUE
+"s4_basis_unknown",TRUE,74,0,"",TRUE
+"s4_basis_known",TRUE,70,4,"s4_prefix_opening_sweep s4_prefix_dividend_sweep s4_prefix_dispose_sweep s4_prefix_terminal_sweep",TRUE
+"s4_prefix_opening_sweep",TRUE,64,10,"s4_prefix_dividend_sweep s4_prefix_dividend_stop s4_capacity_after_fill s4_prefix_dispose_sweep s4_prefix_terminal_sweep s4_prefix_dispose_stop s4_life_capacity_p1 s4_life_capacity_p1_ok s4_life_capacity_p5 s4_life_capacity_p5_ok",TRUE
+"s4_prefix_opening_run",TRUE,74,0,"",TRUE
+"s4_dividend",TRUE,72,2,"s4_dividend_unheld s4_prefix_dividend_run",TRUE
+"s4_dividend_bought",TRUE,74,0,"",TRUE
+"s4_dividend_sessions",TRUE,74,0,"",TRUE
+"s4_dividend_skip",TRUE,74,0,"",TRUE
+"s4_dividend_next_open",TRUE,74,0,"",TRUE
+"s4_dividend_late",TRUE,74,0,"",TRUE
+"s4_dividend_unheld",TRUE,66,8,"s4_carried s4_dividend s4_dividend_skip s4_dividend_next_open s4_dividend_late s4_prefix_dividend_run s4_p1_then_stop s4_p1_complete",TRUE
+"s4_cash_refused",TRUE,74,0,"",TRUE
+"s4_quantity_refused",TRUE,74,0,"",TRUE
+"s4_cash_quantity_refused",TRUE,74,0,"",TRUE
+"s4_quantity_reported",TRUE,74,0,"",TRUE
+"s4_clock_missing",TRUE,74,0,"",TRUE
+"s4_entitlement_missing",TRUE,74,0,"",TRUE
+"s4_dividend_mixed",TRUE,74,0,"",TRUE
+"s4_cash_overflow",TRUE,74,0,"",TRUE
+"s4_prefix_dividend_sweep",TRUE,74,0,"",TRUE
+"s4_prefix_dividend_bought",TRUE,74,0,"",TRUE
+"s4_prefix_dividend_run",TRUE,74,0,"",TRUE
+"s4_prefix_dividend_stop",TRUE,69,5,"s4_prefix_dividend_bought s4_prefix_dispose_sweep s4_prefix_terminal_sweep s4_prefix_dispose_stop s4_life_capacity_p1_ok",TRUE
+"s4_capacity_block",TRUE,65,9,"s4_capacity_prefix s4_capacity_after_fill s4_capacity_fill s4_capacity_after_fill_run s4_capacity_fill_run s4_life_capacity_p1 s4_life_capacity_p5 s4_life_capacity_p1_run s4_life_capacity_p5_run",TRUE
+"s4_capacity_prefix",TRUE,69,5,"s4_capacity_block s4_capacity_after_fill_run s4_capacity_fill_run s4_life_capacity_p1_run s4_life_capacity_p5_run",TRUE
+"s4_capacity_after_fill",TRUE,74,0,"",TRUE
+"s4_capacity_fill",TRUE,74,0,"",TRUE
+"s4_capacity_after_fill_run",TRUE,65,9,"s4_capacity_block s4_capacity_prefix s4_capacity_after_fill s4_capacity_fill s4_capacity_fill_run s4_life_capacity_p1 s4_life_capacity_p5 s4_life_capacity_p1_run s4_life_capacity_p5_run",TRUE
+"s4_capacity_fill_run",TRUE,65,9,"s4_capacity_block s4_capacity_prefix s4_capacity_after_fill s4_capacity_fill s4_capacity_after_fill_run s4_life_capacity_p1 s4_life_capacity_p5 s4_life_capacity_p1_run s4_life_capacity_p5_run",TRUE
+"s4_halt",TRUE,74,0,"",TRUE
+"s4_v201_default",TRUE,74,0,"",TRUE
+"s4_membership",TRUE,74,0,"",TRUE
+"s4_nonmember_increase",TRUE,74,0,"",TRUE
+"s4_restricted_target",TRUE,74,0,"",TRUE
+"s4_restrictions",TRUE,74,0,"",TRUE
+"s4_state_context",TRUE,74,0,"",TRUE
+"s4_no_members_held",TRUE,74,0,"",TRUE
+"s4_subset",TRUE,74,0,"",TRUE
+"s4_stale_facts",TRUE,72,2,"s4_v201_default s4_v201_refuse",TRUE
+"s4_facts_sweep",TRUE,74,0,"",TRUE
+"s4_cash_acquisition",TRUE,68,6,"s4_v201_default s4_terminal s4_acq_fills s4_frozen_writeoff s4_frozen_lastmark s4_reread_nonmember",TRUE
+"s4_terminal",TRUE,74,0,"",TRUE
+"s4_v201_refuse",TRUE,74,0,"",TRUE
+"s4_acq_held",TRUE,74,0,"",TRUE
+"s4_acq_unheld",TRUE,74,0,"",TRUE
+"s4_acq_fills",TRUE,74,0,"",TRUE
+"s4_terminal_choices",TRUE,74,0,"",TRUE
+"s4_terminal_refuse",TRUE,73,1,"s4_blocked_scheduled",TRUE
+"s4_terminal_unlabeled",TRUE,74,0,"",TRUE
+"s4_terminal_no_mark",TRUE,74,0,"",TRUE
+"s4_frozen_writeoff",TRUE,74,0,"",TRUE
+"s4_frozen_lastmark",TRUE,74,0,"",TRUE
+"s4_frozen_refuse",TRUE,74,0,"",TRUE
+"s4_blocked_scheduled",TRUE,73,1,"s4_terminal_refuse",TRUE
+"s4_blocked_group",TRUE,74,0,"",TRUE
+"s4_p1_then_stop",TRUE,74,0,"",TRUE
+"s4_p1_complete",TRUE,74,0,"",TRUE
+"s4_reread_nonmember",TRUE,74,0,"",TRUE
+"s4_bound_dispose",TRUE,74,0,"",TRUE
+"s4_prefix_dispose_sweep",TRUE,73,1,"s4_prefix_terminal_sweep",TRUE
+"s4_prefix_terminal_sweep",TRUE,73,1,"s4_prefix_dispose_sweep",TRUE
+"s4_prefix_dispose_stop",TRUE,72,2,"s4_prefix_dividend_stop s4_life_capacity_p1_ok",TRUE
+"s4_moves_growth",TRUE,74,0,"",TRUE
+"s4_life_capacity_p1",TRUE,74,0,"",TRUE
+"s4_life_capacity_p1_ok",TRUE,74,0,"",TRUE
+"s4_life_capacity_p5",TRUE,74,0,"",TRUE
+"s4_life_capacity_p5_ok",TRUE,74,0,"",TRUE
+"s4_life_capacity_p1_run",TRUE,71,3,"s4_life_capacity_p1 s4_life_capacity_p5 s4_life_capacity_p5_run",TRUE
+"s4_life_capacity_p1_ok_run",TRUE,73,1,"s4_life_capacity_p1_ok",TRUE
+"s4_life_capacity_p5_run",TRUE,71,3,"s4_life_capacity_p1 s4_life_capacity_p5 s4_life_capacity_p1_run",TRUE
+"s4_life_capacity_p5_ok_run",TRUE,73,1,"s4_life_capacity_p5_ok",TRUE

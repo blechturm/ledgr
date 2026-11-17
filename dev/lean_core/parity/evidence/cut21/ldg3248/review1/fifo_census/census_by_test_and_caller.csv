@@ -1,0 +1,676 @@
+"file_test_caller","census_a","census_b"
+"test-acceptance-v0.1.0.R :: AT3: deterministic replay produces identical outputs (excluding run_id/event_id) :: ledgr_fold_fill_candidate",2,2
+"test-acceptance-v0.1.0.R :: AT5/AT6/AT7: ledger-derived state satisfies accounting identities and monotone time :: ledgr_fold_fill_candidate",1,1
+"test-acceptance-v0.1.0.R :: AT5/AT6/AT7: ledger-derived state satisfies accounting identities and monotone time :: ledgr_replay_accounting_events",1,1
+"test-acceptance-v0.1.0.R :: AT8: restart replaces attempt output and matches a clean run :: ledgr_fold_fill_candidate",7,7
+"test-accounting-consistency.R :: [LTB-0004] reversal fee projection conserves source economics in both directions :: ledgr_replay_accounting_events",3,3
+"test-accounting-consistency.R :: equity curve state is reconstructed from ledger fills :: ledgr_fold_fill_candidate",4,4
+"test-accounting-consistency.R :: equity curve state is reconstructed from ledger fills :: ledgr_replay_accounting_events",12,12
+"test-accounting-core-consolidation.R :: [LTB-0019] flat lot carrier preserves independent FIFO arithmetic :: <direct>",1035,1035
+"test-accounting-core-consolidation.R :: [LTB-0021] chunked reader is identical across its fetch boundary :: ledgr_replay_accounting_events",100004,100004
+"test-accounting-core-consolidation.R :: [LTB-0022] depth scaling detector rejects a write-path rescan :: <direct>",38650,38650
+"test-accounting-reader-convergence.R :: [LTB-0551] accounting readers converge on one typed replay :: ledgr_replay_accounting_events",200,200
+"test-active-alias-runtime.R :: ledgr_run resolves active aliases from feature_params :: ledgr_fold_fill_candidate",1,1
+"test-active-alias-runtime.R :: parameterized active-alias bundle sweeps resolve concrete outputs :: ledgr_fold_fill_candidate",2,2
+"test-active-alias-runtime.R :: promotion replays active alias feature params :: ledgr_fold_fill_candidate",2,2
+"test-active-alias-runtime.R :: sweeps keep feature params separate from strategy params :: ledgr_fold_fill_candidate",4,4
+"test-availability-economics.R :: a blocked exit executes only after a new zero target :: ledgr_fold_fill_candidate",1,1
+"test-availability-economics.R :: a blocked exit executes only after a new zero target :: ledgr_lot_book_from_opening",1,1
+"test-availability-economics.R :: a rejected sale never funds an unrelated purchase :: ledgr_lot_book_from_opening",1,1
+"test-availability-economics.R :: an unlabeled known-inactive holding stops before it can freeze :: ledgr_lot_book_from_opening",1,1
+"test-availability-economics.R :: current-mark-only valuation stops on the first missing session :: ledgr_lot_book_from_opening",1,1
+"test-availability-economics.R :: execution-time membership changes are diagnostic only :: ledgr_fold_fill_candidate",1,1
+"test-availability-economics.R :: execution facts resolve at the declared next opening :: ledgr_fold_fill_candidate",3,3
+"test-availability-economics.R :: prepared valuation and linear event growth coexist in one eventful fold :: ledgr_fold_fill_candidate",3,3
+"test-availability-economics.R :: stale valuation marks feed max-weight without pricing execution :: ledgr_lot_book_from_opening",1,1
+"test-availability-economics.R :: stale valuation marks feed max-weight without pricing execution :: ledgr_replay_accounting_events",1,1
+"test-availability-economics.R :: terminal assertions stop without fabricated settlement :: ledgr_lot_book_from_opening",1,1
+"test-availability-economics.R :: unexpected fold errors roll back economics and retain error diagnostics :: ledgr_fold_fill_candidate",1,1
+"test-availability-economics.R :: valuation exhaustion commits an incomplete direct-run prefix :: ledgr_fold_fill_candidate",1,1
+"test-availability-economics.R :: venue sessions age marks across a whole-feed outage :: ledgr_lot_book_from_opening",1,1
+"test-availability-execution-timing.R :: fill results expose derived recording-pulse alignment :: ledgr_fold_fill_candidate",1,1
+"test-availability-execution-timing.R :: fill results expose derived recording-pulse alignment :: ledgr_replay_accounting_events",5,5
+"test-availability-execution-timing.R :: timing version enters active identity and stays absent from dense config :: ledgr_fold_fill_candidate",2,2
+"test-availability-execution-timing.R :: timing version enters active identity and stays absent from dense config :: ledgr_replay_accounting_events",4,4
+"test-availability-features.R :: [LTB-0073] strict feature matrices survive every execution route :: ledgr_lot_book_from_opening",10,10
+"test-availability-features.R :: [LTB-0074] public TTR SMA shares the strict-window contract :: ledgr_lot_book_from_opening",10,10
+"test-availability-fold-witnesses.R :: direct persisted rows match the reviewed baseline :: ledgr_fold_fill_candidate",9,9
+"test-availability-fold-witnesses.R :: ported failures roll back and nonterminal attempts restart fresh :: ledgr_fold_fill_candidate",22,22
+"test-availability-fold-witnesses.R :: ported fold witnesses preserve every persisted surface :: ledgr_fold_fill_candidate",81,81
+"test-availability-parity.R :: [LTB-0024] walk-forward hydrates heterogeneous gaps on the session calendar :: ledgr_fold_fill_candidate",5,5
+"test-availability-parity.R :: [LTB-0024] walk-forward hydrates heterogeneous gaps on the session calendar :: ledgr_lot_book_from_opening",7,7
+"test-availability-parity.R :: [LTB-0024] walk-forward hydrates heterogeneous gaps on the session calendar :: ledgr_replay_accounting_events",12,12
+"test-availability-parity.R :: [LTB-0063] explanation history is durable read-only evidence :: ledgr_fold_fill_candidate",1,1
+"test-availability-parity.R :: [LTB-0063] explanation history is durable read-only evidence :: ledgr_replay_accounting_events",13,13
+"test-availability-parity.R :: [LTB-0064] incomplete completion evidence matches persisted record :: ledgr_fold_fill_candidate",1,1
+"test-availability-parity.R :: [LTB-0064] incomplete completion evidence matches persisted record :: ledgr_replay_accounting_events",7,7
+"test-availability-parity.R :: [LTB-0069] walk-forward preserves incomplete status when prefix metrics fail :: ledgr_fold_fill_candidate",1,1
+"test-availability-parity.R :: [LTB-0552] incomplete sweep metrics stay typed missing :: ledgr_fold_fill_candidate",1,1
+"test-availability-parity.R :: achieved incomplete shortcuts require their finalized prefix :: ledgr_fold_fill_candidate",1,1
+"test-availability-parity.R :: completion affected IDs come only from stopped diagnostics :: ledgr_fold_fill_candidate",1,1
+"test-availability-parity.R :: completion affected IDs come only from stopped diagnostics :: ledgr_replay_accounting_events",2,2
+"test-availability-parity.R :: malformed terminal completion evidence fails closed :: ledgr_fold_fill_candidate",1,1
+"test-availability-parity.R :: parallel availability sweeps return the same compact terminal evidence :: ledgr_fold_fill_candidate",3,3
+"test-availability-parity.R :: terminal completion recovers projections without strategy replay :: ledgr_fold_fill_candidate",2,2
+"test-availability-parity.R :: terminal completion recovers projections without strategy replay :: ledgr_replay_accounting_events",3,3
+"test-availability-parity.R :: walk-forward stops a carry-state chain on incomplete test evidence :: ledgr_lot_book_from_opening",2,2
+"test-availability-production-retirement.R :: production provider consumers bypass public inspection helpers :: ledgr_fold_fill_candidate",9,9
+"test-availability-provider-production.R :: an INCOMPLETE run builds one prepared provider plan and its reopen builds none :: ledgr_fold_fill_candidate",1,1
+"test-availability-provider-production.R :: provider results and reopen surfaces preserve production evidence :: ledgr_disposition_post",2,2
+"test-availability-provider-production.R :: provider results and reopen surfaces preserve production evidence :: ledgr_fold_fill_candidate",27,27
+"test-availability-provider-production.R :: provider results and reopen surfaces preserve production evidence :: ledgr_replay_accounting_events",96,96
+"test-availability-workflow.R :: a target on the last decision fills at the final session open :: ledgr_fold_fill_candidate",1,1
+"test-availability-workflow.R :: a target on the last decision fills at the final session open :: ledgr_replay_accounting_events",1,1
+"test-backtest-audit-log-equivalence.R :: audit_log matches db_live results :: ledgr_fold_fill_candidate",6,6
+"test-backtest-audit-log-equivalence.R :: audit_log matches db_live results :: ledgr_replay_accounting_events",6,6
+"test-backtest-lifecycle.R :: [LTB-0012] closed durable handles remain read-only locators across sessions :: ledgr_fold_fill_candidate",1,1
+"test-backtest-lifecycle.R :: [LTB-0012] closed durable handles remain read-only locators across sessions :: ledgr_replay_accounting_events",4,4
+"test-backtest-lifecycle.R :: durable backtest safety net checkpoints and messages :: ledgr_fold_fill_candidate",1,1
+"test-backtest-lifecycle.R :: durable backtest safety net checkpoints and messages :: ledgr_replay_accounting_events",1,1
+"test-backtest-lifecycle.R :: ordinary result access does not keep durable run files locked :: ledgr_fold_fill_candidate",2,2
+"test-backtest-lifecycle.R :: ordinary result access does not keep durable run files locked :: ledgr_replay_accounting_events",2,2
+"test-backtest-s3.R :: ledgr_backtest S3 methods return tidy outputs :: ledgr_fold_fill_candidate",1,1
+"test-backtest-s3.R :: ledgr_backtest S3 methods return tidy outputs :: ledgr_replay_accounting_events",4,4
+"test-carried-pending-postings.R :: [LTB-0471] a walk-forward carries two pending dividend postings across a fold boundary :: ledgr_lot_book_from_opening",5,5
+"test-carried-pending-postings.R :: [LTB-0471] a walk-forward carries two pending dividend postings across a fold boundary :: ledgr_replay_accounting_events",8,8
+"test-connection-lifecycle.R :: [LTB-0241] composite and interactive calls open the store once per read or commit and leave none open :: ledgr_fold_fill_candidate",4,4
+"test-connection-lifecycle.R :: [LTB-0241] composite and interactive calls open the store once per read or commit and leave none open :: ledgr_lot_book_from_opening",1,1
+"test-connection-lifecycle.R :: [LTB-0241] composite and interactive calls open the store once per read or commit and leave none open :: ledgr_replay_accounting_events",3,3
+"test-corporate-action-axis-closure.R :: [LTB-0056] physical recipient closure does not leak before settlement :: ledgr_disposition_post",2,2
+"test-corporate-action-axis-closure.R :: [LTB-0056] physical recipient closure does not leak before settlement :: ledgr_fold_fill_candidate",2,2
+"test-corporate-action-axis-closure.R :: [LTB-0056] physical recipient closure does not leak before settlement :: ledgr_lot_book_from_opening",2,2
+"test-corporate-action-axis-closure.R :: [LTB-0056] physical recipient closure does not leak before settlement :: ledgr_replay_accounting_events",15,15
+"test-corporate-action-cash.R :: [LTB-0035] cash plan fixes entitlement and posts before use :: ledgr_replay_accounting_events",3,3
+"test-corporate-action-cash.R :: [LTB-0036] public run posts one gross dividend and reports it :: ledgr_fold_fill_candidate",4,4
+"test-corporate-action-cash.R :: [LTB-0036] public run posts one gross dividend and reports it :: ledgr_lot_book_from_opening",8,8
+"test-corporate-action-cash.R :: [LTB-0036] public run posts one gross dividend and reports it :: ledgr_replay_accounting_events",13,13
+"test-corporate-action-cash.R :: [LTB-0217] a resumed plan binds past entitlements like the fresh fold :: ledgr_replay_accounting_events",31,31
+"test-corporate-action-composition.R :: [LTB-0052] acquisition composition reports four reconciled quantities :: ledgr_disposition_post",3,3
+"test-corporate-action-composition.R :: [LTB-0052] acquisition composition reports four reconciled quantities :: ledgr_lot_book_from_opening",4,4
+"test-corporate-action-composition.R :: [LTB-0052] acquisition composition reports four reconciled quantities :: ledgr_replay_accounting_events",7,7
+"test-corporate-action-composition.R :: [LTB-0053] quantity refusal and transaction identity fail closed :: ledgr_lot_book_from_opening",2,2
+"test-corporate-action-composition.R :: [LTB-0053] quantity refusal and transaction identity fail closed :: ledgr_replay_accounting_events",1,1
+"test-corporate-action-composition.R :: [LTB-0068] composition evidence is filtered and prepared once :: ledgr_disposition_post",1,1
+"test-corporate-action-composition.R :: [LTB-0068] composition evidence is filtered and prepared once :: ledgr_lot_book_from_opening",1,1
+"test-corporate-action-composition.R :: [LTB-0068] composition evidence is filtered and prepared once :: ledgr_replay_accounting_events",2,2
+"test-corporate-action-composition.R :: [LTB-0220] composition binds each fact at the fold's boundary :: ledgr_disposition_post",1,1
+"test-corporate-action-composition.R :: [LTB-0220] composition binds each fact at the fold's boundary :: ledgr_lot_book_from_opening",3,3
+"test-corporate-action-composition.R :: [LTB-0220] composition binds each fact at the fold's boundary :: ledgr_replay_accounting_events",4,4
+"test-corporate-action-disposition.R :: [LTB-0050] DISPOSITION is prepared, constrained and replays through FIFO :: ledgr_disposition_post",1,1
+"test-corporate-action-disposition.R :: [LTB-0050] DISPOSITION is prepared, constrained and replays through FIFO :: ledgr_lot_book_from_opening",2,2
+"test-corporate-action-disposition.R :: [LTB-0050] DISPOSITION is prepared, constrained and replays through FIFO :: ledgr_replay_accounting_events",1,1
+"test-corporate-action-disposition.R :: [LTB-0051] terminal mark policy disposes or refuses without mutation :: ledgr_disposition_post",3,3
+"test-corporate-action-disposition.R :: [LTB-0051] terminal mark policy disposes or refuses without mutation :: ledgr_lot_book_from_opening",5,5
+"test-corporate-action-disposition.R :: [LTB-0051] terminal mark policy disposes or refuses without mutation :: ledgr_replay_accounting_events",2,2
+"test-corporate-action-recovery.R :: [LTB-0054] durable resume after disposition is exactly once :: ledgr_disposition_post",3,3
+"test-corporate-action-recovery.R :: [LTB-0054] durable resume after disposition is exactly once :: ledgr_lot_book_from_opening",3,3
+"test-corporate-action-recovery.R :: [LTB-0054] durable resume after disposition is exactly once :: ledgr_replay_accounting_events",4,4
+"test-corporate-action-recovery.R :: [LTB-0055] memory failure discards disposition artifacts only for that candidate :: ledgr_disposition_post",2,2
+"test-corporate-action-recovery.R :: [LTB-0055] memory failure discards disposition artifacts only for that candidate :: ledgr_lot_book_from_opening",2,2
+"test-corporate-action-recovery.R :: [LTB-0055] memory failure discards disposition artifacts only for that candidate :: ledgr_replay_accounting_events",2,2
+"test-corporate-action-refused-facts.R :: [LTB-0451] a held refused dividend is counted and reads unsupported (LFB-014) :: ledgr_fold_fill_candidate",2,2
+"test-corporate-action-refused-facts.R :: [LTB-0451] a held refused dividend is counted and reads unsupported (LFB-014) :: ledgr_replay_accounting_events",8,8
+"test-corporate-action-refused-facts.R :: [LTB-0452] the strict preset refuses a held refused fact in each mode's existing form :: ledgr_fold_fill_candidate",2,2
+"test-corporate-action-refused-facts.R :: [LTB-0452] the strict preset refuses a held refused fact in each mode's existing form :: ledgr_replay_accounting_events",4,4
+"test-corporate-action-refused-facts.R :: [LTB-0473] the report_only choice count is the held facts on the unsupported route (LDG-3091) :: ledgr_fold_fill_candidate",7,7
+"test-corporate-action-refused-facts.R :: [LTB-0473] the report_only choice count is the held facts on the unsupported route (LDG-3091) :: ledgr_replay_accounting_events",19,19
+"test-cost-model.R :: [LTB-0005] cost model applies half-spread price transforms and explicit fees :: ledgr_fold_fill_candidate",1,1
+"test-cost-model.R :: [LTB-0005] cost model applies half-spread price transforms and explicit fees :: ledgr_replay_accounting_events",1,1
+"test-cost-model.R :: direct run, sweep candidate, and promotion preserve cost identity :: ledgr_fold_fill_candidate",3,3
+"test-cross-asset-corrections.R :: [LTB-0497] fractional lot dust closes one canonical position :: ledgr_disposition_post",1,1
+"test-cross-asset-corrections.R :: [LTB-0497] fractional lot dust closes one canonical position :: ledgr_fold_fill_candidate",10,10
+"test-cross-asset-corrections.R :: [LTB-0497] fractional lot dust closes one canonical position :: ledgr_lot_book_from_opening",6,6
+"test-cross-asset-corrections.R :: [LTB-0497] fractional lot dust closes one canonical position :: ledgr_replay_accounting_events",20,20
+"test-cross-asset-corrections.R :: [LTB-0498] R and compiled FIFO share the dust boundary :: <direct>",13,13
+"test-cross-asset-corrections.R :: [LTB-0498] R and compiled FIFO share the dust boundary :: ledgr_fold_fill_candidate",9,9
+"test-cross-asset-corrections.R :: [LTB-0498] R and compiled FIFO share the dust boundary :: ledgr_lot_book_from_opening",4,4
+"test-cross-asset-corrections.R :: [LTB-0499] omitted metric calendars remain visibly defaulted :: ledgr_lot_book_from_opening",5,5
+"test-cross-asset-corrections.R :: [LTB-0499] omitted metric calendars remain visibly defaulted :: ledgr_replay_accounting_events",16,16
+"test-cross-asset-corrections.R :: [LTB-0500] result headlines are asset neutral without API drift :: ledgr_lot_book_from_opening",1,1
+"test-cross-asset-corrections.R :: [LTB-0500] result headlines are asset neutral without API drift :: ledgr_replay_accounting_events",6,6
+"test-demo-strategies.R :: demo SMA crossover strategy runs and keeps qty zero baseline flat :: ledgr_fold_fill_candidate",1,1
+"test-demo-strategies.R :: demo SMA crossover strategy runs and keeps qty zero baseline flat :: ledgr_replay_accounting_events",1,1
+"test-demo-strategies.R :: demo SMA crossover strategy sweeps feature and strategy grids :: ledgr_fold_fill_candidate",1,1
+"test-derived-state.R :: derived state reconstructs positions, cash, and equity_curve deterministically :: ledgr_replay_accounting_events",4,4
+"test-diagnostic-decoder.R :: [LTB-0554] logical diagnostics own every production read :: ledgr_fold_fill_candidate",2,2
+"test-diagnostic-decoder.R :: [LTB-0558] in-pulse implicit sequence order is exact :: ledgr_fold_fill_candidate",2,2
+"test-diagnostic-decoder.R :: [LTB-0560] dynamic context order has an independent anchor :: ledgr_lot_book_from_opening",1,1
+"test-execution-spec.R :: [LTB-0006] compiled spot FIFO path matches canonical R fold outputs :: <direct>",9,9
+"test-execution-spec.R :: [LTB-0006] compiled spot FIFO path matches canonical R fold outputs :: ledgr_fold_fill_candidate",2,2
+"test-execution-spec.R :: [LTB-0006] compiled spot FIFO path matches canonical R fold outputs :: ledgr_lot_book_from_opening",2,2
+"test-execution-spec.R :: [LTB-0006] compiled spot FIFO path matches canonical R fold outputs :: ledgr_replay_accounting_events",12,12
+"test-execution-spec.R :: [LTB-0013] compiled spot FIFO batches preserve multi-instrument pulse parity :: ledgr_fold_fill_candidate",2,2
+"test-execution-spec.R :: [LTB-0013] compiled spot FIFO batches preserve multi-instrument pulse parity :: ledgr_lot_book_from_opening",2,2
+"test-execution-spec.R :: [LTB-0013] compiled spot FIFO batches preserve multi-instrument pulse parity :: ledgr_replay_accounting_events",6,6
+"test-execution-spec.R :: [LTB-0026] accounting refuses every unhandled pulse event kind :: ledgr_lot_book_from_opening",6,6
+"test-execution-spec.R :: [LTB-0026] accounting refuses every unhandled pulse event kind :: ledgr_replay_accounting_events",1,1
+"test-execution-spec.R :: fold primitive positions preserve public named ctx snapshot :: ledgr_fold_fill_candidate",1,1
+"test-execution-spec.R :: fold target deltas align shuffled targets by instrument id :: ledgr_fold_fill_candidate",1,1
+"test-experiment-run.R :: ledgr_run accepts execution seeds and stores them in config identity :: ledgr_fold_fill_candidate",2,2
+"test-experiment-run.R :: ledgr_run accepts execution seeds and stores them in config identity :: ledgr_replay_accounting_events",2,2
+"test-experiment-run.R :: ledgr_run executes an experiment with fixed features :: ledgr_fold_fill_candidate",1,1
+"test-experiment-run.R :: ledgr_run executes an experiment with fixed features :: ledgr_replay_accounting_events",1,1
+"test-experiment-run.R :: ledgr_run matches equivalent ledgr_backtest output :: ledgr_fold_fill_candidate",2,2
+"test-experiment-run.R :: ledgr_run records opening positions as ledger events :: ledgr_lot_book_from_opening",1,1
+"test-experiment-run.R :: ledgr_run records opening positions as ledger events :: ledgr_replay_accounting_events",1,1
+"test-experiment-run.R :: ledgr_run with seed NULL uses ambient strategy RNG without resetting it :: ledgr_fold_fill_candidate",1,1
+"test-experiment-run.R :: ledgr_run with seed NULL uses ambient strategy RNG without resetting it :: ledgr_replay_accounting_events",1,1
+"test-experiment-run.R :: opening position cost basis seeds FIFO accounting :: ledgr_fold_fill_candidate",1,1
+"test-experiment-run.R :: opening position cost basis seeds FIFO accounting :: ledgr_lot_book_from_opening",1,1
+"test-experiment-run.R :: opening position cost basis seeds FIFO accounting :: ledgr_replay_accounting_events",12,12
+"test-experiment-run.R :: pulse_seed strategies reproduce across continuous and resumed runs :: ledgr_fold_fill_candidate",2,2
+"test-experiment-run.R :: seeded ambient RNG strategies restart from pulse one :: ledgr_fold_fill_candidate",9,9
+"test-fact-pipeline-followups.R :: [LTB-0356] one known-when-effective rule follows decisions 11 and 27 :: ledgr_lot_book_from_opening",1,1
+"test-fact-pipeline-followups.R :: [LTB-0357] an effective-only disposition or quantity effect refuses (decision 28) :: ledgr_lot_book_from_opening",12,12
+"test-fact-pipeline-followups.R :: [LTB-0357] an effective-only disposition or quantity effect refuses (decision 28) :: ledgr_replay_accounting_events",10,10
+"test-fact-pipeline-followups.R :: [LTB-0359] an effective-only cash dividend refuses in every mode (decisions 33, 35) :: ledgr_lot_book_from_opening",6,6
+"test-fact-pipeline-followups.R :: [LTB-0359] an effective-only cash dividend refuses in every mode (decisions 33, 35) :: ledgr_replay_accounting_events",5,5
+"test-feature-accessor-scaling.R :: [LTB-0140] prepared feature state stays inside one sweep candidate :: ledgr_fold_fill_candidate",2,2
+"test-feature-accessor-scaling.R :: [LTB-0189] availability folds prepare hashed feature lookups once :: ledgr_fold_fill_candidate",4,4
+"test-feature-inspection.R :: feature inspection views match across execution modes :: ledgr_fold_fill_candidate",2,2
+"test-feature-map-read-surface.R :: [LTB-0184] public execution and pulse inspection agree on aliases :: ledgr_fold_fill_candidate",3,3
+"test-feature-map-read-surface.R :: [LTB-0184] public execution and pulse inspection agree on aliases :: ledgr_replay_accounting_events",2,2
+"test-feature-retention-removal.R :: changed captures recompute values and repeated captures stay exact :: ledgr_fold_fill_candidate",2,2
+"test-feature-retention-removal.R :: changed captures recompute values and repeated captures stay exact :: ledgr_replay_accounting_events",4,4
+"test-feature-start.R :: [LTB-0196] availability features carry their state from the data start into every scoring window :: ledgr_fold_fill_candidate",21,21
+"test-feature-start.R :: [LTB-0196] availability features carry their state from the data start into every scoring window :: ledgr_replay_accounting_events",3,3
+"test-feature-start.R :: fixed-basket entry points share the data-start feature rule :: ledgr_fold_fill_candidate",7,7
+"test-feature-start.R :: fixed-basket entry points share the data-start feature rule :: ledgr_replay_accounting_events",2,2
+"test-fifo-opening-positions.R :: [LTB-0023] resume after partial opening-position liquidation does not double-count cost basis :: ledgr_fold_fill_candidate",3,3
+"test-fifo-opening-positions.R :: [LTB-0023] resume after partial opening-position liquidation does not double-count cost basis :: ledgr_lot_book_from_opening",2,2
+"test-fifo-opening-positions.R :: [LTB-0023] resume after partial opening-position liquidation does not double-count cost basis :: ledgr_replay_accounting_events",6,6
+"test-fifo-opening-positions.R :: db_live and audit_log opening-position accounting agree :: ledgr_fold_fill_candidate",2,2
+"test-fifo-opening-positions.R :: db_live and audit_log opening-position accounting agree :: ledgr_lot_book_from_opening",2,2
+"test-fifo-opening-positions.R :: db_live and audit_log opening-position accounting agree :: ledgr_replay_accounting_events",8,8
+"test-fifo-opening-positions.R :: opening-position fills keep gross fill P&L separate from net equity P&L :: ledgr_fold_fill_candidate",1,1
+"test-fifo-opening-positions.R :: opening-position fills keep gross fill P&L separate from net equity P&L :: ledgr_lot_book_from_opening",1,1
+"test-fifo-opening-positions.R :: opening-position fills keep gross fill P&L separate from net equity P&L :: ledgr_replay_accounting_events",4,4
+"test-fifo-opening-positions.R :: opening-position liquidation cannot flip into a short lot :: ledgr_lot_book_from_opening",1,1
+"test-fifo-opening-positions.R :: opening-position lot drains before accumulated lots :: ledgr_fold_fill_candidate",3,3
+"test-fifo-opening-positions.R :: opening-position lot drains before accumulated lots :: ledgr_lot_book_from_opening",1,1
+"test-fifo-opening-positions.R :: opening-position lot drains before accumulated lots :: ledgr_replay_accounting_events",8,8
+"test-fifo-opening-positions.R :: opening-position lots are isolated across instruments :: ledgr_fold_fill_candidate",1,1
+"test-fifo-opening-positions.R :: opening-position lots are isolated across instruments :: ledgr_lot_book_from_opening",1,1
+"test-fifo-opening-positions.R :: opening-position lots are isolated across instruments :: ledgr_replay_accounting_events",4,4
+"test-fifo-torture.R :: FIFO lot engine handles stress sequences :: ledgr_replay_accounting_events",10,10
+"test-fill-model.R :: next-open planning consumes the prepared execution open :: ledgr_fold_fill_candidate",1,1
+"test-fill-model.R :: next-open proposal and public cost resolver preserve fill intents :: ledgr_fold_fill_candidate",1,1
+"test-fill-model.R :: the availability execution packet projects the next bar onto the run axis :: ledgr_fold_fill_candidate",1,1
+"test-fills-streaming.R :: fill extraction is eager for empty and borrowed reads :: ledgr_replay_accounting_events",6,6
+"test-fills-streaming.R :: large fill extraction remains eager and ordered :: ledgr_replay_accounting_events",220,220
+"test-fills-streaming.R :: ledgr_run_fills is an eager one-argument reader :: ledgr_replay_accounting_events",6,6
+"test-flat-lazy-context.R :: saved fold views freeze lazy buffers and sweep candidates isolate them :: ledgr_fold_fill_candidate",2,2
+"test-fold-phase-contract.R :: [LTB-0278] fold state and stop results have one closed typed shape :: <direct>",2,2
+"test-history-api-bridge.R :: [LTB-0407] history results expose requirements, align weights and share readiness :: ledgr_fold_fill_candidate",1,1
+"test-history-api-bridge.R :: [LTB-0407] history results expose requirements, align weights and share readiness :: ledgr_replay_accounting_events",1,1
+"test-history-continuity.R :: [LTB-0303] carry_test_state windows are one economic chain equal to one run :: ledgr_disposition_post",4,4
+"test-history-continuity.R :: [LTB-0303] carry_test_state windows are one economic chain equal to one run :: ledgr_fold_fill_candidate",9,9
+"test-history-continuity.R :: [LTB-0303] carry_test_state windows are one economic chain equal to one run :: ledgr_lot_book_from_opening",43,43
+"test-history-continuity.R :: [LTB-0303] carry_test_state windows are one economic chain equal to one run :: ledgr_replay_accounting_events",123,123
+"test-history-continuity.R :: [LTB-0304] scoring starts retain data-start feature and mark values :: ledgr_lot_book_from_opening",11,11
+"test-history-continuity.R :: [LTB-0304] scoring starts retain data-start feature and mark values :: ledgr_replay_accounting_events",6,6
+"test-history-foundation.R :: [LTB-0284] civil fact dates retain venue resolution evidence :: ledgr_lot_book_from_opening",4,4
+"test-history-foundation.R :: [LTB-0284] civil fact dates retain venue resolution evidence :: ledgr_replay_accounting_events",4,4
+"test-history-foundation.R :: [LTB-0286] corporate-action clocks distinguish three cases :: ledgr_lot_book_from_opening",1,1
+"test-history-foundation.R :: [LTB-0286] corporate-action clocks distinguish three cases :: ledgr_replay_accounting_events",1,1
+"test-history-frame.R :: [LTB-0299] recorded readiness and estimation exclusion create no execution intent :: ledgr_fold_fill_candidate",3,3
+"test-history-frame.R :: [LTB-0299] recorded readiness and estimation exclusion create no execution intent :: ledgr_lot_book_from_opening",3,3
+"test-history-frame.R :: [LTB-0299] recorded readiness and estimation exclusion create no execution intent :: ledgr_replay_accounting_events",6,6
+"test-history-integrated-proof.R :: [LTB-0411] a cash dividend is credited per split-adjusted share across a split :: ledgr_lot_book_from_opening",2,2
+"test-history-integration.R :: [LTB-0300] run, sweep, window, precompute and inspection read one causal history :: ledgr_lot_book_from_opening",9,9
+"test-history-integration.R :: [LTB-0300] run, sweep, window, precompute and inspection read one causal history :: ledgr_replay_accounting_events",6,6
+"test-history-integration.R :: [LTB-0302] pulse inspection is external, P1/P2-only and gated to availability :: ledgr_lot_book_from_opening",1,1
+"test-history-integration.R :: [LTB-0302] pulse inspection is external, P1/P2-only and gated to availability :: ledgr_replay_accounting_events",1,1
+"test-history-substrate.R :: [LTB-0292] history treatment is causal, bounded and disclosed :: ledgr_lot_book_from_opening",1,1
+"test-history-substrate.R :: [LTB-0292] history treatment is causal, bounded and disclosed :: ledgr_replay_accounting_events",1,1
+"test-history-substrate.R :: [LTB-0295] availability sweeps stage history without semantic drift :: ledgr_fold_fill_candidate",4,4
+"test-history-substrate.R :: [LTB-0296] availability walk-forward accepts staged workers :: ledgr_fold_fill_candidate",7,7
+"test-history-substrate.R :: [LTB-0296] availability walk-forward accepts staged workers :: ledgr_replay_accounting_events",12,12
+"test-integration-full.R :: LDG-507 full v0.1.2 workflow completes without warnings :: ledgr_fold_fill_candidate",3,3
+"test-integration-full.R :: LDG-507 full v0.1.2 workflow completes without warnings :: ledgr_replay_accounting_events",6,6
+"test-lot-accounting.R :: lot accounting pops fractional dust lots :: <direct>",6,6
+"test-metric-context-tables.R :: comparison tables carry exactly one metric context :: ledgr_fold_fill_candidate",2,2
+"test-metric-context-tables.R :: comparison tables carry exactly one metric context :: ledgr_replay_accounting_events",8,8
+"test-metric-context-tables.R :: comparison tables fail loudly for mixed observed cadences :: ledgr_fold_fill_candidate",2,2
+"test-metric-context-tables.R :: comparison tables fail loudly for mixed observed cadences :: ledgr_replay_accounting_events",6,6
+"test-metric-context-tables.R :: sweep and promotion disclose source sweep metric context separately :: ledgr_fold_fill_candidate",3,3
+"test-metric-kernel.R :: single-run metrics use stored context by default and support ephemeral overrides :: ledgr_fold_fill_candidate",1,1
+"test-metric-kernel.R :: single-run metrics use stored context by default and support ephemeral overrides :: ledgr_replay_accounting_events",3,3
+"test-metric-kernel.R :: summary discloses risk-free rate and annualization assumptions :: ledgr_fold_fill_candidate",1,1
+"test-metric-kernel.R :: summary discloses risk-free rate and annualization assumptions :: ledgr_replay_accounting_events",2,2
+"test-metric-oracles.R :: [LTB-0011] standard metrics match independent public-table oracles :: ledgr_fold_fill_candidate",8,8
+"test-metric-oracles.R :: [LTB-0011] standard metrics match independent public-table oracles :: ledgr_replay_accounting_events",32,32
+"test-metric-oracles.R :: sharpe ratio uses geometric scalar risk-free conversion :: ledgr_fold_fill_candidate",2,2
+"test-metric-oracles.R :: sharpe ratio uses geometric scalar risk-free conversion :: ledgr_replay_accounting_events",10,10
+"test-metric-oracles.R :: summary, comparison, and run-list metrics use the same definitions :: ledgr_fold_fill_candidate",2,2
+"test-metric-oracles.R :: summary, comparison, and run-list metrics use the same definitions :: ledgr_replay_accounting_events",10,10
+"test-metrics-performanceanalytics.R :: optional PerformanceAnalytics parity matches aligned ledgr metric definitions :: ledgr_fold_fill_candidate",1,1
+"test-metrics-performanceanalytics.R :: optional PerformanceAnalytics parity matches aligned ledgr metric definitions :: ledgr_replay_accounting_events",1,1
+"test-minimum-variance-proof.R :: [LTB-0431] the strategy acts on month starts and writes sparse decision reasons :: ledgr_fold_fill_candidate",3,3
+"test-minimum-variance-proof.R :: [LTB-0431] the strategy acts on month starts and writes sparse decision reasons :: ledgr_replay_accounting_events",6,6
+"test-minimum-variance-proof.R :: [LTB-0440] a held index leaver is sold on the next solved decision :: ledgr_fold_fill_candidate",3,3
+"test-minimum-variance-proof.R :: [LTB-0440] a held index leaver is sold on the next solved decision :: ledgr_replay_accounting_events",9,9
+"test-output-handler-sinks.R :: [LTB-0519] a worker-executed memory sink delivers the in-process native surfaces :: ledgr_fold_fill_candidate",2,2
+"test-output-handler-sinks.R :: [LTB-0520] a persisted run and a sweep candidate publish the same fill events :: ledgr_fold_fill_candidate",4,4
+"test-param-grid.R :: [LTB-0494] rectangular strategy grids keep identity and namespaces :: ledgr_fold_fill_candidate",10,10
+"test-peer-benchmark-boundary.R :: [LTB-0016] public sweep benchmark boundary is executable :: ledgr_fold_fill_candidate",18,18
+"test-peer-benchmark-boundary.R :: [LTB-0016] public sweep benchmark boundary is executable :: ledgr_replay_accounting_events",18,18
+"test-persistence-fresh-connection.R :: completed run artifacts are visible from a fresh connection after ledgr_run :: ledgr_fold_fill_candidate",1,1
+"test-pit-consistency.R :: [LTB-0218] a run that values no pulse keeps its prefix, opens and reruns :: ledgr_lot_book_from_opening",1,1
+"test-pit-consistency.R :: [LTB-0218] a run that values no pulse keeps its prefix, opens and reruns :: ledgr_replay_accounting_events",2,2
+"test-pit-consistency.R :: [LTB-0219] an INCOMPLETE run with a fill after its achieved end reconstructs :: ledgr_fold_fill_candidate",2,2
+"test-pit-consistency.R :: [LTB-0219] an INCOMPLETE run with a fill after its achieved end reconstructs :: ledgr_replay_accounting_events",1,1
+"test-pit-consistency.R :: [LTB-0221] ingest refuses non-positive prices and keeps zero volume :: ledgr_fold_fill_candidate",1,1
+"test-pit-consistency.R :: [LTB-0227] a held corporate action ledgr does not model is reported or refused :: ledgr_disposition_post",1,1
+"test-pit-consistency.R :: [LTB-0227] a held corporate action ledgr does not model is reported or refused :: ledgr_fold_fill_candidate",6,6
+"test-pit-consistency.R :: [LTB-0227] a held corporate action ledgr does not model is reported or refused :: ledgr_replay_accounting_events",6,6
+"test-pit-consistency.R :: [LTB-0228] a declared corporate-action refusal stops the run typed :: ledgr_fold_fill_candidate",1,1
+"test-pit-consistency.R :: [LTB-0228] a declared corporate-action refusal stops the run typed :: ledgr_replay_accounting_events",2,2
+"test-pit-consistency.R :: [LTB-0230] ledgr_compute_metrics() withholds annualized figures for incomplete performance :: ledgr_fold_fill_candidate",2,2
+"test-pit-consistency.R :: [LTB-0230] ledgr_compute_metrics() withholds annualized figures for incomplete performance :: ledgr_replay_accounting_events",2,2
+"test-pit-consistency.R :: [LTB-0235] promotion records both identities and warns on a mismatch :: ledgr_disposition_post",4,4
+"test-pit-consistency.R :: [LTB-0235] promotion records both identities and warns on a mismatch :: ledgr_fold_fill_candidate",4,4
+"test-pit-consistency.R :: [LTB-0242] promotion warns on each policy, universe and opening identity :: ledgr_disposition_post",2,2
+"test-pit-consistency.R :: [LTB-0242] promotion warns on each policy, universe and opening identity :: ledgr_fold_fill_candidate",5,5
+"test-pit-consistency.R :: [LTB-0245] interrupted availability runs restart to what the uninterrupted run stores :: ledgr_fold_fill_candidate",3,3
+"test-plot.R :: plot.ledgr_backtest dispatches and returns a plot object :: ledgr_fold_fill_candidate",1,1
+"test-plot.R :: plot.ledgr_backtest has dependency fallbacks :: ledgr_fold_fill_candidate",1,1
+"test-position-facts-context.R :: canonical fill transitions maintain flat context position facts :: ledgr_fold_fill_candidate",5,5
+"test-position-facts-context.R :: canonical replay preserves real same-bar order and non-fill semantics :: ledgr_replay_accounting_events",9,9
+"test-position-facts-context.R :: durable restart preserves carried opening anchors :: ledgr_lot_book_from_opening",4,4
+"test-position-facts-context.R :: pulse inspection reports unknown basis and anchors for supplied positions :: ledgr_lot_book_from_opening",1,1
+"test-position-facts-context.R :: restart rebuilds position facts from pulse one :: ledgr_fold_fill_candidate",3,3
+"test-position-facts-context.R :: scheduled decision skips still count absolute entry age :: ledgr_fold_fill_candidate",1,1
+"test-position-facts-context.R :: three contiguous walk-forward windows retain entry and exit facts :: ledgr_fold_fill_candidate",6,6
+"test-position-facts-context.R :: three contiguous walk-forward windows retain entry and exit facts :: ledgr_lot_book_from_opening",2,2
+"test-position-facts-context.R :: three contiguous walk-forward windows retain entry and exit facts :: ledgr_replay_accounting_events",8,8
+"test-precompute-features.R :: precomputed candidates stay bound when captured windows are permuted :: ledgr_fold_fill_candidate",12,12
+"test-precompute-features.R :: precomputed features refuse after a direct capture changes :: ledgr_fold_fill_candidate",2,2
+"test-precompute-features.R :: windowed sweeps validate precomputed scoring and hydration coverage :: ledgr_fold_fill_candidate",6,6
+"test-promotion-context.R :: promoted runs write and read durable promotion context :: ledgr_fold_fill_candidate",4,4
+"test-promotion-context.R :: promoted runs write and read durable promotion context :: ledgr_replay_accounting_events",1,1
+"test-promotion-context.R :: ranked reopened sweeps retain lineage through promotion :: ledgr_fold_fill_candidate",3,3
+"test-pulse-context-accessors.R :: [LTB-0094] pulse snapshots match dense fold state and valuation :: ledgr_lot_book_from_opening",3,3
+"test-pulse-context-accessors.R :: feature-map strategies match across execution modes :: ledgr_fold_fill_candidate",2,2
+"test-pulse-context-accessors.R :: feature-map strategies match across execution modes :: ledgr_replay_accounting_events",2,2
+"test-pulse-context-accessors.R :: runtime strategy contexts expose strategy authoring helpers :: ledgr_fold_fill_candidate",2,2
+"test-pulse-seed-v2.R :: a run window reads the same pulse seeds as a straight run on the same calendar :: ledgr_fold_fill_candidate",2,2
+"test-pulse-seed-v2.R :: a store written under the old rule is refused when opened :: ledgr_fold_fill_candidate",1,1
+"test-pulse-seed-v2.R :: a straight run reads the v2 vector over its own calendar :: ledgr_fold_fill_candidate",2,2
+"test-pulse-seed-v2.R :: actual draws agree for continuous, restarted and windowed runs on the same calendar :: ledgr_fold_fill_candidate",32,32
+"test-pulse-seed-v2.R :: actual draws agree for continuous, restarted and windowed runs on the same calendar :: ledgr_replay_accounting_events",28,28
+"test-pulse-seed-v2.R :: one constant names the rule in bindings, markers and seeded configs :: ledgr_fold_fill_candidate",2,2
+"test-pulse-seed-v2.R :: one constant names the rule in bindings, markers and seeded configs :: ledgr_replay_accounting_events",2,2
+"test-pulse-seed-v2.R :: restart reads the same pulse seeds as a straight run on the same calendar :: ledgr_fold_fill_candidate",3,3
+"test-pulse-seed-v2.R :: seeded configuration identity changes by the rule field only :: ledgr_fold_fill_candidate",2,2
+"test-pulse-seed-v2.R :: seeded configuration identity changes by the rule field only :: ledgr_replay_accounting_events",2,2
+"test-pulse-seed-v2.R :: sweep (one and two workers) and promotion read a straight run's pulse seeds :: ledgr_fold_fill_candidate",54,54
+"test-pulse-seed-v2.R :: sweep candidates: current markers promote, old and missing are refused :: ledgr_fold_fill_candidate",6,6
+"test-pulse-seed-v2.R :: sweep candidates: current markers promote, old and missing are refused :: ledgr_replay_accounting_events",4,4
+"test-pulse-seed-v2.R :: the pulse-seed path computes one vector per fold with no hashing :: ledgr_fold_fill_candidate",4,4
+"test-pulse-seed-v2.R :: walk-forward candidates copy the results marker; old and missing are refused :: ledgr_fold_fill_candidate",13,13
+"test-pulse-seed-v2.R :: walk-forward candidates copy the results marker; old and missing are refused :: ledgr_lot_book_from_opening",2,2
+"test-pulse-seed-v2.R :: walk-forward candidates copy the results marker; old and missing are refused :: ledgr_replay_accounting_events",39,39
+"test-research-cycle-scale.R :: [LTB-0209] the positions timeline equals replaying the ledger up to each time :: <direct>",167,167
+"test-research-cycle-scale.R :: [LTB-0209] the positions timeline equals replaying the ledger up to each time :: ledgr_disposition_post",1,1
+"test-research-cycle-scale.R :: [LTB-0209] the positions timeline equals replaying the ledger up to each time :: ledgr_fold_fill_candidate",14,14
+"test-research-cycle-scale.R :: [LTB-0209] the positions timeline equals replaying the ledger up to each time :: ledgr_replay_accounting_events",52,52
+"test-research-cycle-scale.R :: [LTB-0216] the dense results plane replays the ledger once, not per time :: <direct>",28,28
+"test-research-cycle-scale.R :: [LTB-0216] the dense results plane replays the ledger once, not per time :: ledgr_fold_fill_candidate",7,7
+"test-research-cycle-scale.R :: [LTB-0216] the dense results plane replays the ledger once, not per time :: ledgr_replay_accounting_events",14,14
+"test-result-output.R :: [LTB-0107] backtest print is a one-screen result :: ledgr_fold_fill_candidate",1,1
+"test-result-output.R :: [LTB-0107] backtest print is a one-screen result :: ledgr_replay_accounting_events",9,9
+"test-results-wrapper.R :: ledgr_results delegates to tibble::as_tibble for supported result tables :: ledgr_fold_fill_candidate",1,1
+"test-results-wrapper.R :: ledgr_results delegates to tibble::as_tibble for supported result tables :: ledgr_replay_accounting_events",4,4
+"test-risk-fold.R :: [LTB-0136] the fold flushes its handler once per pulse :: ledgr_fold_fill_candidate",2,2
+"test-risk-fold.R :: [LTB-0137] a failed pulse publishes no partial fill rows :: ledgr_fold_fill_candidate",4,4
+"test-risk-fold.R :: [LTB-0280] handler faults preserve fold atomicity in both data modes :: ledgr_fold_fill_candidate",18,18
+"test-risk-fold.R :: compiled risk plan transforms targets before timing cost and event writes :: ledgr_fold_fill_candidate",1,1
+"test-risk-fold.R :: long-only risk step maps negative targets to zero :: ledgr_fold_fill_candidate",1,1
+"test-risk-fold.R :: max-weight risk step caps absolute target exposure :: ledgr_fold_fill_candidate",1,1
+"test-risk-fold.R :: no-op feasibility hook does not sequentially reject same-pulse rebalances :: ledgr_fold_fill_candidate",1,1
+"test-risk-fold.R :: public sweep applies parameterized max-weight risk step :: ledgr_fold_fill_candidate",6,6
+"test-risk-fold.R :: pulse plan resolves same-pulse fills before emitting events :: ledgr_fold_fill_candidate",1,1
+"test-risk-fold.R :: risk chains apply built-in steps in order :: ledgr_fold_fill_candidate",1,1
+"test-risk-fold.R :: risk failures are captured as sweep candidate failures :: ledgr_fold_fill_candidate",2,2
+"test-rng-isolation.R :: a seeded ambient-RNG fold agrees between ledgr_run and ledgr_sweep past the default checkpoint :: ledgr_fold_fill_candidate",9966,9966
+"test-rng-isolation.R :: an ambient-RNG strategy gives identical results across store checkpoints and paths :: ledgr_fold_fill_candidate",116,116
+"test-rng-isolation.R :: an ambient-RNG strategy gives identical results across store checkpoints and paths :: ledgr_replay_accounting_events",87,87
+"test-rng-isolation.R :: an unseeded run whose strategy draws leaves the caller's RNG unchanged :: ledgr_fold_fill_candidate",18,19
+"test-rng-isolation.R :: captured service expressions and returned helpers restore the caller's RNG :: ledgr_fold_fill_candidate",2,2
+"test-rng-isolation.R :: draws in ordinary arguments advance the caller's stream :: ledgr_fold_fill_candidate",4,4
+"test-rng-isolation.R :: draws in ordinary arguments advance the caller's stream :: ledgr_replay_accounting_events",3,3
+"test-rng-isolation.R :: every wrapped export restores the caller's RNG on success :: ledgr_fold_fill_candidate",258,257
+"test-rng-isolation.R :: every wrapped export restores the caller's RNG on success :: ledgr_lot_book_from_opening",2,2
+"test-rng-isolation.R :: every wrapped export restores the caller's RNG on success :: ledgr_replay_accounting_events",70,70
+"test-rng-isolation.R :: ledgr_walk_forward runs without a seed :: ledgr_fold_fill_candidate",10,10
+"test-rng-isolation.R :: ledgr_walk_forward runs without a seed :: ledgr_lot_book_from_opening",2,2
+"test-rng-isolation.R :: ledgr_walk_forward runs without a seed :: ledgr_replay_accounting_events",12,12
+"test-rng-isolation.R :: rng-relevant sites run only under a wrapped export or a returned helper :: ledgr_fold_fill_candidate",11,11
+"test-rng-isolation.R :: rng-relevant sites run only under a wrapped export or a returned helper :: ledgr_lot_book_from_opening",1,1
+"test-rng-isolation.R :: rng-relevant sites run only under a wrapped export or a returned helper :: ledgr_replay_accounting_events",6,6
+"test-rng-isolation.R :: seeded folds and simulators do not depend on the caller's kind :: ledgr_fold_fill_candidate",84,84
+"test-rng-isolation.R :: seeded folds and simulators do not depend on the caller's kind :: ledgr_replay_accounting_events",84,84
+"test-rng-isolation.R :: signal strategies and adapter indicators draw like the caller's own code :: ledgr_fold_fill_candidate",38,38
+"test-rng-isolation.R :: signal strategies and adapter indicators draw like the caller's own code :: ledgr_replay_accounting_events",38,38
+"test-rng-isolation.R :: storage-facing exports leave the caller's RNG unchanged :: ledgr_fold_fill_candidate",2,2
+"test-rng-isolation.R :: storage-facing exports leave the caller's RNG unchanged :: ledgr_replay_accounting_events",12,12
+"test-rng-isolation.R :: the contract recipe gives identical fills with one and two workers :: ledgr_fold_fill_candidate",84,84
+"test-rng-isolation.R :: the contract recipe gives identical fills with one and two workers :: ledgr_replay_accounting_events",28,28
+"test-rng.R :: [LTB-0009] snapshot ingestion and nonempty fill reads preserve caller RNG :: ledgr_fold_fill_candidate",1,1
+"test-rng.R :: [LTB-0009] snapshot ingestion and nonempty fill reads preserve caller RNG :: ledgr_replay_accounting_events",3,3
+"test-rng.R :: [LTB-0268] seeded ledgr_run preserves caller RNG :: ledgr_fold_fill_candidate",5,5
+"test-rng.R :: [LTB-0268] seeded ledgr_run preserves caller RNG :: ledgr_replay_accounting_events",1,1
+"test-run-compare.R :: [LTB-0134] run tags are character whether or not a run is tagged :: ledgr_fold_fill_candidate",1,1
+"test-run-compare.R :: [LTB-0134] run tags are character whether or not a run is tagged :: ledgr_replay_accounting_events",5,5
+"test-run-compare.R :: ledgr_run_compare compares different stored strategies :: ledgr_fold_fill_candidate",2,2
+"test-run-compare.R :: ledgr_run_compare compares different stored strategies :: ledgr_replay_accounting_events",4,4
+"test-run-compare.R :: ledgr_run_compare compares stored completed runs without recomputation :: ledgr_fold_fill_candidate",2,2
+"test-run-compare.R :: ledgr_run_compare compares stored completed runs without recomputation :: ledgr_replay_accounting_events",4,4
+"test-run-compare.R :: ledgr_run_compare counts only closing trades for win rate :: ledgr_fold_fill_candidate",2,2
+"test-run-compare.R :: ledgr_run_compare counts only closing trades for win rate :: ledgr_replay_accounting_events",12,12
+"test-run-compare.R :: multi-fill runs count each closing fill as a trade :: ledgr_fold_fill_candidate",3,3
+"test-run-compare.R :: multi-fill runs count each closing fill as a trade :: ledgr_replay_accounting_events",12,12
+"test-run-compare.R :: open-only fills are not counted as closed trades :: ledgr_fold_fill_candidate",1,1
+"test-run-compare.R :: open-only fills are not counted as closed trades :: ledgr_replay_accounting_events",6,6
+"test-run-continuity-ii.R :: [LTB-0203] reconstruction rebuilds gap-bearing availability runs exactly :: ledgr_fold_fill_candidate",8,8
+"test-run-continuity-ii.R :: [LTB-0203] reconstruction rebuilds gap-bearing availability runs exactly :: ledgr_replay_accounting_events",10,10
+"test-run-continuity-ii.R :: [LTB-0205] an interrupted walk-forward restarts its test run on rerun :: ledgr_fold_fill_candidate",263,263
+"test-run-continuity-ii.R :: [LTB-0205] an interrupted walk-forward restarts its test run on rerun :: ledgr_lot_book_from_opening",57,57
+"test-run-continuity-ii.R :: [LTB-0205] an interrupted walk-forward restarts its test run on rerun :: ledgr_replay_accounting_events",480,480
+"test-run-continuity-ii.R :: [LTB-0207] an empty unfinished row restarts with its opening positions :: ledgr_lot_book_from_opening",6,6
+"test-run-continuity-ii.R :: [LTB-0207] an empty unfinished row restarts with its opening positions :: ledgr_replay_accounting_events",3,3
+"test-run-continuity-ii.R :: [LTB-0208] flat_test_state still runs gapped, overlapping and reverse-ordered folds :: ledgr_fold_fill_candidate",14,14
+"test-run-continuity-ii.R :: [LTB-0208] flat_test_state still runs gapped, overlapping and reverse-ordered folds :: ledgr_replay_accounting_events",7,7
+"test-run-continuity.R :: [LTB-0198] an early exit after registration records FAILED and still propagates :: ledgr_fold_fill_candidate",1,1
+"test-run-continuity.R :: [LTB-0199] an unpriced eligible member is skipped, capped and recorded, not fatal :: ledgr_fold_fill_candidate",4,4
+"test-run-continuity.R :: [LTB-0199] an unpriced eligible member is skipped, capped and recorded, not fatal :: ledgr_replay_accounting_events",2,2
+"test-run-continuity.R :: [LTB-0201] walk-forward reuses the previous selection or runs no test window :: ledgr_fold_fill_candidate",6,6
+"test-run-continuity.R :: [LTB-0201] walk-forward reuses the previous selection or runs no test window :: ledgr_lot_book_from_opening",1,1
+"test-run-continuity.R :: [LTB-0201] walk-forward reuses the previous selection or runs no test window :: ledgr_replay_accounting_events",9,9
+"test-run-continuity.R :: [LTB-0202] a mid-loop interrupt restarts cleanly and an INCOMPLETE row is never rewritten :: ledgr_fold_fill_candidate",11,11
+"test-run-continuity.R :: [LTB-0202] a mid-loop interrupt restarts cleanly and an INCOMPLETE row is never rewritten :: ledgr_lot_book_from_opening",1,1
+"test-run-continuity.R :: [LTB-0202] a mid-loop interrupt restarts cleanly and an INCOMPLETE row is never rewritten :: ledgr_replay_accounting_events",12,12
+"test-run-continuity.R :: [LTB-0555] pulse-level persistence and soft-stop seams are absent :: ledgr_lot_book_from_opening",1,1
+"test-run-metadata.R :: ledgr_run_label updates labels without changing identity hashes :: ledgr_fold_fill_candidate",1,1
+"test-run-metadata.R :: ledgr_run_label updates labels without changing identity hashes :: ledgr_replay_accounting_events",3,3
+"test-run-print.R :: ledgr_run_compare prints curated view while preserving numeric metrics :: ledgr_fold_fill_candidate",2,2
+"test-run-print.R :: ledgr_run_compare prints curated view while preserving numeric metrics :: ledgr_replay_accounting_events",4,4
+"test-run-print.R :: ledgr_run_list prints curated view while preserving tibble data :: ledgr_fold_fill_candidate",1,1
+"test-run-print.R :: ledgr_run_list prints curated view while preserving tibble data :: ledgr_replay_accounting_events",1,1
+"test-run-store.R :: feature_set_hash is exposed on run config, info, list, and reopened handles :: ledgr_fold_fill_candidate",1,1
+"test-run-store.R :: feature_set_hash is exposed on run config, info, list, and reopened handles :: ledgr_replay_accounting_events",2,2
+"test-run-store.R :: ledgr_run_info returns printable diagnostics and tolerates missing telemetry :: ledgr_fold_fill_candidate",1,1
+"test-run-store.R :: ledgr_run_info returns printable diagnostics and tolerates missing telemetry :: ledgr_replay_accounting_events",2,2
+"test-run-store.R :: ledgr_run_list discovers multiple runs and hides archived rows :: ledgr_fold_fill_candidate",2,2
+"test-run-store.R :: ledgr_run_list discovers multiple runs and hides archived rows :: ledgr_replay_accounting_events",5,5
+"test-run-store.R :: ledgr_run_open returns a handle without recomputation or mutation :: ledgr_fold_fill_candidate",1,1
+"test-run-store.R :: ledgr_run_open returns a handle without recomputation or mutation :: ledgr_replay_accounting_events",3,3
+"test-run-tags.R :: run tags are mutable metadata and do not alter identity :: ledgr_fold_fill_candidate",1,1
+"test-run-tags.R :: run tags are mutable metadata and do not alter identity :: ledgr_replay_accounting_events",5,5
+"test-run-telemetry.R :: diagnostic fold-loop telemetry records sampled buckets :: ledgr_fold_fill_candidate",1,1
+"test-runner.R :: [LTB-0007] post-fold failure preserves evidence and resumes finalization :: ledgr_fold_fill_candidate",14,14
+"test-runner.R :: [LTB-0007] post-fold failure preserves evidence and resumes finalization :: ledgr_replay_accounting_events",28,28
+"test-runner.R :: run info projects recorded risk identity without side effects :: ledgr_fold_fill_candidate",5,5
+"test-runner.R :: run info projects recorded risk identity without side effects :: ledgr_replay_accounting_events",4,4
+"test-runner.R :: runner executes a minimal end-to-end run and writes outputs :: ledgr_fold_fill_candidate",1,1
+"test-runner.R :: runner refuses to resume on config hash mismatch :: ledgr_fold_fill_candidate",1,1
+"test-runner.R :: runner resume appends ledger events without duplicate event_seq and rebuilds tail :: ledgr_fold_fill_candidate",3,3
+"test-scoring-boundary.R :: [LTB-0192] run, backtest, sweep, promotion and walk-forward share the scoring start :: ledgr_fold_fill_candidate",8,8
+"test-scoring-boundary.R :: [LTB-0192] run, backtest, sweep, promotion and walk-forward share the scoring start :: ledgr_replay_accounting_events",2,2
+"test-scoring-boundary.R :: [LTB-0193] a dated availability sweep executes and values like a run :: ledgr_fold_fill_candidate",4,4
+"test-scoring-boundary.R :: [LTB-0193] a dated availability sweep executes and values like a run :: ledgr_lot_book_from_opening",2,2
+"test-scoring-boundary.R :: [LTB-0193] a dated availability sweep executes and values like a run :: ledgr_replay_accounting_events",3,3
+"test-scoring-boundary.R :: [LTB-0195] run and sweep agree on boundary edges and keep the scored range on reopen :: ledgr_fold_fill_candidate",3,3
+"test-selection-visibility.R :: [LTB-0176] a mixed sweep shows counts, reasons and flags on every sweep surface :: ledgr_disposition_post",1,1
+"test-selection-visibility.R :: [LTB-0176] a mixed sweep shows counts, reasons and flags on every sweep surface :: ledgr_fold_fill_candidate",4,4
+"test-selection-visibility.R :: [LTB-0177] attempted and incomplete candidates never enter validation math :: ledgr_disposition_post",2,2
+"test-selection-visibility.R :: [LTB-0177] attempted and incomplete candidates never enter validation math :: ledgr_fold_fill_candidate",6,6
+"test-selection-visibility.R :: [LTB-0178] run lists and comparison disclose incomplete runs and carry flags :: ledgr_disposition_post",1,1
+"test-selection-visibility.R :: [LTB-0178] run lists and comparison disclose incomplete runs and carry flags :: ledgr_fold_fill_candidate",4,4
+"test-selection-visibility.R :: [LTB-0178] run lists and comparison disclose incomplete runs and carry flags :: ledgr_replay_accounting_events",17,17
+"test-selection-visibility.R :: [LTB-0179] walk-forward scores and print carry counts, reasons and flags :: ledgr_disposition_post",1,1
+"test-selection-visibility.R :: [LTB-0179] walk-forward scores and print carry counts, reasons and flags :: ledgr_fold_fill_candidate",5,5
+"test-selection-visibility.R :: [LTB-0179] walk-forward scores and print carry counts, reasons and flags :: ledgr_replay_accounting_events",3,3
+"test-selection-visibility.R :: [LTB-0190] frozen flags use a constant number of grouped store reads :: ledgr_disposition_post",2,2
+"test-selection-visibility.R :: [LTB-0190] frozen flags use a constant number of grouped store reads :: ledgr_fold_fill_candidate",2,2
+"test-selection-visibility.R :: [LTB-0190] frozen flags use a constant number of grouped store reads :: ledgr_replay_accounting_events",12,12
+"test-signal-strategy.R :: ledgr_signal_strategy runs through the data-first backtest path :: ledgr_fold_fill_candidate",1,1
+"test-signal-strategy.R :: ledgr_signal_strategy runs through the data-first backtest path :: ledgr_replay_accounting_events",1,1
+"test-sim-pit-inputs.R :: [LTB-0078] committed PIT inputs regenerate and compose :: ledgr_lot_book_from_opening",2,2
+"test-sim-pit-inputs.R :: [LTB-0078] committed PIT inputs regenerate and compose :: ledgr_replay_accounting_events",1,1
+"test-snapshot-hash-deduplication.R :: [LTB-0250] every content reader refuses a non-current hash rule :: ledgr_fold_fill_candidate",4,4
+"test-snapshot-verification-reuse.R :: [LTB-0254] outer execution and reader calls verify once :: ledgr_fold_fill_candidate",5,5
+"test-snapshot-verification-reuse.R :: [LTB-0254] outer execution and reader calls verify once :: ledgr_replay_accounting_events",2,2
+"test-strategy-authoring-ws16.R :: [LTB-0531] construction requires investor inputs and schedule queries are pure :: ledgr_fold_fill_candidate",2,2
+"test-strategy-authoring-ws16.R :: [LTB-0531] construction requires investor inputs and schedule queries are pure :: ledgr_lot_book_from_opening",3,3
+"test-strategy-authoring-ws16.R :: [LTB-0531] construction requires investor inputs and schedule queries are pure :: ledgr_replay_accounting_events",2,2
+"test-strategy-context-entrances.R :: [LTB-0117] fixed-quantity targets follow the selection :: ledgr_fold_fill_candidate",2,2
+"test-strategy-context-entrances.R :: [LTB-0117] fixed-quantity targets follow the selection :: ledgr_replay_accounting_events",2,2
+"test-strategy-context-surface.R :: [LTB-0091] authored surface table matches real callback contexts :: ledgr_fold_fill_candidate",3,3
+"test-strategy-context-surface.R :: [LTB-0091] authored surface table matches real callback contexts :: ledgr_lot_book_from_opening",1,1
+"test-strategy-context-surface.R :: [LTB-0119] every context exposes the common eligibility planes :: ledgr_lot_book_from_opening",1,1
+"test-strategy-extract.R :: [LTB-0133] trusted recovery resolves what Tier 1 allows and nothing more :: ledgr_fold_fill_candidate",2,2
+"test-strategy-extract.R :: [LTB-0133] trusted recovery resolves what Tier 1 allows and nothing more :: ledgr_replay_accounting_events",3,3
+"test-strategy-extract.R :: ledgr_run_strategy returns Tier 1 source metadata without evaluation :: ledgr_fold_fill_candidate",1,1
+"test-strategy-extract.R :: ledgr_run_strategy trust TRUE reports parse failures :: ledgr_fold_fill_candidate",1,1
+"test-strategy-extract.R :: ledgr_run_strategy trust TRUE verifies hash and returns a function :: ledgr_fold_fill_candidate",1,1
+"test-strategy-intent-evidence.R :: [LTB-0490] structured intent reasons use one durable portfolio row :: ledgr_fold_fill_candidate",2,2
+"test-strategy-intent-evidence.R :: [LTB-0490] structured intent reasons use one durable portfolio row :: ledgr_replay_accounting_events",6,6
+"test-strategy-intent-evidence.R :: [LTB-0491] availability explanations join intent by decision pulse :: ledgr_fold_fill_candidate",1,1
+"test-strategy-intent-evidence.R :: [LTB-0491] availability explanations join intent by decision pulse :: ledgr_replay_accounting_events",3,3
+"test-strategy-ports-ws18.R :: [LTB-0543] frozen strategy ports keep fills and declared state grammar :: ledgr_fold_fill_candidate",532,532
+"test-strategy-ports-ws18.R :: [LTB-0543] frozen strategy ports keep fills and declared state grammar :: ledgr_lot_book_from_opening",1,1
+"test-strategy-ports-ws18.R :: [LTB-0543] frozen strategy ports keep fills and declared state grammar :: ledgr_replay_accounting_events",533,533
+"test-strategy-provenance.R :: function(ctx, params) strategies receive strategy_params and persist provenance :: ledgr_fold_fill_candidate",1,1
+"test-strategy-provenance.R :: function(ctx, params) with empty default strategy_params is valid :: ledgr_fold_fill_candidate",1,1
+"test-strategy-provenance.R :: strategy params and source changes alter provenance hashes :: ledgr_fold_fill_candidate",3,3
+"test-strategy-reference.R :: [LTB-0092] context helper pipeline agrees across run and sweep :: ledgr_fold_fill_candidate",2,2
+"test-strategy-reference.R :: [LTB-0092] context helper pipeline agrees across run and sweep :: ledgr_replay_accounting_events",1,1
+"test-strategy-schedule.R :: [LTB-0505] scheduled skips bypass only decision and plan stages :: ledgr_lot_book_from_opening",2,2
+"test-strategy-schedule.R :: [LTB-0505] scheduled skips bypass only decision and plan stages :: ledgr_replay_accounting_events",2,2
+"test-strategy-schedule.R :: [LTB-0507] skipped pulses preserve economics across fresh restart :: ledgr_lot_book_from_opening",5,5
+"test-strategy-schedule.R :: [LTB-0507] skipped pulses preserve economics across fresh restart :: ledgr_replay_accounting_events",2,2
+"test-strategy-schedule.R :: [LTB-0508] orchestration formats preserve schedule identity :: ledgr_fold_fill_candidate",9,9
+"test-strategy-schedule.R :: [LTB-0508] orchestration formats preserve schedule identity :: ledgr_lot_book_from_opening",15,15
+"test-strategy-schedule.R :: [LTB-0508] orchestration formats preserve schedule identity :: ledgr_replay_accounting_events",18,18
+"test-strategy-schedule.R :: [LTB-0511] common calendar schedules use generic orchestration carriers :: ledgr_fold_fill_candidate",5,5
+"test-strategy-schedule.R :: [LTB-0511] common calendar schedules use generic orchestration carriers :: ledgr_lot_book_from_opening",4,4
+"test-strategy-schedule.R :: [LTB-0511] common calendar schedules use generic orchestration carriers :: ledgr_replay_accounting_events",8,8
+"test-strategy-schedule.R :: [LTB-0512] scheduled skips retain valuation evidence :: ledgr_lot_book_from_opening",8,8
+"test-strategy-schedule.R :: [LTB-0512] scheduled skips retain valuation evidence :: ledgr_replay_accounting_events",11,11
+"test-strategy-sizing-evidence.R :: [LTB-0540] runs persist and report sizing evidence without JSON :: ledgr_fold_fill_candidate",6,6
+"test-strategy-sizing-evidence.R :: [LTB-0540] runs persist and report sizing evidence without JSON :: ledgr_lot_book_from_opening",4,4
+"test-strategy-sizing-evidence.R :: [LTB-0540] runs persist and report sizing evidence without JSON :: ledgr_replay_accounting_events",6,6
+"test-strategy-sizing-evidence.R :: [LTB-0542] risk and cash rejection do not relabel sizing intent :: ledgr_fold_fill_candidate",1,1
+"test-strategy-sizing-evidence.R :: [LTB-0545] binding guards keep requested and post-guard sizing distinct :: ledgr_fold_fill_candidate",3,3
+"test-strategy-sizing-evidence.R :: [LTB-0545] binding guards keep requested and post-guard sizing distinct :: ledgr_lot_book_from_opening",1,1
+"test-strategy-sizing-evidence.R :: [LTB-0545] binding guards keep requested and post-guard sizing distinct :: ledgr_replay_accounting_events",6,6
+"test-strategy-state-ws17.R :: [LTB-0537] sweep candidates isolate declared state across workers :: ledgr_fold_fill_candidate",6,6
+"test-strategy-state-ws17.R :: [LTB-0538] walk-forward resets declared state for every run :: ledgr_fold_fill_candidate",4,4
+"test-strategy-state-ws17.R :: [LTB-0538] walk-forward resets declared state for every run :: ledgr_replay_accounting_events",4,4
+"test-strategy-types.R :: functional strategies may return ledgr_target :: ledgr_fold_fill_candidate",1,1
+"test-strategy-types.R :: functional strategies may return ledgr_target :: ledgr_replay_accounting_events",1,1
+"test-sweep-filter.R :: ledgr_sweep_filter evaluates reopened retained evidence :: ledgr_fold_fill_candidate",2,2
+"test-sweep-parallel.R :: [LTB-0025] parallel sweep constructs opening lots identically to sequential :: ledgr_fold_fill_candidate",5,5
+"test-sweep-parallel.R :: [LTB-0025] parallel sweep constructs opening lots identically to sequential :: ledgr_lot_book_from_opening",3,3
+"test-sweep-parallel.R :: ledgr_sweep workers = 1 equals sequential reference :: ledgr_fold_fill_candidate",4,4
+"test-sweep-parallel.R :: parallel sweep keeps reproduction key stable modulo sweep id :: ledgr_fold_fill_candidate",1,1
+"test-sweep-parallel.R :: parallel sweep preserves parameterized risk identity and row order :: ledgr_fold_fill_candidate",4,4
+"test-sweep-parity.R :: feature-factory sweep parity covers candidate-varying feature sets and warmup :: ledgr_fold_fill_candidate",6,6
+"test-sweep-parity.R :: feature-factory sweep parity covers candidate-varying feature sets and warmup :: ledgr_replay_accounting_events",14,14
+"test-sweep-parity.R :: pulse_seed sweep promotion reproduces the selected candidate :: ledgr_fold_fill_candidate",6,6
+"test-sweep-parity.R :: pulse_seed sweep promotion reproduces the selected candidate :: ledgr_replay_accounting_events",14,14
+"test-sweep-parity.R :: seeded stochastic sweep promotion reproduces the selected candidate :: ledgr_fold_fill_candidate",6,6
+"test-sweep-parity.R :: seeded stochastic sweep promotion reproduces the selected candidate :: ledgr_replay_accounting_events",14,14
+"test-sweep-parity.R :: sweep candidates match persistent run and promoted run artifacts :: ledgr_fold_fill_candidate",13,13
+"test-sweep-parity.R :: sweep candidates match persistent run and promoted run artifacts :: ledgr_replay_accounting_events",53,53
+"test-sweep-parity.R :: sweep parity covers opening-position lots and non-default metric context :: ledgr_fold_fill_candidate",6,6
+"test-sweep-parity.R :: sweep parity covers opening-position lots and non-default metric context :: ledgr_lot_book_from_opening",3,3
+"test-sweep-parity.R :: sweep parity covers opening-position lots and non-default metric context :: ledgr_replay_accounting_events",36,36
+"test-sweep-persistence-api.R :: saved sweep open validates snapshot identity and schema compatibility :: ledgr_fold_fill_candidate",2,2
+"test-sweep-persistence-api.R :: saved sweep print methods expose retention and identity summary :: ledgr_fold_fill_candidate",2,2
+"test-sweep-persistence-api.R :: saved sweep validation fails before partial writes :: ledgr_fold_fill_candidate",2,2
+"test-sweep-persistence-api.R :: saved sweeps save, list, open, and inspect compact artifacts :: ledgr_fold_fill_candidate",2,2
+"test-sweep-persistence-parity.R :: [LTB-0014] retained series match ordered-event reconstruction on compiled spot FIFO :: ledgr_fold_fill_candidate",4,4
+"test-sweep-persistence-parity.R :: [LTB-0014] retained series match ordered-event reconstruction on compiled spot FIFO :: ledgr_replay_accounting_events",4,4
+"test-sweep-persistence-parity.R :: retained series match inline-memory summary on R accounting :: ledgr_fold_fill_candidate",4,4
+"test-sweep-persistence-parity.R :: retained series match ordered-event reconstruction on R accounting :: ledgr_fold_fill_candidate",8,8
+"test-sweep-persistence-parity.R :: retained series match ordered-event reconstruction on R accounting :: ledgr_replay_accounting_events",4,4
+"test-sweep-persistence-roundtrip.R :: [LTB-0008] reopened sweeps survive dplyr and base row operations :: ledgr_fold_fill_candidate",2,2
+"test-sweep-persistence-roundtrip.R :: promotion from reopened sweep replays selected candidate risk plan :: ledgr_fold_fill_candidate",9,9
+"test-sweep-persistence-roundtrip.R :: promotion from reopened sweeps re-executes committed run artifacts :: ledgr_fold_fill_candidate",3,3
+"test-sweep-persistence-roundtrip.R :: reopened sweeps round-trip retained closed-trade evidence :: ledgr_fold_fill_candidate",8,8
+"test-sweep-persistence-roundtrip.R :: reopened sweeps round-trip scalar rows, identity, and retained series :: ledgr_fold_fill_candidate",2,2
+"test-sweep-persistence-roundtrip.R :: saved sweeps refuse a store missing risk columns :: ledgr_fold_fill_candidate",2,2
+"test-sweep-persistence-roundtrip.R :: saved sweeps refuse a store missing sweep_trades :: ledgr_fold_fill_candidate",2,2
+"test-sweep-persistence-roundtrip.R :: schema-1 saved sweeps fail closed with non-noop risk identity :: ledgr_fold_fill_candidate",4,4
+"test-sweep-persistence-roundtrip.R :: schema-2 saved sweeps fail closed on provenance risk drift :: ledgr_fold_fill_candidate",2,2
+"test-sweep-persistence-schema.R :: saved sweep schema enforces compact keys and nullable first returns :: ledgr_fold_fill_candidate",2,2
+"test-sweep-persistence-schema.R :: saved sweep storage projections use canonical JSON and validate denormalized identity :: ledgr_fold_fill_candidate",2,2
+"test-sweep-retention.R :: closed-trade retention exposes deterministic minimal trade evidence :: ledgr_fold_fill_candidate",16,16
+"test-sweep-retention.R :: completed retention exposes long and wide return series :: ledgr_fold_fill_candidate",2,2
+"test-sweep-retention.R :: completed retention is accepted without changing scalar identity :: ledgr_fold_fill_candidate",4,4
+"test-sweep-retention.R :: ledgr_sweep attaches retention metadata without changing default rows :: ledgr_fold_fill_candidate",2,2
+"test-sweep-retention.R :: retained-return panels fail closed for ragged complete grids :: ledgr_fold_fill_candidate",2,2
+"test-sweep-retention.R :: retained return accessors fail loudly for unretained, missing, and failed candidates :: ledgr_fold_fill_candidate",3,3
+"test-sweep-retention.R :: sweep return panels use the same class and hash payload :: ledgr_fold_fill_candidate",2,2
+"test-sweep-retention.R :: wide return projections reversibly escape reserved candidate ids :: ledgr_fold_fill_candidate",4,4
+"test-sweep-retention.R :: xts retained-return projection labels external evidence when available :: ledgr_fold_fill_candidate",2,2
+"test-sweep-single-feature-persistence.R :: [LTB-0257] one-feature sweeps save, reopen and promote exactly :: ledgr_fold_fill_candidate",34,34
+"test-sweep.R :: derived execution seeds are stable across sweep invocations :: ledgr_fold_fill_candidate",4,4
+"test-sweep.R :: feature-consuming sweep strategies see the same feature values as ledgr_run :: ledgr_fold_fill_candidate",2,2
+"test-sweep.R :: fills reconstruction is invariant under hostile collapse settings :: ledgr_replay_accounting_events",8,8
+"test-sweep.R :: inline accounting summary matches reconstruction with opening and split fill :: <direct>",1,1
+"test-sweep.R :: inline accounting summary matches reconstruction with opening and split fill :: ledgr_lot_book_from_opening",1,1
+"test-sweep.R :: inline accounting summary matches reconstruction with opening and split fill :: ledgr_replay_accounting_events",2,2
+"test-sweep.R :: ledgr_candidate selects by label or position and handles failures :: ledgr_fold_fill_candidate",2,2
+"test-sweep.R :: ledgr_promote forwards candidate params and execution seed :: ledgr_fold_fill_candidate",4,4
+"test-sweep.R :: ledgr_sweep returns ordered summary rows without store writes :: ledgr_fold_fill_candidate",2,2
+"test-sweep.R :: ledgr_sweep_results has the v0.1.8 column and metadata contract :: ledgr_fold_fill_candidate",4,4
+"test-sweep.R :: memory output handler stores typed events equivalent to ledger rows :: ledgr_replay_accounting_events",4,4
+"test-sweep.R :: single-pass sweep summary matches separate reconstruction helpers :: ledgr_replay_accounting_events",6,6
+"test-sweep.R :: sweep candidate key supports later durable materialization :: ledgr_fold_fill_candidate",2,2
+"test-sweep.R :: sweep public compiled accounting opt-in dispatches spot FIFO path :: ledgr_fold_fill_candidate",3,3
+"test-sweep.R :: sweep public compiled accounting preserves risk parity :: ledgr_fold_fill_candidate",10,10
+"test-terminal-outcomes.R :: [LTB-0162] modeled terminal choices dispose once before the strategy decision :: ledgr_disposition_post",7,7
+"test-terminal-outcomes.R :: [LTB-0162] modeled terminal choices dispose once before the strategy decision :: ledgr_lot_book_from_opening",9,9
+"test-terminal-outcomes.R :: [LTB-0163] supported settlement evidence pre-empts a modeled terminal :: ledgr_disposition_post",1,1
+"test-terminal-outcomes.R :: [LTB-0163] supported settlement evidence pre-empts a modeled terminal :: ledgr_lot_book_from_opening",2,2
+"test-terminal-outcomes.R :: [LTB-0164] unsupported and unpriceable terminals stop typed :: ledgr_lot_book_from_opening",4,4
+"test-terminal-outcomes.R :: [LTB-0165] an exhausted mark freezes without inventing transactions :: ledgr_fold_fill_candidate",1,1
+"test-terminal-outcomes.R :: [LTB-0165] an exhausted mark freezes without inventing transactions :: ledgr_lot_book_from_opening",3,3
+"test-terminal-outcomes.R :: [LTB-0166] frozen holdings move independently and resume deterministically :: ledgr_lot_book_from_opening",3,3
+"test-terminal-outcomes.R :: [LTB-0166] frozen holdings move independently and resume deterministically :: ledgr_replay_accounting_events",1,1
+"test-terminal-outcomes.R :: [LTB-0167] frozen holdings are preserved and reserved by strategy helpers :: ledgr_fold_fill_candidate",1,1
+"test-terminal-outcomes.R :: [LTB-0167] frozen holdings are preserved and reserved by strategy helpers :: ledgr_lot_book_from_opening",2,2
+"test-terminal-outcomes.R :: [LTB-0167] frozen holdings are preserved and reserved by strategy helpers :: ledgr_replay_accounting_events",2,2
+"test-terminal-outcomes.R :: [LTB-0168] a terminal reached while frozen resolves its declared fallback :: ledgr_disposition_post",7,7
+"test-terminal-outcomes.R :: [LTB-0168] a terminal reached while frozen resolves its declared fallback :: ledgr_lot_book_from_opening",9,9
+"test-terminal-outcomes.R :: [LTB-0169] memory, durable reopen and resume agree across freeze and terminal :: ledgr_disposition_post",3,3
+"test-terminal-outcomes.R :: [LTB-0169] memory, durable reopen and resume agree across freeze and terminal :: ledgr_fold_fill_candidate",3,3
+"test-terminal-outcomes.R :: [LTB-0169] memory, durable reopen and resume agree across freeze and terminal :: ledgr_lot_book_from_opening",4,4
+"test-terminal-outcomes.R :: [LTB-0169] memory, durable reopen and resume agree across freeze and terminal :: ledgr_replay_accounting_events",9,9
+"test-terminal-outcomes.R :: [LTB-0170] exact labels, the default entry and haircut arithmetic price one pulse :: ledgr_disposition_post",1,1
+"test-terminal-outcomes.R :: [LTB-0170] exact labels, the default entry and haircut arithmetic price one pulse :: ledgr_lot_book_from_opening",1,1
+"test-terminal-outcomes.R :: [LTB-0171] a failure before the terminal append commits nothing :: ledgr_lot_book_from_opening",1,1
+"test-terminal-outcomes.R :: [LTB-0171] a failure before the terminal append commits nothing :: ledgr_replay_accounting_events",1,1
+"test-terminal-reporting.R :: [LTB-0172] terminal outcomes reconcile to events and name their assumption :: ledgr_disposition_post",2,2
+"test-terminal-reporting.R :: [LTB-0172] terminal outcomes reconcile to events and name their assumption :: ledgr_fold_fill_candidate",1,1
+"test-terminal-reporting.R :: [LTB-0172] terminal outcomes reconcile to events and name their assumption :: ledgr_lot_book_from_opening",1,1
+"test-terminal-reporting.R :: [LTB-0172] terminal outcomes reconcile to events and name their assumption :: ledgr_replay_accounting_events",14,14
+"test-terminal-reporting.R :: [LTB-0173] valuation evidence matches a pulse-level oracle :: ledgr_lot_book_from_opening",1,1
+"test-terminal-reporting.R :: [LTB-0173] valuation evidence matches a pulse-level oracle :: ledgr_replay_accounting_events",1,1
+"test-terminal-reporting.R :: [LTB-0174] warnings have no materiality threshold and stay off clean runs :: ledgr_disposition_post",1,1
+"test-terminal-reporting.R :: [LTB-0174] warnings have no materiality threshold and stay off clean runs :: ledgr_fold_fill_candidate",1,1
+"test-terminal-reporting.R :: [LTB-0174] warnings have no materiality threshold and stay off clean runs :: ledgr_lot_book_from_opening",4,4
+"test-terminal-reporting.R :: [LTB-0174] warnings have no materiality threshold and stay off clean runs :: ledgr_replay_accounting_events",12,12
+"test-terminal-reporting.R :: [LTB-0175] reporting is identical from memory, reopen and resume :: ledgr_disposition_post",2,2
+"test-terminal-reporting.R :: [LTB-0175] reporting is identical from memory, reopen and resume :: ledgr_lot_book_from_opening",3,3
+"test-terminal-reporting.R :: [LTB-0175] reporting is identical from memory, reopen and resume :: ledgr_replay_accounting_events",6,6
+"test-terminal-reporting.R :: [LTB-0438] stopped valuation headlines replace ordinary mark headlines :: ledgr_lot_book_from_opening",4,4
+"test-terminal-reporting.R :: [LTB-0438] stopped valuation headlines replace ordinary mark headlines :: ledgr_replay_accounting_events",11,11
+"test-terminal-reporting.R :: [LTB-0553] run readers retain late heterogeneous disposition fields :: ledgr_disposition_post",1,1
+"test-terminal-reporting.R :: [LTB-0553] run readers retain late heterogeneous disposition fields :: ledgr_lot_book_from_opening",1,1
+"test-terminal-reporting.R :: [LTB-0553] run readers retain late heterogeneous disposition fields :: ledgr_replay_accounting_events",8,8
+"test-typed-accounting-boundary.R :: [LTB-0550] typed accounting carrier owns fields and block boundaries :: ledgr_replay_accounting_events",6,6
+"test-walk-forward-folds.R :: walk-forward routes every candidate and test through the fold core :: ledgr_fold_fill_candidate",2,2
+"test-walk-forward-folds.R :: walk-forward routes every candidate and test through the fold core :: ledgr_replay_accounting_events",2,2
+"test-walk-forward-folds.R :: windowed run and sweep match equivalent sliced snapshots :: ledgr_fold_fill_candidate",6,6
+"test-walk-forward-folds.R :: windowed run and sweep match equivalent sliced snapshots :: ledgr_replay_accounting_events",4,4
+"test-walk-forward-orchestrator.R :: [LTB-0070] terminal cleanup closes test handles without masking the terminal error :: ledgr_fold_fill_candidate",2,2
+"test-walk-forward-orchestrator.R :: [LTB-0070] terminal cleanup closes test handles without masking the terminal error :: ledgr_replay_accounting_events",2,2
+"test-walk-forward-orchestrator.R :: degradation table is classed and prints a curated core view :: ledgr_fold_fill_candidate",3,3
+"test-walk-forward-orchestrator.R :: degradation table is classed and prints a curated core view :: ledgr_lot_book_from_opening",1,1
+"test-walk-forward-orchestrator.R :: degradation table is classed and prints a curated core view :: ledgr_replay_accounting_events",3,3
+"test-walk-forward-orchestrator.R :: flat-test state is explicit and marked cold-start distorted :: ledgr_fold_fill_candidate",4,4
+"test-walk-forward-orchestrator.R :: flat-test state is explicit and marked cold-start distorted :: ledgr_replay_accounting_events",2,2
+"test-walk-forward-orchestrator.R :: ledgr_candidate extracts walk-forward candidates through locators :: ledgr_fold_fill_candidate",4,4
+"test-walk-forward-orchestrator.R :: ledgr_candidate extracts walk-forward candidates through locators :: ledgr_lot_book_from_opening",1,1
+"test-walk-forward-orchestrator.R :: ledgr_candidate extracts walk-forward candidates through locators :: ledgr_replay_accounting_events",3,3
+"test-walk-forward-orchestrator.R :: walk-forward candidate locators verify overrides and missing stores :: ledgr_fold_fill_candidate",3,3
+"test-walk-forward-orchestrator.R :: walk-forward candidate locators verify overrides and missing stores :: ledgr_lot_book_from_opening",1,1
+"test-walk-forward-orchestrator.R :: walk-forward candidate locators verify overrides and missing stores :: ledgr_replay_accounting_events",3,3
+"test-walk-forward-orchestrator.R :: walk-forward derives fold/window candidate seeds and preserves deterministic session identity :: ledgr_fold_fill_candidate",3,3
+"test-walk-forward-orchestrator.R :: walk-forward derives fold/window candidate seeds and preserves deterministic session identity :: ledgr_lot_book_from_opening",1,1
+"test-walk-forward-orchestrator.R :: walk-forward derives fold/window candidate seeds and preserves deterministic session identity :: ledgr_replay_accounting_events",3,3
+"test-walk-forward-orchestrator.R :: walk-forward exposes cadence warnings through existing metric boundaries :: ledgr_fold_fill_candidate",2,2
+"test-walk-forward-orchestrator.R :: walk-forward exposes cadence warnings through existing metric boundaries :: ledgr_replay_accounting_events",2,2
+"test-walk-forward-orchestrator.R :: walk-forward inspection helpers reopen completed and partial sessions read-only :: ledgr_fold_fill_candidate",5,5
+"test-walk-forward-orchestrator.R :: walk-forward inspection helpers reopen completed and partial sessions read-only :: ledgr_lot_book_from_opening",1,1
+"test-walk-forward-orchestrator.R :: walk-forward inspection helpers reopen completed and partial sessions read-only :: ledgr_replay_accounting_events",5,5
+"test-walk-forward-orchestrator.R :: walk-forward interrupt after a completed fold persists a partial session :: ledgr_fold_fill_candidate",2,2
+"test-walk-forward-orchestrator.R :: walk-forward interrupt after a completed fold persists a partial session :: ledgr_replay_accounting_events",2,2
+"test-walk-forward-orchestrator.R :: walk-forward orchestrates train sweeps, selected test runs, and persisted happy-path rows :: ledgr_fold_fill_candidate",3,3
+"test-walk-forward-orchestrator.R :: walk-forward orchestrates train sweeps, selected test runs, and persisted happy-path rows :: ledgr_lot_book_from_opening",1,1
+"test-walk-forward-orchestrator.R :: walk-forward orchestrates train sweeps, selected test runs, and persisted happy-path rows :: ledgr_replay_accounting_events",3,3
+"test-walk-forward-orchestrator.R :: walk-forward preserves failed train candidate score rows while selecting survivors :: ledgr_fold_fill_candidate",2,2
+"test-walk-forward-orchestrator.R :: walk-forward preserves failed train candidate score rows while selecting survivors :: ledgr_replay_accounting_events",2,2
+"test-walk-forward-orchestrator.R :: walk-forward reruns reopen deterministic test runs and replace session rows :: ledgr_fold_fill_candidate",5,5
+"test-walk-forward-orchestrator.R :: walk-forward reruns reopen deterministic test runs and replace session rows :: ledgr_lot_book_from_opening",1,1
+"test-walk-forward-orchestrator.R :: walk-forward reruns reopen deterministic test runs and replace session rows :: ledgr_replay_accounting_events",6,6
+"test-walk-forward-orchestrator.R :: walk-forward test-run failure preserves train rows and fails the session :: ledgr_fold_fill_candidate",1,1
+"test-workstream8-exact-parity.R :: availability marks use one query and preserve the prefix oracle :: ledgr_fold_fill_candidate",1,1
+"test-workstream8-exact-parity.R :: availability marks use one query and preserve the prefix oracle :: ledgr_replay_accounting_events",1,1
+"test-ws4a-carrier.R :: [WS4a 2.5] reused effects equal both base formulas on every fill :: ledgr_fold_fill_candidate",12,12
+"test-ws4a-carrier.R :: [WS4a 3167 precedence] a batch refuses in the per-fill order with the base conditions :: <direct>",23,23
+"test-ws4a-carrier.R :: [WS4a C13b] a candidate-calculation error leaves state and buffers unchanged :: ledgr_fold_fill_candidate",5,5
+"test-ws4a-carrier.R :: [WS4a C13b] a candidate-calculation error leaves state and buffers unchanged :: ledgr_fold_stage_apply",1,1
+"test-ws4a-carrier.R :: [WS4a compiled boundary] pack and unpack gather typed lots and keep the Kahan state :: <direct>",3,3
+"test-ws4a-carrier.R :: [WS4a compiled overflow] the compiled path refuses an overflowing fill as invalid fill input :: <direct>",1,1
+"test-ws4a-carrier.R :: [WS4a compiled overflow] the compiled path refuses an overflowing fill as invalid fill input :: ledgr_fold_fill_candidate",5,5
+"test-ws4a-carrier.R :: [WS4a D10] P1 writes one fold-owned equity row per valued pulse on both producers :: ledgr_fold_fill_candidate",18,18
+"test-ws4a-carrier.R :: [WS4a D15] the lot kernel never writes a book column by reference :: <direct>",5,5
+"test-ws4a-carrier.R :: [WS4a D16] the provider adapter converts each produced view once :: ledgr_fold_fill_candidate",18,18
+"test-ws4a-carrier.R :: [WS4a D17 F4.35] the lot kernel computes no cash and openings move no cash :: <direct>",2,2
+"test-ws4a-carrier.R :: [WS4a D18] a kernel call refuses duplicate instruments :: <direct>",1,1
+"test-ws4a-carrier.R :: [WS4a D2] the pulse staging is typed, drained whole and never retained across pulses :: ledgr_fold_fill_candidate",20,20
+"test-ws4a-carrier.R :: [WS4a D23] replay adds each published cash effect exactly once :: <direct>",4,4
+"test-ws4a-carrier.R :: [WS4a D25] independent lot work is vectorized; replay applies whole blocks :: <direct>",2,2
+"test-ws4a-carrier.R :: [WS4a D4] the strategy return is normalized once per decided pulse :: ledgr_fold_fill_candidate",20,20
+"test-ws4a-carrier.R :: [WS4a D5 D21] P2's input carries no execution-packet field; P3-P5 read no history :: ledgr_fold_fill_candidate",27,27
+"test-ws4a-carrier.R :: [WS4a D7] openings take no Kahan step and keep a nonzero compensation :: <direct>",4,4
+"test-ws4a-carrier.R :: [WS4a D8 handoff] durable, db_live, memory and compiled publication publish P3's carried effects :: ledgr_fold_fill_candidate",13,13
+"test-ws4a-carrier.R :: [WS4a D8] no fill-intent object in the fold or sinks; effects are computed once, in P3 :: ledgr_fold_fill_candidate",36,36
+"test-ws4a-carrier.R :: [WS4a F1] replay refuses the earliest failing event with the base precedence :: <direct>",11,11
+"test-ws4a-carrier.R :: [WS4a F1] replay refuses the earliest failing event with the base precedence :: ledgr_accounting_event_error",4,4
+"test-ws4a-carrier.R :: [WS4a F4.19] the provider adapter keeps unpriced provenance field by field :: ledgr_fold_fill_candidate",9,9
+"test-ws4a-carrier.R :: [WS4a F4.49 O3.78] E applies each stop result once; its rows and count are installed once :: ledgr_fold_fill_candidate",12,12
+"test-ws4a-carrier.R :: [WS4a import] E import maps openings onto the run axis and refuses corrupt books :: <direct>",2,2
+"test-ws4a-carrier.R :: [WS4a O3.28] the compiled risk plan is validated in E, not per pulse :: ledgr_fold_fill_candidate",1,1
+"test-ws4a-carrier.R :: [WS4a overflow refusal] a fill whose lot accounting overflows is refused as invalid fill input :: <direct>",27,27
+"test-ws4a-carrier.R :: [WS4a overflow refusal] a fill whose lot accounting overflows is refused as invalid fill input :: ledgr_lot_applied",3,3
+"test-ws4a-carrier.R :: [WS4a replay blocks] block replay equals one operation per event :: <direct>",12,12
+"test-ws4a-carrier.R :: [WS4a U-3164] book totals are typed scalars; empty operations keep the book and type their rows :: <direct>",6,6
+"test-ws4a-carrier.R :: [WS4a V-applied-row] applied rows carry actual lot facts and refuse the controls :: <direct>",5,5
+"test-ws4a-carrier.R :: [WS4a V-applied-row] the close/open split is checked against the lots before and after :: <direct>",8,8
+"test-ws4a-carrier.R :: [WS4a V-book F4.12] aggregates are exact reductions at construction and exact zero when flat :: <direct>",9,9
+"test-ws4a-carrier.R :: [WS4a V-book] the typed book group refuses the construction controls :: <direct>",3,3
+"test-ws4a-carrier.R :: [WS4a V-diagnostics V-equity V-stop U-3168] staging, equity and stop payloads are typed and refuse the controls :: ledgr_fold_fill_candidate",4,4
+"test-ws4a-carrier.R :: [WS4a V-packet U-3165] the three P1 groups are typed, aligned and refuse the controls :: ledgr_fold_fill_candidate",9,9
+"test-ws4a-carrier.R :: [WS4a V-publication V-leg U-3167] published blocks and legs are typed and refuse the controls :: <direct>",2,2
+"test-ws4a-carrier.R :: [WS4a V-publication V-leg U-3167] published blocks and legs are typed and refuse the controls :: ledgr_fold_fill_candidate",8,8
+"test-ws4a-carrier.R :: [WS4a V-state] the fold state holds run-axis positions and a typed book :: <direct>",3,3
+"test-ws4a-carrier.R :: [WS4a valuation overflow] a non-finite valuation reaches the base refusal point :: ledgr_fold_fill_candidate",13,13
+"test-ws4a-carrier.R :: [WS4a valuation overflow] a non-finite valuation reaches the base refusal point :: ledgr_lot_book_from_opening",12,12
+"test-ws4a-carrier.R :: [WS4a W1] P4 installs the book, publishes, advances, records legs, then installs positions and cash :: ledgr_fold_fill_candidate",20,20

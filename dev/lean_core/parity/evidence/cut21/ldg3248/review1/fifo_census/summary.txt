@@ -1,0 +1,10 @@
+totals: capture 156572 (mocked 20), census A 156568, census B 156568; committed 156571
+test-rng-isolation.R: census A 10938, census B 10938; without it: A 145630, B 145630
+                    caller capture census_a census_b
+ ledgr_fold_fill_candidate   12803    12799    12799
+                                                                                                            file_test_caller
+ test-rng-isolation.R :: an unseeded run whose strategy draws leaves the caller's RNG unchanged :: ledgr_fold_fill_candidate
+              test-rng-isolation.R :: every wrapped export restores the caller's RNG on success :: ledgr_fold_fill_candidate
+ census_a census_b
+       18       19
+      258      257

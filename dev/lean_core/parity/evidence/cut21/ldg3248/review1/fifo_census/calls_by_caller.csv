@@ -1,0 +1,9 @@
+"caller","capture","census_a","census_b"
+"<direct>",40044,40044,40044
+"ledgr_accounting_event_error",4,4,4
+"ledgr_disposition_post",63,63,63
+"ledgr_fold_fill_candidate",12803,12799,12799
+"ledgr_fold_stage_apply",1,1,1
+"ledgr_lot_applied",3,3,3
+"ledgr_lot_book_from_opening",416,416,416
+"ledgr_replay_accounting_events",103238,103238,103238

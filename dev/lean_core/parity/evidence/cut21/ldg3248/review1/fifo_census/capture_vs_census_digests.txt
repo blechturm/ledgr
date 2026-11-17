@@ -1,0 +1,763 @@
+           digest capture census
+ 0798934a7beefb0b       1      0
+ 088819fd0f55bdc5       1      0
+ 166a5022cd1c705f       1      0
+ 1ec5804544b3b846       1      0
+ 200334b8a9893399       1      0
+ 248a99f18ab20f54       1      0
+ 2dd346e44c513b4a       1      0
+ 38327d374612208b       1      0
+ 3d65ef5d9ed04d23       2      3
+ 4254b83eb33886cf       1      0
+ 60bc9d4ed52c120a       1      0
+ 65af2e4925833a42       1      0
+ 65c5f986825f1308       1      0
+ 66181007a68bae0f      15     16
+ 682c5bb4332308e1       9      7
+ 767715c164db1cfd       1      0
+ 7b0e74f3ad4b1bdc       1      0
+ 88b65b3fcb024e22       1      0
+ 8c11e069e91df1c5       1      0
+ 8e0e668400df0411       1      0
+ c76634614e142034      19     20
+ d1ad0df0877c106c       1      0
+ e5b91bbdac9ae1a0       1      0
+ f3e0592f13266314       1      0
+ f7718f36d487a09d       1      0
+ f9a13b90d867007c       1      0
+ fd97aea540657746       1      0
+ 0378a015f2da85d6       0      1
+ 09da51cb7b3f7c94       0      1
+ 0a64492d76ee2c1d       0      1
+ 16ef23221b75c7c2       0      1
+ 1e1abebc0f77a088       0      1
+ 2f6da60755355584       0      1
+ 3b3e5d1809584465       0      1
+ 40cdb1906bec03a1       0      1
+ 70851f46616dd665       0      1
+ 713cdd6d72705be6       0      1
+ 846bdd9be774ab11       0      1
+ 86ce1e305cc58be0       0      1
+ 8fceae4fb082b944       0      1
+ 96411a3b2a00e7e2       0      1
+ b3a37d799d46d5b9       0      1
+ caad95571dfeff8a       0      1
+ e4c3251490af9baf       0      1
+ e4c67f7420201f54       0      1
+                       file
+152724 test-rng-isolation.R
+                                                            test
+152724 every wrapped export restores the caller's RNG on success
+                       file
+152646 test-rng-isolation.R
+152977 test-rng-isolation.R
+152990 test-rng-isolation.R
+153117 test-rng-isolation.R
+                                                                             test
+152646                  every wrapped export restores the caller's RNG on success
+152977                    storage-facing exports leave the caller's RNG unchanged
+152990 captured service expressions and returned helpers restore the caller's RNG
+153117    rng-relevant sites run only under a wrapped export or a returned helper
+                       file
+152669 test-rng-isolation.R
+                                                            test
+152669 every wrapped export restores the caller's RNG on success
+                       file
+141802 test-pulse-seed-v2.R
+152723 test-rng-isolation.R
+152976 test-rng-isolation.R
+152991 test-rng-isolation.R
+153093 test-rng-isolation.R
+153121 test-rng-isolation.R
+                                                                               test
+141802 walk-forward candidates copy the results marker; old and missing are refused
+152723                    every wrapped export restores the caller's RNG on success
+152976                      storage-facing exports leave the caller's RNG unchanged
+152991   captured service expressions and returned helpers restore the caller's RNG
+153093                                       ledgr_walk_forward runs without a seed
+153121      rng-relevant sites run only under a wrapped export or a returned helper
+                       file
+152769 test-rng-isolation.R
+                                                            test
+152769 every wrapped export restores the caller's RNG on success
+                       file
+152766 test-rng-isolation.R
+                                                            test
+152766 every wrapped export restores the caller's RNG on success
+                       file
+152687 test-rng-isolation.R
+                                                            test
+152687 every wrapped export restores the caller's RNG on success
+                       file
+152774 test-rng-isolation.R
+                                                            test
+152774 every wrapped export restores the caller's RNG on success
+                       file
+152690 test-rng-isolation.R
+                                                            test
+152690 every wrapped export restores the caller's RNG on success
+                       file
+152763 test-rng-isolation.R
+                                                            test
+152763 every wrapped export restores the caller's RNG on success
+                       file
+152764 test-rng-isolation.R
+                                                            test
+152764 every wrapped export restores the caller's RNG on success
+                       file
+152689 test-rng-isolation.R
+                                                            test
+152689 every wrapped export restores the caller's RNG on success
+                       file
+152777 test-rng-isolation.R
+                                                            test
+152777 every wrapped export restores the caller's RNG on success
+                       file
+153009 test-rng-isolation.R
+                                                                         test
+153009 an unseeded run whose strategy draws leaves the caller's RNG unchanged
+                       file
+152775 test-rng-isolation.R
+                                                            test
+152775 every wrapped export restores the caller's RNG on success
+                       file
+152767 test-rng-isolation.R
+                                                            test
+152767 every wrapped export restores the caller's RNG on success
+                       file
+152773 test-rng-isolation.R
+                                                            test
+152773 every wrapped export restores the caller's RNG on success
+                       file
+152776 test-rng-isolation.R
+                                                            test
+152776 every wrapped export restores the caller's RNG on success
+                       file
+152765 test-rng-isolation.R
+                                                            test
+152765 every wrapped export restores the caller's RNG on success
+                       file
+152768 test-rng-isolation.R
+                                                            test
+152768 every wrapped export restores the caller's RNG on success
+                       file
+152686 test-rng-isolation.R
+                                                            test
+152686 every wrapped export restores the caller's RNG on success
+                       file
+152688 test-rng-isolation.R
+                                                            test
+152688 every wrapped export restores the caller's RNG on success
+capture positions: 141802 141833 141834 141855 152646 152654 152669 152685 152688 152689 152690 152691 152692 152693 152694 152727 152728 152734 152742 152758 152759 152765 152766 152767 152768 152769 152770 152771 152772 152773 152774 152775 152776 152777 152778 152789 152805 152821 152837 152843 152851 152859 152867 152875 152876 152901 152902 152920 152921 152939 152940 152958 152959 152977 152978 152991 152992 153010 153011 153012 153013 153097 153121 153122 153123 153124 153125 153138 
+pos 141802 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 141833 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 141834 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 141855 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152646 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152654 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152669 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152685 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152688 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 51.3
+ $ fee               : num 0
+  [list output truncated]
+pos 152689 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 50.8
+ $ fee               : num 0
+  [list output truncated]
+pos 152690 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 50.6
+ $ fee               : num 0
+  [list output truncated]
+pos 152691 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 2
+ $ price             : num 50.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152692 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 50.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152693 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 50.6
+ $ fee               : num 0
+  [list output truncated]
+pos 152694 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 50.9
+ $ fee               : num 0
+  [list output truncated]
+pos 152727 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152728 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 51.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152734 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152742 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152758 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152759 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 51.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152765 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152766 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.1
+ $ fee               : num 0
+  [list output truncated]
+pos 152767 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 50.8
+ $ fee               : num 0
+  [list output truncated]
+pos 152768 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 50.6
+ $ fee               : num 0
+  [list output truncated]
+pos 152769 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 50.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152770 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 50.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152771 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 50.6
+ $ fee               : num 0
+  [list output truncated]
+pos 152772 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 2
+ $ price             : num 50.9
+ $ fee               : num 0
+  [list output truncated]
+pos 152773 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152774 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 51.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152775 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 50.8
+ $ fee               : num 0
+  [list output truncated]
+pos 152776 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 50.6
+ $ fee               : num 0
+  [list output truncated]
+pos 152777 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 50.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152778 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 50.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152789 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152805 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152821 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152837 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152843 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152851 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152859 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152867 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152875 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152876 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152901 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152902 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152920 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152921 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152939 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152940 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152958 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.5
+ $ fee               : num 0
+  [list output truncated]
+pos 152959 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152977 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152978 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152991 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 152992 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 153010 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 51.3
+ $ fee               : num 0
+  [list output truncated]
+pos 153011 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 51.1
+ $ fee               : num 0
+  [list output truncated]
+pos 153012 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 50.8
+ $ fee               : num 0
+  [list output truncated]
+pos 153013 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int -1
+ $ qty               : num 1
+ $ price             : num 50.6
+ $ fee               : num 0
+  [list output truncated]
+pos 153097 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 153121 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 153122 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 153123 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 153124 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 153125 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 2
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]
+pos 153138 error: FALSE 
+List of 8
+ $ operation         : int 1
+ $ pos               : int 1
+ $ side              : int 1
+ $ qty               : num 1
+ $ price             : num 51.4
+ $ fee               : num 0
+  [list output truncated]

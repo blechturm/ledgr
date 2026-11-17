@@ -1,0 +1,10 @@
+a <- read.csv("censusA.csv", stringsAsFactors = FALSE); b <- read.csv("censusB.csv", stringsAsFactors = FALSE)
+cat("A", nrow(a), "B", nrow(b), "\n")
+ka <- paste(a$file, a$test, sep = " :: "); kb <- paste(b$file, b$test, sep = " :: ")
+ta <- table(ka); tb <- table(kb)
+k <- union(names(ta), names(tb))
+d <- data.frame(test = k, A = as.integer(ta[k]), B = as.integer(tb[k]))
+d[is.na(d)] <- 0L
+print(d[d$A != d$B, ], row.names = FALSE)
+cat("per file:\n"); fa <- table(a$file); fb <- table(b$file); f <- union(names(fa), names(fb))
+x <- data.frame(file = f, A = as.integer(fa[f]), B = as.integer(fb[f])); x[is.na(x)] <- 0L; print(x[x$A != x$B, ], row.names = FALSE)

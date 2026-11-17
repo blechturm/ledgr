@@ -1,0 +1,15 @@
+fs <- sort(list.files("fifo_tests", "^tests_[0-9]+[.]rds$", full.names = TRUE))
+calls <- do.call(c, lapply(fs, readRDS))
+inp <- vapply(calls, function(x) !is.null(x$input_args), logical(1))
+cat("records", length(calls), "input refusals", sum(inp), "lot calls", sum(!inp), "\n")
+cc <- calls[!inp]
+caller <- vapply(cc, function(x) paste(x$caller, collapse = "/"), "")
+mocked <- vapply(cc, function(x) length(x$mocked) > 0L, logical(1))
+cat("mocked", sum(mocked), "\n")
+cap <- table(caller)
+a <- read.csv("censusA.csv", stringsAsFactors = FALSE)
+cen <- table(a$caller)
+k <- union(names(cap), names(cen))
+d <- data.frame(caller = k, capture = as.integer(cap[k]), census = as.integer(cen[k])); d[is.na(d)] <- 0L
+print(d[d$capture != d$census, ], row.names = FALSE)
+saveRDS(list(caller = caller, mocked = mocked), "capsum.rds")
