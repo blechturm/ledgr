@@ -242,7 +242,15 @@ for (w in life_cap) {
   add(both(action = "add", mode = "batch1", workload = w, lean_folds = 1L, refused = "", backstop = "",
            reason = "Workstream 40 close review round 1 (F1) witness across terminal batches, declared path"))
 }
-for (w in paste0(life_cap, "_run")) {
+# Close review round 2 retires the two over-room ones from inert hooks
+# (maintainer decision 2026-11-17): they lower the handler's room through
+# the init_buffers() seam and tell lean through lean_entry$capacity, a hook
+# inert hooks switch off by design, and after F3 lean reads no handler
+# internals. No real run lowers the room (the pin passes pulses x
+# instruments as max_events); the five native-room F3 witnesses cover the
+# same capacity code under inert hooks; witness_capacity has no inert row
+# either. They stay in the gate and batch-one sets.
+for (w in c("s4_life_capacity_p1_ok_run", "s4_life_capacity_p5_ok_run")) {
   add(both(action = "add", mode = "inert", workload = w, lean_folds = 0L, refused = "", backstop = "",
            reason = "Workstream 40 close review round 1 (F1) witness under inert hooks, inert-mode count"))
 }

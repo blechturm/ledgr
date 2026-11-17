@@ -66,7 +66,7 @@ batch-one list is `<B1>` plus the nine F3 witnesses s4_wrap_plan_p1,
 s4_wrap_plan_p1_eq, s4_wrap_plan_p5, s4_wrap_plan_p5_eq, s4_wrap_life_p1,
 s4_wrap_life_p1_eq, s4_wrap_life_p5, s4_wrap_life_p5_eq, s4_wrap_drain_run
 (and the four F1 witnesses of round 1); the inert list is `<IN>` plus the
-four F1 `_run` witnesses of round 1 and s4_wrap_plan_p1_run,
+two F1 `_run` controls of round 1 (s4_life_capacity_p1_ok_run, s4_life_capacity_p5_ok_run; the two over-room ones are retired from inert hooks) and s4_wrap_plan_p1_run,
 s4_wrap_plan_p1_eq_run, s4_wrap_plan_p5_run, s4_wrap_plan_p5_eq_run,
 s4_wrap_drain_run. Variants: one loop_parity.R `--mutation=` run per line
 of `review2/variants/spec.txt` (`variant|workloads|debug|batch rows`).

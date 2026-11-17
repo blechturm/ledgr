@@ -1,31 +1,29 @@
-crossover_3x40               PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.0 s  lean 5.8 s
-reconciliation_stop          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.2 s  lean 1.9 s
-s2_sizing_rebalance          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.5 s  lean 5.4 s
-s3_freeze_exit               PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.2 s  lean 3.8 s
-tight_cash                   PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.7 s  lean 2.6 s
-witness_surface_seeded       PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.1 s  lean 3.0 s
-witness_sweep                PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.9 s  lean 2.8 s
-witness_zero_pulses          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.6 s  lean 3.1 s
-s4_carried_lots              PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.8 s  lean 2.4 s
-s4_basis_unknown             PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 1.1 s
-s4_dividend                  PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.8 s  lean 2.4 s
-s4_dividend_mixed            PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.9 s  lean 3.1 s
-s4_capacity_block            PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.7 s  lean 0.6 s
-s4_capacity_after_fill_run   PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.8 s
-s4_capacity_fill_run         PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.7 s
-s4_v201_default              PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.1 s  lean 3.3 s
-s4_subset                    PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.8 s  lean 2.8 s
-s4_acq_held                  PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.0 s  lean 3.2 s
-s4_terminal_choices          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.8 s  lean 2.5 s
-s4_p1_then_stop              PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.7 s  lean 2.0 s
-s4_life_capacity_p1_run      FAIL      DIFFERENT  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.7 s  lean 1.0 s  new errors [Strategy error at ts_utc=2020-01-04T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+crossover_3x40               PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.0 s  lean 6.2 s
+reconciliation_stop          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.2 s  lean 2.3 s
+s2_sizing_rebalance          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.2 s  lean 3.8 s
+s3_freeze_exit               PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.6 s  lean 2.9 s
+tight_cash                   PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.4 s  lean 2.0 s
+witness_surface_seeded       PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.5 s  lean 2.5 s
+witness_sweep                PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.8 s  lean 2.2 s
+witness_zero_pulses          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.3 s  lean 2.3 s
+s4_carried_lots              PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.5 s  lean 1.9 s
+s4_basis_unknown             PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 1.0 s
+s4_dividend                  PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.3 s  lean 2.1 s
+s4_dividend_mixed            PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.5 s  lean 2.2 s
+s4_capacity_block            PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.5 s
+s4_capacity_after_fill_run   PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.6 s
+s4_capacity_fill_run         PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.6 s
+s4_v201_default              PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.6 s  lean 2.6 s
+s4_subset                    PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.5 s  lean 2.4 s
+s4_acq_held                  PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.5 s  lean 2.4 s
+s4_terminal_choices          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.4 s  lean 2.2 s
+s4_p1_then_stop              PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.6 s  lean 1.9 s
 s4_life_capacity_p1_ok_run   PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.9 s
-s4_life_capacity_p5_run      FAIL      DIFFERENT  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.7 s  lean 0.8 s  new errors [Strategy error at ts_utc=2020-01-03T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
-s4_life_capacity_p5_ok_run   PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.7 s  lean 0.9 s
-s4_wrap_plan_p1_run          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.6 s
-s4_wrap_plan_p1_eq_run       PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.7 s
-s4_wrap_plan_p5_run          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.7 s
-s4_wrap_plan_p5_eq_run       PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.7 s  lean 0.8 s
-s4_wrap_drain_run            PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.0 s  lean 2.7 s
-frozen paths (inert, debug 1): 29 of 29 workloads checked
-397 tables, 2 different; verdicts: FAIL 2, PASS* 27
+s4_life_capacity_p5_ok_run   PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.8 s
+s4_wrap_plan_p1_run          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.6 s
+s4_wrap_plan_p1_eq_run       PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.6 s
+s4_wrap_plan_p5_run          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.7 s
+s4_wrap_plan_p5_eq_run       PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.8 s
+s4_wrap_drain_run            PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.5 s  lean 1.9 s
+frozen paths (inert, debug 1): 27 of 27 workloads checked
+375 tables, 0 different; verdicts: PASS* 27
