@@ -7464,7 +7464,7 @@ tickets:
   - id: "LDG-3251"
     title: "Narrow input treatment and cut the TTR per-call overhead, together"
     workstream: 41
-    status: "proposed"
+    status: "complete"
     priority: "P0"
     effort: "M"
     dependencies: ["LDG-3250"]
