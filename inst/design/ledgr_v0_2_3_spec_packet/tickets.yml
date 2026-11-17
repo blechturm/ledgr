@@ -3245,6 +3245,232 @@ cuts:
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
     cut_review: "CHANGES_REQUIRED in cut_review_21.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at dcc2fa9d): R1-R9 required, all applied with the review's replacement text: the carried-freeze predicate keeps the decision row and asserts lots, entry anchor and a pending entitlement (R1); implicit records take P1 non-fill position changes (R2; the probe published false hold targets after a disposition); the capture append keeps the pin's in-memory acceptance validation (R3; the probe deferred an overflow refusal and changed its class); the committed-prefix reader covers openings and P1 appends (R4); empty context distinguished from empty membership, with its record row (R5; the probe dropped three empty_public_domain rows); a debug settlement check that survives omission of the call, and the measured-input facts sentence corrected (R6); the remaining policy routes, P1 precedence collisions and the restricted-target reason (R7); growth, batch-one and re-anchor obligations (R8); the exact existing-row moves with fold counts (R9). No maintainer question; the maintainer's choices stand. Focused re-review 1 (cut_review_21_rereview_1.md, same setup, at a04e0df9): CHANGES_REQUIRED, R1-R7 and R9 applied, F1 (R8 incomplete: the duplicated-row fault must hit the captured tail after the last fill), applied at 3ae3aec9. Focused re-review 2 (cut_review_21_rereview_2.md, at 3ae3aec9): PASS, F1 applied and bound by both closes, no new finding."
+  - id: 22
+    name: "Feature engine stage 1: remove work with the same values (feature-engine RFC, Section 5)"
+    cut: "2026-11-17"
+    status: "proposed"
+    opening: >-
+      Cut 21 closed (ffc7e3eb). The macro plan's order after Cut 20, item c,
+      runs the accepted feature-engine RFC's stage 1 as its own cut before
+      the RFC on stages 2-3 and before slice 5 (maintainer, 2026-11-16,
+      seed Section 7). Features are the largest wide-run cost after the
+      store write. Stage 1 removes work from the package's feature path
+      with identical values and no contract change, repairs the engine
+      version, and leaves the per-instrument bookkeeping (stage 3's) alone.
+      This is the first cut since the pin that changes package code on the
+      feature path, so the lean parity gate, which reads features through
+      that code, becomes a second end-to-end oracle.
+    authority: >-
+      inst/design/rfc/rfc_feature_engine_v0_2_3_seed_v2.md (accepted
+      2026-11-16; Sections 4-7 bind this cut, Section 5 Stage 1 lists its
+      candidates and proof obligations, Section 6 its identity rules);
+      macro_plan.md, order after Cut 20, item c; inst/design/contracts.md
+      (Indicator Computation And Identity, Availability-Aware Strict
+      Features, TTR Adapter, Feature Path, by topic heading) binds
+      behaviour; inst/design/manual/optimization_coding_style.qmd applies
+      as review criteria (feature preparation runs before every fold);
+      inst/design/manual/benchmark_methodology.qmd and the shared harness
+      dev/bench/timing/ govern measurement; inst/design/spike_protocol.md.
+    measured_input: >-
+      Measuring step at ffc7e3eb (dev/spikes/feature_stage1_probe/,
+      e0d6cc9e and 693d8736: probe.R, check.R with CHECK PASS,
+      steps_clean.R, probe_time.R, inputs_split.R, results/, findings.md).
+      R/'s feature code is identical between d5b3a151 and ffc7e3eb (only
+      R/strategy-helpers.R and R/strategy-types.R differ), so the pin
+      measures the current path. Clean step table (quiet machine, High
+      performance, P-cores, 7 reps): whole feature path 0.25 / 0.57 s
+      (10x7200 run / sweep), 0.75 / 1.75 s (500x1260), 1.03 / 2.37 s
+      (1166x252); bare TTR on the same definitions under 0.005, 0.08 /
+      0.24 and 0.16 / 0.47 s. Shares match the RFC's busy-machine table
+      within a few points. Axis formatting is 64 and 59 percent of the
+      10x7200 run and sweep paths. Input treatment is 0.25-0.30 s on the
+      wide runs, but about half of it is the expected-session and terminal
+      masks, which narrowing keeps, so candidate 2 alone saves 0.08-0.16 s,
+      not the bucket. Candidates 2 and 3 on 284 cases (6 substrates x 3
+      calculation starts x 16 definition sets, plus the single-definition
+      read entry): 0 differ from the pin in values, NA placement, types,
+      dimensions, names, plane records, indexed projection planes,
+      history-read evidence, refusal classes and fields, and RNG; 43 pin
+      refusals refuse identically; a broken arm that narrows custom
+      callbacks differs in 58 cases. Candidate 3 keeps raw TTR call counts
+      identical (sharing kept). Paired savings: candidate 3 alone 0.07-0.09
+      s (runs), 0.15-0.25 s (sweeps); candidates 2 and 3 together 0.20-0.22
+      s on the wide runs (20-27 percent of the feature path) and 0.29-0.44
+      s on the wide sweeps (18-19 percent); candidate 2 alone saves nothing
+      on the 1166x252 sweep with the probe's generic frame builder.
+      Candidate 5 saves 0.03-0.05 s; its case is memory. Engine-version
+      census (results/census.csv, proved by mutation in census_check.R):
+      136 helpers; 24 bound by the engine version, 21 by another identity,
+      60 unbound, 31 identity infrastructure or excluded; 11 marked UNSURE.
+      The probe is input, not evidence: the workstream produces its own
+      final-code evidence.
+    decisions: >-
+      (1) Same values (RFC Section 4). For every covered input, values, NA
+      placement, types, dimensions and names, every feature plane and
+      history-read reason, refusal condition classes with their identifying
+      fields and their precedence, the causality probe's selection and
+      order, and the caller's RNG stay identical to the pin d5b3a151. The
+      only intended differences are the engine version, the old-precompute
+      refusal it causes, and the in-memory precompute representation
+      (decision 7); nothing else is normalised away. Refusals still come
+      before any candidate or fold runs, and a preparation failure still
+      leaves a FAILED durable run with no strategy, events or equity. If the
+      accepted post-warmup-NA chore (macro WS12) lands first, the oracle
+      keeps its recorded difference against d5b3a151 in the rules ledger;
+      this cut absorbs no behaviour change.
+      (2) The oracle. A permanent differential harness under
+      dev/feature_parity/, built from the probe's runner and checker, runs
+      the installed pin and the candidate on one case corpus: at least the
+      probe's 284 cases plus the RFC's case list (built-in SMA apart from
+      TTR SMA; every supported warmup rule and documented or derived output,
+      including MACD histogram; bounded and history-dependent rows,
+      stable_after greater than requires_bars; empty, short and
+      never-calculated histories; custom series_fn and fn-only callbacks,
+      one reading a non-required field; unregistered TTR arguments and
+      forged catalogue claims; required-field gaps, carry admission and
+      exclusion, output carry and expiry; inactive sessions, terminals,
+      relistings and late-known facts; both clocks and a scoring start after
+      data start; runs, implicit sweeps and explicit precompute with reuse;
+      the single-definition read entry). Pin against pin passes. Separate
+      deliberate faults (a changed value, a moved NA, a changed plane
+      reason, a changed refusal class, a narrowed custom callback frame, a
+      reordered causality sample) each make it exit nonzero with its own
+      signal; a missing case or a missing arm refuses. The harness compares
+      the two TTR routes too: the cached raw call and the emitted closure
+      (ledgr_ttr_call) used by the single-definition read entry stay
+      equivalent.
+      (3) Candidates and the keep rule (RFC Section 5). Candidate 1: format
+      the pulse axis once per projection, with the same format string (it
+      feeds the precompute axis_hash). Candidate 2: treat only the union of
+      the certified canonical definitions' required fields when no
+      definition is custom; any custom or unregistered definition keeps all
+      five fields and the input-carry choice; the expected-session and
+      terminal masks stay. Candidate 3: resolve the TTR function once per
+      definition at certification; on a raw-cache miss pass the
+      input-carry-selected numeric close vector directly for input close and
+      build the segment frame for other inputs only then; nothing on a cache
+      hit. ledgr_ttr_raw_call() stays the call site (LTB-0276's counts
+      unchanged); output selection, derived outputs, normalisation, the
+      short-sample guard, canonical certification, the cache key and
+      raw-result sharing stay. Candidates 2 and 3 land together (the
+      measuring step: candidate 2 alone spends its saving on frame building
+      on the 1166x252 sweep). Candidate 4: slice only the required fields
+      for admission; the callback frame stays complete. Candidate 5:
+      matrices only in the sweep path, explicit precompute and the pulse
+      snapshot (R/precompute-features.R:91-113, R/sweep.R:278-291,
+      R/pulse-snapshot.R:395-405), with ledgr_projection_from_payload()
+      (R/runtime-projection.R:165) reading the matrix; the dev/bench
+      producers that build split vectors (peer_benchmark.R:658-670,
+      tile_probe.R:93, feature_steps.R) are updated or marked as pin-only.
+      Candidate 7: the causality-probe comment says what the code does. Each
+      speed candidate (1-5) is kept only if the oracle is identical and a
+      paired feature-path measurement against the cut's base (the shared
+      harness, High performance, pcore.ps1) shows its target shapes faster
+      at the median and no measured shape slower by more than 2 percent;
+      candidate 5 is kept on identical values, a smaller precompute object
+      and sweep peak memory, and no shape slower by more than 2 percent. A
+      candidate that fails its keep rule is reverted and recorded with its
+      numbers.
+      (4) Delete the legacy v0.1.4 block (maintainer, 2026-11-17):
+      ledgr_compute_feature_series(), ledgr_compute_feature_scalar_at() and
+      the internal ledgr_check_no_lookahead() that calls them
+      (R/features-engine.R). No run, sweep or read path reaches them; the
+      runtime causality probe stays. The test lines that only exercise them
+      go, each with that stated reason; any assertion they hold that the
+      live path also needs moves to a live-path test first.
+      (5) Repair the engine version (RFC Section 5, candidate 6). Bind every
+      ledgr-owned semantic helper the census lists as unbound in the RFC's
+      categories (certification and declarations, input mapping and
+      treatment, bounds and ranges, calculation and output selection,
+      planes, causality and refusals, the prepared representation), or
+      document the identity that already binds it. Recensus on the final
+      code, after decisions 3 and 4, so deleted helpers leave and new ones
+      join. Provisional defaults, disclosed for the cut review: the 11
+      UNSURE rows are bound (the six substrate mask helpers, because a
+      hand-maintained rule-version constant is the gap the RFC names; the
+      four read-side decoders, because they decide what a stored plane
+      means; ledgr_feature_def_declarations' code, because only its outputs
+      are hashed today). No recursive hash of environments, session state or
+      every package function. Mutation tests show that a representative
+      value, evidence, refusal and representation change each move the
+      version, and that a change to an unbound non-semantic helper does not.
+      (6) Identity (RFC Section 6). On fixed inputs, unchanged: base
+      fingerprints, declared-session active fingerprints and stored
+      declarations; feature_set_hash and feature_union_hash; config_hash,
+      alias_map_hash and feature_params_hash; walk-forward candidate,
+      experiment and session identities; the emitted TTR fn and series_fn
+      bodies, formals, captures, params and IDs. The engine version
+      changes; an old explicit precompute object refuses with
+      ledgr_precomputed_engine_mismatch before candidates; every other
+      precompute validation stays; a durable sweep keeps its recorded
+      engine version; no store schema change; older stored results stay
+      readable.
+      (7) Registered tests (AGENTS.md). Only these change, each with its
+      stated reason in the ticket evidence: LTB-0144's engine-version
+      literal (test-strict-feature-acceleration.R:205; the version moves by
+      design); the candidate-5 physical-shape assertions
+      (test-precompute-features.R:27, :43-46 and the payload side of
+      :59-62; test-history-integration.R:174, which would pass vacuously
+      once $payload is gone, while :173 already compares the projections);
+      the legacy-block test lines of decision 4. Source-text assertions
+      naming ledgr_history_precompute_payload
+      (test-strict-ttr-cleanup.R:167-176, test-history-integrated-proof.R:526)
+      stay by keeping that name. Every other registered test, fixture and
+      oracle stays. New tests are additive.
+      (8) FIFO census follow-up (Cut 21, LDG-3248, maintainer disposition of
+      F2). Harness only: the FIFO capture and census leave out
+      test-rng-isolation.R (its tests check unseeded runs, so they cannot
+      be seeded); the capture copies each book at the call, as the census
+      does; one capture stores each call's digest with its test file and
+      test; fifo_parity.csv is replaced from it with that stated reason, and
+      the check passes on two captures. fifo.R and every FIFO value oracle
+      stay.
+      (9) Scope. Product edits are limited to the feature path:
+      R/history-features.R, R/runtime-projection.R, R/indicator-ttr.R,
+      R/features-engine.R, R/precompute-features.R, the payload lines of
+      R/sweep.R and R/pulse-snapshot.R, and helpers they own. No public
+      formals change; nothing in dev/lean_core changes; no compiled code
+      (maintainer's named decision); no new dependency. Net production lines
+      in R/ fall or stay level apart from the engine-version bind list; any
+      net growth is reported to the maintainer.
+    identity_and_release_impact: >-
+      The feature engine version changes; old in-memory explicit precompute
+      objects refuse and are regenerated. No config_hash, walk-forward,
+      fingerprint or store-schema change. Three internal functions are
+      deleted (decision 4). NEWS: one line on the engine-version change and
+      that precompute objects made before it must be regenerated; no speed
+      claim (no public performance claim without a peer suite). Design
+      impact: the feature-engine RFC's stage-1 status, findings for the
+      stages 2-3 RFC (measured on the cleaned path), the rules ledger for
+      any rule the oracle surfaces.
+    sequencing: >-
+      One workstream (41), serial: LDG-3249 (the oracle harness),
+      LDG-3250 (candidates 1, 4 and 7 and the legacy deletion), LDG-3251
+      (candidates 2 and 3 together), LDG-3252 (candidate 5), LDG-3253 (the
+      engine version, recensused on the final code), LDG-3254 (the FIFO
+      census follow-up, independent of the others but run here), LDG-3255
+      (close: the oracle on the final code, the full test suite and package
+      check, the lean gate, identities, the timing record and paired
+      comparison, lines). Serial so each ticket's oracle run covers the
+      ones before it.
+    out_of_scope: >-
+      Stages 2 and 3 (the adapter registry and the direct-call path; their
+      own RFC, measured on this cut's code); the per-instrument calculate
+      bookkeeping, segment records and evidence planes; narrowing custom
+      callback inputs (a contract decision); the post-warmup-NA chore;
+      sweep sharing and worker memory (the sweep-architecture RFC after the
+      switch); dev/lean_core; compiled code; new indicators or adapters.
+    workstreams: [41]
+    review_lifecycle: >-
+      An independent clean-context Codex CLI cut review, iterated to PASS.
+      Workstream 41 receives one independent clean-context Type 1 close
+      review of its whole diff and every acceptance item; it verifies
+      faithful implementation and contained scope and independently asks
+      whether the inputs are right; a design concern returns NEEDS_TYPE_2.
+      Findings receive one correction pass, with a further round only for a
+      wrong answer; a third correction round stops for maintainer
+      disposition. Findings, reviewed ranges and consequential rejection
+      reasons are kept under rfc_cycle.md's record rule.
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -3615,6 +3841,13 @@ workstreams:
     depends_on_workstream: 39
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 40, after LDG-3248", reason: "Every covered slice-4 workload and the whole existing gate are identical to the pin with debug on and off, at batch one and with inert hooks; every frozen path matches, with only the declared moves; each named branch is reached on the pin and each reach predicate fails elsewhere; the only coverage refusals left are slice 5's and the prepared-axis guard; the loop calls the package's owners (plan, terminal resolution, disposition posting, state alignment, provider views) rather than copies; P2, the planner and the records run on each pulse's context in the pin's order, with typed records and no per-pulse list; every new variant names and reaches its intended fault; the line budget holds; and the timing record reproduces from its committed inputs."}
+  - id: 41
+    name: "Feature engine stage 1: same values, less work"
+    cut: 22
+    status: "proposed"
+    depends_on_workstream: 40
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 41, after LDG-3255", reason: "Every case of the oracle corpus is identical to the pin d5b3a151 in values, NA placement, types, dimensions, names, planes, history-read reasons, refusals and their precedence, the causality probe's selection and RNG, and the oracle catches each of its deliberate faults; every kept candidate passed its keep rule and every reverted one is recorded with its numbers; the legacy block is gone with only the stated test changes; the engine version binds every semantic helper of the final census, its mutation tests move it, and only the declared registered tests changed; every identity of decision 6 is unchanged on fixed inputs and an old precompute object refuses; the full test suite, the package check and the lean gate pass; the FIFO check passes on two captures with fifo.R unchanged; the seven optimization shapes are walked on the changed code; the line rule holds; and the timing record reproduces from its committed inputs."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -7087,3 +7320,119 @@ tickets:
       - "F2 (review2/fifo_census/): the two test-attributed censuses of round 1 (censusA, censusB: every ledgr_lot_apply() call's xxhash64 digest of list(book, input) with its test file and test, in call order; 156,568 calls each) against each other and the fresh capture (156,572 calls, digests by the same recipe). Census A against census B, keyed by (file, test, digest): 44 keys differ in multiplicity, all in test-rng-isolation.R; outside that file the two runs hold the same 145,630 calls over 60,441 keys, key for key, and in the same order. The capture aligned by call order: the 142,196 calls of the files before test-rng-isolation.R equal census A (and B) call for call; of the 3,434 calls after it, 3,433 equal; between them lies the capture's test-rng-isolation.R block (10,942 calls against the censuses' 10,938). Keys the capture alone holds: 23 calls, 22 inside that block. The one remaining difference outside the rng file is a single call at the same aligned position (test-ws4a-carrier.R, \"[WS4a D15] the lot kernel never writes a book column by reference\", census A row 156,187): the test deliberately writes the book it passed into the call by reference afterwards (collapse::setv on b$lot_qty, test lines 613-619); the census digests at the call, the capture keeps the book and serializes it later, after that write. Rebuilt with the pinned package, the book with the call's input digests to the census key (08f3659ff00704e6) before the write and to the capture key (f75bcf74ea363a34) after it (byref_digest.txt). So every multiplicity difference among the two censuses and the capture lies in test-rng-isolation.R except that one capture-serialization artifact; the population outside it is identical across both runs and the capture. The committed population of 156,571 calls cannot be re-attributed: only its count was stored, never its calls' digests, test files or tests. fifo_parity.csv, fifo_check.R and the failing log are unchanged; whether the count oracle should exclude or seed the unseeded-draw tests (and whether the capture should copy books at the call) remains a maintainer decision."
       - "Close review round 3 (ws40_close_review_round3.md, at e7d492b8): F1 and F3 closed by independent pin probes (wrapped append, init and events methods; native and seam rooms; P1 and P5 over and equal; retaining and draining; carried openings; three-candidate sweeps; event sequences shifted by 40 slots) with debug off and on, at batch one and with inert hooks; the inert retirement is exactly the two rows, with the reason recorded; committed numbers, lines, frozen moves (312), reach (92 of 92) and the ws40-review1 timing check reproduce; no per-pulse change since that record; no new finding. F2 not closed: the ordered census and capture ledgers (censusA.csv, censusB.csv, f2_capture_keys.rds) are not committed, so the call-order alignment cannot be recomputed, and the original 156,571 population cannot be traced. The review routed F2 to the maintainer, not to a further correction round."
       - "Maintainer disposition of F2 (2026-11-17, after round 3): close workstream 40 and Cut 21 now with F2 recorded as explained (the unseeded drawing strategies in test-rng-isolation.R, plus the one by-reference capture artifact) but not independently recomputed. No FIFO value difference was found: every compared call is identical between pin and lean with debug off and on. fifo_parity.csv, fifo_check.R and the failing log stay unchanged, so the FIFO check reads CHECK FAILED until the follow-up. Follow-up, for the next cut to carry: the FIFO census and capture leave out test-rng-isolation.R, whose tests exist to check unseeded runs and so cannot be seeded; the capture copies each book at the call; one capture stores each call's test with its digest; fifo_parity.csv is replaced from it with that stated reason."
+  - id: "LDG-3249"
+    title: "The feature-path oracle"
+    workstream: 41
+    status: "proposed"
+    priority: "P0"
+    effort: "M"
+    dependencies: []
+    scope: >-
+      Decision 2: a permanent differential harness under dev/feature_parity/
+      (runner, diff-based checker, case corpus, README), built from
+      dev/spikes/feature_stage1_probe/ and following the spike protocol's
+      provenance rules (the pin's installed marker and loaded path, the
+      candidate's commit, source hashes, in the output). No product change.
+    acceptance:
+      - "The corpus holds the probe's 284 cases and the RFC's case list (decision 2), each case named; a missing case, arm or output column refuses"
+      - "Compared: values, NA placement, types, dimensions and names; every feature plane and indexed projection plane; history-read evidence (reasons, flags, sources, ages); refusal classes, identifying fields and precedence; the causality probe's selection and order; the caller's RNG; the cached-raw-call and emitted-closure TTR routes"
+      - "Pin against pin passes; each deliberate fault of decision 2 exits nonzero with its own signal (fault outputs committed)"
+      - "Runs on runs, implicit sweeps and explicit precompute with reuse, on both clocks"
+    evidence: []
+  - id: "LDG-3250"
+    title: "Format the axis once, slice admission fields, fix the probe comment, delete the legacy block"
+    workstream: 41
+    status: "proposed"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-3249"]
+    scope: >-
+      Candidates 1, 4 and 7 (decision 3) and the legacy v0.1.4 deletion
+      (decision 4).
+    acceptance:
+      - "Candidate 1: one format call per projection with the same format string; the precompute axis_hash unchanged on fixed inputs"
+      - "Candidate 4: admission reads only the required fields; every callback frame complete (the oracle's non-required-field callback case)"
+      - "Candidate 7: the causality-probe comment describes the code"
+      - "ledgr_compute_feature_series(), ledgr_compute_feature_scalar_at() and ledgr_check_no_lookahead() deleted; no remaining caller in R/, tests/, vignettes or dev/; each removed test line listed with its stated reason, and any assertion the live path also needs moved to a live-path test first"
+      - "Oracle identical; paired feature-path measurement and keep verdict per speed candidate (decision 3)"
+    evidence: []
+  - id: "LDG-3251"
+    title: "Narrow input treatment and cut the TTR per-call overhead, together"
+    workstream: 41
+    status: "proposed"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3250"]
+    scope: >-
+      Candidates 2 and 3 (decision 3), landed together.
+    acceptance:
+      - "Field union computed from the certified canonical definitions, not from source labels or claimed metadata; any custom or unregistered definition keeps all five fields and the input-carry choice; the expected-session and terminal masks unchanged"
+      - "TTR function resolved once per definition; frame built only on a raw-cache miss for non-close inputs; ledgr_ttr_raw_call() still the call site; raw TTR call counts identical to the pin on the oracle's counted cases; LTB-0276 unchanged"
+      - "Oracle identical, including the narrowed-callback fault still caught"
+      - "Paired feature-path measurement on the run and sweep paths of 500x1260 and 1166x252 and the keep verdict (decision 3)"
+    evidence: []
+  - id: "LDG-3252"
+    title: "Matrices only in the prepared representation"
+    workstream: 41
+    status: "proposed"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-3251"]
+    scope: >-
+      Candidate 5 (decision 3) and its registered test changes (decision 7).
+    acceptance:
+      - "The sweep path, explicit precompute and the pulse snapshot keep matrices only; ledgr_projection_from_payload() reads them; ledgr_history_precompute_payload keeps its name"
+      - "The dev/bench split-vector producers updated or marked pin-only"
+      - "Registered test changes limited to decision 7's candidate-5 lines, each with its stated reason; the matrix-layout assertions stay"
+      - "Oracle identical; precompute object size and sweep peak memory before and after; keep verdict (decision 3)"
+    evidence: []
+  - id: "LDG-3253"
+    title: "Repair the engine version"
+    workstream: 41
+    status: "proposed"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3252"]
+    scope: >-
+      Decision 5, on the final code of LDG-3250 to LDG-3252.
+    acceptance:
+      - "Census rerun on the final code (deleted helpers leave, new ones join), committed as CSV with helper, file:line, category and binding"
+      - "Every semantic helper bound by the engine version or by a documented identity; the 11 provisional rows bound unless the cut review decides otherwise"
+      - "Mutation tests: a representative value, evidence, refusal and representation change each move the version; a non-semantic helper change does not; no recursive hash"
+      - "LTB-0144's literal updated with its stated reason; an old explicit precompute object refuses with ledgr_precomputed_engine_mismatch before candidates; every other precompute refusal unchanged"
+    evidence: []
+  - id: "LDG-3254"
+    title: "FIFO census follow-up"
+    workstream: 41
+    status: "proposed"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    scope: >-
+      Decision 8 (Cut 21, LDG-3248, the maintainer's disposition of F2).
+      Harness only.
+    acceptance:
+      - "The FIFO capture and census leave out test-rng-isolation.R; the capture copies each book at the call"
+      - "One capture stores each call's digest with its test file and test; fifo_parity.csv replaced from it with the stated reason"
+      - "The FIFO check passes on two independent captures; every compared call identical between pin and lean with debug off and on; fifo.R unchanged"
+    evidence: []
+  - id: "LDG-3255"
+    title: "Close feature engine stage 1"
+    workstream: 41
+    status: "proposed"
+    priority: "P0"
+    effort: "M"
+    dependencies: ["LDG-3253", "LDG-3254"]
+    scope: >-
+      The final check set on the final code; identities; timing; lines; the
+      RFC's stage-1 status; NEWS.
+    acceptance:
+      - "The oracle on the final code: identical on every case, every fault caught"
+      - "Full test suite and R CMD check --no-manual --no-build-vignettes pass (AGENTS.md Local Verification)"
+      - "The lean gate against loop_freeze.csv with debug 0 and 1: 0 different (the lean loop reads features through the changed code)"
+      - "Every identity of decision 6 compared on fixed inputs before and after: unchanged except the engine version"
+      - "Timing record cut22-feature-1 on the shared harness (base: the cut's base commit; candidate: the final commit, installed as cut17-helper-1 did; run and sweep on 10x7200, 500x1260 and 1166x252), checked by check.R, and a paired feature-path comparison; High performance and pcore.ps1, Balanced restored after"
+      - "Lines: R/ production lines before and after (decision 9); the seven optimization shapes walked on the changed code"
+      - "The RFC's status records stage 1's outcome; NEWS has decision 6's line"
+      - "Type 1 close review of workstream 41 (review_lifecycle)"
+    evidence: []
