@@ -15,9 +15,10 @@
 #
 # Coverage (Section 19.2): anything outside slices 1-3 and the slice-4 parts
 # landed so far (Section 19.13: opening positions and carried openings,
-# LDG-3243; corporate actions without dispositions, LDG-3244; facts, the
-# per-pulse views and the context axis, LDG-3246) is refused before the
-# first pulse with `ledgr_lean_not_covered`; the harness then runs the pin.
+# LDG-3243; corporate actions, LDG-3244; facts, the per-pulse views and the
+# context axis, LDG-3246; dispositions and terminal stops, LDG-3247) is
+# refused before the first pulse with `ledgr_lean_not_covered`; the harness
+# then runs the pin.
 
 # The pin's marked gross exposure (ledgr_availability_marked_gross) without
 # ifelse(): a zero quantity contributes exactly 0.
@@ -80,10 +81,8 @@ lean_loop_coverage <- function(execution, entry = NULL) {
     lean_not_covered("a checkpoint_every control")
   }
   if (!identical(as.integer(execution$start_idx), 1L)) lean_not_covered("restart")
-  # Corporate actions are covered (LDG-3244, facts.R) but for scheduled
-  # dispositions (acquisitions), workstream 40.
-  ca <- execution$corporate_action_plan
-  if (!is.null(ca) && isTRUE(ca$has_disposition())) lean_not_covered("corporate-action dispositions")
+  # Corporate actions are covered (LDG-3244, facts.R), with their scheduled
+  # dispositions (LDG-3247).
   # Opening positions and carried openings are covered (slice 4, LDG-3243):
   # positions, lots, position facts and the opening event_seq come in
   # through execution; the frozen set and the unknown-basis mask below.
@@ -530,14 +529,19 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   # loop body only calls them in order.
 
   # A settlement's returned state installed by the pin's own installer
-  # (cash, positions, lot book; position facts of changed positions).
-  lean_settle <- function(value, i) {
+  # (cash, positions, lot book; position facts of changed positions), its
+  # position changes recorded for the implicit records (decision 4(c)) and
+  # the event_seq advanced; returns the installed state (facts.R).
+  lean_settle <- function(value, i, next_seq = event_seq) {
     fs <- list2env(list(positions = pos, position_facts = position_facts), parent = emptyenv())
     ledgr_carrier_settlement_install(fs, value, projection_idx[[i]])
+    lean_facts_moved(s4, i, pos, fs$positions)
     cash <<- fs$cash
     pos <<- fs$positions
     book <<- fs$lot_state
     position_facts <<- fs$position_facts
+    event_seq <<- next_seq
+    list(cash = cash, positions = pos, lot_state = book, seq = event_seq)
   }
 
   # P1: corporate actions (slice 4), then valuation at the marks (the close,
@@ -564,7 +568,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
     if (!is.null(s3$state)) {
       m <- lean_marks_pulse(provider, s3$state, i, pulses_posix[[i]], pos, ids)
       # The dispositions, then the one P1 stop path (facts.R; decision 6).
-      d <- lean_facts_dispose(s3, s4, m, i, refused, list(cash = cash, pos = pos, book = book, seq = event_seq),
+      d <- lean_facts_dispose(s3, s4, m, i, refused, list(cash = cash, positions = pos, lot_state = book, seq = event_seq),
         function(v, s) lean_settle(v, i, s))
       m <- d$m
       st <- d$stop
@@ -610,7 +614,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
     # P2 runs on the pulse's decision axis: the run axis, or on a marked run
     # its context, bound here (decision 7); targets and records stay on it.
     if (!is.null(marks)) {
-      ids <- marks$cids; ids_attr <- list(names = ids); ids_ok <- lean_targets_axis_ok(ids); n <- length(ids)
+      ids <- marks$cids; ids_attr <- list(names = ids); ids_ok <- s4$ok; n <- length(ids)
       pos <- pos[ctx_pos]
     }
     if (!is.null(s3$due) && !isTRUE(s3$due[[i]])) {
@@ -1224,6 +1228,8 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
 
     # holds: every decision cell of a..b that is neither explicit nor a clean
     # fill; a cell is (context ordinal, pulse), its run position lean_facts_rpos()
+    # The position changes of a..b: P1 settlements and fills (decision 4(c)).
+    ev <- lean_facts_moves(s4, fl, fr, a, b)
     implicit <- NULL
     if (can_encode) {
       hold <- outer(seq_len(n), lay$nctx[p], "<=")
@@ -1237,7 +1243,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
       hk <- (hc - 1L) %% n + 1L
       hp <- (hc - 1L) %/% n + a
       rk <- lean_facts_rpos(s4, hk, hp)
-      hpos <- lean_facts_positions_at(fl, fr, rk, hp, a, b, carry)
+      hpos <- lean_facts_positions_at(ev, rk, hp, a, b, carry)
       fk <- fl$k[cf]; fpl <- fl$pulse[cf]
       ord <- order(c(fpl, hp), c(rep(0L, length(cf)), rep(1L, length(hc))), method = "radix")
       kk <- c(fk, hk)[ord]
@@ -1264,8 +1270,8 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
         position_after = c(fl$planned_position_after[cf], hpos)[ord]
       )
     }
-    # Positions entering b + 1: the book net after each instrument's last fill in a..b.
-    if (length(fr)) carry[fl$pos[fr]] <- fl$net_after[fr]
+    # Positions entering b + 1: the book net after each instrument's last change in a..b.
+    carry[ev$k] <- ev$v
     list(explicit = explicit, implicit = implicit, fill_rows = fr, carry = carry)
   }
 
@@ -1339,6 +1345,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
     capacity = c(fills_used = nf, fills_allocated = fcap, decisions_used = nd, decisions_allocated = dcap,
       sizing_used = nsz, sizing_allocated = scap, slice3_rows_used = s3$nx, slice3_rows_allocated = s3$xcap,
       capture_blocks_used = s4$nb, capture_blocks_allocated = s4$cap, context_used = s4$ncx %||% 0L, context_allocated = length(s4$cx),
+      moves_used = s4$nmv, moves_allocated = length(s4$mv$pulse),
       rejections = length(rj$k), pulse_headers = n_pulse, batches = live$batches, ranges = live$ranges,
       max_range_pulses = live$max_range_pulses)))
   telemetry$telemetry_samples <- as.integer(telemetry$telemetry_samples %||% 0L)

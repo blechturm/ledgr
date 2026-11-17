@@ -756,3 +756,289 @@ loop_reach <- c(loop_reach, list(
     NROW(s) == 1L && identical(as.character(s$status), "DONE") && any(f$instrument_id == "D")
   }
 ))
+
+# --- LDG-3247: acquisitions, spin-offs, dispositions and terminal stops ----------
+
+# One corporate-action row with acquisition terms (R/availability-facts.R:615;
+# s4_action has none): entitled and effective at 16:00 of day `day` (a
+# dividend effective `effective`), known before the first session.
+s4_acq <- function(id, subtype, parent, day, cash = NA_real_, recipient = NA_character_, ratio = NA_real_,
+                   effective = day) {
+  data.frame(fact_id = id, subtype = subtype, parent_instrument_id = parent, entitlement_time = s4_at(day),
+    effective_time = s4_at(effective), knowledge_time = s4_at(1L) - 3600, complete = TRUE, provenance_tier = "snapshot_bound",
+    gross_cash_per_parent_unit = cash, gross_cash_validated = !is.na(cash), recipient_instrument_id = recipient,
+    recipient_identity_validated = !is.na(recipient), recipient_quantity_per_parent_unit = ratio,
+    recipient_quantity_validated = !is.na(ratio), source = "s4", stringsAsFactors = FALSE)
+}
+# Lifetime ends (known_inactive) of `ids` from 00:00 of `day`, known at 17:00
+# the day before, with their terminal labels (NA: unlabeled).
+s4_life <- function(ids, day, label = "delisted") {
+  eff <- s4_at(day, "00:00:00")
+  ledgr::ledgr_facts_lifetime(data.frame(instrument_id = ids, effective_from = eff, knowledge_time = eff - 7 * 3600,
+    assertion = "known_inactive", terminal_event = label, stringsAsFactors = FALSE))
+}
+s4_held4 <- function(...) c(A = 10, B = 10, C = 10, D = 10, ...)
+s4_cost4 <- function(...) c(A = 10, B = 20, C = 30, D = 40, ...)
+s4_ca <- function(...) ledgr::ledgr_facts_equity_corporate_actions(rbind(...))
+# A frozen holding of A (no bars from day 3, frozen once its mark expires)
+# whose lifetime ends on day 6 under the default last_permissible choice:
+# the frozen fallback `choice` applies (R/terminal-outcomes.R:34-36).
+s4_frozen_terminal <- function(name, choice) {
+  closes <- s4_facts_closes()
+  closes$A[3:10] <- NA
+  s4_run(name, closes, ledgr::ledgr_facts(s4_sessions(10L), s4_life("A", 6L)),
+    s4_exp(s4_strategy(list()), positions = c(A = 10, B = 10), cost_basis = c(A = 10, B = 20),
+      valuation_policy = ledgr::ledgr_valuation_stale(1L, exhausted = "freeze"),
+      corporate_action_policy = s4_policy(frozen_terminal_position = choice)))
+}
+# Acquisitions and a spin-off on A-D (decision 2): A cash (day 5), B stock
+# into E (day 5), C mixed (day 6), D spin-off into E (day 6); E bought on day 7.
+s4_acq_facts <- function() ledgr::ledgr_facts(s4_sessions(10L), s4_ca(s4_acq("a1", "cash_acquisition", "A", 5L, cash = 12),
+  s4_acq("a2", "stock_acquisition", "B", 5L, recipient = "E", ratio = 0.5),
+  s4_acq("a3", "mixed_acquisition", "C", 6L, cash = 5, recipient = "E", ratio = 0.2),
+  s4_acq("a4", "spin_off", "D", 6L, recipient = "E", ratio = 0.1)))
+# Eight holdings acquired for cash over six pulses (the transition record
+# grows after four), one bought on day 2 before its acquisition.
+s4_moves_run <- function(name) {
+  closes <- stats::setNames(lapply(seq_along(s4_mixed_ids), function(k) 20 + k + seq_len(10L) / 5), s4_mixed_ids)
+  days <- c(3L, 3L, 4L, 5L, 6L, 7L, 7L, 8L)
+  acts <- do.call(rbind, lapply(seq_along(days), function(k) s4_acq(paste0("q", k), "cash_acquisition", s4_mixed_ids[[k]],
+    days[[k]], cash = 30)))
+  s4_run(name, closes, ledgr::ledgr_facts(s4_sessions(10L), ledgr::ledgr_facts_equity_corporate_actions(acts)),
+    s4_exp(s4_strategy(s4_plan(list(2L, c(M8 = 12)))), positions = stats::setNames(rep(10, 8L), s4_mixed_ids),
+      cost_basis = stats::setNames(rep(20, 8L), s4_mixed_ids), cash = 1e5))
+}
+
+loop_slice4 <- c(loop_slice4, list(
+  # The probe's: a cash acquisition of a held instrument whose lifetime then
+  # ends; a delisting under valuation_stale(2); the v0.2.0.1 witness under
+  # held_terminal_position = "refuse".
+  s4_cash_acquisition = function() {
+    closes <- s4_closes(); closes$A[6:10] <- NA
+    life <- ledgr::ledgr_facts_lifetime(data.frame(instrument_id = "A", effective_from = s4_at(6L),
+      knowledge_time = s4_at(6L) - 1, assertion = "known_inactive", terminal_event = "acquired", stringsAsFactors = FALSE))
+    act <- ledgr::ledgr_facts_equity_corporate_actions(data.frame(fact_id = "acq-1", subtype = "cash_acquisition",
+      parent_instrument_id = "A", entitlement_time = s4_at(6L), effective_time = s4_at(6L), knowledge_time = s4_at(1L),
+      complete = TRUE, provenance_tier = "snapshot_bound", gross_cash_per_parent_unit = 40, gross_cash_validated = TRUE,
+      recipient_identity_validated = FALSE, recipient_quantity_validated = FALSE, stringsAsFactors = FALSE))
+    s4_run("s4_cash_acquisition", closes, ledgr::ledgr_facts(s4_sessions(10L), life, act),
+      s4_exp(s4_strategy(s4_plan(list(2L, c(B = 10)))), positions = c(A = 10), cost_basis = c(A = 28),
+             valuation_policy = ledgr::ledgr_valuation_stale(1L)))
+  },
+  s4_terminal = function() {
+    closes <- s4_closes(); closes$C[7:10] <- NA
+    life <- ledgr::ledgr_facts_lifetime(data.frame(instrument_id = "C", effective_from = s4_at(7L),
+      knowledge_time = s4_at(7L) - 1, assertion = "known_inactive", terminal_event = "delisted", stringsAsFactors = FALSE))
+    s4_run("s4_terminal", closes, ledgr::ledgr_facts(s4_sessions(10L), life),
+      s4_exp(s4_strategy(s4_plan(list(2L, c(C = 25, A = 5)))), valuation_policy = ledgr::ledgr_valuation_stale(2L)))
+  },
+  s4_v201_refuse = function() s4_v201_run("s4_v201_refuse",
+    valuation_policy = ledgr::ledgr_valuation_stale(max_sessions = 2L, exhausted = "refuse"),
+    corporate_action_policy = ledgr::ledgr_corporate_actions(held_terminal_position = "refuse")),
+  # Held: A, B and C disposed at their marks (scheduled dispositions), D's
+  # spin-off and the stock terms reported only (E unchanged: its day-7
+  # target 3 buys exactly 3); A and B then hold zero on current bars with
+  # no lifetime fact (cut review R2). Not held: nothing posts.
+  s4_acq_held = function() s4_run("s4_acq_held", s4_facts_closes(), s4_acq_facts(),
+    s4_exp(s4_strategy(s4_plan(list(7L, c(E = 3)))), positions = s4_held4(), cost_basis = s4_cost4())),
+  s4_acq_unheld = function() s4_run("s4_acq_unheld", s4_facts_closes(), s4_acq_facts(),
+    s4_exp(s4_strategy(s4_plan(list(2L, c(E = 5)))))),
+  # The scheduled disposition with fills before (A bought on day 2) and
+  # after it (B on day 6), holds on either side (cut review R2).
+  s4_acq_fills = function() s4_run("s4_acq_fills", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_ca(s4_acq("a1", "cash_acquisition", "A", 5L, cash = 12))),
+    s4_exp(s4_strategy(s4_plan(list(2L, c(A = 14)), list(6L, c(B = 5)))), positions = c(A = 10), cost_basis = c(A = 10))),
+  # Terminal choices (decision 2, cut review R7): exact labels to last_mark,
+  # write_off and haircut (0.25), the default to last_permissible; D's end
+  # is known late (after the day-8 decision, for day 7): disposed on day 9.
+  s4_terminal_choices = function() s4_run("s4_terminal_choices", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), ledgr::ledgr_facts_lifetime(data.frame(instrument_id = c("A", "B", "C", "D"),
+      effective_from = s4_at(c(4L, 5L, 6L, 7L), "00:00:00"), knowledge_time = s4_at(c(3L, 4L, 5L, 8L), "17:00:00"),
+      assertion = "known_inactive", terminal_event = c("delisted", "merged", "bankrupt", "other"), stringsAsFactors = FALSE))),
+    s4_exp(s4_strategy(list()), positions = s4_held4(), cost_basis = s4_cost4(),
+      corporate_action_policy = s4_policy(held_terminal_position = c(delisted = "last_mark", merged = "write_off",
+        bankrupt = "haircut", default = "last_permissible"), haircut = 0.25))),
+  # Blocked terminal outcomes: the refuse choice, an unlabeled end, and no
+  # permissible mark for last_permissible (A unbarred from day 4, stale(1)).
+  s4_terminal_refuse = function() s4_run("s4_terminal_refuse", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_life("A", 4L)),
+    s4_exp(s4_strategy(list()), positions = c(A = 10, B = 10), cost_basis = c(A = 10, B = 20),
+      corporate_action_policy = s4_policy(held_terminal_position = "refuse"))),
+  s4_terminal_unlabeled = function() s4_run("s4_terminal_unlabeled", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_life("A", 4L, NA_character_)),
+    s4_exp(s4_strategy(list()), positions = c(A = 10, B = 10), cost_basis = c(A = 10, B = 20))),
+  s4_terminal_no_mark = function() {
+    closes <- s4_facts_closes()
+    closes$A[4:10] <- NA
+    s4_run("s4_terminal_no_mark", closes, ledgr::ledgr_facts(s4_sessions(10L), s4_life("A", 5L)),
+      s4_exp(s4_strategy(list()), positions = c(A = 10, B = 10), cost_basis = c(A = 10, B = 20),
+        valuation_policy = ledgr::ledgr_valuation_stale(1L, exhausted = "refuse")))
+  },
+  # The three frozen fallback choices.
+  s4_frozen_writeoff = function() s4_frozen_terminal("s4_frozen_writeoff", "write_off"),
+  s4_frozen_lastmark = function() s4_frozen_terminal("s4_frozen_lastmark", "last_mark"),
+  s4_frozen_refuse = function() s4_frozen_terminal("s4_frozen_refuse", "refuse"),
+  # P1 precedence (cut review R7). A scheduled disposition blocked (default
+  # refuse) while A's lifetime label would dispose it: the scheduled stop
+  # comes first, nothing is disposed.
+  s4_blocked_scheduled = function() s4_run("s4_blocked_scheduled", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_life("A", 5L, "acquired"), s4_ca(s4_acq("a1", "cash_acquisition", "A", 5L, cash = 12))),
+    s4_exp(s4_strategy(list()), positions = c(A = 10, B = 10), cost_basis = c(A = 10, B = 20),
+      corporate_action_policy = s4_policy(held_terminal_position = c(acquired = "last_permissible", default = "refuse")))),
+  # A lifetime group of A (disposable) and B (unlabeled): the group stops,
+  # A is not disposed.
+  s4_blocked_group = function() s4_run("s4_blocked_group", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_life(c("A", "B"), 5L, c("delisted", NA_character_))),
+    s4_exp(s4_strategy(list()), positions = c(A = 10, B = 10, C = 10), cost_basis = c(A = 10, B = 20, C = 30))),
+  # Day 5: A's dividend posts and B's acquisition disposes, then C's mark
+  # (unbarred from day 4, stale(1)) has expired: the valuation stop.
+  s4_p1_then_stop = function() {
+    closes <- s4_facts_closes()
+    closes$C[4:10] <- NA
+    s4_run("s4_p1_then_stop", closes, ledgr::ledgr_facts(s4_sessions(10L), s4_ca(s4_acq("d1", "ordinary_cash_dividend", "A", 5L,
+      cash = 0.5, effective = 6L), s4_acq("a1", "cash_acquisition", "B", 5L, cash = 25))),
+      s4_exp(s4_strategy(list()), positions = c(A = 10, B = 10, C = 10), cost_basis = c(A = 10, B = 20, C = 30),
+        valuation_policy = ledgr::ledgr_valuation_stale(1L, exhausted = "refuse")))
+  },
+  # Day 5 completes with A's dividend, B's scheduled and C's lifetime
+  # disposition, and a buy of D decided that day.
+  s4_p1_complete = function() s4_run("s4_p1_complete", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_life("C", 5L), s4_ca(s4_acq("d1", "ordinary_cash_dividend", "A", 5L, cash = 0.5,
+      effective = 6L), s4_acq("a1", "cash_acquisition", "B", 5L, cash = 25))),
+    s4_exp(s4_strategy(s4_plan(list(5L, c(D = 4)))), positions = c(A = 10, B = 10, C = 10), cost_basis = c(A = 10, B = 20, C = 30))),
+  # A, a held nonmember from day 3, disposed on day 5: the re-read view
+  # drops it from that pulse's context.
+  s4_reread_nonmember = function() s4_run("s4_reread_nonmember", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_universe(list("1" = c("A", "B", "C"), "3" = c("B", "C"))),
+      s4_ca(s4_acq("a1", "cash_acquisition", "A", 5L, cash = 12))),
+    s4_members_exp(s4_strategy(list()), positions = c(A = 10, B = 10), cost_basis = c(A = 10, B = 20))),
+  # Entitlement boundaries after P1 dispositions, before P4 fills: B
+  # disposed on day 4 and bought back (6) that day, its day-5 dividend bound
+  # at 0 (not 6); C disposed on day 7, a skipped decision pulse, its day-8
+  # dividend bound at 0 (not 10). No dividend posts.
+  s4_bound_dispose = function() s4_run("s4_bound_dispose", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_ca(s4_acq("a1", "cash_acquisition", "B", 4L, cash = 25),
+      s4_acq("d1", "ordinary_cash_dividend", "B", 5L, cash = 1, effective = 6L), s4_acq("a2", "cash_acquisition", "C", 7L, cash = 25),
+      s4_acq("d2", "ordinary_cash_dividend", "C", 8L, cash = 1, effective = 9L))),
+    s4_exp(s4_strategy(s4_plan(list(4L, c(B = 6)))), positions = c(B = 10, C = 10), cost_basis = c(B = 20, C = 30),
+      schedule = ledgr::ledgr_schedule_dates(s3_dates(10L)[-7L]))),
+  # Committed prefix with dispositions (cut review R4): a scheduled and a
+  # lifetime disposition on day 4 visible to that day's strategy call, and
+  # on a pulse whose strategy then fails.
+  s4_prefix_dispose_sweep = function() lw_prefix_reads(memory = TRUE, workload = function()
+    s4_ca_sweep("s4_prefix_dispose_sweep", s4_facts_closes(), ledgr::ledgr_facts(s4_sessions(10L),
+      s4_ca(s4_acq("a1", "cash_acquisition", "A", 4L, cash = 12))),
+      s4_exp(s4_strategy(s4_plan(list(1L, c(B = 2)))), positions = c(A = 10), cost_basis = c(A = 10)))),
+  s4_prefix_terminal_sweep = function() lw_prefix_reads(memory = TRUE, workload = function()
+    s4_ca_sweep("s4_prefix_terminal_sweep", s4_facts_closes(), ledgr::ledgr_facts(s4_sessions(10L), s4_life("A", 4L)),
+      s4_exp(s4_strategy(s4_plan(list(1L, c(B = 2)))), positions = c(A = 10), cost_basis = c(A = 10)))),
+  s4_prefix_dispose_stop = function() lw_prefix_reads(memory = TRUE, workload = function()
+    s4_ca_sweep("s4_prefix_dispose_stop", s4_facts_closes(), ledgr::ledgr_facts(s4_sessions(10L),
+      s4_ca(s4_acq("a1", "cash_acquisition", "A", 4L, cash = 12))),
+      s4_exp(function(ctx, params) {
+        t <- ctx$hold()
+        if (ctx$ts_utc == "2020-01-04T16:00:00Z") t[["B"]] <- NA_real_
+        t
+      }, positions = c(A = 10), cost_basis = c(A = 10)))),
+  # The transition record's growth (cut review R8).
+  s4_moves_growth = function() s4_moves_run("s4_moves_growth")
+))
+
+# Branch reach for LDG-3247, on the pin's tables.
+s4_disp <- function(t, path = "run") {
+  ev <- t[[path]]$ledger_events
+  if (is.null(ev)) ev <- t[[path]]$memory_events
+  ev[ev$event_type == "DISPOSITION", , drop = FALSE]
+}
+s4_terminal_stop <- function(reason, ids, reasons) function(t) {
+  s <- s4_stop_rows(t, reason)
+  identical(s4_status(t), "INCOMPLETE") && identical(as.character(t$run$run_completion$stop_reason), reason) &&
+    identical(s$instrument_id, ids) && identical(s$reasons, reasons) && nrow(s4_disp(t)) == 0L
+}
+s4_hold_zero <- function(t, id, from) {
+  im <- s4_implicit(t)
+  h <- im[im$instrument_id == id & s4_day(im$ts_utc) >= from, , drop = FALSE]
+  nrow(h) > 0L && all(s4_num(h$target) == 0) && all(s4_num(h$position_before) == 0) && all(s4_num(h$position_after) == 0)
+}
+
+loop_reach <- c(loop_reach, list(
+  s4_cash_acquisition = function(t) nrow(s4_disp(t)) == 1L && identical(s4_status(t), "DONE"),
+  s4_terminal = function(t) {
+    d <- s4_rows(t, "valuation", "disposed", "terminal_disposition")
+    nrow(d) == 1L && d$instrument_id == "C" && nrow(s4_disp(t)) == 1L
+  },
+  s4_v201_refuse = s4_terminal_stop("terminal_settlement_unsupported", "EEE", "terminal_settlement_unsupported"),
+  s4_acq_held = function(t) {
+    dp <- s4_disp(t)
+    f <- t$run$fills
+    identical(sort(dp$instrument_id), c("A", "B", "C")) && all(dp$source == "corporate_action_disposition") &&
+      identical(s4_day(dp$ts_utc[order(dp$instrument_id)]), c("2020-01-05", "2020-01-05", "2020-01-06")) &&
+      s4_hold_zero(t, "A", "2020-01-06") && s4_hold_zero(t, "B", "2020-01-06") &&
+      identical(s4_num(f$qty[f$instrument_id == "E"]), 3) && !any(f$instrument_id == "D")
+  },
+  s4_acq_unheld = function(t) nrow(s4_disp(t)) == 0L && identical(s4_status(t), "DONE") && any(t$run$fills$instrument_id == "E"),
+  s4_acq_fills = function(t) {
+    f <- t$run$fills
+    nrow(s4_disp(t)) == 1L && s4_num(s4_disp(t)$position_delta) == -14 && s4_hold_zero(t, "A", "2020-01-06") &&
+      any(f$instrument_id == "A" & f$side == "BUY") && any(f$instrument_id == "B" & f$side == "BUY")
+  },
+  s4_terminal_choices = function(t) {
+    dp <- s4_disp(t)
+    dp <- dp[order(dp$instrument_id), ]
+    identical(dp$instrument_id, c("A", "B", "C", "D")) && all(dp$source == "lifetime_terminal_disposition") &&
+      identical(dp$disposition_choice, c("last_mark", "write_off", "haircut", "last_permissible")) &&
+      identical(dp$disposition_basis, c("label", "label", "label", "default")) && s4_num(dp$price[[2L]]) == 0 &&
+      identical(s4_day(dp$ts_utc[[4L]]), "2020-01-09") &&
+      nrow(s4_rows(t, "valuation", "disposed", "terminal_disposition")) == 4L
+  },
+  s4_terminal_refuse = s4_terminal_stop("terminal_settlement_unsupported", "A", "terminal_settlement_unsupported"),
+  s4_terminal_unlabeled = s4_terminal_stop("terminal_settlement_unsupported", "A",
+    "terminal_settlement_unsupported|terminal_label_missing"),
+  s4_terminal_no_mark = s4_terminal_stop("terminal_mark_unavailable", "A", "terminal_mark_unavailable|last_permissible"),
+  s4_frozen_writeoff = function(t) {
+    dp <- s4_disp(t)
+    nrow(dp) == 1L && dp$disposition_choice == "write_off" && dp$disposition_basis == "frozen_fallback" && s4_num(dp$price) == 0
+  },
+  s4_frozen_lastmark = function(t) {
+    dp <- s4_disp(t)
+    nrow(dp) == 1L && dp$disposition_choice == "last_mark" && dp$disposition_basis == "frozen_fallback" && s4_num(dp$price) > 0
+  },
+  s4_frozen_refuse = s4_terminal_stop("terminal_settlement_unsupported", "A", "terminal_settlement_unsupported|frozen_terminal_refuse"),
+  s4_blocked_scheduled = s4_terminal_stop("terminal_settlement_unsupported", "A", "terminal_settlement_unsupported"),
+  s4_blocked_group = s4_terminal_stop("terminal_settlement_unsupported", "B", "terminal_settlement_unsupported|terminal_label_missing"),
+  # Accepted P1 effects before the stop: A's CASHFLOW and B's DISPOSITION on
+  # day 5, then C stopped; no day-5 equity row.
+  s4_p1_then_stop = function(t) {
+    s <- s4_stop_rows(t, "valuation_horizon_exhausted")
+    eq <- t$run$equity_curve
+    identical(s4_day(s4_cf(t)$ts_utc), "2020-01-05") && identical(s4_disp(t)$instrument_id, "B") &&
+      identical(s$instrument_id, "C") && identical(s4_day(s$ts_utc), "2020-01-05") &&
+      max(s4_day(eq$ts_utc)) == "2020-01-04" && s4_num(t$run$run_completion$affected_exposure) > 0
+  },
+  s4_p1_complete = function(t) {
+    dp <- s4_disp(t)
+    identical(sort(dp$source), c("corporate_action_disposition", "lifetime_terminal_disposition")) &&
+      all(s4_day(dp$ts_utc) == "2020-01-05") && identical(s4_day(s4_cf(t)$ts_utc), "2020-01-05") &&
+      any(t$run$fills$instrument_id == "D") && identical(s4_status(t), "DONE")
+  },
+  # A on the day-4 context (a held nonmember), not on day 5's after its disposition.
+  s4_reread_nonmember = function(t) {
+    im <- s4_implicit(t)
+    d <- t$run$run_diagnostics
+    a <- c(im$ts_utc[im$instrument_id == "A"], d$ts_utc[d$instrument_id == "A" & d$stage == "decision"])
+    identical(s4_disp(t)$instrument_id, "A") && "2020-01-04" %in% s4_day(a) && !any(s4_day(a) >= "2020-01-05")
+  },
+  s4_bound_dispose = function(t) {
+    dp <- s4_disp(t)
+    f <- t$run$fills
+    nrow(s4_cf(t)) == 0L && identical(sort(dp$instrument_id), c("B", "C")) &&
+      identical(s4_num(f$qty[f$instrument_id == "B"]), 6) && "2020-01-07" %in% s4_day(s4_rows(t, "decision", "skipped", "scheduled_skip")$ts_utc)
+  },
+  s4_prefix_dispose_sweep = function(t) isTRUE(s4_prefix_step(t, "sweep", "2020-01-04") == 1) && nrow(s4_disp(t, "sweep")) == 1L,
+  s4_prefix_terminal_sweep = function(t) isTRUE(s4_prefix_step(t, "sweep", "2020-01-04") == 1) && nrow(s4_disp(t, "sweep")) == 1L,
+  # The failed candidate keeps no memory tables; its day-4 call saw the disposition.
+  s4_prefix_dispose_stop = function(t) isTRUE(s4_prefix_step(t, "sweep", "2020-01-04") == 1) && s4_capacity_failed(t) == FALSE &&
+    identical(as.character(t$sweep$sweep$status), "FAILED"),
+  s4_moves_growth = function(t) nrow(s4_disp(t)) == 8L && length(unique(s4_day(s4_disp(t)$ts_utc))) == 6L &&
+    s4_hold_zero(t, "M1", "2020-01-04")
+))

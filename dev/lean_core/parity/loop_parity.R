@@ -89,8 +89,8 @@ loop_mutations <- list(
   drop_hold = variant("differ", list(edit("loop.R", "lean_loop_expand", "      hc <- which(hold)",
     "      if (a == 1L && any(hold)) hold[which(hold)[[1L]]] <- FALSE", "before")),
     error = "Diagnostic codec coverage is corrupt"),
-  hold_position = variant("differ", list(edit("loop.R", "lean_loop_expand",
-    "      hpos <- lean_loop_positions_at(hk, hp, a, b, fr, carry)",
+  hold_position = variant("differ", list(edit("loop.R", "lean_loop_expand",   # Cut 21 re-anchor
+    "      hpos <- lean_facts_positions_at(ev, rk, hp, a, b, carry)",
     "      if (a == 1L && length(hpos)) hpos[[1L]] <- hpos[[1L]] + 1", "after")),
     tables = "^run_diagnostic_implicit$"),
   write_in_loop = variant("sink", list(edit("loop.R", "lean_p4_apply",
@@ -319,7 +319,42 @@ loop_mutations <- list(
     error = ".", tables = "^fills$|^ledger_events$"),
   context_lost_at_growth = variant("differ", list(edit("facts.R", "lean_facts_context",
     "  while (s4$ncx + m > length(cx)) length(cx) <- 2L * length(cx)",
-    "  while (s4$ncx + m > length(cx)) { length(cx) <- 2L * length(cx); if (s4$ncx > 0L) cx[[s4$ncx]] <- NA_integer_ }")),
+    paste("  while (s4$ncx + m > length(cx)) { length(cx) <- 2L * length(cx); lean_entry$variant_reached <- TRUE;",
+          "if (s4$ncx > 0L) cx[[s4$ncx]] <- NA_integer_ }"), mark = FALSE)),
+    error = ".", tables = "^run_diagnostic"),
+  # Cut 21, LDG-3247 (decision 11; cut review R2, R7, R8): dispositions and
+  # terminal stops. The plan's scheduled dispositions skipped; a terminal
+  # stop counting its pulse; the lifetime path run after a blocked scheduled
+  # disposition; the disposable part of a blocked lifetime group posted; the
+  # next entitlement boundary bound after the fills; P1 position changes
+  # left out of the implicit records' history; a transition record lost at
+  # growth.
+  disposition_skipped = variant("differ", list(edit("facts.R", "lean_facts_dispose",
+    "  if (!is.null(plan) && isTRUE(plan$has_disposition())) {", "  if (FALSE) {")), error = ".", tables = "^ledger_events$"),
+  terminal_stop_counts_pulse = variant("differ", list(edit("loop.R", "lean_p1_value", "        stop_reason <<- st$reason",
+    "        if (startsWith(st$reason, \"terminal\")) processed <<- processed + 1L", "after")),
+    tables = "^run_telemetry$|^runs$|^run_completion$"),
+  lifetime_after_blocked_scheduled = variant("differ", list(edit("facts.R", "lean_facts_dispose",
+    "    if (!is.null(d$stopped)) return(stop(d$stopped$ids, d$stopped$reason_code, d$stopped$reasons))")),
+    error = ".", tables = "^ledger_events$"),
+  blocked_group_partial_disposal = variant("differ", list(edit("facts.R", "lean_facts_dispose",
+    "    blocked <- r$outcome != \"dispose\"", c("    if (any(blocked) && any(!blocked)) {",
+      "      keep <- !blocked; inactive <- inactive[keep]; labels <- labels[keep]",
+      "      r <- lapply(r, function(v) if (length(v) == length(keep)) v[keep] else v); blocked <- blocked[keep]", "    }"),
+    "after")), error = ".", tables = "^ledger_events$"),
+  entitlement_bound_after_fills = variant("differ", list(
+    edit("loop.R", "lean_p4_apply",
+      "    if (!is.null(s4$plan) && i < n_pulse) s4$plan$bind_boundary(i + 1L, ledgr_fold_positions_snapshot(pos, ids))"),
+    edit("loop.R", "lean_p4_apply", "    explicit_k <- if (length(clean_k)) differs[match(differs, clean_k, 0L) == 0L] else differs",
+      "    if (!is.null(s4$plan) && i < n_pulse) s4$plan$bind_boundary(i + 1L, ledgr_fold_positions_snapshot(pos, ids))",
+      "before", mark = FALSE)), error = ".", tables = "^ledger_events$"),
+  nonfill_position_history_ignored = variant("differ", list(edit("loop.R", "lean_settle",
+    "    lean_facts_moved(s4, i, pos, fs$positions)")), error = ".", tables = "^run_diagnostic"),
+  moves_lost_at_growth = variant("differ", list(edit("facts.R", "lean_facts_moved",
+    "  while (s4$nmv + length(k) > length(mv$pulse)) mv <- lapply(mv, function(v) { length(v) <- 2L * length(v); v })",
+    c("  while (s4$nmv + length(k) > length(mv$pulse)) {",
+      "    mv <- lapply(mv, function(v) { length(v) <- 2L * length(v); v })",
+      "    lean_entry$variant_reached <- TRUE; mv$net[[s4$nmv]] <- NA_real_", "  }"), mark = FALSE)),
     error = ".", tables = "^run_diagnostic"),
   # the valuation state given scoring ordinals instead of prepared columns
   wrong_origin = variant("differ", list(edit("marks.R", "lean_marks_state",

@@ -1,6 +1,8 @@
 # Slice 4 (Cut 21; interface Section 19.13): stateless helpers for the
-# lean loop's corporate actions. The loop keeps one slice-4 environment, s4
-# (as slice 3 keeps s3), so the envelope frame grows by one binding.
+# lean loop's corporate actions (LDG-3244), its context axis (LDG-3246) and
+# its dispositions, terminal stops and position history (LDG-3247). The loop
+# keeps one slice-4 environment, s4 (as slice 3 keeps s3), so the envelope
+# frame grows by one binding.
 #
 # The package's corporate-action plan (R/corporate-action-settlement.R) is
 # called, not copied (decision 3). It posts its event rows through an output
@@ -26,7 +28,8 @@
 # offset (row 1) and a length (row 2) per pulse in the integer matrix `cxi`
 # (NULL on other runs, whose context is the run axis), and `axis`, the axis
 # the strategy state is aligned to (the run axis after the envelope's first
-# alignment).
+# alignment). On every run (LDG-3247) `mv` records the P1 position changes
+# (lean_facts_moved), and the constants the dispositions need.
 lean_facts_run_state <- function(execution, handler, ids, marked, cap = 4L) {
   s4 <- new.env(parent = emptyenv())
   s4$plan <- execution$corporate_action_plan
@@ -35,6 +38,9 @@ lean_facts_run_state <- function(execution, handler, ids, marked, cap = 4L) {
   s4$run_id <- execution$run_id
   s4$pulses <- execution$pulses_posix
   s4$ids <- s4$axis <- ids
+  s4$ok <- lean_targets_axis_ok(ids)   # the target check's universe predicate on that axis (checks.R)
+  s4$mv <- list(pulse = integer(cap), pos = integer(cap), net = numeric(cap))   # P1 position changes (LDG-3247)
+  s4$nmv <- 0L
   if (marked) {
     s4$cx <- integer(4L * max(1L, length(ids)))
     s4$ncx <- 0L
@@ -155,36 +161,68 @@ lean_facts_context <- function(s4, i, cp) {
 # ordinal itself on a run whose context is the run axis.
 lean_facts_rpos <- function(s4, k, p) if (is.null(s4$cxi)) k else s4$cx[s4$cxi[1L, p] + k]
 
+# --- the position history (LDG-3247, decision 4(c), cut review R2) -------------
+
+# Records the run positions a P1 settlement changed, with their exact
+# installed book nets and pulse (the stage is P1: fills are in the fill
+# records), typed, written by index, doubled when full and detached while
+# written.
+lean_facts_moved <- function(s4, i, before, after) {
+  k <- which(before != after)
+  if (length(k) == 0L) return(invisible(NULL))
+  mv <- s4$mv
+  s4$mv <- NULL
+  while (s4$nmv + length(k) > length(mv$pulse)) mv <- lapply(mv, function(v) { length(v) <- 2L * length(v); v })
+  r <- s4$nmv + seq_along(k)
+  mv$pulse[r] <- i
+  mv$pos[r] <- k
+  mv$net[r] <- after[k]
+  s4$mv <- mv
+  s4$nmv <- s4$nmv + length(k)
+}
+
+# The position changes of pulses a..b in time order: P1 changes of pulse p
+# at slot 2 (p - a) + 2, before p's fills at 2 (p - a) + 3 (slot 1 is the
+# carry entering a); record order within a slot. `fl` holds the typed fill
+# records, `fr` their rows in a..b.
+lean_facts_moves <- function(s4, fl, fr, a, b) {
+  p <- s4$mv$pulse[seq_len(s4$nmv)]   # pulse-ordered: the rows of a..b by two binary searches
+  lo <- findInterval(a - 1L, p)
+  t <- lo + seq_len(findInterval(b, p) - lo)
+  slot <- c(2L * (s4$mv$pulse[t] - a) + 2L, 2L * (fl$pulse[fr] - a) + 3L)
+  o <- order(slot, method = "radix")
+  list(k = c(s4$mv$pos[t], fl$pos[fr])[o], slot = slot[o], v = c(s4$mv$net[t], fl$net_after[fr])[o])
+}
+
 # Positions of run positions `rk` entering the decisions of pulses `hp` (a <=
-# hp <= b), for the holds of one expansion range (moved from loop.R, now
-# keyed by run position): the book net after the instrument's latest fill on
-# an earlier pulse of a..b (the fill's recorded net after; `fl` the typed
-# fill records, `fr` the rows of a..b), else its position entering a
-# (`carry`); never a sum of deltas.
-lean_facts_positions_at <- function(fl, fr, rk, hp, a, b, carry) {
+# hp <= b), for the holds of one expansion range (moved from loop.R): the
+# book net after the latest change `ev` (lean_facts_moves) on rk at a P1 of
+# a pulse up to hp or a fill of an earlier pulse, else its position entering
+# a (`carry`); never a sum of deltas.
+lean_facts_positions_at <- function(ev, rk, hp, a, b, carry) {
   out <- carry[rk]
-  if (length(fr) == 0L || length(rk) == 0L) return(out)
+  if (length(ev$k) == 0L || length(rk) == 0L) return(out)
   n <- length(carry)
-  stride <- b - a + 2L
-  # P[pulse - a + 2, k] = position after the fill on `pulse`
-  key_fill <- (fl$pos[fr] - 1L) * stride + fl$pulse[fr] - a + 2L
+  stride <- 2L * (b - a) + 3L
+  key <- (ev$k - 1L) * stride + ev$slot
   val <- numeric(n * stride)
   has <- logical(n * stride)
-  val[key_fill] <- fl$net_after[fr]
-  has[key_fill] <- TRUE
+  val[key] <- ev$v
+  has[key] <- TRUE
   idx <- seq_len(n * stride)
   last <- cummax(ifelse(has, idx, (idx - 1L) %/% stride * stride))
-  src <- last[(rk - 1L) * stride + hp - a + 1L]
+  src <- last[(rk - 1L) * stride + 2L * (hp - a) + 2L]
   found <- src %% stride != 0L
   out[found] <- val[src[found]]
   out
 }
 
 # The strategy state aligned to a changed context (R/fold-engine.R:546-556),
-# from the axis it is on.
+# from the axis it is on; the target check's axis predicate follows the context.
 lean_facts_align <- function(s4, values, declaration, cids, defaults) {
   out <- ledgr_strategy_state_align(values, declaration, s4$axis, cids, default_scalars = defaults)
   s4$axis <- cids
+  s4$ok <- lean_targets_axis_ok(cids)
   out
 }
 
@@ -195,17 +233,70 @@ lean_facts_align <- function(s4, values, declaration, cids, defaults) {
 # `state` is the fold's cash, positions, book and event_seq, and
 # `settle(value, next_seq)` installs a settlement and returns the new state.
 # Returns the pulse's marks `m` (re-read after a disposition) and the stop or
-# NULL. Terminal and scheduled dispositions are LDG-3247's: until then a
-# held lifetime-inactive instrument aborts the attempt, which reruns on the
-# pin.
+# NULL. In the pin's order (LDG-3247): the plan's scheduled dispositions,
+# with the view re-read after any; then the held lifetime-inactive
+# instruments resolved by ledgr_terminal_resolve(), all stopped when any is
+# blocked (no partial disposition), else posted by ledgr_disposition_post()
+# with their valuation/disposed rows and the view re-read. Each posting
+# goes through the capture (decision 4) and is installed before the next
+# view, checked in debug (decision 9).
 lean_facts_dispose <- function(s3, s4, m, i, refused, state, settle) {
   ts <- s4$pulses[[i]]
-  if (is.null(refused)) {
-    held <- m$cids[m$columns$held]
-    if (any(m$view$lifetime[held] %in% "known_inactive")) lean_abort_attempt("terminal dispositions")
+  stop <- function(ids, reason, reasons) {
+    list(m = m, stop = lean_marks_valuation_stop(m, ts, ids, reason, rep_len(reasons, length(ids))))
   }
-  list(m = m, stop = if (is.null(refused)) lean_marks_valuation_stop(m, ts) else
-    lean_marks_valuation_stop(m, ts, refused$ids, refused$reason_code, rep_len(refused$reasons, length(refused$ids))))
+  if (!is.null(refused)) return(stop(refused$ids, refused$reason_code, refused$reasons))
+  reread <- function() lean_marks_pulse(s4$provider, s3$state, i, ts, state$positions, s4$ids)
+  plan <- s4$plan
+  if (!is.null(plan) && isTRUE(plan$has_disposition())) {
+    d <- plan$post_disposition(index = i, run_id = s4$run_id, event_seq = state$seq, output_handler = s4$capture,
+      state_value = ledgr_carrier_settlement_state(state, s4$ids), valuation = m$valuation)
+    if (.lean_debug) lean_facts_debug_posted(s4, d$state)
+    state <- settle(d$state, d$next_event_seq)
+    if (.lean_debug) lean_facts_debug_settled(s4, i, state$cash, state$positions, state$lot_state)
+    if (!is.null(d$stopped)) return(stop(d$stopped$ids, d$stopped$reason_code, d$stopped$reasons))
+    if (d$dispositions > 0L) m <- reread()
+  }
+  held <- m$cids[m$columns$held]
+  inactive <- held[as.character(m$view$lifetime[held]) %in% "known_inactive"]
+  if (length(inactive) > 0L) {
+    labels <- as.character(m$view$terminal_event[inactive])
+    r <- ledgr_terminal_resolve(s4$policy, inactive, labels, m$valuation)
+    r$outcome[!nzchar(labels)] <- "unlabeled"
+    blocked <- r$outcome != "dispose"
+    if (any(blocked)) {
+      # The pin's terminal stop (R/fold-engine.R:439-465).
+      reasons <- ifelse(r$outcome == "unlabeled", "terminal_settlement_unsupported|terminal_label_missing",
+        ifelse(r$outcome == "refuse", ifelse(r$basis == "frozen_fallback",
+          "terminal_settlement_unsupported|frozen_terminal_refuse", "terminal_settlement_unsupported"),
+          paste("terminal_mark_unavailable", r$choice, sep = "|")))
+      return(stop(inactive[blocked], if (any(r$outcome %in% c("unlabeled", "refuse"))) "terminal_settlement_unsupported" else
+        "terminal_mark_unavailable", reasons[blocked]))
+    }
+    mm <- ledgr_terminal_mark_meta(r, m$valuation, ts)
+    p <- ledgr_disposition_post(ids = inactive, price = r$price, source = rep("lifetime_terminal_disposition", length(inactive)),
+      source_fact_id = as.character(m$view$lifetime_fact_id[inactive]), terminal_event = labels,
+      matched_label = r$matched_label, disposition_policy_id = r$policy_id, disposition_choice = r$choice,
+      disposition_basis = r$basis, mark_source = mm$source, mark_source_ts_utc = mm$source_ts, mark_age = mm$age,
+      haircut_fraction = ifelse(r$choice == "haircut", r$haircut, NA_real_), ts = ts, run_id = s4$run_id,
+      event_seq = state$seq, output_handler = s4$capture, state_value = ledgr_carrier_settlement_state(state, s4$ids),
+      instrument_ids = s4$ids, exposure_mark = r$reference)
+    if (.lean_debug) lean_facts_debug_posted(s4, p$state)
+    state <- settle(p$state, p$next_event_seq)
+    if (.lean_debug) lean_facts_debug_settled(s4, i, state$cash, state$positions, state$lot_state)
+    lean_marks_add_rows(s3, i, 1L, lean_marks_group(inactive, "valuation", "disposed", "terminal_disposition",
+      reasons = paste("terminal_disposition", r$choice, r$basis, sep = "|"), quantity = abs(p$before), price = r$price,
+      mark_source = mm$source, mark_age = mm$age, event_seq = p$event_seq, position_before = p$before, position_after = 0))
+    m <- reread()
+  }
+  list(m = m, stop = lean_marks_valuation_stop(m, ts))
+}
+
+# Debug only: the witness of one disposition posting and its returned state,
+# checked after installation by lean_facts_debug_settled().
+lean_facts_debug_posted <- function(s4, value) {
+  s4$calls <- s4$calls + 1L
+  s4$posted <- value
 }
 
 # The accepted rows as one frame, in event_seq order (blocks are accepted in
