@@ -10,7 +10,7 @@
 # slice.
 #
 #   Rscript dev/lean_core/parity/slice4_reach_cross.R --lib=<pinned library> --dump=<dir>
-#     --set=ws39 --out=<csv>
+#     --set=ws39|slice4 --out=<csv>
 # The workload builders are not called here; only the predicates are.
 
 here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/"))
@@ -43,6 +43,16 @@ sets <- list(
            # close review round 1, F1: the retaining handler's room
            "s4_capacity_block", "s4_capacity_prefix", "s4_capacity_after_fill", "s4_capacity_fill",
            "s4_capacity_after_fill_run", "s4_capacity_fill_run"))
+# LDG-3248: the whole slice, workstream 40's facts, context, disposition,
+# precedence, prefix and growth cases added to workstream 39's list.
+sets$slice4 <- c(sets$ws39,
+  "s4_halt", "s4_v201_default", "s4_membership", "s4_nonmember_increase", "s4_restricted_target", "s4_restrictions",
+  "s4_state_context", "s4_no_members_held", "s4_subset", "s4_stale_facts", "s4_facts_sweep",
+  "s4_cash_acquisition", "s4_terminal", "s4_v201_refuse", "s4_acq_held", "s4_acq_unheld", "s4_acq_fills",
+  "s4_terminal_choices", "s4_terminal_refuse", "s4_terminal_unlabeled", "s4_terminal_no_mark", "s4_frozen_writeoff",
+  "s4_frozen_lastmark", "s4_frozen_refuse", "s4_blocked_scheduled", "s4_blocked_group", "s4_p1_then_stop",
+  "s4_p1_complete", "s4_reread_nonmember", "s4_bound_dispose", "s4_prefix_dispose_sweep", "s4_prefix_terminal_sweep",
+  "s4_prefix_dispose_stop", "s4_moves_growth")
 set <- arg("set")
 if (is.null(sets[[set]])) stop("unknown --set: ", set, call. = FALSE)
 required <- sets[[set]]

@@ -1,0 +1,61 @@
+"case","field","plain","hashed","equal","expected_equal","as_expected"
+"normal","value","done:3","done:3",TRUE,TRUE,TRUE
+"normal","order","n=3,exit1,exit_last","n=3,exit1,exit_last",TRUE,TRUE,TRUE
+"normal","class","<none>","<none>",TRUE,TRUE,TRUE
+"normal","message","<none>","<none>",TRUE,TRUE,TRUE
+"normal","fields","<none>","<none>",TRUE,TRUE,TRUE
+"normal","call","<none>","<none>",TRUE,TRUE,TRUE
+"conditional_exit","value","done:3","done:3",TRUE,TRUE,TRUE
+"conditional_exit","order","n=3,exit1,exit_cond,exit_last","n=3,exit1,exit_cond,exit_last",TRUE,TRUE,TRUE
+"conditional_exit","class","<none>","<none>",TRUE,TRUE,TRUE
+"conditional_exit","message","<none>","<none>",TRUE,TRUE,TRUE
+"conditional_exit","fields","<none>","<none>",TRUE,TRUE,TRUE
+"conditional_exit","call","<none>","<none>",TRUE,TRUE,TRUE
+"early_after_on_exit","value","early","early",TRUE,TRUE,TRUE
+"early_after_on_exit","order","exit1","exit1",TRUE,TRUE,TRUE
+"early_after_on_exit","class","<none>","<none>",TRUE,TRUE,TRUE
+"early_after_on_exit","message","<none>","<none>",TRUE,TRUE,TRUE
+"early_after_on_exit","fields","<none>","<none>",TRUE,TRUE,TRUE
+"early_after_on_exit","call","<none>","<none>",TRUE,TRUE,TRUE
+"top_stop_exiting","value","<error>","<error>",TRUE,TRUE,TRUE
+"top_stop_exiting","order","n=3,exit1,exit_cond,exiting_handler","n=3,exit1,exit_cond,exiting_handler",TRUE,TRUE,TRUE
+"top_stop_exiting","class","simpleError/error/condition","simpleError/error/condition",TRUE,TRUE,TRUE
+"top_stop_exiting","message","top-level stop","top-level stop",TRUE,TRUE,TRUE
+"top_stop_exiting","fields","detail=NA","detail=NA",TRUE,TRUE,TRUE
+"top_stop_exiting","call","f(x, log)","eval(code, new.env(hash = TRUE, parent = environment()))",FALSE,FALSE,TRUE
+"top_stop_calling","value","<error>","<error>",TRUE,TRUE,TRUE
+"top_stop_calling","order","n=3,calling_handler,exit1,exit_cond","n=3,calling_handler,exit1,exit_cond",TRUE,TRUE,TRUE
+"top_stop_calling","class","simpleError/error/condition","simpleError/error/condition",TRUE,TRUE,TRUE
+"top_stop_calling","message","top-level stop","top-level stop",TRUE,TRUE,TRUE
+"top_stop_calling","fields","detail=NA","detail=NA",TRUE,TRUE,TRUE
+"top_stop_calling","call","f(x, log)","eval(code, new.env(hash = TRUE, parent = environment()))",FALSE,FALSE,TRUE
+"top_abort_exiting","value","<error>","<error>",TRUE,TRUE,TRUE
+"top_abort_exiting","order","n=3,exit1,exit_cond,exiting_handler","n=3,exit1,exit_cond,exiting_handler",TRUE,TRUE,TRUE
+"top_abort_exiting","class","witness_error/rlang_error/error/condition","witness_error/rlang_error/error/condition",TRUE,TRUE,TRUE
+"top_abort_exiting","message","top-level abort","top-level abort",TRUE,TRUE,TRUE
+"top_abort_exiting","fields","detail=7","detail=7",TRUE,TRUE,TRUE
+"top_abort_exiting","call","f(x, log)","eval(code, new.env(hash = TRUE, parent = environment()))",FALSE,FALSE,TRUE
+"top_abort_calling","value","<error>","<error>",TRUE,TRUE,TRUE
+"top_abort_calling","order","n=3,calling_handler,exit1,exit_cond","n=3,calling_handler,exit1,exit_cond",TRUE,TRUE,TRUE
+"top_abort_calling","class","witness_error/rlang_error/error/condition","witness_error/rlang_error/error/condition",TRUE,TRUE,TRUE
+"top_abort_calling","message","top-level abort","top-level abort",TRUE,TRUE,TRUE
+"top_abort_calling","fields","detail=7","detail=7",TRUE,TRUE,TRUE
+"top_abort_calling","call","f(x, log)","eval(code, new.env(hash = TRUE, parent = environment()))",FALSE,FALSE,TRUE
+"helper_stop_calling","value","<error>","<error>",TRUE,TRUE,TRUE
+"helper_stop_calling","order","n=3,calling_handler,exit1,exit_cond","n=3,calling_handler,exit1,exit_cond",TRUE,TRUE,TRUE
+"helper_stop_calling","class","simpleError/error/condition","simpleError/error/condition",TRUE,TRUE,TRUE
+"helper_stop_calling","message","helper stop","helper stop",TRUE,TRUE,TRUE
+"helper_stop_calling","fields","detail=NA","detail=NA",TRUE,TRUE,TRUE
+"helper_stop_calling","call","helper_stop(""helper stop"")","helper_stop(""helper stop"")",TRUE,TRUE,TRUE
+"helper_abort_exiting","value","<error>","<error>",TRUE,TRUE,TRUE
+"helper_abort_exiting","order","n=3,exit1,exit_cond,exiting_handler","n=3,exit1,exit_cond,exiting_handler",TRUE,TRUE,TRUE
+"helper_abort_exiting","class","witness_error/rlang_error/error/condition","witness_error/rlang_error/error/condition",TRUE,TRUE,TRUE
+"helper_abort_exiting","message","helper abort","helper abort",TRUE,TRUE,TRUE
+"helper_abort_exiting","fields","detail=7","detail=7",TRUE,TRUE,TRUE
+"helper_abort_exiting","call","helper_abort(""helper abort"")","helper_abort(""helper abort"")",TRUE,TRUE,TRUE
+"caller_inspection","value","f(x, log)","eval(code, new.env(hash = TRUE, parent = environment()))",FALSE,FALSE,TRUE
+"caller_inspection","order","n=3,exit1","n=3,exit1",TRUE,TRUE,TRUE
+"caller_inspection","class","<none>","<none>",TRUE,TRUE,TRUE
+"caller_inspection","message","<none>","<none>",TRUE,TRUE,TRUE
+"caller_inspection","fields","<none>","<none>",TRUE,TRUE,TRUE
+"caller_inspection","call","<none>","<none>",TRUE,TRUE,TRUE

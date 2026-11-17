@@ -868,7 +868,7 @@ pin's stage samples are mostly zero (every stage median 0 in
 `ledgr_backtest_bench()` reports after the switch is a decision of the
 diagnostic-records amendment (seed D7).
 
-### 19.2 Coverage (slices 1 to 3)
+### 19.2 Coverage (slices 1 to 4)
 
 The loop runs a fold only when all of these hold, and otherwise refuses with
 one classed condition naming the first uncovered feature, before the first
@@ -876,10 +876,10 @@ pulse; the harness then runs the workload on the pin:
 
 | Covered | Refused (slice) |
 | --- | --- |
-| fixed universe, no status or lifetime facts; a frozen holding's hold-or-exit restriction (slice 3) | membership universes, restrictions other than a frozen holding's, terminals (4) |
+| fixed universe and membership universes; trading-status and lifetime facts with every restriction, the empty public domain and a context axis other than the run axis; plan and terminal dispositions with every terminal outcome and stop (slice 4, Section 19.13); a frozen holding's hold-or-exit restriction (slice 3) | - |
 | bar-native pulses or a declared session calendar with its execution opportunities; strategy schedules and schedule queries; missing bars and closes with stale and frozen marks under `ledgr_valuation_stale()` (slice 3, Section 19.11) | - |
 | every cost model and chain; risk chains of `long_only` and `max_weight` on fresh marks; raw full targets, `ledgr_target_rebalance()` and `ledgr_target_adjust()` with their sizing evidence, or `ledgr_strategy_result()` with declared state (slice 2, Section 19.9) | - (slice 3 covers the stale-mark risk rows, the unavailable risk-mark stop and sizing at an unusable mark) |
-| cash opening, no corporate actions | opening positions and imports, corporate actions (4) |
+| cash and position openings, carried openings (frozen set, lots, pending entitlements, position facts) and unknown-basis positions; corporate actions (cash dividends, cash, stock and mixed acquisitions, spin-offs) with the plan's refusals (slice 4, Section 19.13) | - |
 | strategy reading `ctx` fields, `hold()`, state and the pulse seed; `ledgr_history_matrix()`, `ledgr_history_frame()` and `ledgr_history_info()` of bars and features (slice 3) | - |
 | committed run and a one-worker sweep candidate | workers, compiled FIFO, restart, walk-forward (5) |
 | the in-memory event path | `db_live`, refused before the first pulse (retired by the pulse-plumbing synthesis R8) |
@@ -1471,6 +1471,13 @@ list shows otherwise.
   With only the refusal lifted, a dividend was silently missed and debug
   on did not catch it. These are inputs, not evidence: Cut 21 produces
   its own.
+- Implementation (2026-11-17): workstream 39 (LDG-3243 to LDG-3245, closed
+  after its close review passed at round 2) and workstream 40 (LDG-3246 to
+  LDG-3248) implement this section in `dev/lean_core/facts.R`, `loop.R` and
+  `marks.R`. Section 19.2's table now lists slice 4 as covered; the only
+  coverage refusals left are slice 5's and the prepared-axis guard. The
+  evidence is in tickets.yml (LDG-3243 to LDG-3248). Workstream 40's Type 1
+  close review and the cut's timing record (`cut21-loop-1`) are pending.
 
 Coverage moves in Section 19.2's table to covered:
 

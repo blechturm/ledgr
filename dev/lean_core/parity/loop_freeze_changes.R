@@ -195,6 +195,42 @@ for (w in c("s4_capacity_block", "s4_capacity_after_fill_run", "s4_capacity_fill
            reason = "Cut 21 LDG-3244 (close review round 1, F1) capacity witness under inert hooks, inert-mode count"))
 }
 
+# Cut 21, workstream 40 (LDG-3246, LDG-3247; decision 10 and cut review R9,
+# the final slice-4 paths): facts, the context axis and dispositions covered,
+# so the three existing rows still stopped at a slice-4 feature take their
+# final paths, and the workstream's workloads are added.
+for (u in list(list("avail_acquisition", 4L, ""), list("prep_fixture", 1L, ""),
+               list("avail_terminal_resume", 4L, "sweep workers"))) {
+  add(both(action = "update", mode = "gate", workload = u[[1L]], lean_folds = u[[2L]], refused = u[[3L]],
+           backstop = "", reason = "Cut 21 LDG-3246/LDG-3247: facts, the context axis and dispositions covered; final slice-4 path"))
+}
+slice4_ws40 <- c(
+  # LDG-3246
+  "s4_halt", "s4_v201_default", "s4_membership", "s4_nonmember_increase", "s4_restricted_target", "s4_restrictions",
+  "s4_state_context", "s4_no_members_held", "s4_subset", "s4_stale_facts", "s4_facts_sweep",
+  # LDG-3247
+  "s4_cash_acquisition", "s4_terminal", "s4_v201_refuse", "s4_acq_held", "s4_acq_unheld", "s4_acq_fills",
+  "s4_terminal_choices", "s4_terminal_refuse", "s4_terminal_unlabeled", "s4_terminal_no_mark", "s4_frozen_writeoff",
+  "s4_frozen_lastmark", "s4_frozen_refuse", "s4_blocked_scheduled", "s4_blocked_group", "s4_p1_then_stop",
+  "s4_p1_complete", "s4_reread_nonmember", "s4_bound_dispose", "s4_prefix_dispose_sweep", "s4_prefix_terminal_sweep",
+  "s4_prefix_dispose_stop", "s4_moves_growth")
+for (w in slice4_ws40) {
+  add(both(action = "add", mode = "gate", workload = w, lean_folds = 1L, refused = "", backstop = "",
+           reason = "Cut 21 workstream 40 slice-4 workload, declared path"))
+}
+# Facts, context and disposition rows across terminal batches (batch one,
+# decision 10: captured, disposition and fill interleaving, the context
+# records), and under inert hooks (inert-mode count 0).
+for (w in c("s4_acq_fills", "s4_moves_growth", "s4_p1_complete", "s4_p1_then_stop", "s4_terminal_choices", "s4_subset",
+            "s4_state_context", "s4_membership", "s4_v201_default", "s4_bound_dispose", "s4_prefix_dispose_sweep")) {
+  add(both(action = "add", mode = "batch1", workload = w, lean_folds = 1L, refused = "", backstop = "",
+           reason = "Cut 21 workstream 40: facts, context and disposition rows across terminal batches, declared path"))
+}
+for (w in c("s4_v201_default", "s4_subset", "s4_acq_held", "s4_terminal_choices", "s4_p1_then_stop")) {
+  add(both(action = "add", mode = "inert", workload = w, lean_folds = 0L, refused = "", backstop = "",
+           reason = "Cut 21 workstream 40: facts, context and dispositions under inert hooks, inert-mode count"))
+}
+
 out <- do.call(rbind, rows)
 utils::write.csv(out, file.path(here, "loop_freeze_changes.csv"), row.names = FALSE)
 cat(nrow(out), "changes:", paste(names(table(out$action)), table(out$action), collapse = ", "), "\n")

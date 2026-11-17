@@ -1,0 +1,10 @@
+dev/lean_core/loop.R:65:  lean_not_covered(feature)
+dev/lean_core/loop.R:73:  if (!is.null(entry)) lean_not_covered(entry)
+dev/lean_core/loop.R:76:  if (!is.null(execution$compiled_accounting_model)) lean_not_covered("compiled FIFO")
+dev/lean_core/loop.R:77:  if (!identical(execution$event_mode, "buffered")) lean_not_covered("db_live")
+dev/lean_core/loop.R:81:    lean_not_covered("a checkpoint_every control")
+dev/lean_core/loop.R:83:  if (!identical(as.integer(execution$start_idx), 1L)) lean_not_covered("restart")
+dev/lean_core/loop.R:94:  if (anyNA(cols)) lean_not_covered("pulses outside the prepared axis")
+dev/lean_core/loop.R:523:    if (length(u)) lean_not_covered(u[[1L]])
+dev/lean_core/loop_harness.R:13:#   condition raised mid-run (lean_abort_attempt()) marks the attempt, and
+dev/lean_core/parity/loop_parity.R:122:  entry_guard_off = variant("unrefused", list(edit("loop.R", "lean_loop_coverage", "  if (!is.null(entry)) lean_not_covered(entry)")),
