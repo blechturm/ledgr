@@ -20,9 +20,26 @@
 # a sweep's retained rows), read from the handler's state
 # (R/output-handler.R:466-477), and, for a retaining handler, from its event
 # count and maximum (:488-492; close review round 1, F1).
-lean_facts_run_state <- function(plan, handler, cap = 4L) {
+#
+# On a marked run (LDG-3246, decision 7) s4 also holds each pulse's context:
+# its run positions in one typed vector `cx`, grown by doubling, with an
+# offset (row 1) and a length (row 2) per pulse in the integer matrix `cxi`
+# (NULL on other runs, whose context is the run axis), and `axis`, the axis
+# the strategy state is aligned to (the run axis after the envelope's first
+# alignment).
+lean_facts_run_state <- function(execution, handler, ids, marked, cap = 4L) {
   s4 <- new.env(parent = emptyenv())
-  s4$plan <- plan
+  s4$plan <- execution$corporate_action_plan
+  s4$policy <- execution$corporate_action_policy   # the terminal policy (R/fold-engine.R:1837)
+  s4$provider <- execution$availability_provider
+  s4$run_id <- execution$run_id
+  s4$pulses <- execution$pulses_posix
+  s4$ids <- s4$axis <- ids
+  if (marked) {
+    s4$cx <- integer(4L * max(1L, length(ids)))
+    s4$ncx <- 0L
+    s4$cxi <- matrix(0L, 2L, length(execution$pulses_posix))
+  }
   st <- get0("state", envir = environment(handler$init_buffers), inherits = FALSE)
   s4$bseq <- if (is.environment(st)) st$last_event_seq
   s4$bts <- if (is.environment(st)) st$last_event_ts_utc
@@ -113,6 +130,82 @@ lean_facts_debug_settled <- function(s4, i, cash, pos, book) {
   if (!identical(cash, posted$cash) || !identical(pos, unname(as.numeric(posted$positions))) ||
       !identical(book, posted$lot_state)) fail("was not installed")
   invisible(TRUE)
+}
+
+# --- the context axis (LDG-3246, decision 7) ------------------------------------
+
+# Records pulse i's context (its run positions in context order) in the typed
+# columns: written by index, the vector doubled when full and detached while
+# written (shape 7), so the write does not copy it.
+lean_facts_context <- function(s4, i, cp) {
+  m <- length(cp)
+  cx <- s4$cx
+  s4$cx <- NULL
+  while (s4$ncx + m > length(cx)) length(cx) <- 2L * length(cx)
+  cx[s4$ncx + seq_len(m)] <- cp
+  s4$cx <- cx
+  ci <- s4$cxi
+  s4$cxi <- NULL
+  ci[, i] <- c(s4$ncx, m)
+  s4$cxi <- ci
+  s4$ncx <- s4$ncx + m
+}
+
+# Run positions of context ordinals `k` on pulses `p` (vectorised): the
+# ordinal itself on a run whose context is the run axis.
+lean_facts_rpos <- function(s4, k, p) if (is.null(s4$cxi)) k else s4$cx[s4$cxi[1L, p] + k]
+
+# Positions of run positions `rk` entering the decisions of pulses `hp` (a <=
+# hp <= b), for the holds of one expansion range (moved from loop.R, now
+# keyed by run position): the book net after the instrument's latest fill on
+# an earlier pulse of a..b (the fill's recorded net after; `fl` the typed
+# fill records, `fr` the rows of a..b), else its position entering a
+# (`carry`); never a sum of deltas.
+lean_facts_positions_at <- function(fl, fr, rk, hp, a, b, carry) {
+  out <- carry[rk]
+  if (length(fr) == 0L || length(rk) == 0L) return(out)
+  n <- length(carry)
+  stride <- b - a + 2L
+  # P[pulse - a + 2, k] = position after the fill on `pulse`
+  key_fill <- (fl$pos[fr] - 1L) * stride + fl$pulse[fr] - a + 2L
+  val <- numeric(n * stride)
+  has <- logical(n * stride)
+  val[key_fill] <- fl$net_after[fr]
+  has[key_fill] <- TRUE
+  idx <- seq_len(n * stride)
+  last <- cummax(ifelse(has, idx, (idx - 1L) %/% stride * stride))
+  src <- last[(rk - 1L) * stride + hp - a + 1L]
+  found <- src %% stride != 0L
+  out[found] <- val[src[found]]
+  out
+}
+
+# The strategy state aligned to a changed context (R/fold-engine.R:546-556),
+# from the axis it is on.
+lean_facts_align <- function(s4, values, declaration, cids, defaults) {
+  out <- ledgr_strategy_state_align(values, declaration, s4$axis, cids, default_scalars = defaults)
+  s4$axis <- cids
+  out
+}
+
+# P1 after the corporate-action posting (R/fold-engine.R:383-521): the
+# dispositions, then the one P1 stop path (decision 6) for a corporate-action
+# refusal (`refused`), a blocked disposition or the valuation horizon, with
+# the pin's rows, reason and affected exposure (lean_marks_valuation_stop).
+# `state` is the fold's cash, positions, book and event_seq, and
+# `settle(value, next_seq)` installs a settlement and returns the new state.
+# Returns the pulse's marks `m` (re-read after a disposition) and the stop or
+# NULL. Terminal and scheduled dispositions are LDG-3247's: until then a
+# held lifetime-inactive instrument aborts the attempt, which reruns on the
+# pin.
+lean_facts_dispose <- function(s3, s4, m, i, refused, state, settle) {
+  ts <- s4$pulses[[i]]
+  if (is.null(refused)) {
+    held <- m$cids[m$columns$held]
+    if (any(m$view$lifetime[held] %in% "known_inactive")) lean_abort_attempt("terminal dispositions")
+  }
+  list(m = m, stop = if (is.null(refused)) lean_marks_valuation_stop(m, ts) else
+    lean_marks_valuation_stop(m, ts, refused$ids, refused$reason_code, rep_len(refused$reasons, length(refused$ids))))
 }
 
 # The accepted rows as one frame, in event_seq order (blocks are accepted in

@@ -172,9 +172,9 @@ loop_mutations <- list(
   # the pin reports it.
   risk_not_applied = variant("differ", list(edit("checks.R", "lean_risk_apply", "  for (s in steps) {", "  for (s in list()) {")),
     tables = "^fills$|^ledger_events$|^run_diagnostic", error = "Lean risk plan differs from the pin's"),
-  implicit_row_old_rule = variant("differ", list(edit("loop.R", "lean_p4_apply",   # Cut 19 re-anchor
-    "    differs <- if (isTRUE(v2$skip)) integer() else which(!(is.finite(sq) & sq == pos & tq == sq & cleanc))",
-    "    differs <- if (isTRUE(v2$skip)) integer() else which(!(is.finite(sq) & sq == pos & cleanc))")),
+  implicit_row_old_rule = variant("differ", list(edit("loop.R", "lean_p4_apply",   # Cut 19, Cut 21 re-anchors
+    "    differs <- if (isTRUE(v2$skip)) integer() else which(!(is.finite(sq) & sq == pc & tq == sq & cleanc))",
+    "    differs <- if (isTRUE(v2$skip)) integer() else which(!(is.finite(sq) & sq == pc & cleanc))")),
     error = "Diagnostic codec coverage is corrupt", tables = "^run_diagnostic"),
   # Cut 18 R2: the resolver's output-shape check runs in debug only; a lean
   # cost column of the wrong length must raise its original refusal there.
@@ -289,6 +289,38 @@ loop_mutations <- list(
   # the capture or the fill commit; the pin's capacity refusal is lost.
   capacity_check_dropped = variant("differ", list(edit("facts.R", "lean_facts_capacity",
     "  if (s4$retains && s4$nrows + incoming > 0L) {", "  if (FALSE) {")), error = ".", tables = "^sweep|^prefix_reads$"),
+  # Cut 21, LDG-3246 (decision 11; cut review R5, R8): the context axis. The
+  # constant execution view on a facts run; decision rows numbered by run
+  # position, not context ordinal; decision_order on the run axis; the
+  # strategy state not aligned to a changed context; the empty axis's
+  # decision row dropped; P3 on run-axis positions (cells outside the
+  # context actionable); a context record lost at growth.
+  execution_view_fixed = variant("differ", list(edit("loop.R", "lean_p3_plan",
+    "        lean_plan_execution_view(provider, exec_ts, ids[ctx_pos[actionable]])",
+    "      if (!is.na(exec_ts)) view <- lean_exec_view(length(actionable))", "after")),
+    error = ".", tables = "^run_diagnostic|^fills$|^ledger_events$"),
+  decision_on_run_axis = variant("differ", list(edit("loop.R", "lean_loop_expand",
+    "      add(lay$dec0[dp] + dk, dp, list(instrument_id = ids[lean_facts_rpos(s4, dk, dp)], stage = \"decision\", outcome = \"recorded\",",
+    "      add(lay$dec0[dp] + lean_facts_rpos(s4, dk, dp), dp, list(instrument_id = ids[lean_facts_rpos(s4, dk, dp)], stage = \"decision\", outcome = \"recorded\",")),
+    error = ".", tables = "^run_diagnostic"),
+  decision_order_run_axis = variant("differ", list(edit("loop.R", "lean_loop_expand",
+    "        decision_order = as.numeric((kk - 1) * n + rq),   # (ordinal - 1) x axis size + run position (R/fold-engine.R:1330)",
+    "        decision_order = as.numeric((kk - 1) * n + kk + 0 * {lean_entry$variant_reached <- TRUE; 0}),", mark = FALSE)),
+    error = "decision-order evidence is corrupt", tables = "^run_diagnostic"),
+  state_not_aligned = variant("differ", list(edit("loop.R", "lean_p1_value",
+    "      if (!identical(m$cids, s4$axis)) strategy_state <<- lean_facts_align(s4, strategy_state, state_declaration,",
+    "      if (FALSE) strategy_state <<- lean_facts_align(s4, strategy_state, state_declaration,")), error = ".", tables = "."),
+  empty_domain_row_dropped = variant("differ", list(edit("loop.R", "lean_p2_decide",
+    "    if (n == 0L) lean_marks_add_rows(s3, i, 2L, lean_marks_group(\"\", \"decision\", \"recorded\", \"empty_public_domain\"))")),
+    error = ".", tables = "^run_diagnostic"),
+  outside_context_actionable = variant("differ", list(edit("loop.R", "lean_p3_plan",
+    "      batch <- lean_plan_pulse(context_pos = ctx_pos, target_qty = tq, position = pos,",
+    "      batch <- lean_plan_pulse(context_pos = seq_along(tq), target_qty = tq, position = pos,")),
+    error = ".", tables = "^fills$|^ledger_events$"),
+  context_lost_at_growth = variant("differ", list(edit("facts.R", "lean_facts_context",
+    "  while (s4$ncx + m > length(cx)) length(cx) <- 2L * length(cx)",
+    "  while (s4$ncx + m > length(cx)) { length(cx) <- 2L * length(cx); if (s4$ncx > 0L) cx[[s4$ncx]] <- NA_integer_ }")),
+    error = ".", tables = "^run_diagnostic"),
   # the valuation state given scoring ordinals instead of prepared columns
   wrong_origin = variant("differ", list(edit("marks.R", "lean_marks_state",
     "  ledgr_availability_valuation_state(bars, ids, substrate$axis, as.integer(provider$valuation_policy$max_sessions),",
@@ -576,6 +608,11 @@ for (id in ids) {
   # Cut 21 (LDG-3244, cut review R8): the corporate-action capture's blocks.
   res$capture_blocks_used <- if (is.null(cap) || is.na(cap["capture_blocks_used"])) NA_integer_ else as.integer(cap[["capture_blocks_used"]])
   res$capture_blocks_allocated <- if (is.null(cap) || is.na(cap["capture_blocks_allocated"])) NA_integer_ else as.integer(cap[["capture_blocks_allocated"]])
+  # Cut 21 (LDG-3246, LDG-3247; cut review R8): the typed context positions
+  # and the P1 position-transition record.
+  for (nm in c("context_used", "context_allocated", "moves_used", "moves_allocated")) {
+    res[[nm]] <- if (is.null(cap) || is.na(cap[nm])) NA_integer_ else as.integer(cap[[nm]])
+  }
   res$lost_errors <- paste(lost_errors, collapse = " | ")
   res$new_errors <- paste(new_errors, collapse = " | ")
   res$verdict <- verdict

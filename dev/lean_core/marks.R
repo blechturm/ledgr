@@ -24,7 +24,9 @@ lean_marks_run_state <- function(bars, ids, substrate, provider, history_reader,
   # (R/fold-engine.R:1794), so freeze entry is not recorded twice; such a
   # run takes the marked path, since only the valuation state can exit or
   # keep a frozen holding. So does a run with a corporate-action plan
-  # (LDG-3244): its refusal stops at the valuation (R/fold-engine.R:383-392).
+  # (LDG-3244): its refusal stops at the valuation (R/fold-engine.R:383-392);
+  # and one that declares a fact family other than sessions (LDG-3246): its
+  # decision axis is the provider's per-pulse context.
   s3$state <- if (lean_marks_needed(bars) || length(frozen) > 0L || marked) {
     lean_marks_state(bars, ids, substrate, provider, history_reader)
   }
@@ -36,7 +38,7 @@ lean_marks_run_state <- function(bars, ids, substrate, provider, history_reader,
     outcome = character(cap), reason_code = character(cap), reasons = character(cap), target = numeric(cap),
     quantity = numeric(cap), price = numeric(cap), mark_source = character(cap), mark_age = integer(cap),
     target_before_risk = numeric(cap), target_after_risk = numeric(cap), position_before = numeric(cap),
-    position_after = numeric(cap), detail_json = character(cap))
+    position_after = numeric(cap), detail_json = character(cap), event_seq = rep(NA_integer_, cap))
   s3$nx <- 0L
   s3
 }
@@ -86,9 +88,10 @@ lean_marks_state <- function(bars, ids, substrate, provider, history_reader) {
 # the valuation state advanced to the pulse with the held set, the frozen
 # restriction and the carrier's provider view (the pin's P1 order,
 # R/fold-engine.R:315-336). Returns the view columns, the valuation, the
-# named full positions and the P2 input. A context axis other than the run
-# axis cannot occur on a fixed basket (R/availability-provider-prepared.R:472);
-# it is a coverage condition, so the attempt reruns on the pin.
+# named full positions, the restricted view (lifetime and terminal facts),
+# the context ids `cids` (the decision axis: members, then held nonmembers,
+# R/availability-provider-prepared.R:522; slice 4 lifts the run-axis
+# refusal) and the P2 input on that axis.
 lean_marks_pulse <- function(provider, vs, i, ts_posix, pos, ids) {
   full <- stats::setNames(pos, ids)
   view <- provider$decision_view(ts_posix, full)
@@ -96,8 +99,8 @@ lean_marks_pulse <- function(provider, vs, i, ts_posix, pos, ids) {
   valuation <- vs$advance(i, axis, held = as.logical(view$held[axis]))
   view <- ledgr_availability_restrict_frozen(view, valuation)
   columns <- ledgr_carrier_provider_view(view, valuation)
-  if (!identical(columns$context_pos, seq_along(ids))) lean_abort_attempt("a context axis other than the run axis")
-  list(columns = columns, valuation = valuation, full = full, p2 = ledgr_carrier_p2_input(columns, ids))
+  list(columns = columns, valuation = valuation, full = full, view = view, cids = axis,
+       p2 = ledgr_carrier_p2_input(columns, axis))
 }
 
 # A group of diagnostic rows (one per entry of `ids`), with the pin's segment
@@ -111,7 +114,7 @@ lean_marks_group <- function(ids, stage, outcome, reason_code, ..., reasons = re
 # usable mark, NULL when every holding is priced; or a given stop, such as a
 # corporate-action refusal (:383-392). Its rows, reason and the affected
 # exposure the completion row records.
-lean_marks_valuation_stop <- function(m, ts_posix, ids = names(m$full)[m$columns$held & !m$columns$priced],
+lean_marks_valuation_stop <- function(m, ts_posix, ids = m$cids[m$columns$held & !m$columns$priced],
                                       reason_code = "valuation_horizon_exhausted", reasons = reason_code) {
   if (length(ids) == 0L) return(NULL)
   v <- m$valuation
@@ -128,7 +131,7 @@ lean_marks_valuation_stop <- function(m, ts_posix, ids = names(m$full)[m$columns
 # newly frozen holdings in context order, then holdings that left the frozen
 # set in the previous set's order. Returns the new set and the row groups.
 lean_marks_frozen <- function(m, before) {
-  ids <- names(m$full)
+  ids <- m$cids
   now <- ids[m$columns$held & m$columns$frozen]
   entered <- setdiff(now, before)
   exited <- setdiff(before, now)

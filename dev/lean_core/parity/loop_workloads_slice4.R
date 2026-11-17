@@ -519,3 +519,240 @@ loop_reach <- c(loop_reach, list(
     s4_capacity_failed(t) && NROW(p) == 1L && p$ts_utc == "2020-01-01T16:00:00Z" && s4_num(p$events) == 4
   }
 ))
+
+# --- LDG-3246: facts, the per-pulse views, the context axis and strategy state ---
+
+# Membership snapshots of universe "U" (R/availability-facts.R:167): `sets`
+# maps a day number to its members (character(0): no member); each set is
+# effective from that day's 00:00 and known at 17:00 the day before, after
+# that day's decision and before the next session opens.
+s4_universe <- function(sets) {
+  eff <- s4_at(as.integer(names(sets)), "00:00:00")
+  ledgr::ledgr_facts_membership_snapshots(data.frame(effective_from = eff, knowledge_time = eff - 7 * 3600,
+    set_id = paste0("S", names(sets)), members = I(unname(sets)), source = "s4", stringsAsFactors = FALSE), "U")
+}
+s4_members_exp <- function(strategy, ...) s4_exp(strategy, universe = ledgr::ledgr_universe_members("U"), ...)
+# One trading-status row from day `from` (00:00) to `to` (NA: open), known at
+# 17:00 the day before; two sources tied on one interval conflict.
+s4_trading <- function(id, status, from, to = NA, src = "s4") {
+  eff <- s4_at(from, "00:00:00")
+  data.frame(fact_id = paste(id, status, from, src, sep = "-"), instrument_id = id, effective_from = eff,
+    effective_to = if (is.na(to)) as.POSIXct(NA, tz = "UTC") else s4_at(to, "00:00:00"), knowledge_time = eff - 7 * 3600,
+    status = status, source = src, precedence = 0L, stringsAsFactors = FALSE)
+}
+# The v0.2.0.1 availability witness (tests/testthat): membership sets, halts,
+# a stale mark and a delisting, defined in an environment whose parent is
+# ledgr's namespace so the helper's unqualified calls resolve (the probe's).
+s4_v201 <- new.env(parent = asNamespace("ledgr"))
+sys.source(file.path(here, "..", "..", "..", "tests", "testthat", "helper-availability-v0-2-0-1-witnesses.R"),
+           envir = s4_v201)
+s4_v201_run <- function(name, ...) {
+  fx <- s4_v201$availability_v201_fold_fixture()
+  db <- build(name, function(db) ledgr::ledgr_snapshot_from_df(fx$bars, instruments_df = fx$instruments,
+    db_path = db, snapshot_id = name, facts = fx$facts, price_basis = "split_adjusted"))
+  collect(db, name, paste0("s4-", name), function(snapshot) ledgr::ledgr_experiment(snapshot,
+    s4_v201$availability_v201_fold_strategy, universe = ledgr::ledgr_universe_members("U"),
+    cost_model = ledgr::ledgr_cost_zero(), opening = ledgr::ledgr_opening(cash = 1e6), ...), seed = 7L)
+}
+s4_facts_closes <- function(n_days = 10L) list(A = 10 + seq_len(n_days) / 10, B = 20 + seq_len(n_days) / 5,
+  C = 30 - seq_len(n_days) / 10, D = 40 + seq_len(n_days) / 4, E = 50 - seq_len(n_days) / 5)
+# A run expected to fail: its store tables and the condition's class vector,
+# message, reason and affected instrument ids (decision 10, cut review R7).
+s4_cond_run <- function(name, closes, facts, exp) {
+  db <- s4_snapshot(name, closes, facts)
+  snapshot <- ledgr::ledgr_snapshot_open(db, name, verify = TRUE)
+  on.exit(ledgr::ledgr_snapshot_close(snapshot))
+  run_id <- paste0("s4-", name)
+  e <- tryCatch({ close(ledgr::ledgr_run(exp(snapshot), run_id = run_id, seed = 21L)); NULL }, error = identity)
+  cond <- data.frame(class = paste(class(e), collapse = "/"), message = if (is.null(e)) "" else conditionMessage(e),
+    reason = as.character(e$reason %||% ""), instrument_ids = paste(as.character(e$instrument_ids), collapse = ","),
+    stringsAsFactors = FALSE)
+  list(run = c(a0_store_tables(db, run_id), list(condition = cond)))
+}
+# Strategy reads recorded in the intent reason (cut review R5): the context,
+# the portfolio state `n` and the asset state `cnt` as read; then it holds,
+# n counts the pulse and cnt each context instrument.
+s4_state_strategy <- function(ctx, params) {
+  cnt <- ctx$state$cnt
+  ledgr::ledgr_strategy_result(ctx$hold(), n = ctx$state$n + 1L, cnt = cnt + 1,
+    intent_reason = sprintf("n=%d;%s", ctx$state$n, paste(names(cnt), cnt, sep = "=", collapse = ",")))
+}
+# The strict subset (cut review R5): the context is D and B of A..E, then B,
+# C, E with D a held nonmember. The strategy records its bar, feature and
+# history reads; it buys B and D on day 2, is refused 30 more B for cash on
+# day 4, sells 6 B on day 8; a context kept on day 3 (its feature unread) is
+# read on day 7, after the context changed.
+s4_subset_strategy <- function() {
+  kept <- new.env(parent = emptyenv())
+  function(ctx, params) {
+    day <- substr(ctx$ts_utc, 1L, 10L)
+    t <- ctx$hold()
+    read <- paste(ctx$universe, round(ctx$close, 4), sep = ":", collapse = ",")
+    if (day != "2020-01-03") read <- paste(read, paste(round(ctx$sma, 4), collapse = ","))
+    if (day >= "2020-01-03") read <- paste(read, paste(round(ledgr::ledgr_history_matrix(ctx, bar = "close",
+      lookback = 2L)[1L, ], 4), collapse = ","))
+    if (day == "2020-01-02") t[c("B", "D")] <- c(10, 5)
+    if (day == "2020-01-03") kept$ctx <- ctx
+    if (day == "2020-01-04") t[["B"]] <- 40
+    if (day == "2020-01-07") read <- paste(read, "| kept", paste(kept$ctx$universe, collapse = ","),
+      round(kept$ctx$close[["D"]], 4), paste(round(kept$ctx$sma, 4), collapse = ","))
+    if (day == "2020-01-08") t[["B"]] <- 4
+    list(targets = t, intent_reason = read)
+  }
+}
+
+loop_slice4 <- c(loop_slice4, list(
+  # Trading status only (the probe's): B halted on days 4-6, learned after
+  # the day-3 decision, so its day-3 buy meets the halt at execution.
+  s4_halt = function() {
+    status <- ledgr::ledgr_facts_trading_status(data.frame(fact_id = c("a", "b", "c", "b-halt"),
+      instrument_id = c("A", "B", "C", "B"), effective_from = c(rep(s4_at(1L, "00:00:00"), 3L), s4_at(4L, "00:00:00")),
+      effective_to = c(rep(as.POSIXct(NA, tz = "UTC"), 3L), s4_at(7L, "00:00:00")),
+      knowledge_time = c(rep(s4_at(1L, "00:00:00") - 3600, 3L), s4_at(3L) + 3600), status = c(rep("active", 3L), "halted"),
+      source = "s4", precedence = c(0L, 0L, 0L, 5L), stringsAsFactors = FALSE))
+    s4_run("s4_halt", s4_closes(), ledgr::ledgr_facts(s4_sessions(10L), status),
+      s4_exp(s4_strategy(s4_plan(list(2L, c(B = 5)), list(3L, c(B = 9)), list(8L, c(B = 0))))))
+  },
+  # The v0.2.0.1 availability witness with the default policies (the
+  # probe's): membership changes, halts, a stale mark and a delisting.
+  s4_v201_default = function() s4_v201_run("s4_v201_default",
+    valuation_policy = ledgr::ledgr_valuation_stale(max_sessions = 2L)),
+  # Membership entry and exit: A, bought on day 3, leaves the universe on
+  # day 4 (known after the decision), so its fill reports
+  # membership_changed_before_execution; it stays as a held nonmember at
+  # context ordinal 4 (run position 1), is reduced on day 6; D enters.
+  s4_membership = function() s4_run("s4_membership", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_universe(list("1" = c("A", "B", "C"), "4" = c("B", "C", "D")))),
+    s4_members_exp(s4_strategy(s4_plan(list(1L, c(B = 3)), list(3L, c(A = 4)), list(5L, c(D = 2)), list(6L, c(A = 1)))))),
+  # A held nonmember's exposure increased on day 5: refused.
+  s4_nonmember_increase = function() s4_cond_run("s4_nonmember_increase", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_universe(list("1" = c("A", "B", "C"), "4" = c("B", "C", "D")))),
+    s4_members_exp(s4_strategy(s4_plan(list(1L, c(B = 3)), list(3L, c(A = 4)), list(5L, c(A = 6)))))),
+  # A target change on a halted instrument: refused.
+  s4_restricted_target = function() s4_cond_run("s4_restricted_target", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), ledgr::ledgr_facts_trading_status(rbind(s4_trading("A", "active", 1L),
+      s4_trading("B", "active", 1L, 3L), s4_trading("B", "halted", 3L), s4_trading("C", "active", 1L)))),
+    s4_exp(s4_strategy(s4_plan(list(1L, c(A = 2)), list(4L, c(B = 5)))))),
+  # The quotation_only, status_unknown and status_unknown_or_conflicting
+  # restrictions: A quotation_only from day 4 (its day-3 sale meets it at
+  # execution), B with no status fact, C conflicting from day 5 (two tied
+  # sources; its day-4 buy meets it at execution).
+  s4_restrictions = function() s4_run("s4_restrictions", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), ledgr::ledgr_facts_trading_status(rbind(s4_trading("A", "active", 1L, 4L),
+      s4_trading("A", "quotation_only", 4L), s4_trading("C", "active", 1L), s4_trading("C", "halted", 5L, NA, "s4-alt"),
+      s4_trading("D", "active", 1L), s4_trading("E", "active", 1L)))),
+    s4_exp(s4_strategy(s4_plan(list(1L, c(A = 4, C = 3, D = 2)), list(3L, c(A = 0)), list(4L, c(C = 6)))))),
+  # Asset-scoped state across context changes (cut review R5): the context
+  # shrinks from A, B to B, through zero (days 4-5: the strategy is called
+  # with an empty axis and one empty_public_domain row each), and grows to
+  # A (re-entering with its default) and C (an entrant); n continues.
+  s4_state_context = function() s4_run("s4_state_context", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_universe(list("1" = c("A", "B"), "3" = "B", "4" = character(), "6" = c("A", "C")))),
+    s4_members_exp(s4_state_strategy, portfolio_state = list(n = 0L), asset_state = list(cnt = 0))),
+  # No members but a held nonmember (cut review R5): A, bought on day 1,
+  # stays on the context alone from day 3 under the ordinary rules and is
+  # reduced on day 4; no empty_public_domain row.
+  s4_no_members_held = function() s4_run("s4_no_members_held", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_universe(list("1" = c("A", "B"), "3" = character()))),
+    s4_members_exp(s4_strategy(s4_plan(list(1L, c(A = 4)), list(4L, c(A = 2)))))),
+  # A noncontiguous strict subset of the run axis, with features and history.
+  s4_subset = function() s4_run("s4_subset", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_universe(list("1" = c("D", "B"), "6" = c("B", "C", "E")))),
+    s4_members_exp(s4_subset_strategy(), cash = 1000,
+      features = ledgr::ledgr_feature_map(sma = ledgr::ledgr_ind_ttr("SMA", input = "close", n = 2L)))),
+  # Stale marks with facts: B has no bars on days 4-5 (a stale mark under
+  # ledgr_valuation_stale(2)) while C is halted on days 6-7.
+  s4_stale_facts = function() {
+    closes <- s4_facts_closes()
+    closes$B[4:5] <- NA
+    s4_run("s4_stale_facts", closes, ledgr::ledgr_facts(s4_sessions(10L), ledgr::ledgr_facts_trading_status(rbind(
+      s4_trading("A", "active", 1L), s4_trading("B", "active", 1L), s4_trading("C", "active", 1L, 6L),
+      s4_trading("C", "halted", 6L, 8L), s4_trading("C", "active", 8L, NA, "s4-lift")))),
+      s4_exp(s4_strategy(s4_plan(list(2L, c(B = 5, C = 2)))), valuation_policy = ledgr::ledgr_valuation_stale(2L)))
+  },
+  # A one-worker sweep over membership facts.
+  s4_facts_sweep = function() s4_ca_sweep("s4_facts_sweep", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_universe(list("1" = c("A", "B", "C"), "4" = c("B", "C", "D")))),
+    s4_members_exp(s4_strategy(s4_plan(list(1L, c(B = 3)), list(3L, c(A = 4)), list(5L, c(D = 2))))))
+))
+
+# Branch reach for LDG-3246, on the pin's tables.
+s4_rows <- function(t, stage, outcome, reason, path = "run") {
+  d <- t[[path]]$run_diagnostics
+  d[d$stage == stage & d$outcome == outcome & d$reason_code == reason, , drop = FALSE]
+}
+s4_implicit <- function(t) t$run$run_diagnostic_implicit
+s4_cond_reach <- function(class, reason, ids) function(t) {
+  c <- t$run$condition
+  NROW(c) == 1L && startsWith(c$class, paste0(class, "/")) && c$reason == reason && c$instrument_ids == ids &&
+    grepl(ids, c$message, fixed = TRUE)
+}
+
+loop_reach <- c(loop_reach, list(
+  # B's day-3 buy meets the halt at execution; B's decision cells while halted.
+  s4_halt = function(t) {
+    nf <- s4_rows(t, "execution", "no_fill", "trading_halted")
+    nrow(nf) >= 1L && all(nf$instrument_id == "B") &&
+      nrow(s4_rows(t, "decision", "recorded", "trading_halted")) >= 1L
+  },
+  s4_v201_default = function(t) {
+    d <- t$run$run_diagnostics
+    all(c("membership_changed_before_execution", "final_pulse_no_execution", "execution_bar_missing",
+          "stale_mark_pass_through") %in% d$reason_code)
+  },
+  # A's fill reports the membership change; A's day-4 hold is a held
+  # nonmember at context ordinal 4: decision_order (4 - 1) x 5 + 1 = 16.
+  s4_membership = function(t) {
+    f <- s4_rows(t, "execution", "filled", "membership_changed_before_execution")
+    im <- s4_implicit(t)
+    a4 <- im[im$instrument_id == "A" & s4_day(im$ts_utc) == "2020-01-04", , drop = FALSE]
+    nrow(f) == 1L && f$instrument_id == "A" && nrow(a4) == 1L && s4_num(a4$decision_order) == 16
+  },
+  s4_nonmember_increase = s4_cond_reach("ledgr_nonmember_exposure_increase", "nonmember_exposure_increase", "A"),
+  s4_restricted_target = s4_cond_reach("ledgr_restricted_target", "restricted_target", "B"),
+  s4_restrictions = function(t) {
+    nf <- function(r) s4_rows(t, "execution", "no_fill", r)$instrument_id
+    identical(nf("quotation_only"), "A") && identical(nf("status_unknown_or_conflicting"), "C") &&
+      all(s4_rows(t, "decision", "recorded", "status_unknown")$instrument_id == "B") &&
+      nrow(s4_rows(t, "decision", "recorded", "status_unknown")) >= 1L
+  },
+  # The recorded reads: B keeps its count when A leaves, the empty axis
+  # keeps n, A re-enters with its default and C enters with it; one
+  # empty_public_domain row on each empty day.
+  s4_state_context = function(t) {
+    r <- s4_intents(t)
+    e <- s4_rows(t, "decision", "recorded", "empty_public_domain")
+    identical(unname(r[c("2020-01-03", "2020-01-04", "2020-01-05", "2020-01-06")]), c("n=2;B=2", "n=3;", "n=4;", "n=5;A=0,C=0")) &&
+      identical(s4_day(e$ts_utc), c("2020-01-04", "2020-01-05")) && identical(s4_status(t), "DONE")
+  },
+  # From day 3 only A is decided (held nonmember), no empty row; A reduced.
+  s4_no_members_held = function(t) {
+    d <- t$run$run_diagnostics
+    im <- s4_implicit(t)
+    late <- function(x) x$instrument_id[s4_day(x$ts_utc) >= "2020-01-03" & x$stage %in% c("decision", NA)]
+    nrow(s4_rows(t, "decision", "recorded", "empty_public_domain")) == 0L &&
+      all(im$instrument_id[s4_day(im$ts_utc) >= "2020-01-03"] == "A") && any(s4_day(im$ts_utc) >= "2020-01-03") &&
+      any(t$run$fills$instrument_id == "A" & t$run$fills$side == "SELL")
+  },
+  # No row for A (never on the context); D's day-7 hold at ordinal 4 has
+  # decision_order 19, B's at ordinal 1 has 2; the day-4 refusal maps to B.
+  s4_subset = function(t) {
+    d <- t$run$run_diagnostics
+    im <- s4_implicit(t)
+    d7 <- im[s4_day(im$ts_utc) == "2020-01-07", , drop = FALSE]
+    rej <- s4_rows(t, "execution", "no_fill", "insufficient_cash")
+    !any(d$instrument_id %in% "A") && !any(im$instrument_id %in% "A") && !any(t$run$fills$instrument_id %in% "A") &&
+      identical(s4_num(d7$decision_order[d7$instrument_id == "D"]), 19) &&
+      identical(s4_num(d7$decision_order[d7$instrument_id == "B"]), 2) &&
+      identical(rej$instrument_id, "B") && sum(t$run$fills$side == "BUY") == 2L
+  },
+  s4_stale_facts = function(t) {
+    nrow(s4_rows(t, "risk", "passed", "stale_mark_pass_through")) >= 1L &&
+      nrow(s4_rows(t, "decision", "recorded", "trading_halted")) >= 1L
+  },
+  s4_facts_sweep = function(t) {
+    s <- t$sweep$sweep
+    f <- t$sweep$memory_fills
+    NROW(s) == 1L && identical(as.character(s$status), "DONE") && any(f$instrument_id == "D")
+  }
+))
