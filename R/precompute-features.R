@@ -94,10 +94,6 @@ ledgr_precompute_features_impl <- function(exp, param_grid, start, end) {
     calculation_start = calculation_start,
     calculation_end = range$scoring_end
   )
-  pulses_posix <- substrate$axis
-  history_axis <- ledgr_precompute_history_axis(
-    substrate, calculation_start, range$scoring_end
-  )
   available <- ledgr_precompute_available_counts(
     substrate$instrument_ids,
     substrate$bars$observed,
@@ -107,9 +103,12 @@ ledgr_precompute_features_impl <- function(exp, param_grid, start, end) {
   projection <- ledgr_projection_from_payload(
     payload = payload,
     universe = exp$universe,
-    pulses_posix = pulses_posix,
+    pulses_posix = substrate$axis,
     feature_engine_version = feature_engine_version,
     alias_index = NULL
+  )
+  history_axis <- ledgr_precompute_history_axis(
+    substrate, calculation_start, range$scoring_end, projection$pulses_iso
   )
   warmup <- ledgr_precompute_warmup_table(resolved$candidates, available)
 
@@ -762,9 +761,11 @@ ledgr_precompute_warmup_table <- function(candidates, available) {
 
 # The causal axis an availability payload was prepared on: its data start,
 # feature calculation start, cutoff and the exact session stamps between.
-ledgr_precompute_history_axis <- function(substrate, calculation_start, cutoff) {
+# `pulse_names`, when given, is the projection's formatted substrate axis.
+ledgr_precompute_history_axis <- function(substrate, calculation_start, cutoff, pulse_names = NULL) {
   cutoff <- ledgr_history_utc(cutoff)
-  sessions <- substrate$axis[as.numeric(substrate$axis) <= as.numeric(cutoff)]
+  keep <- as.numeric(substrate$axis) <= as.numeric(cutoff)
+  sessions <- substrate$axis[keep]
   # Equivalent bounds name the same first calculated session.
   first <- sessions[as.numeric(sessions) >= as.numeric(ledgr_history_utc(calculation_start))]
   list(
@@ -780,6 +781,9 @@ ledgr_precompute_history_axis <- function(substrate, calculation_start, cutoff) 
       NA_character_
     },
     sessions = length(sessions),
-    axis_hash = digest::digest(ledgr_projection_pulse_names(sessions), algo = "sha256")
+    axis_hash = digest::digest(
+      if (is.null(pulse_names)) ledgr_projection_pulse_names(sessions) else pulse_names[keep],
+      algo = "sha256"
+    )
   )
 }

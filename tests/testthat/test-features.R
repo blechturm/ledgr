@@ -24,6 +24,30 @@ make_test_bars <- function(instrument_ids, start_ts_utc, n) {
   out
 }
 
+# Cut 22 decision 4 deleted the v0.1.4 frame engine
+# (ledgr_compute_feature_series(), ledgr_check_no_lookahead()); its claims
+# move to the live calculation. live_feature_series() runs one definition over
+# a one-instrument frame through the live dispatch
+# (ledgr_history_feature_segment(): series_fn, else bounded fn windows, then
+# the shared output normalisation); live_no_lookahead() runs the preparation
+# path, whose causality probe refuses a definition that reads later rows.
+live_feature_series <- function(bars, def) {
+  substrate <- ws43_history_substrate(
+    as.numeric(bars$close),
+    fields = as.list(bars)[c("open", "high", "low", "volume")]
+  )
+  n <- length(substrate$axis)
+  cert <- ledgr:::ledgr_feature_certify(def)
+  if (n < as.integer(cert$def$stable_after)) return(rep(NA_real_, n))
+  inputs <- ledgr:::ledgr_history_feature_inputs(substrate, 1L, n, substrate$axis[[n]])
+  ledgr:::ledgr_history_feature_segment(cert, inputs, inputs$treated, seq_len(n))
+}
+
+live_no_lookahead <- function(feature_def, bars_df, horizons = c(1L, 3L)) {
+  ws43_bars_feature_values(bars_df, feature_def)
+  invisible(TRUE)
+}
+
 testthat::test_that("feature definitions are validated fail-loud", {
   good <- list(
     id = "x",
@@ -102,7 +126,7 @@ testthat::test_that("feature series uses and validates vectorized series functio
     params = list()
   )
 
-  values <- ledgr:::ledgr_compute_feature_series(bars, def)
+  values <- live_feature_series(bars, def)
 
   testthat::expect_identical(calls$series_fn, 1L)
   testthat::expect_identical(calls$fn, 0L)
@@ -124,7 +148,7 @@ testthat::test_that("feature series uses and validates vectorized series functio
   len_def <- base_def
   len_def$series_fn <- function(bars, params = list()) bars$close[-1]
   testthat::expect_error(
-    ledgr:::ledgr_compute_feature_series(bars, len_def),
+    live_feature_series(bars, len_def),
     "expected 4",
     fixed = TRUE
   )
@@ -132,7 +156,7 @@ testthat::test_that("feature series uses and validates vectorized series functio
   type_def <- base_def
   type_def$series_fn <- function(bars, params = list()) as.character(bars$close)
   testthat::expect_error(
-    ledgr:::ledgr_compute_feature_series(bars, type_def),
+    live_feature_series(bars, type_def),
     "non-numeric",
     fixed = TRUE
   )
@@ -140,27 +164,27 @@ testthat::test_that("feature series uses and validates vectorized series functio
   inf_def <- base_def
   inf_def$series_fn <- function(bars, params = list()) c(NA_real_, 1, Inf, 2)
   testthat::expect_error(
-    ledgr:::ledgr_compute_feature_series(bars, inf_def),
+    live_feature_series(bars, inf_def),
     "infinite",
     fixed = TRUE
   )
 
   inf_warmup_def <- base_def
   inf_warmup_def$series_fn <- function(bars, params = list()) c(Inf, 1, 2, 3)
-  values <- ledgr:::ledgr_compute_feature_series(bars, inf_warmup_def)
+  values <- live_feature_series(bars, inf_warmup_def)
   testthat::expect_true(is.na(values[[1]]))
   testthat::expect_equal(values[-1], c(1, 2, 3))
 
   nan_def <- base_def
   nan_def$series_fn <- function(bars, params = list()) c(NaN, 1, 2, 3)
-  values <- ledgr:::ledgr_compute_feature_series(bars, nan_def)
+  values <- live_feature_series(bars, nan_def)
   testthat::expect_true(is.na(values[[1]]))
   testthat::expect_false(is.nan(values[[1]]))
 
   nan_late_def <- base_def
   nan_late_def$series_fn <- function(bars, params = list()) c(NA_real_, 1, NaN, 3)
   testthat::expect_error(
-    ledgr:::ledgr_compute_feature_series(bars, nan_late_def),
+    live_feature_series(bars, nan_late_def),
     "NaN outside",
     fixed = TRUE
   )
@@ -168,7 +192,7 @@ testthat::test_that("feature series uses and validates vectorized series functio
   na_late_def <- base_def
   na_late_def$series_fn <- function(bars, params = list()) c(NA_real_, 1, NA_real_, 3)
   testthat::expect_error(
-    ledgr:::ledgr_compute_feature_series(bars, na_late_def),
+    live_feature_series(bars, na_late_def),
     "NA outside",
     fixed = TRUE
   )
@@ -192,25 +216,11 @@ testthat::test_that("fn-only feature fallback uses bounded windows", {
     params = list()
   )
 
-  values <- ledgr:::ledgr_compute_feature_series(bars, def)
+  values <- live_feature_series(bars, def)
 
   testthat::expect_true(all(is.na(values[1:2])))
   testthat::expect_identical(seen$max_rows, 3L)
   testthat::expect_false(anyNA(values[3:length(values)]))
-})
-
-testthat::test_that("no-lookahead checker passes for built-in features on deterministic bars", {
-  bars <- make_test_bars(c("AAA"), "2020-01-01 00:00:00", n = 10)
-  bars <- bars[order(bars$ts_utc), , drop = FALSE]
-
-  testthat::expect_error(
-    ledgr:::ledgr_check_no_lookahead(ledgr:::ledgr_feature_sma_n(3L), bars, horizons = c(1L, 3L)),
-    NA
-  )
-  testthat::expect_error(
-    ledgr:::ledgr_check_no_lookahead(ledgr:::ledgr_feature_return_1(), bars, horizons = c(1L, 3L)),
-    NA
-  )
 })
 
 testthat::test_that("[LTB-0003] no-lookahead checker detects a leaking series function", {
@@ -241,9 +251,9 @@ testthat::test_that("[LTB-0003] no-lookahead checker detects a leaking series fu
   }
 
   testthat::expect_silent(
-    ledgr:::ledgr_check_no_lookahead(causal, bars, horizons = c(1L, 3L))
+    live_no_lookahead(causal, bars, horizons = c(1L, 3L))
   )
-  testthat::expect_silent(detects_leak(ledgr:::ledgr_check_no_lookahead))
+  testthat::expect_silent(detects_leak(live_no_lookahead))
   testthat::expect_error(
     detects_leak(function(...) invisible(TRUE)),
     "The leaking feature was not detected.",

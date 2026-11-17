@@ -507,8 +507,8 @@ testthat::test_that("[LTB-0074] public TTR SMA shares the strict-window contract
     close = c(10, 12, 14, 16)
   )
   testthat::expect_identical(
-    ledgr:::ledgr_compute_feature_series(dense_bars, ttr_sma),
-    ledgr:::ledgr_compute_feature_series(dense_bars, dense_ttr)
+    ws43_bars_feature_values(dense_bars, ttr_sma),
+    ws43_bars_feature_values(dense_bars, dense_ttr)
   )
 
   # The strict-window certification of TTR forms is the bounded rows of the

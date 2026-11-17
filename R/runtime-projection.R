@@ -21,6 +21,8 @@ ledgr_runtime_projection <- function(feature_values,
 
   n_inst <- length(universe)
   n_pulse <- length(pulses_posix)
+  # One formatted axis serves the matrix dimnames, pulse_index and pulses_iso.
+  pulse_names <- ledgr_projection_pulse_names(pulses_posix)
   feature_values <- lapply(feature_values, function(value) {
     if (!is.matrix(value)) {
       rlang::abort("Each runtime projection feature value must be a matrix.", class = "ledgr_invalid_runtime_projection")
@@ -32,12 +34,12 @@ ledgr_runtime_projection <- function(feature_values,
       )
     }
     storage.mode(value) <- "double"
-    dimnames(value) <- list(universe, ledgr_projection_pulse_names(pulses_posix))
+    dimnames(value) <- list(universe, pulse_names)
     value
   })
 
   instrument_index <- stats::setNames(seq_along(universe), universe)
-  pulse_index <- stats::setNames(seq_along(pulses_posix), ledgr_projection_pulse_names(pulses_posix))
+  pulse_index <- stats::setNames(seq_along(pulses_posix), pulse_names)
 
   structure(
     list(
@@ -45,7 +47,7 @@ ledgr_runtime_projection <- function(feature_values,
       instrument_index = instrument_index,
       pulse_index = pulse_index,
       pulses_posix = pulses_posix,
-      pulses_iso = format(pulses_posix, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+      pulses_iso = pulse_names,
       feature_engine_version = feature_engine_version,
       alias_index = alias_index,
       feature_planes = feature_planes

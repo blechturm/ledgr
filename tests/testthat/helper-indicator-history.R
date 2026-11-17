@@ -71,3 +71,18 @@ ws43_feature_values <- function(substrate, definition, ...) {
   )
   as.numeric(out[[1L]][1L, ])
 }
+
+# Live-path values of one definition over a bars frame's rows, one session
+# per row (Cut 22 decision 4: the replacement for the deleted v0.1.4
+# ledgr_compute_feature_series()). `from` and `to` bound the calculation to
+# sessions from..to of the frame.
+ws43_bars_feature_values <- function(bars, definition, from = NULL, to = NULL) {
+  fields <- as.list(bars)[intersect(names(bars), c("open", "high", "low", "volume"))]
+  substrate <- ws43_history_substrate(as.numeric(bars$close), fields = fields)
+  ws43_feature_values(
+    substrate,
+    definition,
+    calculation_start = if (is.null(from)) NULL else substrate$axis[[from]],
+    calculation_end = if (is.null(to)) NULL else substrate$axis[[to]]
+  )
+}

@@ -328,7 +328,7 @@ testthat::test_that("TTR ledgr output matches direct TTR output after normalizat
     label <- ledgr_test_ttr_case_label(case)
     ind <- ledgr_test_ind_ttr_from_case(case)
     values_from_ttr <- ledgr_test_ttr_expected_values(bars, case)
-    values_from_ledgr <- ledgr:::ledgr_compute_feature_series(bars, ind)
+    values_from_ledgr <- ws43_bars_feature_values(bars, ind)
     first_valid_from_ledgr <- which(!is.na(values_from_ledgr))[1]
     first_callable_from_ttr <- ledgr_test_ttr_first_callable(case, max_n = nrow(bars))
 
@@ -371,7 +371,7 @@ testthat::test_that("MACD audit case uses direct TTR warmup with percent false",
   testthat::expect_identical(ind$requires_bars, 34L)
   testthat::expect_identical(ind$stable_after, 34L)
 
-  values <- ledgr:::ledgr_compute_feature_series(bars, ind)
+  values <- ws43_bars_feature_values(bars, ind)
   first_valid <- which(!is.na(values))[1]
   testthat::expect_identical(first_valid, 34L)
   testthat::expect_false(any(is.na(values[seq.int(ind$stable_after, length(values))])))
@@ -407,7 +407,7 @@ testthat::test_that("MACD warmup matches direct TTR output for all percent/outpu
       ledgr_ind_ttr,
       c(list("MACD", input = "close", output = case$output), case$args)
     )
-    values_from_ledgr <- ledgr:::ledgr_compute_feature_series(bars, ind)
+    values_from_ledgr <- ws43_bars_feature_values(bars, ind)
     first_valid_from_ledgr <- which(!is.na(values_from_ledgr))[1]
 
     testthat::expect_identical(ind$requires_bars, case$requires_bars, info = label)
@@ -438,7 +438,7 @@ testthat::test_that("TTR short samples return aligned warmup NA instead of low-l
   for (case in cases) {
     ind <- ledgr_test_ind_ttr_from_case(case)
     for (n in unique(pmax(1L, c(case$requires_bars - 1L, case$requires_bars, case$requires_bars + 1L)))) {
-      values <- ledgr:::ledgr_compute_feature_series(ledgr_test_ttr_bars(n), ind)
+      values <- ws43_bars_feature_values(ledgr_test_ttr_bars(n), ind)
       label <- paste(ledgr_test_ttr_case_label(case), "n=", n)
       testthat::expect_equal(length(values), n, info = label)
       if (n < case$requires_bars) {
@@ -546,7 +546,7 @@ testthat::test_that("TTR output bundles include MACD derived histogram output", 
   )
 
   bars <- ledgr_test_ttr_bars()
-  values <- lapply(indicators, function(ind) ledgr:::ledgr_compute_feature_series(bars, ind))
+  values <- lapply(indicators, function(ind) ws43_bars_feature_values(bars, ind))
   testthat::expect_equal(
     values[[3]],
     values[[1]] - values[[2]],

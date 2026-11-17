@@ -340,8 +340,9 @@ ledgr_history_feature_calculate <- function(cert, inputs, calc_from, output_carr
   }
   calc <- seq.int(calc_from, n)
   fields <- if (identical(declarations$input_carry, "excluded")) inputs$raw else inputs$treated
+  # Admission reads only the required fields; callbacks still get the frame.
   admission <- ledgr_history_required_field_admission(
-    lapply(fields, function(x) x[calc]),
+    lapply(fields[declarations$required_fields], function(x) x[calc]),
     declarations$required_fields
   )
   available_all[calc] <- admission$available & inputs$expected[calc]
@@ -618,12 +619,14 @@ ledgr_feature_plane_records <- function(planes, instrument_ids, bounds) {
 # history in their calculation range. A position is recomputed on the
 # history ending there and must reproduce the prepared value exactly, so a
 # definition that reads later rows, or carries state between calls, refuses.
-# A custom bounded definition with both `fn` and `series_fn` is also
-# refuted at the same positions: `fn` on its handed window must equal the
-# `series_fn` value on the full causal prefix within the declared tolerance.
-# Built-ins and catalogue rows are certified by package tests and are not
-# refuted at runtime. The cost is a fixed number of recomputations of one
-# instrument per definition, linear in history length, never all prefixes.
+# Every definition with calculated cells gets this prefix check, built-ins
+# and catalogue rows included. Only a custom bounded definition with both
+# `fn` and `series_fn` is also refuted at the same positions: `fn` on its
+# handed window must equal the `series_fn` value on the full causal prefix
+# within the declared tolerance; package tests certify that parity for
+# built-ins and catalogue rows. The cost is a fixed number of recomputations
+# of one instrument per definition, linear in history length, never all
+# prefixes.
 ledgr_history_feature_causality_positions <- function(n) {
   if (n < 1L) return(integer())
   unique(c(1L, as.integer(ceiling(n * c(1, 2) / 3)), n))

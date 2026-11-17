@@ -31,7 +31,7 @@ testthat::test_that("core indicator fingerprints remain stable", {
     return_5 = "d3feff6aeb660729888928583c4cf36150a66dba0053ab944783e064f090d9cb",
     adapter_r = "1db65a21158519f20fed668b45dcedf54cd076c94af7f3c8fb7789dadc675508",
     strategy_fn = "bf2bef3c9c4540717f9165a987e62d35033f4af3c706f22014e5ae78ff6393c8",
-    feature_engine = "895161a3f7ff6d3d2808d5e45a00a2e3f9cf9c5330e52e89e6c6d6aa58a5fb56"
+    feature_engine = "d9b7540951380819f879c9eabd7032ec11937048d75732c2a4ea17f9d1b23ce1"
   )
 
   observed <- c(
@@ -62,9 +62,11 @@ testthat::test_that("core indicator fingerprints remain stable", {
 
 testthat::test_that("[LTB-0105] scalar helpers enter feature-engine identity", {
   baseline <- ledgr:::ledgr_feature_engine_version()
+  # Cut 22 decision 4: the v0.1.4 scalar-at-index helper is deleted; the live
+  # bounded fn window is ledgr_history_feature_window().
   changed_window <- local({
     testthat::local_mocked_bindings(
-      ledgr_compute_feature_scalar_at = function(...) -1,
+      ledgr_history_feature_window = function(...) -1,
       .package = "ledgr"
     )
     ledgr:::ledgr_feature_engine_version()

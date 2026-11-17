@@ -306,7 +306,7 @@ testthat::test_that("built-in indicators are deterministic and silent", {
   )
 
   for (ind in indicators) {
-    values <- ledgr:::ledgr_compute_feature_series(window, ind)
+    values <- ws43_bars_feature_values(window, ind)
     latest_window <- utils::tail(window, ind$stable_after)
     result1 <- ind$fn(latest_window)
     result2 <- ind$fn(latest_window)

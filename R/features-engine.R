@@ -3,20 +3,10 @@ ledgr_feature_engine_version <- function() {
   # computed feature values.
   payload <- list(
     namespace = "v0.1.4-feature-engine",
-    compute_series = ledgr_function_fingerprint(
-      ledgr_compute_feature_series,
-      include_captures = FALSE,
-      label = "`ledgr_compute_feature_series()`"
-    ),
     normalize_series = ledgr_function_fingerprint(
       ledgr_normalize_feature_series_output,
       include_captures = FALSE,
       label = "`ledgr_normalize_feature_series_output()`"
-    ),
-    compute_scalar_at = ledgr_function_fingerprint(
-      ledgr_compute_feature_scalar_at,
-      include_captures = FALSE,
-      label = "`ledgr_compute_feature_scalar_at()`"
     ),
     normalize_scalar = ledgr_function_fingerprint(
       ledgr_normalize_feature_scalar_output,
@@ -383,50 +373,6 @@ ledgr_normalize_feature_scalar_output <- function(value, feature_id) {
   as.numeric(value)
 }
 
-ledgr_compute_feature_scalar_at <- function(bars_df, feature_def, index) {
-  index <- as.integer(index)
-  stable_after <- as.integer(feature_def$stable_after)
-  if (index < stable_after) return(NA_real_)
-
-  start_idx <- index - stable_after + 1L
-  window <- bars_df[seq.int(start_idx, index), , drop = FALSE]
-  params <- feature_def$params
-  if (is.null(params)) params <- list()
-  value <- ledgr_call_feature_fn(feature_def$fn, window, params)
-  ledgr_normalize_feature_scalar_output(value, feature_def$id)
-}
-
-ledgr_compute_feature_series <- function(bars_df, feature_def) {
-  ledgr_validate_feature_def(feature_def)
-
-  if (!is.data.frame(bars_df) || nrow(bars_df) < 1) {
-    rlang::abort("`bars_df` must be a non-empty data.frame.", class = "ledgr_invalid_feature_input")
-  }
-  if (!all(c("ts_utc", "close") %in% names(bars_df))) {
-    rlang::abort("`bars_df` must include at least columns `ts_utc` and `close`.", class = "ledgr_invalid_feature_input")
-  }
-
-  stable_after <- as.integer(feature_def$stable_after)
-  series_fn <- feature_def$series_fn
-  params <- feature_def$params
-  if (is.null(params)) params <- list()
-
-  n <- nrow(bars_df)
-  if (n < stable_after) {
-    return(rep(NA_real_, n))
-  }
-  if (!is.null(series_fn)) {
-    value <- ledgr_call_feature_series_fn(series_fn, bars_df, params)
-    return(ledgr_normalize_feature_series_output(value, n, stable_after, feature_def$id))
-  }
-
-  out <- rep(NA_real_, n)
-  for (i in seq_len(n)) {
-    out[[i]] <- ledgr_compute_feature_scalar_at(bars_df, feature_def, i)
-  }
-  out
-}
-
 ledgr_strict_sma_series <- function(values, width) {
   values <- as.numeric(values)
   width <- as.integer(width)
@@ -441,32 +387,4 @@ ledgr_strict_sma_series <- function(values, width) {
     mean(values[seq.int(i - width + 1L, i)])
   }, numeric(1))
   out
-}
-
-ledgr_check_no_lookahead <- function(feature_def, bars_df, horizons = c(1L, 3L)) {
-  ledgr_validate_feature_def(feature_def)
-  if (!is.data.frame(bars_df) || nrow(bars_df) < 2) {
-    rlang::abort("`bars_df` must be a data.frame with at least 2 rows.", class = "ledgr_invalid_feature_input")
-  }
-  n <- nrow(bars_df)
-  horizons <- as.integer(horizons)
-  horizons <- horizons[horizons >= 1L]
-  if (length(horizons) == 0) horizons <- 1L
-
-  for (h in horizons) {
-    for (k in seq_len(n - h)) {
-      past <- bars_df[seq_len(k), , drop = FALSE]
-      extended <- bars_df[seq_len(k + h), , drop = FALSE]
-      v1 <- ledgr_compute_feature_series(past, feature_def)[[k]]
-      v2 <- ledgr_compute_feature_series(extended, feature_def)[[k]]
-      if (is.na(v1) && is.na(v2)) next
-      if (!identical(v1, v2)) {
-        rlang::abort(
-          sprintf("No-lookahead check failed for feature %s at k=%d with horizon=%d.", feature_def$id, k, h),
-          class = "ledgr_feature_lookahead_detected"
-        )
-      }
-    }
-  }
-  invisible(TRUE)
 }

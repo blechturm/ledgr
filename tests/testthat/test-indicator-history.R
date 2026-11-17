@@ -257,16 +257,15 @@ testthat::test_that("[LTB-0308] catalogue rows are certified on hostile fixtures
     for (fixture_name in names(fixtures)) {
       bars <- fixtures[[fixture_name]]
       n <- nrow(bars)
-      full <- ledgr:::ledgr_compute_feature_series(bars, indicator)
+      # Cut 22 decision 4: computed on the live calculation, bounded to the
+      # prefix 1..k and to the window k - width + 1..k.
+      full <- ws43_bars_feature_values(bars, indicator)
       positions <- unique(c(seq.int(indicator$stable_after, n, by = 7L), n))
       for (k in positions) {
-        prefix <- ledgr:::ledgr_compute_feature_series(bars[seq_len(k), , drop = FALSE], indicator)
+        prefix <- ws43_bars_feature_values(bars, indicator, to = k)
         testthat::expect_identical(prefix[[k]], full[[k]],
           info = paste(label, fixture_name, "exact prefix invariance at", k))
-        window <- ledgr:::ledgr_compute_feature_series(
-          bars[seq.int(k - width + 1L, k), , drop = FALSE],
-          indicator
-        )[[width]]
+        window <- ws43_bars_feature_values(bars, indicator, from = k - width + 1L, to = k)[[k]]
         delta <- scaled(window, full[[k]])
         if (identical(row$history_class, "bounded")) {
           testthat::expect_true(
