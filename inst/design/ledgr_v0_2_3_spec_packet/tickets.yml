@@ -3400,15 +3400,22 @@ cuts:
       work (or report it separately inside a complete preparation clock).
       Work signatures compare values, axes, planes and logical mappings,
       excluding only the declared engine marker and physical representation;
-      fault controls still detect a changed value or plane. Candidate 5:
-      the whole explicit-precompute object's bytes, and peak R heap of
-      sequential sweep feature preparation by the repository's
-      gc(reset = TRUE) max-used method in fresh children (fixtures prepared
-      outside the phase, the projection retained at its end), its metric,
-      worker count and lifecycle declared before running, and its
-      sensitivity validated against an extra live allocation; labelled peak
-      R heap, not process memory; a smaller retained size alone does not
-      satisfy it. The timing harness itself does not change. A unit that
+      fault controls still detect a changed value or plane. Candidate 5 is
+      kept only if the oracle is identical, the whole explicit-precompute
+      object has fewer bytes, and the median peak R heap of sequential sweep
+      feature preparation is lower in the candidate on every memory target
+      cell named before comparison (re-review 1, F1). Matched arms differ
+      only by candidate 5, with prerequisites identical. The object-byte
+      measure, memory cells, repetitions, worker count and lifecycle are
+      declared before running. The method is the repository's fresh-child
+      gc(reset = TRUE) max-used method, with fixtures prepared outside the
+      phase, the projection retained at its end, and sensitivity validated
+      with an extra live allocation; the metric is labelled peak R heap,
+      not process memory. Both memory reductions must pass; unchanged or
+      increased memory fails, and unresolved noise is inconclusive. No
+      minimum percentage reduction is required. Every measured timing cell
+      also stays within 1.02. The A/A record runs without a candidate
+      overlay. The timing harness itself does not change. A unit that
       fails its rule is reverted and recorded with its numbers.
       (4) Delete the legacy v0.1.4 block (maintainer, 2026-11-17):
       ledgr_compute_feature_series(), ledgr_compute_feature_scalar_at() and
@@ -3554,7 +3561,7 @@ cuts:
       wrong answer; a third correction round stops for maintainer
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
-    cut_review: "CHANGES_REQUIRED in cut_review_22.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at e458f38f): R1-R5 required, R6-R8 advisory, all applied with the review's replacement text: the two further engine-version literals (test-fingerprint-stability.R:34, test-strict-ttr-cleanup.R:182) and the legacy scalar-helper mock (R1); the census from the preparation roots including substrate construction, complete bindings only, and the lifetime-segment counterexample (R2; its probe changed results with the engine and history identities unchanged); the read-side decoders and the recomputing read entry left unbound, reversing the provisional default for those five (R3; binding them would refuse equivalent precomputes); per-unit matched-arm keep rules, the cut22-feature-1 protocol with an A/A record, and a declared peak-R-heap metric for candidate 5 (R4); the FIFO tooling scope and the legacy inventory of historical dev consumers (R5); the whole formatted axis at every consumer (R6); the corpus count corrected to 15 sets plus 14 read-entry cases, with route and field-union recording (R7); key-level comparison of two FIFO captures (R8). No maintainer question; the maintainer's choices stand."
+    cut_review: "CHANGES_REQUIRED in cut_review_22.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at e458f38f): R1-R5 required, R6-R8 advisory, all applied with the review's replacement text: the two further engine-version literals (test-fingerprint-stability.R:34, test-strict-ttr-cleanup.R:182) and the legacy scalar-helper mock (R1); the census from the preparation roots including substrate construction, complete bindings only, and the lifetime-segment counterexample (R2; its probe changed results with the engine and history identities unchanged); the read-side decoders and the recomputing read entry left unbound, reversing the provisional default for those five (R3; binding them would refuse equivalent precomputes); per-unit matched-arm keep rules, the cut22-feature-1 protocol with an A/A record, and a declared peak-R-heap metric for candidate 5 (R4); the FIFO tooling scope and the legacy inventory of historical dev consumers (R5); the whole formatted axis at every consumer (R6); the corpus count corrected to 15 sets plus 14 read-entry cases, with route and field-union recording (R7); key-level comparison of two FIFO captures (R8). No maintainer question; the maintainer's choices stand. Focused re-review 1 (cut_review_22_rereview_1.md, same setup, at e32742b4): CHANGES_REQUIRED, R1-R3 and R5-R8 applied; F1 (the rewrite of R4 lost candidate 5's memory keep predicate) applied with the review's text: fewer object bytes and a lower median peak R heap on every named memory cell, both required."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -7468,7 +7475,7 @@ tickets:
       - "The sweep path, explicit precompute and the pulse snapshot keep matrices only; ledgr_projection_from_payload() reads them; ledgr_history_precompute_payload keeps its name"
       - "The dev/bench split-vector producers updated or marked pin-only"
       - "Registered test changes limited to decision 7's candidate-5 lines, each with its stated reason; the matrix-layout assertions stay"
-      - "Oracle identical; the whole explicit-precompute object's bytes and the peak R heap of sequential sweep feature preparation before and after (decision 3a: metric, worker count and lifecycle declared first, fresh children, sensitivity validated against an extra live allocation); no measured cell slower than the 1.02 bound; keep verdict"
+      - "Candidate 5 kept only if the oracle is identical, the whole explicit-precompute object has fewer bytes, and the median peak R heap of sequential sweep feature preparation is lower on every memory target cell named before comparison (decision 3a: matched arms differing only by candidate 5; object-byte measure, cells, repetitions, worker count and lifecycle declared first; fresh children; sensitivity validated against an extra live allocation); unchanged or increased memory fails, noise is inconclusive; every timing cell within 1.02; keep verdict"
     evidence: []
   - id: "LDG-3253"
     title: "Repair the engine version"
