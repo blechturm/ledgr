@@ -6,7 +6,13 @@
 # package scope.
 #
 #   Rscript dev/lean_core/parity/fifo_check.R --lib=<pinned library>
-#     --captures=<recorder lot captures> --tests=<test-suite captures> --scratch=<empty dir>
+#     --captures=<recorder lot captures> --tests=<test-suite captures>
+#     --tests2=<a second, independent test-suite capture> --scratch=<empty dir>
+#
+# Cut 22 decision 8: the two test-suite captures must hold the same ordered
+# population, key by key (fifo_population.R, written to
+# fifo_population.csv and compared with the committed evidence like every
+# other fifo_*.csv), before their calls are compared with the lean kernel.
 #
 # Exits with status 1 on any difference or failure.
 
@@ -21,6 +27,10 @@ dir.create(scratch, recursive = TRUE, showWarnings = FALSE)
 if (length(list.files(scratch))) stop("--scratch= must be empty", call. = FALSE)
 repo <- normalizePath(file.path(here, "..", "..", ".."), winslash = "/")
 problems <- character()
+status <- system2(file.path(R.home("bin"), "Rscript"),
+                  c(file.path(here, "fifo_population.R"), paste0("--a=", arg("tests")), paste0("--b=", arg("tests2")),
+                    paste0("--out=", file.path(scratch, "fifo_population.csv"))))
+if (!identical(status, 0L)) problems <- c(problems, paste("fifo_population.R exited with status", status))
 status <- system2(file.path(R.home("bin"), "Rscript"),
                   c(file.path(here, "fifo_parity.R"), paste0("--lib=", arg("lib")), paste0("--captures=", arg("captures")),
                     paste0("--tests=", arg("tests")), paste0("--out=", scratch)))

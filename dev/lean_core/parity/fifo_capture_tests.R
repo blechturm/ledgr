@@ -10,6 +10,14 @@
 # a test had mocked at that moment (those calls test the oracle's own
 # instrumentation and are reported, not compared). Tests that start other R
 # processes are not observed. Captures are large and never committed.
+#
+# Cut 22 decision 8 (the maintainer's disposition of Cut 21 F2): the capture
+# leaves out test-rng-isolation.R (its tests check unseeded runs and sweeps,
+# so their lot calls change from run to run; the file is excluded here only,
+# never from package testing), copies each book and input at the call (a
+# test may write a book by reference after the call), and records with every
+# call its test file, its test and the xxhash64 digest of the call-time book
+# and input, so fifo_population.R can compare two captures key by key.
 
 local({
   arg <- function(n) sub(paste0("^--", n, "="), "", grep(paste0("^--", n, "="), commandArgs(TRUE), value = TRUE)[[1L]])
@@ -28,9 +36,13 @@ originals <- mget(helpers, envir = ns)
 skip <- c("ledgr_lot_apply", "ledgr_lot_fill", "ledgr_lot_opening", "ledgr_lot_disposition",
           "ledgr_lot_apply_blocks")
 
+excluded_files <- "test-rng-isolation.R"
 rec <- new.env()
 rec$calls <- list()
 rec$chunk <- 0L
+rec$file <- ""
+rec$test <- ""
+call_time <- function(x) unserialize(serialize(x, NULL))
 flush <- function() {
   if (!length(rec$calls)) return(invisible())
   rec$chunk <- rec$chunk + 1L
@@ -39,8 +51,12 @@ flush <- function() {
 }
 record <- function(book, input, value) {
   mocked <- helpers[!vapply(helpers, function(h) identical(get(h, envir = ns), originals[[h]]), logical(1))]
+  book <- call_time(book)
+  input <- call_time(input)
   rec$calls[[length(rec$calls) + 1L]] <- list(book = book, input = input, value = value,
-                                              caller = ws16_caller(skip), mocked = mocked)
+                                              caller = ws16_caller(skip), mocked = mocked,
+                                              file = rec$file, test = rec$test,
+                                              digest = digest::digest(list(book, input), algo = "xxhash64"))
   if (length(rec$calls) >= 20000L) flush()
 }
 
@@ -65,18 +81,29 @@ ws16_wrap("ledgr_lot_input", function(orig) {
     args <- list(...)
     withCallingHandlers(do.call(orig, args), error = function(e) {
       rec$calls[[length(rec$calls) + 1L]] <- list(input_args = args, value = list(class = class(e), message = conditionMessage(e)),
-                                                  caller = ws16_caller(skip), mocked = character())
+                                                  caller = ws16_caller(skip), mocked = character(),
+                                                  file = rec$file, test = rec$test,
+                                                  digest = digest::digest(args, algo = "xxhash64"))
     })
   }
 })
 
+# The current file and test, from the reporter (as the Cut 21 F2 census did).
+Where <- R6::R6Class("Where", inherit = testthat::Reporter, public = list(
+  start_file = function(filename) { rec$file <- basename(filename) },
+  start_test = function(context, test) { rec$test <- test },
+  end_test = function(context, test) { rec$test <- "" }))
 t0 <- proc.time()[["elapsed"]]
 res <- testthat::test_dir(file.path(src, "tests", "testthat"), load_package = "none",
-                          reporter = "summary", stop_on_failure = FALSE, stop_on_warning = FALSE)
+                          filter = paste0("^(?!", sub("^test-(.*)[.]R$", "\\1", excluded_files), "$)"), perl = TRUE,
+                          reporter = testthat::MultiReporter$new(list(testthat::SummaryReporter$new(), Where$new())),
+                          stop_on_failure = FALSE, stop_on_warning = FALSE)
 flush()
 df <- as.data.frame(res)
+if (any(basename(df$file) %in% excluded_files)) stop("an excluded file ran: ", paste(excluded_files, collapse = ", "))
 utils::write.csv(data.frame(files = length(unique(df$file)), tests = nrow(df), failed = sum(df$failed),
-                            errors = sum(df$error), skipped = sum(df$skipped), chunks = rec$chunk,
+                            errors = sum(df$error), skipped = sum(df$skipped), excluded = paste(excluded_files, collapse = ";"),
+                            chunks = rec$chunk,
                             seconds = round(proc.time()[["elapsed"]] - t0)),
                  file.path(out, "tests_outcome.csv"), row.names = FALSE)
 cat("captured test-suite lot calls in", rec$chunk, "chunks to", out, "\n")
