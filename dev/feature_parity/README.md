@@ -13,7 +13,10 @@ it lands.
 | `faults.R` | the fault controls: seven deliberate faults each exit 1 with their own signal; a missing arm, case or component refuses; the pin against itself passes |
 | `install_arm.R` | installs a commit as an arm (git archive, `R CMD INSTALL`) with its commit marker and R/ source hashes |
 | `corpus_expected.csv` | the corpus: every case, and each case's certification, field union, route, refusal class and TTR-route agreement as the pin produced them |
-| `pin_observations.csv` | the pin's observations, the reference the tickets' runs were checked against |
+| `memory.R` | candidate 5's memory rule (LDG-3252): object bytes and peak R heap of sweep feature preparation in fresh children |
+| `census.R`, `census.csv` | the engine-version census (LDG-3253): the walk from the preparation roots and the replacement proof of every row |
+| `timing_launch.R` | starts the shared timing runner with its temporary directory outside AppData/Local/Temp |
+| `evidence/<ticket>/` | each ticket's commands, transcripts and the pin's observations under that ticket's harness |
 
 ## Cases (548)
 
