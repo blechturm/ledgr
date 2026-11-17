@@ -3248,7 +3248,8 @@ cuts:
   - id: 22
     name: "Feature engine stage 1: remove work with the same values (feature-engine RFC, Section 5)"
     cut: "2026-11-17"
-    status: "proposed"
+    status: "accepted"
+    accepted: "2026-11-17 by the maintainer, after the cut review passed at re-review 2 (cut_review_22_rereview_2.md), as written. The maintainer asked for the whole workstream in one go, then one Codex code review iterated to green, with frequent updates."
     opening: >-
       Cut 21 closed (ffc7e3eb). The macro plan's order after Cut 20, item c,
       runs the accepted feature-engine RFC's stage 1 as its own cut before
@@ -3935,7 +3936,8 @@ workstreams:
   - id: 41
     name: "Feature engine stage 1: same values, less work"
     cut: 22
-    status: "proposed"
+    status: "accepted"
+    accepted: "2026-11-17 by the maintainer with Cut 22."
     depends_on_workstream: 40
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 41, after LDG-3255", reason: "Every case of the oracle corpus is identical to the pin d5b3a151 in values, NA placement, types, dimensions, names, planes, history-read reasons, refusals and their precedence, the causality probe's selection and RNG, and the oracle catches each of its deliberate faults; every kept candidate passed its keep rule and every reverted one is recorded with its numbers; the legacy block is gone with only the stated test changes; the engine version binds every semantic helper of the final census, its mutation tests move it, and only the declared registered tests changed; every identity of decision 6 is unchanged on fixed inputs and an old precompute object refuses; the full test suite, the package check and the lean gate pass; the FIFO check passes on two captures with fifo.R unchanged; the seven optimization shapes are walked on the changed code; the line rule holds; and the timing record reproduces from its committed inputs."}
