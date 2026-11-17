@@ -1,0 +1,16 @@
+Cells (ratio = median candidate / median base; PASS when ratio <= bound):
+                cell clock bound n_candidate n_base median_candidate median_base     ratio verdict
+         run_10x7200   run     1           8      8         3.346322   20.408817 0.1639645    PASS
+        fold_10x7200  fold     1           8      8         2.377118   19.549946 0.1215920    PASS
+        run_20x23400   run     1           8      8        10.709487   74.335699 0.1440692    PASS
+       fold_20x23400  fold     1           8      8         8.728630   72.019692 0.1211978    PASS
+        run_500x1260   run     1           8      8         3.921526    8.212667 0.4774972    PASS
+       fold_500x1260  fold     1           8      8         2.491736    6.767148 0.3682106    PASS
+        run_1166x252   run     1           8      8         2.929630    3.793914 0.7721920    PASS
+       fold_1166x252  fold     1           8      8         1.276842    2.134487 0.5981959    PASS
+  run_slice2_10x7200   run     1           8      8         5.524654   26.844265 0.2058039    PASS
+ fold_slice2_10x7200  fold     1           8      8         4.757307   25.981749 0.1831019    PASS
+   run_facts_10x7200   run     1           8      8         6.375438   20.133746 0.3166543    PASS
+  fold_facts_10x7200  fold     1           8      8         5.397028   19.118372 0.2822954    PASS
+
+CHECK PASS
