@@ -259,8 +259,10 @@ local({
   # and the read entry (the emitted series_fn, ledgr_ttr_call) must agree.
   for (s in c("panel_carry5", "panel_strict_outcarry", "empty")) {
     sub <- substrates[[s]]
+    # Chosen by the definition (a TTR catalogue row), not by its certification,
+    # so a wrong route shows as a difference, not as a missing case.
     for (def in sets$catalogue_rows) {
-      if (!identical(ns$ledgr_feature_certify(def)$kind, "ttr")) next
+      if (!is.character(def$params$ttr_fn)) next
       case <- paste(s, def$id, sep = "|")
       res <- observe("ttr_route", case, {
         cached <- ns$ledgr_history_compute_feature_series(sub, list(def))[[1L]]
