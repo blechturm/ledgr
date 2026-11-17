@@ -7524,7 +7524,7 @@ tickets:
   - id: "LDG-3254"
     title: "FIFO census follow-up"
     workstream: 41
-    status: "proposed"
+    status: "complete"
     priority: "P2"
     effort: "S"
     dependencies: []
@@ -7535,7 +7535,10 @@ tickets:
       - "The FIFO capture and census leave out test-rng-isolation.R, from this capture and census only (package testing unchanged); the capture copies each book at the call; only the FIFO tooling, a maintained census tool and the population evidence change"
       - "Two independent captures each record file, test and the call-time book and input digest; ordered populations and key multiplicities compared after the exclusion; an omitted deterministic call or a changed key refuses even when totals agree; fifo_parity.csv replaced with the stated reason; the previous count and failure explanation kept in the evidence"
       - "The FIFO check passes; mocked and refusal accounting and every value comparison unchanged; every compared call identical between pin and lean with debug off and on; fifo.R unchanged"
-    evidence: []
+    evidence:
+      - "Tooling (98c76c92; commands in dev/lean_core/parity/evidence/cut22/ldg3254/COMMANDS.md): fifo_capture_tests.R leaves out test-rng-isolation.R (testthat's file filter, this capture only; it refuses if the file ran; package testing unchanged), copies each book and input at the call (a serialize round trip, so a later by-reference write cannot reach the capture: the Cut 21 F2 test-ws4a-carrier.R artifact) and records each call's test file, test (from a reporter) and the xxhash64 digest of the call-time book and input (input refusals: of their arguments). New maintained census tool fifo_population.R: two captures' ordered key sequences (file, test, kind, digest) must be identical, so key multiplicities, totals and per-file counts agree; it writes the population by file with a digest of the whole sequence. fifo_check.R takes the second capture (--tests2) and fails unless the populations agree; fifo_population.csv joins the committed evidence and is compared like every fifo_*.csv. fifo.R, fifo_parity.R and every FIFO value oracle unchanged; nothing else in dev/lean_core changed (the recorder's run rewrote its committed manifests with the lot-boundary subset; restored, not committed)."
+      - "Two independent captures of the pinned suite (separate processes and source copies; captureA_outcome.csv, captureB_outcome.csv): 230 files, 1,327 tests, 0 failed, 0 errors, 1 skipped each, test-rng-isolation.R excluded. fifo_population.R: POPULATIONS IDENTICAL, 145,669 calls (145,630 lot calls, 39 input refusals), 60,468 distinct keys, 117 files (population.log). The 145,630 lot calls equal the Cut 21 F2 census's count outside test-rng-isolation.R. Negative controls (population_negative.log): capture B with one deterministic call omitted (replaced by a copy of the next, totals agreeing) and with one call's key changed (totals agreeing) each refuse (exit 1)."
+      - "fifo_parity.csv replaced, with the stated reason (decision 8, the maintainer's disposition of Cut 21 F2): the committed tests row counted test-rng-isolation.R's unseeded draws, whose lot calls change from run to run, so no capture could reproduce its 156,571; the replacement is the population after the exclusion. Before (fifo_check_before.log, the committed evidence unchanged): CHECK FAILED only on 'fifo_parity.csv differs from the committed evidence', the tests row 156,571 -> 145,630 calls (identical debug off and on 156,551 -> 145,610, mocked 20 and refusals 38/37 unchanged); every other row, stream, input refusal and mutation as committed. After the replacement and with fifo_population.csv added (fifo_check.log): CHECK PASSED, evidence reproduces, every compared call and stream step identical with debug off and on (test suite 145,610 of 145,610 and its 37 refusals, the recorder's a0, momentum_40x504 and fill_heavy_500x1260 workloads), every mutation fails parity, package scope clean. Previous count and failure explanation kept here and in LDG-3248's evidence; historical captured records not rewritten."
   - id: "LDG-3255"
     title: "Close feature engine stage 1"
     workstream: 41

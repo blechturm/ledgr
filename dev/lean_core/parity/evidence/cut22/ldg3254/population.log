@@ -1,0 +1,2 @@
+Rscript dev/lean_core/parity/fifo_population.R --a=$S/fifo/testsA --b=$S/fifo/testsB --out=$S/fifo/population.csv
+POPULATIONS IDENTICAL: 145669 calls (145630 lot calls, 39 input refusals), 60468 distinct keys, 117 files

@@ -1,0 +1,9 @@
+omitted_call: exit1
+  POPULATIONS DIFFER
+  - first differing call 10: test-acceptance-v0.1.0.R | AT8: restart replaces attempt output and matches a clean run against test-acceptance-v0.1.0.R | AT8: restart replaces attempt output and matches a clean run
+  - 2 keys differ in multiplicity
+changed_key: exit1
+  POPULATIONS DIFFER
+  - first differing call 10: test-acceptance-v0.1.0.R | AT8: restart replaces attempt output and matches a clean run against test-acceptance-v0.1.0.R | AT8: restart replaces attempt output and matches a clean run
+  - 2 keys differ in multiplicity
+NEGATIVE CONTROLS PASS: both corrupted populations refuse
