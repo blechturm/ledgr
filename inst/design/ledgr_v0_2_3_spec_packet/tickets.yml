@@ -3599,8 +3599,9 @@ workstreams:
   - id: 39
     name: "Lean loop slice 4a: opening imports and corporate-action posting"
     cut: 21
-    status: "accepted"
+    status: "complete"
     accepted: "2026-11-16 by the maintainer with Cut 21."
+    close_review: "Independent clean-context Codex CLI (gpt-6.1-sol/high), Type 1; reports in this packet. Round 1 (ws39_close_review_round1.md, at 586d6b12): CHANGES_REQUIRED, F1 only: the capture validated accounting rows but skipped the retaining handler's event-buffer capacity check, so a block the pin refuses was accepted and the strategy ran after it. Corrected in 754b9889 with evidence in 75e3140e (LDG-3244 evidence). Round 2 (ws39_close_review_round2.md, at 75e3140e): PASS, F1 confirmed closed by independent pin probes (exact boundary, capture growth, multi-candidate sweep, draining handler, carried opening with forced max_events, capacity against accounting precedence) with debug off and on, at batch one and with inert hooks; committed numbers reproduce; no new finding. Ratio: 2 reviews, 1 correction pass."
     depends_on_workstream: 38
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 39, after LDG-3245", reason: "Every covered workload without facts (opening positions, carried openings, dividends and the corporate-action refusals) and the whole existing gate are identical to the pin with debug on and off, at batch one and with inert hooks; every frozen path matches, with only the declared moves; each named branch is reached on the pin and each reach predicate fails elsewhere; the loop calls the corporate-action plan rather than a copy and writes nothing to the store inside the loop; corporate-action and fill rows are published in event order without a per-row loop; the debug cash check catches a dropped corporate action; every new variant names and reaches its intended fault; the line budget holds."}
@@ -6949,7 +6950,7 @@ tickets:
   - id: "LDG-3245"
     title: "Close workstream 39"
     workstream: 39
-    status: "pending"
+    status: "complete"
     priority: "P0"
     effort: "S"
     dependencies: ["LDG-3244"]
@@ -6972,7 +6973,8 @@ tickets:
       - "slice4_reach_cross.R (new) over workstream 39's explicit list of 33 workloads (with the F1 witnesses): 33 predicates hold on their own workload and fail on at least 26 others each; it refuses a missing workload, predicate or pin dump (slice4_reach_cross_ws39.csv)."
       - "Lines (lines.csv, cut19_lines.R's role count against 381c0d0c; facts.R added to its file list and lean_facts_debug_settled to its debug-only functions): loop.R production 982 -> 994 (cap 1,000), marks.R 152 -> 155, facts.R 0 -> 91 (debug 16), other lean files unchanged; total production 2,441 -> 2,547 (+106 of the cut's 300, LDG-3243 +1 and LDG-3244 +105), debug 180 -> 197 (+17). Harness beside: loop_workloads_slice4.R, slice4_reach_cross.R (new), loop_parity.R the new variants, re-anchors and capture columns."
       - "Hashed-frame witness on 754b9889 (witness/, witness.log): PASS: the frame and scan checks with their seven faults and control, the test-only adapter on crossover_3x40, s2_sizing_rebalance and s3_freeze_exit (identical, 48 tables) with its fault failing on the context comparison on each, and the semantics probe as expected."
-      - "Close review round 1 (ws39_close_review_round1.md, at f41c5088): CHANGES_REQUIRED, F1 (the retaining handler's capacity at the capture), fixed at 754b9889 (LDG-3244 evidence). Open: the review's confirmation of the fix."
+      - "Close review round 1 (ws39_close_review_round1.md, at f41c5088): CHANGES_REQUIRED, F1 (the retaining handler's capacity at the capture), fixed at 754b9889 (LDG-3244 evidence)."
+      - "Close review round 2 (ws39_close_review_round2.md, at 75e3140e): PASS. F1 closed; no new finding; the gate, batch-one, inert, variant-manifest, frozen-move, reach and line numbers reproduce from the committed files. Workstream 39 is complete (its close_review field)."
   - id: "LDG-3246"
     title: "Cover facts, the per-pulse views, the context axis and strategy state"
     workstream: 40
