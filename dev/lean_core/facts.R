@@ -21,7 +21,10 @@
 # harness wrapper: the capture starts from its append boundary (opening rows,
 # a sweep's retained rows), read from the handler's state
 # (R/output-handler.R:466-477), and, for a retaining handler, from its event
-# count and maximum (:488-492; close review round 1, F1).
+# count and maximum (:488-492; workstream 39 close review round 1, F1). The
+# state is read through the handler's append method, the one the capture
+# stands in for, so a wrapped init_buffers() (a witness seam) does not hide
+# it (workstream 40 close review round 1, F1).
 #
 # On a marked run (LDG-3246, decision 7) s4 also holds each pulse's context:
 # its run positions in one typed vector `cx`, grown by doubling, with an
@@ -35,6 +38,10 @@ lean_facts_run_state <- function(execution, handler, ids, marked, cap = 4L) {
   s4$plan <- execution$corporate_action_plan
   s4$policy <- execution$corporate_action_policy   # the terminal policy (R/fold-engine.R:1837)
   s4$provider <- execution$availability_provider
+  # A run that can capture: a plan, or declared lifetime facts (terminal
+  # dispositions post with no plan). Its fills keep the capture's append
+  # boundary and its retaining handler's population (close review round 1, F1).
+  s4$captures <- !is.null(s4$plan) || "lifetime" %in% s4$provider$identity()$declared_families
   s4$run_id <- execution$run_id
   s4$pulses <- execution$pulses_posix
   s4$ids <- s4$axis <- ids
@@ -46,7 +53,7 @@ lean_facts_run_state <- function(execution, handler, ids, marked, cap = 4L) {
     s4$ncx <- 0L
     s4$cxi <- matrix(0L, 2L, length(execution$pulses_posix))
   }
-  st <- get0("state", envir = environment(handler$init_buffers), inherits = FALSE)
+  st <- get0("state", envir = environment(handler$append_event_rows), inherits = FALSE)
   s4$bseq <- if (is.environment(st)) st$last_event_seq
   s4$bts <- if (is.environment(st)) st$last_event_ts_utc
   s4$retains <- is.function(handler$events) && is.environment(st)

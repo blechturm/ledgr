@@ -52,7 +52,10 @@ sets$slice4 <- c(sets$ws39,
   "s4_terminal_choices", "s4_terminal_refuse", "s4_terminal_unlabeled", "s4_terminal_no_mark", "s4_frozen_writeoff",
   "s4_frozen_lastmark", "s4_frozen_refuse", "s4_blocked_scheduled", "s4_blocked_group", "s4_p1_then_stop",
   "s4_p1_complete", "s4_reread_nonmember", "s4_bound_dispose", "s4_prefix_dispose_sweep", "s4_prefix_terminal_sweep",
-  "s4_prefix_dispose_stop", "s4_moves_growth")
+  "s4_prefix_dispose_stop", "s4_moves_growth",
+  # workstream 40 close review round 1, F1: lifetime-only capacity
+  "s4_life_capacity_p1", "s4_life_capacity_p1_ok", "s4_life_capacity_p5", "s4_life_capacity_p5_ok",
+  "s4_life_capacity_p1_run", "s4_life_capacity_p1_ok_run", "s4_life_capacity_p5_run", "s4_life_capacity_p5_ok_run")
 set <- arg("set")
 if (is.null(sets[[set]])) stop("unknown --set: ", set, call. = FALSE)
 required <- sets[[set]]

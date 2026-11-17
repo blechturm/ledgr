@@ -231,6 +231,22 @@ for (w in c("s4_v201_default", "s4_subset", "s4_acq_held", "s4_terminal_choices"
            reason = "Cut 21 workstream 40: facts, context and dispositions under inert hooks, inert-mode count"))
 }
 
+# Workstream 40 close review round 1, F1: lifetime-only capacity witnesses
+# (NULL corporate-action plan), P1 and P5 refusals with adjacent controls.
+life_cap <- c("s4_life_capacity_p1", "s4_life_capacity_p1_ok", "s4_life_capacity_p5", "s4_life_capacity_p5_ok")
+for (w in c(life_cap, paste0(life_cap, "_run"))) {
+  add(both(action = "add", mode = "gate", workload = w, lean_folds = 1L, refused = "", backstop = "",
+           reason = "Workstream 40 close review round 1 (F1) lifetime-only capacity witness, declared path"))
+}
+for (w in life_cap) {
+  add(both(action = "add", mode = "batch1", workload = w, lean_folds = 1L, refused = "", backstop = "",
+           reason = "Workstream 40 close review round 1 (F1) witness across terminal batches, declared path"))
+}
+for (w in paste0(life_cap, "_run")) {
+  add(both(action = "add", mode = "inert", workload = w, lean_folds = 0L, refused = "", backstop = "",
+           reason = "Workstream 40 close review round 1 (F1) witness under inert hooks, inert-mode count"))
+}
+
 out <- do.call(rbind, rows)
 utils::write.csv(out, file.path(here, "loop_freeze_changes.csv"), row.names = FALSE)
 cat(nrow(out), "changes:", paste(names(table(out$action)), table(out$action), collapse = ", "), "\n")

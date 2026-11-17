@@ -1042,3 +1042,98 @@ loop_reach <- c(loop_reach, list(
   s4_moves_growth = function(t) nrow(s4_disp(t)) == 8L && length(unique(s4_day(s4_disp(t)$ts_utc))) == 6L &&
     s4_hold_zero(t, "M1", "2020-01-04")
 ))
+
+# --- Close review round 1 (workstream 40), F1: lifetime-only capacity -------------
+
+# A one-candidate sweep with no corporate-action plan: A (opened, 10 held)
+# ends its lifetime on `life_day` (s4_life) and is disposed with no plan,
+# B is bought on days 1 and 2. The retaining handler's room is lowered to `k`
+# events past its entry (the pin through its handler's init_buffers() seam,
+# the lean loop's fill limit through lean_entry$capacity, as
+# witness_capacity), so the disposition's append (P1) or a later fill's
+# commit (P5) meets the pin's capacity refusal at k = 2 and is accepted at
+# k = 3 (the adjacent control). The strategy fails if called on the day
+# after the refusal point, so a lost refusal shows as a strategy error. The
+# table plan_route records that every fold ran with a NULL plan.
+s4_life_strategy_p1 <- function(ctx, params) {
+  t <- ctx$hold()
+  if (ctx$ts_utc == "2020-01-01T16:00:00Z") t[["B"]] <- 1
+  if (ctx$ts_utc == "2020-01-02T16:00:00Z") t[["B"]] <- 2
+  if (ctx$ts_utc == "2020-01-04T16:00:00Z") stop("lean witness: terminal pulse strategy reached")
+  t
+}
+s4_life_strategy_p5 <- function(ctx, params) {
+  t <- ctx$hold()
+  if (ctx$ts_utc == "2020-01-01T16:00:00Z") t[["B"]] <- 1
+  if (ctx$ts_utc == "2020-01-02T16:00:00Z") t[["B"]] <- 2
+  if (ctx$ts_utc == "2020-01-03T16:00:00Z") stop("lean witness: strategy reached after terminal plus fill")
+  t
+}
+s4_life_capacity <- function(name, k, life_day, strategy, observe) {
+  seen <- new.env(parent = emptyenv())
+  seen$plan_null <- logical()
+  run <- function() {
+    if (lw_lean_installed()) lean$lean_entry$capacity <- k
+    restore <- lw_rebind("ledgr_fold_envelope", local({
+      inner <- get("ledgr_fold_envelope", envir = ns)
+      function(execution, output_handler) {
+        seen$plan_null <- c(seen$plan_null, is.null(execution$corporate_action_plan))
+        init <- output_handler$init_buffers
+        output_handler$init_buffers <- function(max_events) init(k)
+        inner(execution, output_handler)
+      }
+    }))
+    on.exit(restore())
+    s4_ca_sweep(name, s4_facts_closes(), ledgr::ledgr_facts(s4_sessions(10L), s4_life("A", life_day)),
+      s4_exp(strategy, positions = c(A = 10), cost_basis = c(A = 10)))
+  }
+  t <- if (observe) lw_prefix_reads(memory = TRUE, workload = run) else run()
+  t$sweep$plan_route <- data.frame(folds = length(seen$plan_null), plan_null = all(seen$plan_null))
+  t
+}
+
+loop_slice4 <- c(loop_slice4, list(
+  # P1: the day-4 disposition append over the room (k = 2) is refused; at
+  # k = 3 it is accepted and the day-4 strategy is reached.
+  s4_life_capacity_p1 = function() s4_life_capacity("s4_life_capacity_p1", 2L, 4L, s4_life_strategy_p1, TRUE),
+  s4_life_capacity_p1_ok = function() s4_life_capacity("s4_life_capacity_p1_ok", 3L, 4L, s4_life_strategy_p1, TRUE),
+  # P5: the day-2 disposition fills the room with the opening and day 1's
+  # fill; day 2's fill commit exceeds it (k = 2), or fits (k = 3).
+  s4_life_capacity_p5 = function() s4_life_capacity("s4_life_capacity_p5", 2L, 2L, s4_life_strategy_p5, TRUE),
+  s4_life_capacity_p5_ok = function() s4_life_capacity("s4_life_capacity_p5_ok", 3L, 2L, s4_life_strategy_p5, TRUE),
+  # The same four without the prefix observer (it needs the harness hooks),
+  # for inert hooks.
+  s4_life_capacity_p1_run = function() s4_life_capacity("s4_life_capacity_p1_run", 2L, 4L, s4_life_strategy_p1, FALSE),
+  s4_life_capacity_p1_ok_run = function() s4_life_capacity("s4_life_capacity_p1_ok_run", 3L, 4L, s4_life_strategy_p1, FALSE),
+  s4_life_capacity_p5_run = function() s4_life_capacity("s4_life_capacity_p5_run", 2L, 2L, s4_life_strategy_p5, FALSE),
+  s4_life_capacity_p5_ok_run = function() s4_life_capacity("s4_life_capacity_p5_ok_run", 3L, 2L, s4_life_strategy_p5, FALSE)
+))
+
+# Every fold ran with a NULL plan; the capacity refusal at k = 2, the
+# strategy's own error past the refusal point at k = 3 (acceptance).
+s4_life_route <- function(t) isTRUE(t$sweep$plan_route$plan_null) && t$sweep$plan_route$folds >= 1L
+s4_life_error <- function(t, msg) {
+  s <- t$sweep$sweep
+  NROW(s) == 1L && identical(as.character(s$status), "FAILED") && identical(as.character(s$error_class), "ledgr_strategy_error") &&
+    grepl(msg, as.character(s$error_msg), fixed = TRUE)
+}
+s4_prefix_days <- function(t) s4_day(t$sweep$prefix_reads$ts_utc[t$sweep$prefix_reads$ts_utc != "reconciliation"])
+loop_reach <- c(loop_reach, list(
+  # Refused at the day-4 append: no day-4 strategy observation.
+  s4_life_capacity_p1 = function(t) s4_life_route(t) && s4_capacity_failed(t) &&
+    identical(s4_prefix_days(t), c("2020-01-01", "2020-01-02", "2020-01-03")),
+  s4_life_capacity_p1_ok = function(t) s4_life_route(t) && s4_life_error(t, "terminal pulse strategy reached") &&
+    "2020-01-04" %in% s4_prefix_days(t),
+  # Refused at the day-2 fill commit: no day-2 reconciliation observation.
+  s4_life_capacity_p5 = function(t) {
+    p <- t$sweep$prefix_reads
+    s4_life_route(t) && s4_capacity_failed(t) && identical(p$ts_utc, c("2020-01-01T16:00:00Z", "reconciliation",
+      "2020-01-02T16:00:00Z"))
+  },
+  s4_life_capacity_p5_ok = function(t) s4_life_route(t) && s4_life_error(t, "strategy reached after terminal plus fill") &&
+    "2020-01-03" %in% s4_prefix_days(t),
+  s4_life_capacity_p1_run = function(t) s4_life_route(t) && s4_capacity_failed(t),
+  s4_life_capacity_p1_ok_run = function(t) s4_life_route(t) && s4_life_error(t, "terminal pulse strategy reached"),
+  s4_life_capacity_p5_run = function(t) s4_life_route(t) && s4_capacity_failed(t),
+  s4_life_capacity_p5_ok_run = function(t) s4_life_route(t) && s4_life_error(t, "strategy reached after terminal plus fill")
+))

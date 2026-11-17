@@ -356,6 +356,17 @@ loop_mutations <- list(
       "    mv <- lapply(mv, function(v) { length(v) <- 2L * length(v); v })",
       "    lean_entry$variant_reached <- TRUE; mv$net[[s4$nmv]] <- NA_real_", "  }"), mark = FALSE)),
     error = ".", tables = "^run_diagnostic"),
+  # Workstream 40 close review round 1, F1: a run with lifetime facts and no
+  # corporate-action plan treated as one that cannot capture, so its fills
+  # leave the capture's boundary and the retaining handler's population; and
+  # the handler state read through init_buffers(), which a witness seam wraps.
+  lifetime_capture_population_dropped = variant("differ", list(edit("facts.R", "lean_facts_run_state",
+    "  s4$captures <- !is.null(s4$plan) || \"lifetime\" %in% s4$provider$identity()$declared_families",
+    "  s4$captures <- !is.null(s4$plan)")), error = ".", tables = "^sweep|^prefix_reads$"),
+  handler_state_via_init = variant("differ", list(edit("facts.R", "lean_facts_run_state",
+    "  st <- get0(\"state\", envir = environment(handler$append_event_rows), inherits = FALSE)",
+    "  st <- get0(\"state\", envir = environment(handler$init_buffers), inherits = FALSE)")),
+    error = ".", tables = "^sweep|^prefix_reads$"),
   # the valuation state given scoring ordinals instead of prepared columns
   wrong_origin = variant("differ", list(edit("marks.R", "lean_marks_state",
     "  ledgr_availability_valuation_state(bars, ids, substrate$axis, as.integer(provider$valuation_policy$max_sessions),",

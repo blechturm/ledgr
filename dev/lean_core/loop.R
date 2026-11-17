@@ -885,7 +885,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
       fl$evseq[rows] <<- event_seq + seq_len(n_fill) - 1L
       nf <<- nf + n_fill
       event_seq <<- event_seq + n_fill
-      if (!is.null(s4$plan)) lean_facts_fills_accepted(s4, event_seq - 1L, fill$exec_ts[[n_fill]])
+      if (s4$captures) lean_facts_fills_accepted(s4, event_seq - 1L, fill$exec_ts[[n_fill]])
       pos[fill$pos] <<- book$net_by_inst[fill$pos]
       fl$net_after[rows] <<- book$net_by_inst[fill$pos]
       cash <<- ledgr_cash_scan(cash, fill$cash_delta)[[n_fill]]
@@ -927,7 +927,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
       rlang::abort("Ledger event buffer exceeded the run's maximum event capacity.",
                    class = "ledgr_event_buffer_capacity_exceeded")
     }
-    if (!is.null(s4$plan)) s4$nfc <- lean_facts_capacity(s4, nf)   # a retaining handler also holds corporate-action rows
+    if (s4$captures) s4$nfc <- lean_facts_capacity(s4, nf)   # a retaining handler also holds captured rows
     n_committed <<- nf                # the pin flushes the pulse's fills here, before reconciliation
     if (!is.null(batch) && !isTRUE(cash == batch$expected_final_cash) && !isTRUE(all.equal(as.numeric(cash), as.numeric(batch$expected_final_cash),
                                              tolerance = ledgr_availability_cash_tolerance))) {
