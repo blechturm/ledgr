@@ -1,0 +1,10 @@
+A/A cells (ratio = median candidate / median base; a noise observation, not a gate):
+           cell   clock bound n_candidate n_base median_candidate median_base     ratio         noise
+    run_10x7200 feature  1.02           8      8         6.611086    6.603207 1.0011934 within margin
+  sweep_10x7200 feature  1.02           8      8         7.124155    7.162946 0.9945845 within margin
+   run_500x1260 feature  1.02           8      8         4.656597    4.652575 1.0008645 within margin
+ sweep_500x1260 feature  1.02           8      8         5.174034    5.190196 0.9968861 within margin
+   run_1166x252 feature  1.02           8      8         4.162653    4.164077 0.9996580 within margin
+ sweep_1166x252 feature  1.02           8      8         4.841204    4.831443 1.0020203 within margin
+
+A/A VALID (validity and noise only; never gate evidence)

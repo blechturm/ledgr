@@ -1,0 +1,26 @@
+location,kind,disposition
+R/features-engine.R (ledgr_compute_feature_series; engine hash entry compute_series),package,deleted with its engine-hash entry
+R/features-engine.R (ledgr_compute_feature_scalar_at; engine hash entry compute_scalar_at),package,deleted with its engine-hash entry
+R/features-engine.R (ledgr_check_no_lookahead),package,deleted
+tests/testthat/test-features.R (feature series uses and validates vectorized series functions: 9 calls),registered test,moved to the live dispatch (live_feature_series: ledgr_history_feature_segment); definitions and expectations unchanged
+tests/testthat/test-features.R (fn-only feature fallback uses bounded windows: 1 call),registered test,moved to the live dispatch; definition and expectations unchanged
+tests/testthat/test-features.R (no-lookahead checker passes for built-in features on deterministic bars: 2 assertions),registered test,retired; its legacy list definitions are not live built-ins (the live probe refutes ledgr_feature_sma_n(3)'s fn against its series_fn); the live claim is held by LTB-0142/LTB-0143 (ledgr_ind_sma and ledgr_ind_returns through the preparation path and its causality probe)
+tests/testthat/test-features.R ([LTB-0003] 3 checker calls),registered test,moved to the preparation path's causality probe (live_no_lookahead); definitions and negative control unchanged
+tests/testthat/test-fingerprint-stability.R:67 ([LTB-0105] scalar-helper mock),registered test,mock target moved to the live window helper ledgr_history_feature_window
+tests/testthat/test-availability-features.R:510-511,registered test,moved to the live calculation (ws43_bars_feature_values)
+tests/testthat/test-indicator-history.R:260-266 ([LTB-0308] 3 calls),registered test,moved to the live calculation bounded to the prefix and the window (calculation_start/end)
+tests/testthat/test-indicator-ttr.R:331 374 410 441 549,registered test,moved to the live calculation (ws43_bars_feature_values)
+tests/testthat/test-indicators.R:309,registered test,moved to the live calculation (ws43_bars_feature_values)
+tools/check-codebase-contracts.R:1434 (test-seam contract),maintained developer tool,migrated: ledgr_check_no_lookahead entry removed; ledgr_validate_feature_def entry added (it is now test-only)
+dev/bench/v0_2_2_pre_cran_removal/census/*.csv,historical record (last written 2026-11-05),kept; not rewritten
+dev/benchmark_ldg_712_indicator_series_fn.R:158-162,historical developer script,pin-only; keeps its references
+dev/design-checks/history_wave_stage1/{burnin,claims,probe_d2_d5,speed}.R,historical developer script,pin-only; keeps its references
+dev/bench/v0_2_2_indicator_history/scripts/cert_drift.R:16-19,historical developer script,pin-only; keeps its references
+dev/bench/v0_2_2_workstream8/strict_feature_benchmark.R:41 278,historical developer script,pin-only; keeps its references
+dev/spikes/historical-projection/probe.R:62,historical spike,pin-only; keeps its references
+dev/spikes/recursive-indicator-history/spike_runner.R:18,historical spike,pin-only; keeps its references
+dev/spikes/history-indicator-conformance/runner.R:226,historical spike,pin-only; keeps its references
+dev/spikes/feature_stage1_probe/ (findings.md and results),measuring-step evidence,kept as recorded
+dev/spikes/*/ profile and count CSVs (growth_shape_matrix; indicator-source-attribution; json-hot-path-audit; pmwr-performance; shape-audit),historical captured records,kept; not rewritten
+inst/design/ (v0.1.4 to v0.2.2 packets and audits),historical design records,kept
+man/; vignettes/; NAMESPACE,public documentation,no reference (none was exported or documented)
