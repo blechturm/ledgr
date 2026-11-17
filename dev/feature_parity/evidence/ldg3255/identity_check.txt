@@ -1,0 +1,6 @@
+identities compared: 155, equal: 155
+engine version base 895161a3f7ff6d3d2808d5e45a00a2e3f9cf9c5330e52e89e6c6d6aa58a5fb56 candidate 034f0c231b72b22078d1ab1ae3e66d2ec232d1f8155ae85629a989dc23d4bd86 
+old precompute: ledgr_precomputed_engine_mismatch strategy calls 0 
+old store: run readable equity rows 30 sweep list 1 
+old stored sweep keeps its engine version: 895161a3f7ff6d3d2808d5e45a00a2e3f9cf9c5330e52e89e6c6d6aa58a5fb56 (saved with 895161a3f7ff6d3d2808d5e45a00a2e3f9cf9c5330e52e89e6c6d6aa58a5fb56 )
+IDENTITY CHECK PASS

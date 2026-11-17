@@ -1,0 +1,12 @@
+
+             entered: reached from the preparation roots on the final code 
+                                                                        15 
+entered: substrate construction and calculation bounds (cut review 22, R2) 
+                                                                       132 
+                                                                   in both 
+                                                                       131 
+                                               left: deleted by decision 4 
+                                                                         3 
+            left: not reached from the preparation roots on the final code 
+                                                                         2 
+rows in both whose engine binding changed: 86 

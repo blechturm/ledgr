@@ -1,0 +1,15 @@
+census_missing_row: exit 1
+FAIL: walked helpers missing from the census: ledgr_history_lifetime_segments 
+FAIL: census engine rows and the engine's helper list differ: ledgr_history_lifetime_segments 
+CENSUS CHECK FAIL: 2 
+
+census_false_engine: exit 1
+FAIL: census engine rows and the engine's helper list differ: ledgr_history_feature_evidence 
+FAIL: replacement disagrees with the claimed binding: ledgr_history_feature_evidence 
+CENSUS CHECK FAIL: 2 
+
+census_false_exclusion: exit 1
+FAIL: census engine rows and the engine's helper list differ: ledgr_history_lifetime_segments 
+FAIL: replacement disagrees with the claimed binding: ledgr_history_lifetime_segments 
+CENSUS CHECK FAIL: 2 
+
