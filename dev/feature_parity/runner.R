@@ -302,25 +302,19 @@ local({
   }
 
   # ---- public entry points on both clocks ---------------------------------
-  # The precompute object's logical content: the declared engine marker is
-  # left out (decision 1) and the payload is compared by feature, as matrices
-  # with their planes and fingerprint-to-ID mapping, whatever its physical
-  # shape. The snapshot ID is generated afresh with every fixture snapshot,
-  # so only its agreement with the fixture's is compared.
+  # The precompute object's logical content: the declared engine marker and
+  # the payload's physical representation are left out (decisions 1 and 7).
+  # The payload's logical content, the matrices with their planes by feature
+  # and the fingerprint-to-ID mapping, is compared through the projection and
+  # feature_union. The snapshot ID is generated afresh with every fixture
+  # snapshot, so only its agreement with the fixture's is compared.
   precompute_logical <- function(pre, snapshot) {
     pre <- unclass(pre)
     pre$snapshot_id <- identical(pre$snapshot_id, snapshot$snapshot_id)
     pre$feature_engine_version <- NULL
     pre$projection$feature_engine_version <- NULL
-    pre$payload <- ns_payload_logical(pre$payload, pre$universe)
+    pre$payload <- NULL
     pre
-  }
-  ns_payload_logical <- function(payload, universe) {
-    lapply(payload, function(entry) {
-      values <- if (is.list(entry$values)) do.call(rbind, unname(entry$values[universe])) else entry$values
-      list(feature_id = entry$feature_id, fingerprint = entry$fingerprint, values = unname(values),
-           planes = entry$planes)
-    })
   }
   db_dir <- file.path(out, "db")
   unlink(db_dir, recursive = TRUE)

@@ -24,7 +24,6 @@ testthat::test_that("ledgr_precompute_features computes concrete feature payload
   testthat::expect_identical(precomputed$snapshot_hash, ledgr_snapshot_info(snapshot)$snapshot_hash[[1]])
   testthat::expect_identical(precomputed$universe, c("AAA", "BBB"))
   testthat::expect_equal(nrow(precomputed$feature_union), 2L)
-  testthat::expect_equal(length(precomputed$payload), 2L)
   testthat::expect_equal(nrow(precomputed$candidate_features), 2L)
   testthat::expect_equal(
     names(precomputed$candidate_features),
@@ -40,10 +39,6 @@ testthat::test_that("ledgr_precompute_features computes concrete feature payload
     precomputed$candidate_features$feature_fingerprints[[1]],
     precomputed$candidate_features$feature_fingerprints[[2]]
   )
-  testthat::expect_equal(
-    sort(names(precomputed$payload)),
-    sort(precomputed$feature_union$fingerprint)
-  )
   testthat::expect_s3_class(precomputed$projection, "ledgr_runtime_projection")
   testthat::expect_identical(precomputed$projection$feature_engine_version, ledgr:::ledgr_feature_engine_version())
   testthat::expect_null(precomputed$projection$alias_index)
@@ -56,10 +51,13 @@ testthat::test_that("ledgr_precompute_features computes concrete feature payload
     sort(names(precomputed$projection$feature_values)),
     sort(precomputed$feature_union$feature_id)
   )
-  first_payload <- precomputed$payload[[precomputed$candidate_features$feature_fingerprints[[1]][[1]]]]
-  first_matrix <- precomputed$projection$feature_values[[first_payload$feature_id]]
+  # Cut 22 decision 7: the object keeps matrices only; the fingerprint maps
+  # to its feature ID through feature_union.
+  first_fingerprint <- precomputed$candidate_features$feature_fingerprints[[1]][[1]]
+  first_matrix <- precomputed$projection$feature_values[[
+    precomputed$feature_union$feature_id[match(first_fingerprint, precomputed$feature_union$fingerprint)]
+  ]]
   testthat::expect_equal(dim(first_matrix), c(2L, 8L))
-  testthat::expect_equal(unname(first_matrix["AAA", ]), as.numeric(first_payload$values$AAA))
   sma_id <- ledgr_feature_id(ledgr_ind_sma(3))
   testthat::expect_true(is.na(precomputed$projection$feature_values[[sma_id]]["AAA", 1]))
   testthat::expect_silent(ledgr:::ledgr_validate_precomputed_features(precomputed, exp, grid))

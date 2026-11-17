@@ -5,6 +5,9 @@
 #
 #   Rscript tile_probe.R --pkg=<ledgr source at d5b3a151> --out=<dir>
 #
+# Pin-only since Cut 22 (decision 3, candidate 5): its payload note describes
+# the pin's per-instrument split, which the package no longer builds.
+#
 # The access sites are wrapped in the pinned namespace; their semantics are
 # untouched. Workloads: the WS42 public-history fixture (late-known lifetime
 # fact, bar gap, price carry) with one read of every public request shape on

@@ -373,37 +373,27 @@ ledgr_history_calculation_start <- function(substrate) {
   substrate$data_start_utc
 }
 
+# The prepared features of a sweep, an explicit precompute or a pulse
+# inspection, read once by ledgr_projection_from_payload(): the computed
+# matrices (substrate instruments x axis, named by fingerprint, with their
+# plane records) and each fingerprint's feature ID.
 ledgr_history_precompute_payload <- function(unique_defs,
                                              substrate,
                                              calculation_start = NULL,
                                              calculation_end = NULL) {
   ledgr_history_substrate_require(substrate)
-  values <- ledgr_history_compute_feature_series(
-    substrate = substrate,
-    definitions = unique_defs,
-    calculation_start = calculation_start,
-    calculation_end = calculation_end
-  )
-  fingerprints <- names(unique_defs)
-  planes <- attr(values, "ledgr_feature_planes")
-  out <- vector("list", length(fingerprints))
-  for (d in seq_along(fingerprints)) {
-    matrix_values <- values[[d]]
-    # Release each matrix once it is split so the payload and the matrices
-    # are never both held in full.
-    values[d] <- list(NULL)
-    out[[d]] <- list(
-      feature_id = unique_defs[[d]]$id,
-      fingerprint = fingerprints[[d]],
-      values = stats::setNames(
-        lapply(seq_along(substrate$instrument_ids), function(i) matrix_values[i, ]),
-        substrate$instrument_ids
-      ),
-      planes = planes[[d]]
+  list(
+    instrument_ids = substrate$instrument_ids,
+    feature_ids = vapply(unique_defs, function(def) {
+      if (is.character(def$id) && length(def$id) == 1L) def$id else NA_character_
+    }, character(1)),
+    values = ledgr_history_compute_feature_series(
+      substrate = substrate,
+      definitions = unique_defs,
+      calculation_start = calculation_start,
+      calculation_end = calculation_end
     )
-  }
-  names(out) <- fingerprints
-  out
+  )
 }
 
 ledgr_history_substrate_bind_features <- function(substrate, projection) {
