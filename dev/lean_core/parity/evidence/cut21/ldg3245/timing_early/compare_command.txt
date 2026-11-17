@@ -1,0 +1,1 @@
+C:/PROGRA~1/R/R-46~1.1/bin/x64/Rscript C:/Users/maxth/Documents/GitHub/ledgr/dev/lean_core/parity/loop_shortcuts.R --lib=C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151 --mode=compare --base=381c0d0c --candidate=444df92a --rounds=7 --shapes=10x7200,20x23400,500x1260,slice2_10x7200 --out=C:/Users/maxth/Documents/GitHub/ledgr/dev/lean_core/parity/evidence/cut21/ldg3245/timing_early
