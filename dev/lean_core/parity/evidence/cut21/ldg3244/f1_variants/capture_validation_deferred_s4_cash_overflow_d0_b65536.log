@@ -1,0 +1,2 @@
+s4_cash_overflow             CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=0  pinned 1.8 s  lean 1.2 s  new errors [{"condition_class":["ledgr_config_non_finite","rlang_error","error","condition"],"message":"canonical_json() does not al | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN).]
+13 tables, 3 different; verdicts: CAUGHT 1

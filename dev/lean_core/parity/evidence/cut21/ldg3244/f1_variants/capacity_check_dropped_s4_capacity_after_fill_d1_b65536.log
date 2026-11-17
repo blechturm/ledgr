@@ -1,0 +1,2 @@
+s4_capacity_after_fill       CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.4 s  lean 1.2 s
+11 tables, 1 different; verdicts: CAUGHT 1

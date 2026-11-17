@@ -1,0 +1,2 @@
+witness_capacity             CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=16  range<=8  pinned 1.8 s  lean 1.8 s
+16 tables, 13 different; verdicts: CAUGHT 1

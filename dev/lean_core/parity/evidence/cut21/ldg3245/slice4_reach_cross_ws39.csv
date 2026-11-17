@@ -1,28 +1,34 @@
 "predicate","own","fails_elsewhere","holds_elsewhere","holds_on","ok"
-"s4_opening",TRUE,23,3,"s4_carried s4_carried_lots s4_prefix_opening_run",TRUE
-"s4_opening_sessions",TRUE,22,4,"s4_dividend s4_dividend_sessions s4_dividend_skip s4_prefix_dividend_run",TRUE
-"s4_carried",TRUE,26,0,"",TRUE
-"s4_carried_lots",TRUE,26,0,"",TRUE
-"s4_basis_unknown",TRUE,26,0,"",TRUE
-"s4_basis_known",TRUE,24,2,"s4_prefix_opening_sweep s4_prefix_dividend_sweep",TRUE
-"s4_prefix_opening_sweep",TRUE,24,2,"s4_prefix_dividend_sweep s4_prefix_dividend_stop",TRUE
-"s4_prefix_opening_run",TRUE,26,0,"",TRUE
-"s4_dividend",TRUE,24,2,"s4_dividend_unheld s4_prefix_dividend_run",TRUE
-"s4_dividend_bought",TRUE,26,0,"",TRUE
-"s4_dividend_sessions",TRUE,26,0,"",TRUE
-"s4_dividend_skip",TRUE,26,0,"",TRUE
-"s4_dividend_next_open",TRUE,26,0,"",TRUE
-"s4_dividend_late",TRUE,26,0,"",TRUE
-"s4_dividend_unheld",TRUE,20,6,"s4_carried s4_dividend s4_dividend_skip s4_dividend_next_open s4_dividend_late s4_prefix_dividend_run",TRUE
-"s4_cash_refused",TRUE,26,0,"",TRUE
-"s4_quantity_refused",TRUE,26,0,"",TRUE
-"s4_cash_quantity_refused",TRUE,26,0,"",TRUE
-"s4_quantity_reported",TRUE,26,0,"",TRUE
-"s4_clock_missing",TRUE,26,0,"",TRUE
-"s4_entitlement_missing",TRUE,26,0,"",TRUE
-"s4_dividend_mixed",TRUE,26,0,"",TRUE
-"s4_cash_overflow",TRUE,26,0,"",TRUE
-"s4_prefix_dividend_sweep",TRUE,26,0,"",TRUE
-"s4_prefix_dividend_bought",TRUE,26,0,"",TRUE
-"s4_prefix_dividend_run",TRUE,26,0,"",TRUE
-"s4_prefix_dividend_stop",TRUE,25,1,"s4_prefix_dividend_bought",TRUE
+"s4_opening",TRUE,29,3,"s4_carried s4_carried_lots s4_prefix_opening_run",TRUE
+"s4_opening_sessions",TRUE,28,4,"s4_dividend s4_dividend_sessions s4_dividend_skip s4_prefix_dividend_run",TRUE
+"s4_carried",TRUE,32,0,"",TRUE
+"s4_carried_lots",TRUE,32,0,"",TRUE
+"s4_basis_unknown",TRUE,32,0,"",TRUE
+"s4_basis_known",TRUE,30,2,"s4_prefix_opening_sweep s4_prefix_dividend_sweep",TRUE
+"s4_prefix_opening_sweep",TRUE,29,3,"s4_prefix_dividend_sweep s4_prefix_dividend_stop s4_capacity_after_fill",TRUE
+"s4_prefix_opening_run",TRUE,32,0,"",TRUE
+"s4_dividend",TRUE,30,2,"s4_dividend_unheld s4_prefix_dividend_run",TRUE
+"s4_dividend_bought",TRUE,32,0,"",TRUE
+"s4_dividend_sessions",TRUE,32,0,"",TRUE
+"s4_dividend_skip",TRUE,32,0,"",TRUE
+"s4_dividend_next_open",TRUE,32,0,"",TRUE
+"s4_dividend_late",TRUE,32,0,"",TRUE
+"s4_dividend_unheld",TRUE,26,6,"s4_carried s4_dividend s4_dividend_skip s4_dividend_next_open s4_dividend_late s4_prefix_dividend_run",TRUE
+"s4_cash_refused",TRUE,32,0,"",TRUE
+"s4_quantity_refused",TRUE,32,0,"",TRUE
+"s4_cash_quantity_refused",TRUE,32,0,"",TRUE
+"s4_quantity_reported",TRUE,32,0,"",TRUE
+"s4_clock_missing",TRUE,32,0,"",TRUE
+"s4_entitlement_missing",TRUE,32,0,"",TRUE
+"s4_dividend_mixed",TRUE,32,0,"",TRUE
+"s4_cash_overflow",TRUE,32,0,"",TRUE
+"s4_prefix_dividend_sweep",TRUE,32,0,"",TRUE
+"s4_prefix_dividend_bought",TRUE,32,0,"",TRUE
+"s4_prefix_dividend_run",TRUE,32,0,"",TRUE
+"s4_prefix_dividend_stop",TRUE,31,1,"s4_prefix_dividend_bought",TRUE
+"s4_capacity_block",TRUE,27,5,"s4_capacity_prefix s4_capacity_after_fill s4_capacity_fill s4_capacity_after_fill_run s4_capacity_fill_run",TRUE
+"s4_capacity_prefix",TRUE,29,3,"s4_capacity_block s4_capacity_after_fill_run s4_capacity_fill_run",TRUE
+"s4_capacity_after_fill",TRUE,32,0,"",TRUE
+"s4_capacity_fill",TRUE,32,0,"",TRUE
+"s4_capacity_after_fill_run",TRUE,27,5,"s4_capacity_block s4_capacity_prefix s4_capacity_after_fill s4_capacity_fill s4_capacity_fill_run",TRUE
+"s4_capacity_fill_run",TRUE,27,5,"s4_capacity_block s4_capacity_prefix s4_capacity_after_fill s4_capacity_fill s4_capacity_after_fill_run",TRUE
