@@ -55,6 +55,6 @@ checking the active plan, from the package root at the final commit.
 
 ## Probes (unregistered)
 
-`probes/probe_debug0.csv`, `probe_debug1.csv`, `probe_b1_debug0.csv`:
+`probes/probe_debug0.csv`, `probe_debug1.csv`, `probe_b1_debug0.csv`, `probe_b1_debug1.csv`:
 `Rscript dev/lean_core/parity/evidence/cut21/ldg3248/probes/probe_runner.R --lib=<pin> --debug=<0/1> [--batch-rows=1] --workloads=p_terminal_first,p_stop_first,p_acq_first,p_many_facts,p_empty_first,p_sweep_terminal --out=<file>`
 (loop_parity.R's text with `probes/probe_workloads.R` added to its workload list; no freeze).
