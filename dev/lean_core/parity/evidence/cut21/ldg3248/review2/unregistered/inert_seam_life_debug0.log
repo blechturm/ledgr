@@ -1,0 +1,5 @@
+s4_wrap_life_p1_run          FAIL      DIFFERENT  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.0 s  lean 0.9 s  new errors [Strategy error at ts_utc=2020-01-04T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+s4_wrap_life_p1_eq_run       PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.7 s
+s4_wrap_life_p5_run          FAIL      DIFFERENT  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.7 s  lean 0.6 s  new errors [Strategy error at ts_utc=2020-01-03T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+s4_wrap_life_p5_eq_run       PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.6 s
+44 tables, 2 different; verdicts: FAIL 2, PASS* 2

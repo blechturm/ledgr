@@ -1,0 +1,100 @@
+== lifetime_capture_population_dropped debug 0 bound 65536 (status 0)
+s4_life_capacity_p1          CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.9 s  lean 0.9 s  new errors [Strategy error at ts_utc=2020-01-04T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+s4_life_capacity_p5          CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.7 s  new errors [Strategy error at ts_utc=2020-01-03T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+s4_life_capacity_p1_run      CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.6 s  new errors [Strategy error at ts_utc=2020-01-04T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+s4_life_capacity_p5_run      CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.6 s  new errors [Strategy error at ts_utc=2020-01-03T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+46 tables, 6 different; verdicts: CAUGHT 4
+== lifetime_capture_population_dropped debug 1 bound 65536 (status 0)
+s4_life_capacity_p1          CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.9 s  lean 1.2 s  new errors [Strategy error at ts_utc=2020-01-04T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+s4_life_capacity_p5          CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 1.2 s  new errors [Strategy error at ts_utc=2020-01-03T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+24 tables, 4 different; verdicts: CAUGHT 2
+== capacity_check_dropped debug 0 bound 65536 (status 0)
+s4_capacity_block            CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.8 s  lean 0.6 s  new errors [Strategy error at ts_utc=2020-01-01T16:00:00Z for run_id=a. Instruments: A. Available feature IDs: <none>. Original erro]
+s4_capacity_fill             CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.0 s  lean 0.8 s
+21 tables, 2 different; verdicts: CAUGHT 2
+== capacity_check_dropped debug 1 bound 65536 (status 0)
+s4_capacity_block            CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.8 s  lean 0.7 s  new errors [Strategy error at ts_utc=2020-01-01T16:00:00Z for run_id=a. Instruments: A. Available feature IDs: <none>. Original erro]
+s4_capacity_after_fill       CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.0 s  lean 1.4 s
+21 tables, 2 different; verdicts: CAUGHT 2
+== capacity_late debug 0 bound 65536 (status 0)
+witness_capacity             CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=16  range<=8  pinned 1.6 s  lean 1.7 s
+16 tables, 13 different; verdicts: CAUGHT 1
+== capacity_late debug 1 bound 65536 (status 0)
+witness_capacity             CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=16  range<=8  pinned 1.6 s  lean 2.5 s
+16 tables, 13 different; verdicts: CAUGHT 1
+== commit_late debug 0 bound 65536 (status 0)
+witness_prefix_reads         CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=16  range<=8  pinned 2.2 s  lean 1.6 s
+witness_prefix_reads_sweep   CAUGHT    DIFFERENT  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=14  pinned 0.9 s  lean 0.9 s
+witness_state_refusal        CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=0  pinned 0.9 s  lean 0.8 s
+43 tables, 3 different; verdicts: CAUGHT 3
+== commit_late debug 1 bound 65536 (status 0)
+witness_prefix_reads         CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=16  range<=8  pinned 2.3 s  lean 2.5 s
+witness_prefix_reads_sweep   CAUGHT    DIFFERENT  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=14  pinned 1.0 s  lean 2.9 s
+witness_state_refusal        CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=0  pinned 0.9 s  lean 1.2 s
+43 tables, 3 different; verdicts: CAUGHT 3
+== capture_lost_at_growth debug 0 bound 65536 (status 0)
+s4_dividend_mixed            CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=80  range<=10  pinned 2.4 s  lean 1.8 s
+16 tables, 1 different; verdicts: CAUGHT 1
+== capture_validation_deferred debug 0 bound 65536 (status 0)
+s4_cash_overflow             CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=0  pinned 1.7 s  lean 1.1 s  new errors [{"condition_class":["ledgr_config_non_finite","rlang_error","error","condition"],"message":"canonical_json() does not al | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN).]
+13 tables, 3 different; verdicts: CAUGHT 1
+== captured_row_dropped debug 0 bound 65536 (status 0)
+s4_dividend_mixed            CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=80  range<=10  pinned 2.5 s  lean 1.8 s
+16 tables, 1 different; verdicts: CAUGHT 1
+== captured_row_duplicated debug 0 bound 1 (status 0)
+s4_dividend_mixed            CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=0  pinned 2.5 s  lean 2.3 s  new errors [{"condition_class":["ledgr_invalid_accounting_event","ledgr_invalid_ledger_event","rlang_error","error","condition"],"me | Accounting event_seq values must be integral and strictly increasing across blocks.]
+16 tables, 13 different; verdicts: CAUGHT 1
+== nonfill_block_unsplit debug 0 bound 1 (status 0)
+s4_dividend_mixed            CAUGHT    identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=8  range<=1  pinned 2.4 s  lean 2.6 s
+16 tables, 0 different; verdicts: CAUGHT 1
+== nonfill_commit_late debug 0 bound 65536 (status 0)
+s4_prefix_dividend_sweep     CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=10  pinned 1.4 s  lean 0.9 s
+11 tables, 1 different; verdicts: CAUGHT 1
+== nonfill_position_history_ignored debug 0 bound 65536 (status 0)
+s4_acq_held                  CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=50  range<=10  pinned 2.4 s  lean 1.8 s
+s4_acq_fills                 CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=50  range<=10  pinned 1.5 s  lean 1.8 s
+32 tables, 4 different; verdicts: CAUGHT 2
+== nonfill_position_history_ignored debug 0 bound 1 (status 0)
+s4_acq_fills                 CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 2.5 s  lean 2.4 s
+16 tables, 2 different; verdicts: CAUGHT 1
+== disposition_skipped debug 0 bound 65536 (status 0)
+s4_acq_held                  CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=50  range<=10  pinned 2.4 s  lean 1.7 s
+16 tables, 6 different; verdicts: CAUGHT 1
+== handler_state_via_init debug 0 bound 65536 (status 0)
+s4_life_capacity_p1          CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.9 s  lean 0.9 s  new errors [Strategy error at ts_utc=2020-01-04T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+s4_life_capacity_p5          CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.7 s  new errors [Strategy error at ts_utc=2020-01-03T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+s4_wrap_life_p1              CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.6 s  new errors [Strategy error at ts_utc=2020-01-04T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+s4_wrap_life_p5              CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.6 s  new errors [Strategy error at ts_utc=2020-01-03T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+48 tables, 8 different; verdicts: CAUGHT 4
+== handler_state_via_init debug 1 bound 65536 (status 0)
+s4_wrap_life_p1              CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.9 s  lean 1.2 s  new errors [Strategy error at ts_utc=2020-01-04T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+s4_wrap_life_p5              CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 1.3 s  new errors [Strategy error at ts_utc=2020-01-03T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+24 tables, 4 different; verdicts: CAUGHT 2
+== retains_via_append_closure debug 0 bound 65536 (status 0)
+s4_wrap_plan_p1              CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.8 s  lean 0.6 s  new errors [Strategy error at ts_utc=2020-01-01T16:00:00Z for run_id=a. Instruments: A. Available feature IDs: <none>. Original erro]
+s4_wrap_plan_p5              CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.7 s  new errors [Strategy error at ts_utc=2020-01-02T16:00:00Z for run_id=a. Instruments: A. Available feature IDs: <none>. Original erro]
+s4_wrap_life_p1              CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.8 s  new errors [Strategy error at ts_utc=2020-01-04T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+s4_wrap_life_p5              CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.6 s  new errors [Strategy error at ts_utc=2020-01-03T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+s4_wrap_plan_p1_run          CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.5 s  new errors [Strategy error at ts_utc=2020-01-01T16:00:00Z for run_id=a. Instruments: A. Available feature IDs: <none>. Original erro]
+s4_wrap_plan_p5_run          CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.4 s  lean 0.5 s  new errors [Strategy error at ts_utc=2020-01-02T16:00:00Z for run_id=a. Instruments: A. Available feature IDs: <none>. Original erro]
+70 tables, 10 different; verdicts: CAUGHT 6
+== retains_via_append_closure debug 1 bound 65536 (status 0)
+s4_wrap_plan_p1              CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.8 s  lean 0.7 s  new errors [Strategy error at ts_utc=2020-01-01T16:00:00Z for run_id=a. Instruments: A. Available feature IDs: <none>. Original erro]
+s4_wrap_plan_p5              CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 1.1 s  new errors [Strategy error at ts_utc=2020-01-02T16:00:00Z for run_id=a. Instruments: A. Available feature IDs: <none>. Original erro]
+s4_wrap_life_p1              CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 1.0 s  new errors [Strategy error at ts_utc=2020-01-04T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+s4_wrap_life_p5              CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.8 s  new errors [Strategy error at ts_utc=2020-01-03T16:00:00Z for run_id=a. Instruments: A, B, C, D, E. Available feature IDs: <none>. O]
+s4_wrap_plan_p1_run          CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.6 s  new errors [Strategy error at ts_utc=2020-01-01T16:00:00Z for run_id=a. Instruments: A. Available feature IDs: <none>. Original erro]
+s4_wrap_plan_p5_run          CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.6 s  new errors [Strategy error at ts_utc=2020-01-02T16:00:00Z for run_id=a. Instruments: A. Available feature IDs: <none>. Original erro]
+70 tables, 10 different; verdicts: CAUGHT 6
+== room_without_entry debug 0 bound 65536 (status 0)
+s4_wrap_plan_p1_eq           CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.8 s  lean 0.5 s  new errors [Ledger event buffer exceeded the run's maximum event capacity.]
+s4_wrap_plan_p5_eq           CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 0.6 s  new errors [Ledger event buffer exceeded the run's maximum event capacity.]
+s4_life_capacity_p1_ok       CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.8 s  new errors [Ledger event buffer exceeded the run's maximum event capacity.]
+s4_life_capacity_p5_ok       CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.6 s  new errors [Ledger event buffer exceeded the run's maximum event capacity.]
+48 tables, 8 different; verdicts: CAUGHT 4
+== room_without_entry debug 1 bound 65536 (status 0)
+s4_wrap_plan_p1_eq           CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.8 s  lean 0.5 s  new errors [Ledger event buffer exceeded the run's maximum event capacity.]
+s4_wrap_plan_p5_eq           CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.5 s  lean 1.0 s  new errors [Ledger event buffer exceeded the run's maximum event capacity.]
+s4_life_capacity_p1_ok       CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 1.0 s  new errors [Ledger event buffer exceeded the run's maximum event capacity.]
+s4_life_capacity_p5_ok       CAUGHT    DIFFERENT  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.7 s  new errors [Ledger event buffer exceeded the run's maximum event capacity.]
+48 tables, 8 different; verdicts: CAUGHT 4

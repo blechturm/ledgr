@@ -1,0 +1,9 @@
+"file","production.base","debug.base","production.final","debug.final","production_change","debug_change"
+"loop.R",982,120,993,122,11,2
+"plan.R",422,38,422,38,0,0
+"checks.R",153,15,153,15,0,0
+"fifo.R",436,4,436,4,0,0
+"prepare.R",119,3,119,3,0,0
+"loop_harness.R",177,0,177,0,0,0
+"marks.R",152,0,155,0,3,0
+"facts.R",0,0,210,24,210,24

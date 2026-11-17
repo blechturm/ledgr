@@ -58,3 +58,28 @@ checking the active plan, from the package root at the final commit.
 `probes/probe_debug0.csv`, `probe_debug1.csv`, `probe_b1_debug0.csv`, `probe_b1_debug1.csv`:
 `Rscript dev/lean_core/parity/evidence/cut21/ldg3248/probes/probe_runner.R --lib=<pin> --debug=<0/1> [--batch-rows=1] --workloads=p_terminal_first,p_stop_first,p_acq_first,p_many_facts,p_empty_first,p_sweep_terminal --out=<file>`
 (loop_parity.R's text with `probes/probe_workloads.R` added to its workload list; no freeze).
+
+## Close review round 2 (review2/)
+
+The same commands with the review2 paths, on the round-2 lean code; the
+batch-one list is `<B1>` plus the nine F3 witnesses s4_wrap_plan_p1,
+s4_wrap_plan_p1_eq, s4_wrap_plan_p5, s4_wrap_plan_p5_eq, s4_wrap_life_p1,
+s4_wrap_life_p1_eq, s4_wrap_life_p5, s4_wrap_life_p5_eq, s4_wrap_drain_run
+(and the four F1 witnesses of round 1); the inert list is `<IN>` plus the
+four F1 `_run` witnesses of round 1 and s4_wrap_plan_p1_run,
+s4_wrap_plan_p1_eq_run, s4_wrap_plan_p5_run, s4_wrap_plan_p5_eq_run,
+s4_wrap_drain_run. Variants: one loop_parity.R `--mutation=` run per line
+of `review2/variants/spec.txt` (`variant|workloads|debug|batch rows`).
+`review2/unregistered/inert_seam_life_debug0.csv`: the four seam-room
+lifetime `_run` witnesses under inert hooks, not registered (see LDG-3248's
+round-2 evidence).
+
+F2, `review2/fifo_census/` (scripts copied there; run from a scratch
+directory holding the inputs, which are large and not committed):
+`fifo_census.R --src=<pinned source archive> --out=censusA.csv` and again
+to `censusB.csv` (each call's digest of list(book, input) with its test
+file and test, in call order); `f2_diag.R` (digests of the fresh capture
+`fifo_tests/`, same recipe, to `f2_capture_keys.rds`); `f2_final.R <dir>`
+(the comparison: `f2_keys.txt`, `differing_digests.csv`,
+`census_ab_differing_keys.csv`); `f2_byref.R` (`byref_digest.txt`, the one
+difference outside test-rng-isolation.R reproduced with the pinned package).

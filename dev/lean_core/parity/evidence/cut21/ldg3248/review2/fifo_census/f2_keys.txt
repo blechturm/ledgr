@@ -1,0 +1,13 @@
+calls: census A 156568, census B 156568, fresh capture 156572; the committed capture population was 156571
+A vs B, keyed by (file, test, digest): 44 keys differ in multiplicity; files holding them: test-rng-isolation.R
+A vs B outside test-rng-isolation.R: 60441 keys, 145630 calls each; keys differing: 0; the two call sequences identical in order: TRUE
+A vs B in test-rng-isolation.R: 10938 calls vs 10938
+capture head (files before test-rng-isolation.R, 142196 calls): 142196 equal to census A call for call, 0 differ
+capture tail (files after test-rng-isolation.R, 3434 calls): 3433 equal to census A call for call, 1 differ
+  differing tail call: census A row 156187, test-ws4a-carrier.R :: [WS4a D15] the lot kernel never writes a book column by reference, caller <direct> (census B digest 08f3659ff00704e6, A digest 08f3659ff00704e6, capture digest f75bcf74ea363a34)
+capture block between them (the test-rng-isolation.R block): 10942 calls; census A has 10938, census B 10938 there
+against census B: head 142196/142196 equal, tail 3433/3434 equal
+capture-only keys: 23 calls; in the rng block 22, in the head 0, in the tail 1
+digests whose multiplicity differs among A, B and the capture: 68; of them, differing outside the rng file (A, B, capture head+tail): 2
+  those outside differences: 08f3659ff00704e6, f75bcf74ea363a34
+Record: the committed population of 156,571 calls cannot be re-attributed: only its count was stored, never its calls' digests, test files or tests.

@@ -1,0 +1,2 @@
+digest at the call: 08f3659ff00704e6 (census A and B: 08f3659ff00704e6)
+digest after the test's by-reference write: f75bcf74ea363a34 (capture: f75bcf74ea363a34)
