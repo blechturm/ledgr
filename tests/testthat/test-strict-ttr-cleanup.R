@@ -179,7 +179,7 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
   if (!under_covr) {
     testthat::expect_identical(
       ledgr:::ledgr_feature_engine_version(),
-      "3a67c0a6d04ac3e77048f1c07b3c618dc2ae20e709771d6301c66104dcb5219e"
+      "31930b44e380c7129fb12d5fd84b0eab046482b6fbef916da076a238909e161d"
     )
   }
 })

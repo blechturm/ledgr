@@ -1,87 +1,90 @@
 ledgr_feature_engine_version <- function() {
-  # Feature-engine provenance includes every helper whose semantics can change
-  # computed feature values.
-  payload <- list(
-    namespace = "v0.1.4-feature-engine",
-    normalize_series = ledgr_function_fingerprint(
-      ledgr_normalize_feature_series_output,
-      include_captures = FALSE,
-      label = "`ledgr_normalize_feature_series_output()`"
-    ),
-    normalize_scalar = ledgr_function_fingerprint(
-      ledgr_normalize_feature_scalar_output,
-      include_captures = FALSE,
-      label = "`ledgr_normalize_feature_scalar_output()`"
-    ),
-    call_series_fn = ledgr_function_fingerprint(
-      ledgr_call_feature_series_fn,
-      include_captures = FALSE,
-      label = "`ledgr_call_feature_series_fn()`"
-    ),
-    call_fn = ledgr_function_fingerprint(
-      ledgr_call_feature_fn,
-      include_captures = FALSE,
-      label = "`ledgr_call_feature_fn()`"
-    )
+  # Feature-engine provenance (Cut 22 decision 5). The deparsed formals and
+  # body of every ledgr helper whose code can change prepared feature values,
+  # evidence planes, refusals or the prepared representation, from the run,
+  # sweep, explicit precompute and pulse-inspection preparation roots
+  # (substrate construction and calculation bounds included) and the emitted
+  # built-in and TTR closures. Each helper is named here; the helpers it calls
+  # are bound by their own entries, never by a recursive walk. The census
+  # (dev/feature_parity/census.csv) classifies every reached helper and proves
+  # each row by replacement. Not bound: the read-side decoders and the
+  # recomputing single-definition read entry, which produce no reusable
+  # prepared state, and substrate guards, fold facts and storage.
+  bound <- c(
+    # input mapping and treatment (substrate construction included)
+    "ledgr_availability_read_table", "ledgr_availability_provider_data",
+    "ledgr_availability_calendar", "ledgr_availability_stable_ids", "ledgr_history_price_fields",
+    "ledgr_history_feature_fields", "ledgr_history_feature_inputs", "ledgr_history_feature_frame",
+    "ledgr_history_feature_window", "ledgr_history_lifetime_segments",
+    "ledgr_history_terminal_segments", "ledgr_bar_native_sessions",
+    "ledgr_history_segments_materialize", "ledgr_history_substrate_fact_plane",
+    "ledgr_history_substrate_expected_at", "ledgr_history_substrate_terminal_at",
+    "ledgr_history_substrate_terminal_planes", "ledgr_history_substrate",
+    "ledgr_history_substrate_for_experiment", "ledgr_history_substrate_bar_matrices",
+    "ledgr_history_lifetime_resolve_applicable", "ledgr_history_segment_dictionary",
+    "ledgr_history_segment_epoch_cells", "ledgr_history_segment_bind", "ledgr_history_epoch_start",
+    "ledgr_history_observation_breaks", "ledgr_history_sparse_fact_segments",
+    "ledgr_history_fact_segments_by_instrument", "ledgr_history_input_carry_calculation",
+    "ledgr_history_input_carry", "ledgr_history_required_field_admission", "ledgr_ttr_build_input",
+    "ledgr_precompute_fetch_bars_frame",
+    # certification and declarations
+    "ledgr_assert_indicator_fn_pure", "ledgr_assert_indicator_safe", "ledgr_indicator_source",
+    "ledgr_new_parameterized_indicator", "ledgr_is_param_ref", "ledgr_contains_param_ref",
+    "ledgr_abort_unsupported_param_placement", "ledgr_assert_no_param_refs",
+    "ledgr_validate_direct_param_args", "ledgr_feature_def_fingerprint",
+    "ledgr_duplicate_feature_ids", "ledgr_abort_duplicate_feature_ids",
+    "ledgr_active_feature_fingerprint", "ledgr_feature_certify",
+    "ledgr_feature_catalogue_candidates", "ledgr_ind_sma", "ledgr_ind_returns",
+    "ledgr_indicator_builtin", "ledgr_ind_ema", "ledgr_ind_rsi", "ledgr_indicator_bar_fields",
+    "ledgr_indicator_default_required_fields", "ledgr_feature_def_declarations",
+    "ledgr_indicator_history_classes", "ledgr_indicator_apply_declarations",
+    "ledgr_indicator_history_catalogue", "ledgr_indicator_abort_declaration",
+    "ledgr_indicator_catalogue_index", "ledgr_indicator_catalogue_row",
+    "ledgr_indicator_catalogue_declarations", "ledgr_indicator_apply_catalogue",
+    "ledgr_indicator_normalize_required_fields", "ledgr_indicator_declare", "ledgr_ind_ttr",
+    "ledgr_ind_ttr_warmup_rules", "ledgr_ttr_declaration_args", "ledgr_ttr_required_fields",
+    "ledgr_ttr_catalogue_spec", "ledgr_ttr_catalogue_variant", "ledgr_ttr_catalogue_row",
+    "ledgr_ttr_normalize_fn", "ledgr_ttr_normalize_input", "ledgr_ttr_normalize_output",
+    "ledgr_ttr_normalize_args", "ledgr_ttr_match_rule", "ledgr_ttr_inputs_for_known_function",
+    "ledgr_ttr_infer_requires_bars", "ledgr_ttr_validate_positive_integer",
+    "ledgr_ttr_example_call", "ledgr_ttr_default_id", "ledgr_ttr_id_token",
+    "ledgr_ttr_validate_output_contract", "ledgr_ttr_synthetic_bars", "ledgr_indicator_fingerprint",
+    "ledgr_indicator_capture_overrides", "ledgr_indicator",
+    "ledgr_precompute_feature_def_from_indicator", "ledgr_precompute_unique_feature_defs",
+    # calculation and output selection
+    "ledgr_rolling_mean", "ledgr_bounded_ema_series", "ledgr_simple_rsi_series",
+    "ledgr_call_feature_series_fn", "ledgr_call_feature_fn",
+    "ledgr_normalize_feature_series_output", "ledgr_normalize_feature_scalar_output",
+    "ledgr_strict_sma_series", "ledgr_history_feature_segment", "ledgr_history_feature_calculate",
+    "ledgr_history_compute_feature_series", "ledgr_history_output_carry", "ledgr_ttr_call",
+    "ledgr_ttr_raw_call", "ledgr_ttr_select_output",
+    # bounds and ranges
+    "ledgr_history_feature_runs", "ledgr_history_feature_terminal_breaks",
+    "ledgr_history_feature_ranges", "ledgr_history_feature_bounds", "ledgr_history_utc",
+    "ledgr_history_calculation_start", "ledgr_history_axis_lower_bound",
+    # causality and refusals
+    "ledgr_history_feature_refuse_parity", "ledgr_history_feature_causality_positions",
+    "ledgr_history_feature_inputs_prefix", "ledgr_history_feature_causality",
+    "ledgr_history_feature_check_definition", "ledgr_history_feature_refuse_lookahead",
+    # planes
+    "ledgr_feature_plane_fields", "ledgr_feature_plane_chunks", "ledgr_feature_plane_exceptions",
+    "ledgr_feature_plane_records", "ledgr_projection_index_planes",
+    # prepared representation
+    "ledgr_history_precompute_payload", "ledgr_precompute_feature_union",
+    "ledgr_precompute_available_counts", "ledgr_precompute_warmup_table",
+    "ledgr_precompute_history_axis", "ledgr_normalize_ts_utc", "ledgr_runtime_projection",
+    "ledgr_projection_pulse_names", "ledgr_projection_from_feature_matrix",
+    "ledgr_projection_from_payload"
   )
-  {
-    helper <- function(fn, name) {
-      ledgr_function_fingerprint(
-        fn,
-        include_captures = FALSE,
-        label = sprintf("`%s()`", name)
-      )
-    }
-    payload$availability <- list(
-      semantics = "history_segments_v1",
-      history_rule_version = ledgr_feature_history_rule_version,
-      compute = helper(
-        ledgr_history_compute_feature_series,
-        "ledgr_history_compute_feature_series"
-      ),
-      certify = helper(ledgr_feature_certify, "ledgr_feature_certify"),
-      candidates = helper(
-        ledgr_feature_catalogue_candidates,
-        "ledgr_feature_catalogue_candidates"
-      ),
-      catalogue = helper(
-        ledgr_indicator_history_catalogue,
-        "ledgr_indicator_history_catalogue"
-      ),
-      declarations = helper(ledgr_indicator_declare, "ledgr_indicator_declare"),
-      admission = helper(
-        ledgr_history_required_field_admission,
-        "ledgr_history_required_field_admission"
-      ),
-      inputs = helper(ledgr_history_feature_inputs, "ledgr_history_feature_inputs"),
-      fields = helper(ledgr_history_feature_fields, "ledgr_history_feature_fields"),
-      input_carry = helper(ledgr_history_input_carry, "ledgr_history_input_carry"),
-      input_carry_calculation = helper(
-        ledgr_history_input_carry_calculation,
-        "ledgr_history_input_carry_calculation"
-      ),
-      output_carry = helper(ledgr_history_output_carry, "ledgr_history_output_carry"),
-      ranges = helper(ledgr_history_feature_ranges, "ledgr_history_feature_ranges"),
-      runs = helper(ledgr_history_feature_runs, "ledgr_history_feature_runs"),
-      terminal_breaks = helper(
-        ledgr_history_feature_terminal_breaks,
-        "ledgr_history_feature_terminal_breaks"
-      ),
-      calculate = helper(
-        ledgr_history_feature_calculate,
-        "ledgr_history_feature_calculate"
-      ),
-      segment = helper(ledgr_history_feature_segment, "ledgr_history_feature_segment"),
-      frame = helper(ledgr_history_feature_frame, "ledgr_history_feature_frame"),
-      window = helper(ledgr_history_feature_window, "ledgr_history_feature_window"),
-      strict_sma = helper(ledgr_strict_sma_series, "ledgr_strict_sma_series"),
-      fingerprint = helper(
-        ledgr_active_feature_fingerprint,
-        "ledgr_active_feature_fingerprint"
-      )
-    )
-  }
-  digest::digest(canonical_json(payload), algo = "sha256")
+  code <- lapply(mget(bound, envir = environment(), inherits = TRUE), function(fn) {
+    c(ledgr_deparse_one(formals(fn)), ledgr_deparse_one(body(fn)))
+  })
+  digest::digest(canonical_json(list(
+    namespace = "ledgr-feature-engine-v2",
+    history_rule_version = ledgr_feature_history_rule_version,
+    substrate_version = ledgr_history_substrate_version,
+    code = code
+  )), algo = "sha256")
 }
 
 # Canonical feature identity under rule 5: the base fingerprint
