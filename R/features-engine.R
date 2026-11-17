@@ -54,6 +54,7 @@ ledgr_feature_engine_version <- function() {
         "ledgr_history_required_field_admission"
       ),
       inputs = helper(ledgr_history_feature_inputs, "ledgr_history_feature_inputs"),
+      fields = helper(ledgr_history_feature_fields, "ledgr_history_feature_fields"),
       input_carry = helper(ledgr_history_input_carry, "ledgr_history_input_carry"),
       input_carry_calculation = helper(
         ledgr_history_input_carry_calculation,

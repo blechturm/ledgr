@@ -849,12 +849,15 @@ ledgr_ttr_call <- function(bars, params) {
   ledgr_ttr_select_output(result, params$output, params$ttr_fn)
 }
 
-ledgr_ttr_raw_call <- function(bars, params) {
-  if (!requireNamespace("TTR", quietly = TRUE)) {
+# The one TTR call site. Certified catalogue segments pass the TTR function
+# resolved at certification (`ttr_fn`) and, for close input, the numeric
+# close vector (`x`) instead of a bars frame.
+ledgr_ttr_raw_call <- function(bars, params, ttr_fn = NULL, x = NULL) {
+  if (is.null(ttr_fn) && !requireNamespace("TTR", quietly = TRUE)) {
     rlang::abort("Package 'TTR' is required to compute this TTR indicator.", class = "ledgr_missing_optional_dependency")
   }
-  x <- ledgr_ttr_build_input(bars, params$input)
-  ttr_fn <- getExportedValue("TTR", params$ttr_fn)
+  if (is.null(x)) x <- ledgr_ttr_build_input(bars, params$input)
+  if (is.null(ttr_fn)) ttr_fn <- getExportedValue("TTR", params$ttr_fn)
   if (identical(params$input, "hlcv") && params$ttr_fn %in% c("MFI", "CMF")) {
     do.call(ttr_fn, c(list(x[, c("High", "Low", "Close"), drop = FALSE], x[, "Volume"]), params$args))
   } else {

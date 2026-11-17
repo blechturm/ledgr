@@ -62,12 +62,15 @@ ledgr_feature_certify <- function(def) {
       # Outputs of one TTR call share inputs, segments and the raw result.
       call_params <- canonical$params
       call_params$output <- NULL
+      ttr <- identical(candidate$kind, "ttr")
       return(list(
         certification = candidate$certification,
         kind = candidate$kind,
         def = canonical,
         declarations = canonical_declarations,
-        ttr_call_key = if (identical(candidate$kind, "ttr")) {
+        # The TTR function, resolved once per definition.
+        ttr_fn = if (ttr) getExportedValue("TTR", canonical$params$ttr_fn),
+        ttr_call_key = if (ttr) {
           paste(
             canonical_json(call_params),
             paste(canonical_declarations$required_fields, collapse = ","),
@@ -163,10 +166,24 @@ ledgr_history_feature_runs <- function(available, breaks = NULL) {
   )
 }
 
+# The bar fields one preparation treats: every field when any definition is
+# custom, since custom callbacks see the complete frame; otherwise the union
+# of the certified canonical definitions' required fields, which for
+# built-ins and catalogue rows are the only fields their code reads.
+ledgr_history_feature_fields <- function(certified) {
+  fields <- c(ledgr_history_price_fields(), "volume")
+  custom <- vapply(certified, function(cert) identical(cert$certification, "custom"), logical(1))
+  if (any(custom)) return(fields)
+  used <- unlist(lapply(certified, function(cert) cert$declarations$required_fields), use.names = FALSE)
+  fields[fields %in% used]
+}
+
 # Treated inputs for one instrument over the prefix 1..prefix_end, with the
 # expected-session mask and terminal barrier knowable at `cutoff`. Price
 # fields are carried by the shared calculation; volume is never carried.
-ledgr_history_feature_inputs <- function(substrate, instrument_idx, prefix_end, cutoff) {
+# Only `fields` are treated (ledgr_history_feature_fields()).
+ledgr_history_feature_inputs <- function(substrate, instrument_idx, prefix_end, cutoff,
+                                         fields = c(ledgr_history_price_fields(), "volume")) {
   prefix <- seq_len(prefix_end)
   expected <- as.logical(ledgr_history_substrate_expected_at(
     substrate, cutoff, prefix, instrument_idx
@@ -183,7 +200,7 @@ ledgr_history_feature_inputs <- function(substrate, instrument_idx, prefix_end, 
   raw <- list()
   treated <- list()
   carried <- list()
-  for (field in c(ledgr_history_price_fields(), "volume")) {
+  for (field in fields) {
     value <- as.numeric(substrate$bars[[field]][instrument_idx, prefix])
     raw_value <- value
     raw_value[!expected] <- NA_real_
@@ -226,17 +243,15 @@ ledgr_history_feature_terminal_breaks <- function(terminal_asserted, rows) {
 }
 
 # Plain data frames built directly: these are constructed once per segment
-# and once per fn window, so data.frame()'s name checks are avoided.
+# and once per fn window, so data.frame()'s name checks are avoided. The
+# frame holds the treated fields, all five in this order for any custom
+# definition (ledgr_history_feature_fields()).
 ledgr_history_feature_frame <- function(inputs, fields, rows) {
+  present <- c(ledgr_history_price_fields(), "volume")
   structure(
-    list(
-      instrument_id = rep(inputs$instrument_id, length(rows)),
-      ts_utc = inputs$axis[rows],
-      open = fields$open[rows],
-      high = fields$high[rows],
-      low = fields$low[rows],
-      close = fields$close[rows],
-      volume = fields$volume[rows]
+    c(
+      list(instrument_id = rep(inputs$instrument_id, length(rows)), ts_utc = inputs$axis[rows]),
+      lapply(fields[present[present %in% names(fields)]], `[`, rows)
     ),
     class = "data.frame",
     row.names = c(NA_integer_, -length(rows))
@@ -289,13 +304,17 @@ ledgr_history_feature_segment <- function(cert, inputs, fields, rows, cache = NU
     # Exact parity with the scalar mean(window$close) oracle.
     return(ledgr_strict_sma_series(fields$close[rows], width))
   }
-  frame <- ledgr_history_feature_frame(inputs, fields, rows)
-  ready <- seq_len(m) >= stable_after
   if (identical(cert$kind, "ttr") && is.environment(cache)) {
     key <- paste(cert$ttr_call_key, rows[[1L]], rows[[m]], sep = "|")
     raw <- cache[[key]]
+    # On a miss TTR gets the selected close vector directly, or the segment
+    # frame for other inputs; a hit builds nothing.
     if (is.null(raw)) {
-      raw <- ledgr_ttr_raw_call(frame, params)
+      raw <- if (identical(params$input, "close")) {
+        ledgr_ttr_raw_call(NULL, params, cert$ttr_fn, as.numeric(fields$close[rows]))
+      } else {
+        ledgr_ttr_raw_call(ledgr_history_feature_frame(inputs, fields, rows), params, cert$ttr_fn)
+      }
       cache[[key]] <- raw
     }
     return(ledgr_normalize_feature_series_output(
@@ -305,6 +324,7 @@ ledgr_history_feature_segment <- function(cert, inputs, fields, rows, cache = NU
       def$id
     ))
   }
+  frame <- ledgr_history_feature_frame(inputs, fields, rows)
   if (is.function(def$series_fn)) {
     return(ledgr_normalize_feature_series_output(
       ledgr_call_feature_series_fn(def$series_fn, frame, params),
@@ -314,7 +334,7 @@ ledgr_history_feature_segment <- function(cert, inputs, fields, rows, cache = NU
     ))
   }
   value <- rep(NA_real_, m)
-  for (k in which(ready)) {
+  for (k in which(seq_len(m) >= stable_after)) {
     value[[k]] <- ledgr_normalize_feature_scalar_output(
       ledgr_call_feature_fn(def$fn, ledgr_history_feature_window(frame, seq.int(k - width + 1L, k)), params),
       def$id
@@ -469,6 +489,7 @@ ledgr_history_compute_feature_series <- function(substrate,
     return(out)
   }
   output_carry <- substrate$history_policy$output_carry
+  fields <- ledgr_history_feature_fields(certified)
   # Calculated (not carried) cells per definition and instrument choose each
   # definition's causality probe.
   calculated_count <- matrix(0L, nrow = length(certified), ncol = n_inst)
@@ -477,7 +498,7 @@ ledgr_history_compute_feature_series <- function(substrate,
     for (r in seq_along(ranges$start)) {
       range_end <- ranges$end[[r]]
       inputs <- ledgr_history_feature_inputs(
-        substrate, i, range_end, substrate$axis[[range_end]]
+        substrate, i, range_end, substrate$axis[[range_end]], fields
       )
       keep <- seq.int(ranges$start[[r]], range_end)
       cache <- new.env(hash = TRUE, parent = emptyenv())
@@ -649,6 +670,7 @@ ledgr_history_feature_inputs_prefix <- function(inputs, k) {
 
 ledgr_history_feature_causality <- function(substrate, certified, bounds, calculated_count, values) {
   probes <- list()
+  fields <- ledgr_history_feature_fields(certified)
   for (d in seq_along(certified)) {
     counts <- calculated_count[d, ]
     if (!any(counts > 0L)) next
@@ -662,7 +684,7 @@ ledgr_history_feature_causality <- function(substrate, certified, bounds, calcul
           start = ranges$start[[r]],
           end = range_end,
           inputs = ledgr_history_feature_inputs(
-            substrate, i, range_end, substrate$axis[[range_end]]
+            substrate, i, range_end, substrate$axis[[range_end]], fields
           ),
           cache = new.env(hash = TRUE, parent = emptyenv())
         )
