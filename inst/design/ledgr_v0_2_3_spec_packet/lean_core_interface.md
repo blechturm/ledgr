@@ -1476,8 +1476,15 @@ list shows otherwise.
   LDG-3248) implement this section in `dev/lean_core/facts.R`, `loop.R` and
   `marks.R`. Section 19.2's table now lists slice 4 as covered; the only
   coverage refusals left are slice 5's and the prepared-axis guard. The
-  evidence is in tickets.yml (LDG-3243 to LDG-3248). Workstream 40's Type 1
-  close review and the cut's timing record (`cut21-loop-1`) are pending.
+  evidence is in tickets.yml (LDG-3243 to LDG-3248).
+- Closed (2026-11-17): workstream 40's Type 1 close review ended at round 3
+  (F1 and F3, two capacity gaps at the capture, fixed; F2, the FIFO
+  check's count population, closed by the maintainer's decision with a
+  follow-up on the FIFO census). The capture reads the handler's room and
+  append boundary from lean-owned facts and the handler's public
+  `events()`, never from a method's closure. The timing record
+  `cut21-loop-1` (label `ws40-review1`) passes, and plain runs stay inside
+  Cut 15's 5 percent rule.
 
 Coverage moves in Section 19.2's table to covered:
 
