@@ -1,0 +1,137 @@
+helper,location,category,bound_by,note
+ledgr_feature_certify,R/history-features.R:19,certification and declarations,engine version,named
+ledgr_feature_catalogue_candidates,R/history-features.R:93,certification and declarations,engine version,named
+ledgr_indicator_history_catalogue,R/indicator-history.R:203,certification and declarations,engine version,named; the rows (classes; required fields; carry families; widths)
+ledgr_indicator_declare,R/indicator-history.R:54,certification and declarations,engine version,named
+ledgr_feature_def_declarations,R/indicator-history.R:169,certification and declarations,unbound,builds the declarations every certification; admission and plane read; its outputs are hashed into ledgr_active_feature_fingerprint but its code is not (UNSURE whether active-fingerprint coverage counts)
+ledgr_indicator_normalize_required_fields,R/indicator-history.R:36,certification and declarations,unbound,canonical field order; decides blocking_field order and the c2 union order
+ledgr_indicator_bar_fields,R/indicator-history.R:10,certification and declarations,unbound,constant: the five bar fields
+ledgr_indicator_default_required_fields,R/indicator-history.R:14,certification and declarations,unbound,constant: custom default required fields (OHLC); changes custom admission
+ledgr_indicator_history_classes,R/indicator-history.R:18,certification and declarations,unbound,constant
+ledgr_indicator_apply_declarations,R/indicator-history.R:186,certification and declarations,unbound,copies declarations onto the canonical indicator
+ledgr_indicator_catalogue_index,R/indicator-history.R:280,certification and declarations,unbound,session cache keyed lookup over the (bound) catalogue; ambiguous key resolves to no row
+ledgr_indicator_catalogue_row,R/indicator-history.R:299,certification and declarations,unbound,catalogue lookup
+ledgr_indicator_catalogue_declarations,R/indicator-history.R:306,certification and declarations,unbound,parses row required_fields string
+ledgr_indicator_apply_catalogue,R/indicator-history.R:314,certification and declarations,unbound,
+ledgr_indicator_builtin,R/indicator-builtins.R:176,certification and declarations,unbound,
+ledgr_ind_sma,R/indicator-builtins.R:14,certification and declarations,indicator fingerprint (emitted fn/series_fn),canonical candidate constructor; emitted closures are fingerprinted; constructor validation is not
+ledgr_ind_ema,R/indicator-builtins.R:51,certification and declarations,indicator fingerprint (emitted fn/series_fn),as above
+ledgr_ind_rsi,R/indicator-builtins.R:96,certification and declarations,indicator fingerprint (emitted fn/series_fn),as above
+ledgr_ind_returns,R/indicator-builtins.R:144,certification and declarations,indicator fingerprint (emitted fn/series_fn),as above
+ledgr_ind_ttr,R/indicator-ttr.R:127,certification and declarations,indicator fingerprint (emitted fn/series_fn; params incl. ttr_version),canonical TTR candidate constructor (certification calls it per definition); catalogue routing inside is unbound
+ledgr_ind_ttr_warmup_rules,R/indicator-ttr.R:13,certification and declarations,partly indicator fingerprint (requires_bars),rules table: input per function; decides catalogue membership and known-input refusal
+ledgr_ttr_match_rule,R/indicator-ttr.R:684,certification and declarations,unbound,catalogue matching
+ledgr_ttr_inputs_for_known_function,R/indicator-ttr.R:691,certification and declarations,unbound,refusal message routing
+ledgr_ttr_infer_requires_bars,R/indicator-ttr.R:718,certification and declarations,indicator fingerprint (requires_bars) for the emitted value; unbound as a matcher,also decides catalogue width match
+ledgr_ttr_catalogue_spec,R/indicator-ttr.R:331,certification and declarations,unbound,neutral/allowed/variant arguments; RFC Section 3 names it
+ledgr_ttr_catalogue_variant,R/indicator-ttr.R:366,certification and declarations,unbound,RFC Section 3 names it
+ledgr_ttr_catalogue_row,R/indicator-ttr.R:390,certification and declarations,unbound,RFC Section 3 names it
+ledgr_ttr_required_fields,R/indicator-ttr.R:317,certification and declarations,unbound,custom TTR forms' required fields (catalogue rows take the catalogue's)
+ledgr_ttr_declaration_args,R/indicator-ttr.R:312,certification and declarations,unbound,parameterized path only
+ledgr_ttr_normalize_fn,R/indicator-ttr.R:640,certification and declarations,indicator fingerprint (params$ttr_fn),case-insensitive export match
+ledgr_ttr_normalize_input,R/indicator-ttr.R:652,certification and declarations,indicator fingerprint (params$input),
+ledgr_ttr_normalize_output,R/indicator-ttr.R:664,certification and declarations,indicator fingerprint (params$output),
+ledgr_ttr_normalize_args,R/indicator-ttr.R:672,certification and declarations,indicator fingerprint (params$args),
+ledgr_ttr_validate_positive_integer,R/indicator-ttr.R:746,certification and declarations,unbound,refusal on non-integer widths
+ledgr_ttr_default_id,R/indicator-ttr.R:779,certification and declarations,indicator fingerprint (id),
+ledgr_ttr_id_token,R/indicator-ttr.R:799,certification and declarations,indicator fingerprint (id),
+ledgr_ttr_validate_output_contract,R/indicator-ttr.R:865,certification and declarations,unbound,one synthetic TTR call per certified TTR definition (counted by LTB-0276)
+ledgr_ttr_synthetic_bars,R/indicator-ttr.R:870,certification and declarations,unbound,synthetic certification bars
+ledgr_indicator,R/indicator.R:86,certification and declarations,unbound,constructor of every canonical candidate; validation and refusals
+ledgr_precompute_feature_def_from_indicator,R/precompute-features.R:663,certification and declarations,unbound,the definition shape every path computes from
+ledgr_indicator_source,R/feature-inspection.R:295,certification and declarations,unbound (diagnostic),source label; feature_union column; not calculation
+ledgr_history_feature_inputs,R/history-features.R:169,input mapping and treatment,engine version,named
+ledgr_history_input_carry_calculation,R/history-treatment.R:16,input mapping and treatment,engine version + history identity (treatment_rule_version),named
+ledgr_history_input_carry,R/history-treatment.R:76,input mapping and treatment,engine version + history identity (treatment_rule_version),named; reached through output carry
+ledgr_history_price_fields,R/history-features.R:12,input mapping and treatment,unbound,constant: which fields are carried (volume never)
+ledgr_history_feature_frame,R/history-features.R:230,input mapping and treatment,engine version,named; the custom callback frame
+ledgr_history_feature_window,R/history-features.R:246,input mapping and treatment,engine version,named
+ledgr_history_required_field_admission,R/indicator-history.R:332,input mapping and treatment,engine version,named
+ledgr_ttr_build_input,R/indicator-ttr.R:806,input mapping and treatment,unbound,TTR input mapping (close/hl/hlc/ohlc/hlcv); RFC Section 3 names it
+ledgr_history_feature_bounds,R/history-features.R:430,bounds and ranges,unbound,RFC Section 3 names it
+ledgr_history_feature_ranges,R/history-features.R:412,bounds and ranges,engine version,named
+ledgr_history_feature_runs,R/history-features.R:155,bounds and ranges,engine version,named
+ledgr_history_feature_terminal_breaks,R/history-features.R:222,bounds and ranges,engine version,named
+ledgr_history_axis_lower_bound,R/history-substrate.R:738,bounds and ranges,history identity (axis/cutoff rule versions; manual constants),shared with the fold and history reads (UNSURE: bind here or leave to history identity)
+ledgr_history_utc,R/history-substrate.R:118,bounds and ranges,history identity (cutoff rule version; manual constant),instant parsing of bounds (UNSURE as above)
+ledgr_history_substrate_expected_at,R/history-substrate.R:1395,bounds and ranges,history identity (axis/cutoff rule versions; manual constants),expected-session mask at a cutoff (UNSURE as above)
+ledgr_history_substrate_terminal_planes,R/history-substrate.R:1426,bounds and ranges,history identity (axis/cutoff rule versions; manual constants),terminal assertion and sticky barrier (UNSURE as above)
+ledgr_history_substrate_fact_plane,R/history-substrate.R:1381,bounds and ranges,history identity (axis/cutoff rule versions; manual constants),(UNSURE as above)
+ledgr_history_segments_materialize,R/history-substrate.R:1340,bounds and ranges,history identity (axis/cutoff rule versions; manual constants),(UNSURE as above)
+ledgr_history_compute_feature_series,R/history-features.R:447,calculation and output selection,engine version,named
+ledgr_history_feature_calculate,R/history-features.R:329,calculation and output selection,engine version,named
+ledgr_history_feature_segment,R/history-features.R:282,calculation and output selection,engine version,named
+ledgr_strict_sma_series,R/features-engine.R:430,calculation and output selection,engine version,named
+ledgr_call_feature_series_fn,R/features-engine.R:335,calculation and output selection,engine version,named (legacy namespace block)
+ledgr_call_feature_fn,R/features-engine.R:339,calculation and output selection,engine version,named (legacy namespace block)
+ledgr_normalize_feature_series_output,R/features-engine.R:343,calculation and output selection,engine version,named (legacy block); warmup NA and non-finite refusals
+ledgr_normalize_feature_scalar_output,R/features-engine.R:374,calculation and output selection,engine version,named (legacy block)
+ledgr_history_output_carry,R/history-treatment.R:452,calculation and output selection,engine version + history identity (treatment_rule_version),named
+ledgr_ttr_raw_call,R/indicator-ttr.R:852,calculation and output selection,unbound,raw TTR invocation and MFI/CMF volume split; RFC names it; registered seam (LTB-0276)
+ledgr_ttr_select_output,R/indicator-ttr.R:966,calculation and output selection,unbound,output selection and MACD histogram derivation; RFC names it
+ledgr_ttr_call,R/indicator-ttr.R:847,calculation and output selection,unbound,called by the emitted TTR closures (custom TTR forms run through it); the closure fingerprint hashes the call symbol not this body
+ledgr_rolling_mean,R/features-engine.R:286,calculation and output selection,unbound,called by ledgr_simple_rsi_series (builtin rsi) and the builtin sma series_fn
+ledgr_bounded_ema_series,R/features-engine.R:297,calculation and output selection,unbound,builtin ema series; the emitted series_fn body is fingerprinted but not this helper
+ledgr_simple_rsi_series,R/features-engine.R:315,calculation and output selection,unbound,builtin rsi series; as above
+ledgr_compute_feature_series,R/features-engine.R:399,calculation and output selection,engine version,named but OFF the availability path (only ledgr_check_no_lookahead and tests call it)
+ledgr_compute_feature_scalar_at,R/features-engine.R:386,calculation and output selection,engine version,named but OFF the availability path (only the legacy series above)
+ledgr_validate_feature_def,R/features-engine.R:172,causality and refusals,unbound,legacy path only (ledgr_compute_feature_series)
+ledgr_feature_plane_fields,R/history-features.R:520,planes,unbound,plane field list
+ledgr_feature_plane_chunks,R/history-features.R:528,planes,unbound,
+ledgr_feature_plane_exceptions,R/history-features.R:540,planes,unbound,reason codes 1-3; input carry; output carry; segment runs; RFC names it
+ledgr_feature_plane_records,R/history-features.R:587,planes,unbound,flat records; RFC names it
+ledgr_history_feature_planes,R/history-features.R:769,planes,unbound (not prepared state),single-definition read entry; recomputes at read; no stored object depends on it
+ledgr_history_feature_evidence,R/history-frame.R:359,planes,unbound (read-side decode),decodes retained planes into reasons; a decode change without a producer change would misread an old precompute object (UNSURE: bind or treat as read code)
+ledgr_history_feature_compact,R/history-frame.R:665,planes,unbound (read-side decode),as above
+ledgr_history_plane_lookup,R/history-frame.R:341,planes,unbound (read-side decode),as above
+ledgr_history_plane_run,R/history-frame.R:350,planes,unbound (read-side decode),as above
+ledgr_history_feature_causality,R/history-features.R:647,causality and refusals,unbound,probe instrument choice and order
+ledgr_history_feature_causality_positions,R/history-features.R:627,causality and refusals,unbound,sampled positions
+ledgr_history_feature_check_definition,R/history-features.R:675,causality and refusals,unbound,prefix invariance and fn/series refutation; RFC names it
+ledgr_history_feature_inputs_prefix,R/history-features.R:632,causality and refusals,unbound,
+ledgr_history_feature_refuse_lookahead,R/history-features.R:744,causality and refusals,unbound,refusal class and fields
+ledgr_history_feature_refuse_parity,R/history-features.R:254,causality and refusals,unbound,refusal class and fields
+ledgr_indicator_abort_declaration,R/indicator-history.R:22,causality and refusals,unbound,declaration refusal classes
+ledgr_assert_indicator_fn_pure,R/determinism.R:14,causality and refusals,unbound,construction-time refusal (canonical candidates are constructed)
+ledgr_assert_indicator_safe,R/determinism.R:25,causality and refusals,unbound,as above
+ledgr_are_params_deterministic,R/determinism.R:34,causality and refusals,unbound,as above
+ledgr_history_precompute_payload,R/history-substrate.R:376,prepared representation,unbound,per-instrument split (candidate 5)
+ledgr_projection_from_payload,R/runtime-projection.R:134,prepared representation,unbound,rebuild of matrices from the split
+ledgr_projection_from_feature_matrix,R/runtime-projection.R:108,prepared representation,unbound,run path projection
+ledgr_runtime_projection,R/runtime-projection.R:1,prepared representation,unbound,matrix dimnames; pulse index; ISO pulses (candidate 1)
+ledgr_projection_index_planes,R/runtime-projection.R:62,prepared representation,unbound,sorted plane keys; RFC names it
+ledgr_projection_pulse_names,R/runtime-projection.R:104,prepared representation,unbound,axis format (candidate 1); also feeds precompute axis_hash
+ledgr_projection_slice,R/runtime-projection.R:189,prepared representation,unbound,explicit-precompute reuse in sweeps; drops planes when sliced
+ledgr_precompute_unique_feature_defs,R/precompute-features.R:685,prepared representation,feature_union_hash (fingerprint keyed),union by base fingerprint
+ledgr_precompute_history_axis,R/precompute-features.R:765,prepared representation,itself an identity check (history_axis),reuse gate; not representation content
+ledgr_active_feature_fingerprint,R/features-engine.R:100,identity infrastructure,engine version,named
+ledgr_feature_def_fingerprint,R/features-engine.R:120,identity infrastructure,fingerprints (self),a change moves every base fingerprint
+ledgr_indicator_fingerprint,R/indicator.R:278,identity infrastructure,fingerprints (self),
+ledgr_indicator_capture_overrides,R/indicator.R:307,identity infrastructure,fingerprints (self),
+ledgr_function_fingerprint,R/determinism.R:119,identity infrastructure,fingerprints (self),hashes body and variable captures only; called functions are not captured
+ledgr_stable_payload,R/determinism.R:63,identity infrastructure,fingerprints (self),
+ledgr_deparse_one,R/determinism.R:48,identity infrastructure,fingerprints (self),
+ledgr_static_function_signature,R/determinism.R:52,identity infrastructure,fingerprints (self),
+ledgr_determinism_forbidden_calls,R/determinism.R:6,identity infrastructure,fingerprints (self),
+canonical_json,R/config-canonical-json.R:102,identity infrastructure,fingerprints (self),
+ledgr_feature_engine_version,R/features-engine.R:1,identity infrastructure,self,
+ledgr_check_no_lookahead,R/features-engine.R:446,excluded (not on the feature path),n/a,legacy test helper; only caller of ledgr_compute_feature_series
+ledgr_canonical_json_encode,R/config-canonical-json.R:119,excluded (infrastructure),n/a,JSON encoder internals
+.ledgr_json_cache_get,R/config-canonical-json.R:46,excluded (infrastructure),n/a,
+.ledgr_json_cache_set,R/config-canonical-json.R:51,excluded (infrastructure),n/a,
+.ledgr_json_cache_key,R/config-canonical-json.R:61,excluded (infrastructure),n/a,
+ledgr_json_read_nested,R/config-canonical-json.R:68,excluded (infrastructure),n/a,
+ledgr_json_write_canonical_v2,R/config-canonical-json.R:82,excluded (infrastructure),n/a,
+ledgr_strategy_ambient_rng_functions,R/strategy-preflight.R:683,excluded (infrastructure),n/a,
+ledgr_new_parameterized_indicator,R/feature-parameters.R:190,excluded (infrastructure),n/a,parameter references; certification candidates are concrete
+ledgr_is_param_ref,R/feature-parameters.R:33,excluded (infrastructure),n/a,
+ledgr_contains_param_ref,R/feature-parameters.R:44,excluded (infrastructure),n/a,
+ledgr_abort_unsupported_param_placement,R/feature-parameters.R:52,excluded (infrastructure),n/a,
+ledgr_assert_no_param_refs,R/feature-parameters.R:63,excluded (infrastructure),n/a,
+ledgr_validate_direct_param_args,R/feature-parameters.R:72,excluded (infrastructure),n/a,
+ledgr_history_substrate_is,R/history-substrate.R:217,excluded (infrastructure),n/a,
+ledgr_history_substrate_require,R/history-substrate.R:223,excluded (infrastructure),n/a,
+ledgr_duplicate_feature_ids,R/features-engine.R:153,excluded (infrastructure),n/a,projection input validation
+ledgr_abort_duplicate_feature_ids,R/features-engine.R:158,excluded (infrastructure),n/a,projection input validation
+ledgr_ttr_example_call,R/indicator-ttr.R:753,excluded (infrastructure),n/a,error message text
+ledgr_normalize_ts_utc,R/pulse-context.R:850,excluded (infrastructure),n/a,timestamp formatting for refusals and axis records

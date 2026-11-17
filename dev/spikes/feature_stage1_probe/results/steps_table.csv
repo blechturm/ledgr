@@ -1,0 +1,145 @@
+"source","shape","path","step","share","seconds","samples"
+"clean","crossover_10x7200","run","axis formatting",0.642,0.16,120
+"clean","crossover_10x7200","run","TTR raw call",0.008,0.002,120
+"clean","crossover_10x7200","run","input treatment",0.108,0.027,120
+"clean","crossover_10x7200","run","calculate bookkeeping",0.058,0.015,120
+"clean","crossover_10x7200","run","segment frame and rest",0.008,0.002,120
+"clean","crossover_10x7200","run","plane exceptions and records",0.025,0.006,120
+"clean","crossover_10x7200","run","compute residual",0.108,0.027,120
+"clean","crossover_10x7200","run","causality probe, certification",0.033,0.008,120
+"clean","crossover_10x7200","run","payload split and rebuild",0,0,120
+"clean","crossover_10x7200","run","other",0.008,0.002,120
+"clean","crossover_10x7200","run","whole path",1,0.25,120
+"clean","crossover_10x7200","run","bare TTR",NA,0,120
+"clean","crossover_10x7200","sweep","axis formatting",0.589,0.336,263
+"clean","crossover_10x7200","sweep","TTR raw call",0.019,0.011,263
+"clean","crossover_10x7200","sweep","input treatment",0.038,0.022,263
+"clean","crossover_10x7200","sweep","calculate bookkeeping",0.087,0.05,263
+"clean","crossover_10x7200","sweep","segment frame and rest",0.038,0.022,263
+"clean","crossover_10x7200","sweep","plane exceptions and records",0.008,0.005,263
+"clean","crossover_10x7200","sweep","compute residual",0.156,0.089,263
+"clean","crossover_10x7200","sweep","causality probe, certification",0.053,0.03,263
+"clean","crossover_10x7200","sweep","payload split and rebuild",0.008,0.005,263
+"clean","crossover_10x7200","sweep","other",0.004,0.002,263
+"clean","crossover_10x7200","sweep","whole path",1,0.57,263
+"clean","crossover_10x7200","sweep","bare TTR",NA,0,263
+"clean","crossover_500x1260","run","axis formatting",0.042,0.032,333
+"clean","crossover_500x1260","run","TTR raw call",0.18,0.135,333
+"clean","crossover_500x1260","run","input treatment",0.339,0.254,333
+"clean","crossover_500x1260","run","calculate bookkeeping",0.213,0.16,333
+"clean","crossover_500x1260","run","segment frame and rest",0.084,0.063,333
+"clean","crossover_500x1260","run","plane exceptions and records",0.039,0.029,333
+"clean","crossover_500x1260","run","compute residual",0.075,0.056,333
+"clean","crossover_500x1260","run","causality probe, certification",0,0,333
+"clean","crossover_500x1260","run","payload split and rebuild",0,0,333
+"clean","crossover_500x1260","run","other",0.027,0.02,333
+"clean","crossover_500x1260","run","whole path",1,0.75,333
+"clean","crossover_500x1260","run","bare TTR",NA,0.08,333
+"clean","crossover_500x1260","sweep","axis formatting",0.035,0.061,774
+"clean","crossover_500x1260","sweep","TTR raw call",0.234,0.41,774
+"clean","crossover_500x1260","sweep","input treatment",0.152,0.266,774
+"clean","crossover_500x1260","sweep","calculate bookkeeping",0.286,0.5,774
+"clean","crossover_500x1260","sweep","segment frame and rest",0.11,0.192,774
+"clean","crossover_500x1260","sweep","plane exceptions and records",0.062,0.108,774
+"clean","crossover_500x1260","sweep","compute residual",0.079,0.138,774
+"clean","crossover_500x1260","sweep","causality probe, certification",0.008,0.014,774
+"clean","crossover_500x1260","sweep","payload split and rebuild",0.027,0.047,774
+"clean","crossover_500x1260","sweep","other",0.007,0.012,774
+"clean","crossover_500x1260","sweep","whole path",1,1.75,774
+"clean","crossover_500x1260","sweep","bare TTR",NA,0.24,774
+"clean","crossover_1166x252","run","axis formatting",0.006,0.006,469
+"clean","crossover_1166x252","run","TTR raw call",0.294,0.303,469
+"clean","crossover_1166x252","run","input treatment",0.294,0.303,469
+"clean","crossover_1166x252","run","calculate bookkeeping",0.192,0.198,469
+"clean","crossover_1166x252","run","segment frame and rest",0.079,0.081,469
+"clean","crossover_1166x252","run","plane exceptions and records",0.055,0.057,469
+"clean","crossover_1166x252","run","compute residual",0.049,0.05,469
+"clean","crossover_1166x252","run","causality probe, certification",0.004,0.004,469
+"clean","crossover_1166x252","run","payload split and rebuild",0,0,469
+"clean","crossover_1166x252","run","other",0.025,0.026,469
+"clean","crossover_1166x252","run","whole path",1,1.03,469
+"clean","crossover_1166x252","run","bare TTR",NA,0.16,469
+"clean","crossover_1166x252","sweep","axis formatting",0.007,0.017,1081
+"clean","crossover_1166x252","sweep","TTR raw call",0.382,0.905,1081
+"clean","crossover_1166x252","sweep","input treatment",0.118,0.28,1081
+"clean","crossover_1166x252","sweep","calculate bookkeeping",0.237,0.562,1081
+"clean","crossover_1166x252","sweep","segment frame and rest",0.101,0.239,1081
+"clean","crossover_1166x252","sweep","plane exceptions and records",0.069,0.164,1081
+"clean","crossover_1166x252","sweep","compute residual",0.06,0.142,1081
+"clean","crossover_1166x252","sweep","causality probe, certification",0.004,0.009,1081
+"clean","crossover_1166x252","sweep","payload split and rebuild",0.014,0.033,1081
+"clean","crossover_1166x252","sweep","other",0.008,0.019,1081
+"clean","crossover_1166x252","sweep","whole path",1,2.37,1081
+"clean","crossover_1166x252","sweep","bare TTR",NA,0.47,1081
+"rfc","crossover_10x7200","run","axis formatting",0.625,0.188,96
+"rfc","crossover_10x7200","run","TTR raw call",0.01,0.003,96
+"rfc","crossover_10x7200","run","input treatment",0.146,0.044,96
+"rfc","crossover_10x7200","run","calculate bookkeeping",0.052,0.016,96
+"rfc","crossover_10x7200","run","segment frame and rest",0,0,96
+"rfc","crossover_10x7200","run","plane exceptions and records",0,0,96
+"rfc","crossover_10x7200","run","compute residual",0.094,0.028,96
+"rfc","crossover_10x7200","run","causality probe, certification",0.062,0.019,96
+"rfc","crossover_10x7200","run","payload split and rebuild",0,0,96
+"rfc","crossover_10x7200","run","other",0.01,0.003,96
+"rfc","crossover_10x7200","run","whole path",1,0.3,96
+"rfc","crossover_10x7200","run","bare TTR",NA,NA,96
+"rfc","crossover_10x7200","sweep","axis formatting",0.54,0.432,250
+"rfc","crossover_10x7200","sweep","TTR raw call",0.032,0.026,250
+"rfc","crossover_10x7200","sweep","input treatment",0.036,0.029,250
+"rfc","crossover_10x7200","sweep","calculate bookkeeping",0.088,0.07,250
+"rfc","crossover_10x7200","sweep","segment frame and rest",0.04,0.032,250
+"rfc","crossover_10x7200","sweep","plane exceptions and records",0.028,0.022,250
+"rfc","crossover_10x7200","sweep","compute residual",0.16,0.128,250
+"rfc","crossover_10x7200","sweep","causality probe, certification",0.068,0.054,250
+"rfc","crossover_10x7200","sweep","payload split and rebuild",0.004,0.003,250
+"rfc","crossover_10x7200","sweep","other",0.004,0.003,250
+"rfc","crossover_10x7200","sweep","whole path",1,0.8,250
+"rfc","crossover_10x7200","sweep","bare TTR",NA,NA,250
+"rfc","crossover_500x1260","run","axis formatting",0.041,0.037,296
+"rfc","crossover_500x1260","run","TTR raw call",0.155,0.14,296
+"rfc","crossover_500x1260","run","input treatment",0.382,0.344,296
+"rfc","crossover_500x1260","run","calculate bookkeeping",0.176,0.158,296
+"rfc","crossover_500x1260","run","segment frame and rest",0.108,0.097,296
+"rfc","crossover_500x1260","run","plane exceptions and records",0.061,0.055,296
+"rfc","crossover_500x1260","run","compute residual",0.071,0.064,296
+"rfc","crossover_500x1260","run","causality probe, certification",0,0,296
+"rfc","crossover_500x1260","run","payload split and rebuild",0,0,296
+"rfc","crossover_500x1260","run","other",0.006,0.005,296
+"rfc","crossover_500x1260","run","whole path",1,0.9,296
+"rfc","crossover_500x1260","run","bare TTR",NA,NA,296
+"rfc","crossover_500x1260","sweep","axis formatting",0.036,0.075,673
+"rfc","crossover_500x1260","sweep","TTR raw call",0.236,0.491,673
+"rfc","crossover_500x1260","sweep","input treatment",0.166,0.345,673
+"rfc","crossover_500x1260","sweep","calculate bookkeeping",0.25,0.52,673
+"rfc","crossover_500x1260","sweep","segment frame and rest",0.117,0.243,673
+"rfc","crossover_500x1260","sweep","plane exceptions and records",0.053,0.11,673
+"rfc","crossover_500x1260","sweep","compute residual",0.1,0.208,673
+"rfc","crossover_500x1260","sweep","causality probe, certification",0.009,0.019,673
+"rfc","crossover_500x1260","sweep","payload split and rebuild",0.025,0.052,673
+"rfc","crossover_500x1260","sweep","other",0.007,0.015,673
+"rfc","crossover_500x1260","sweep","whole path",1,2.08,673
+"rfc","crossover_500x1260","sweep","bare TTR",NA,NA,673
+"rfc","crossover_1166x252","run","axis formatting",0.005,0.006,399
+"rfc","crossover_1166x252","run","TTR raw call",0.296,0.367,399
+"rfc","crossover_1166x252","run","input treatment",0.283,0.351,399
+"rfc","crossover_1166x252","run","calculate bookkeeping",0.18,0.223,399
+"rfc","crossover_1166x252","run","segment frame and rest",0.086,0.107,399
+"rfc","crossover_1166x252","run","plane exceptions and records",0.068,0.084,399
+"rfc","crossover_1166x252","run","compute residual",0.053,0.066,399
+"rfc","crossover_1166x252","run","causality probe, certification",0.003,0.004,399
+"rfc","crossover_1166x252","run","payload split and rebuild",0,0,399
+"rfc","crossover_1166x252","run","other",0.029,0.036,399
+"rfc","crossover_1166x252","run","whole path",1,1.24,399
+"rfc","crossover_1166x252","run","bare TTR",NA,NA,399
+"rfc","crossover_1166x252","sweep","axis formatting",0.004,0.012,964
+"rfc","crossover_1166x252","sweep","TTR raw call",0.371,1.106,964
+"rfc","crossover_1166x252","sweep","input treatment",0.115,0.343,964
+"rfc","crossover_1166x252","sweep","calculate bookkeeping",0.225,0.67,964
+"rfc","crossover_1166x252","sweep","segment frame and rest",0.105,0.313,964
+"rfc","crossover_1166x252","sweep","plane exceptions and records",0.07,0.209,964
+"rfc","crossover_1166x252","sweep","compute residual",0.078,0.232,964
+"rfc","crossover_1166x252","sweep","causality probe, certification",0.004,0.012,964
+"rfc","crossover_1166x252","sweep","payload split and rebuild",0.016,0.048,964
+"rfc","crossover_1166x252","sweep","other",0.01,0.03,964
+"rfc","crossover_1166x252","sweep","whole path",1,2.98,964
+"rfc","crossover_1166x252","sweep","bare TTR",NA,NA,964

@@ -1,0 +1,9 @@
+"shape","arm","bucket","share","seconds","wall_s","samples"
+"crossover_500x1260","pin","masks",0.122,0.087,0.716,230
+"crossover_500x1260","pin","carry",0.13,0.093,0.716,230
+"crossover_500x1260","pin","inputs_rest",0.048,0.034,0.716,230
+"crossover_500x1260","pin","outside inputs",0.7,0.501,0.716,230
+"crossover_500x1260","c2","masks",0.142,0.088,0.616,197
+"crossover_500x1260","c2","carry",0.051,0.031,0.616,197
+"crossover_500x1260","c2","inputs_rest",0.02,0.013,0.616,197
+"crossover_500x1260","c2","outside inputs",0.787,0.485,0.616,197
