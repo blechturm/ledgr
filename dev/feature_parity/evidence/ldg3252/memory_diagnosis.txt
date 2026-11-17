@@ -1,0 +1,28 @@
+Candidate 5 memory, attempt 1 (memory.R as committed at 0fbdffe5; memory.log, memory_raw.csv,
+memory_summary.csv, memory_spread.csv). Base 9f4c1a24 (LDG-3251), candidate 0fbdffe5 (LDG-3252),
+installed libraries, fresh child per observation, 8 heap children per arm and cell, 2 heap_extra,
+1 bytes.
+
+  object bytes (whole ledgr_precompute_features() object)
+    500x1260   object.size 62,655,176 -> 31,792,928 (-49.3%)   serialized 61,747,786 -> 31,360,206 (-49.2%)
+    1166x252   object.size 31,273,040 -> 15,747,656 (-49.6%)   serialized 30,529,862 -> 16,084,534 (-47.3%)
+  peak R heap of sequential sweep feature preparation (median; every child identical, spread 0)
+    500x1260   348,346,136 -> 348,344,960 (-1,176 bytes, 0.000%)
+    1166x252   226,087,592 -> 193,445,024 (-32.6 MB, -14.4%)
+  sensitivity (an extra live 8 MiB raw vector inside the phase)
+    1166x252   +8,366,656 bytes on both arms: resolved
+    500x1260   +1,416 (base) and +2,408 (candidate) bytes: NOT resolved
+
+Diagnosis of the 500x1260 cell (scratch runs, not records): with the source bars frame dropped and
+a full collection before gc(reset = TRUE), the base child reports 87.6 Mb in use at the reset, 132.3
+Mb at the end of the phase (the retained projection) and a phase maximum of about 250 Mb, which lies
+in the calculation, before the payload and the projection exist; that maximum is sampled at garbage
+collections, so an extra 8 MiB moves it by 2 KB to 4.4 MB depending on where the collections fall
+(also with R_GC_MEM_GROW=0). Candidate 5 changes only the payload and projection stage, so on this
+cell it cannot lower the peak: the result is unchanged (and the measure insensitive there).
+
+Verdict (decision 3a): object bytes lower on both cells, peak R heap lower on 1166x252 but unchanged
+and unresolved on 500x1260, a memory target cell named before comparison. Candidate 5 is not kept;
+LDG-3252's product change is reverted (dev/feature_parity/evidence/ldg3252/ and the ticket record the
+numbers). Timing record c5-matrices passed the 1.02 bound on every cell (0.949-1.018), which does not
+substitute for the memory rule.

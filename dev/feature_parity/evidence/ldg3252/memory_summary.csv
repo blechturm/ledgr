@@ -1,0 +1,9 @@
+"shape","measure","metric","base","candidate","change_pct"
+"1166x252","bytes","object_size",31273040,15747656,-49.64
+"500x1260","bytes","object_size",62655176,31792928,-49.26
+"1166x252","heap","peak_heap",226087592,193445024,-14.44
+"500x1260","heap","peak_heap",348346136,348344960,0
+"1166x252","heap_extra","peak_heap",234454248,201833656,-13.91
+"500x1260","heap_extra","peak_heap",348347552,348347368,0
+"1166x252","bytes","serialized",30529862,16084534,-47.32
+"500x1260","bytes","serialized",61747786,31360206,-49.21

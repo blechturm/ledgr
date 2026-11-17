@@ -276,20 +276,22 @@ ledgr_sweep_impl <- function(exp,
   if (is.null(precomputed_features)) {
     resolved <- ledgr_resolve_feature_candidates(exp, param_grid, stop_on_error = FALSE)
     unique_defs <- ledgr_precompute_unique_feature_defs(resolved$candidates)
-    # The payload goes straight into the projection, which releases each
-    # computed matrix as it projects it (audit F01).
+    payload <- ledgr_history_precompute_payload(
+      unique_defs,
+      history_substrate,
+      calculation_start = ledgr_history_calculation_start(history_substrate),
+      calculation_end = range$scoring_end
+    )
     runtime_projection <- ledgr_projection_from_payload(
-      payload = ledgr_history_precompute_payload(
-        unique_defs,
-        history_substrate,
-        calculation_start = ledgr_history_calculation_start(history_substrate),
-        calculation_end = range$scoring_end
-      ),
+      payload = payload,
       universe = exp$universe,
       pulses_posix = history_axis,
       feature_engine_version = ledgr_feature_engine_version(),
       alias_index = NULL
     )
+    # The projection holds every value the sweep reads; release the payload
+    # at its last read so the two are never both kept (audit F01).
+    rm(payload)
     # Cut 16 decision (26), amended: collect before staging two or more workers.
     if (workers > 1L) invisible(gc(verbose = FALSE))
   } else {

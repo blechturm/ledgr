@@ -138,13 +138,8 @@ ledgr_projection_from_payload <- function(payload,
                                           pulses_posix,
                                           feature_engine_version = ledgr_feature_engine_version(),
                                           alias_index = NULL) {
-  # The payload (ledgr_history_precompute_payload()) is read once and
-  # released, so each computed matrix is freed as soon as it is projected.
-  values <- payload$values
-  feature_ids <- unname(payload$feature_ids)
-  rows <- match(as.character(universe), payload$instrument_ids)
-  payload <- NULL
-  if (length(values) == 0L) {
+  payload <- payload %||% list()
+  if (length(payload) == 0L) {
     return(ledgr_runtime_projection(
       feature_values = list(),
       universe = universe,
@@ -153,23 +148,35 @@ ledgr_projection_from_payload <- function(payload,
       alias_index = alias_index
     ))
   }
-  if (anyNA(feature_ids) || !all(nzchar(feature_ids))) {
-    rlang::abort("Precomputed payload entries must include a non-empty `feature_id`.", class = "ledgr_invalid_runtime_projection")
+
+  feature_values <- list()
+  feature_planes <- list()
+  for (entry in payload) {
+    feature_id <- entry$feature_id
+    if (!is.character(feature_id) || length(feature_id) != 1L || is.na(feature_id) || !nzchar(feature_id)) {
+      rlang::abort("Precomputed payload entries must include a non-empty `feature_id`.", class = "ledgr_invalid_runtime_projection")
+    }
+    if (!is.null(feature_values[[feature_id]])) {
+      rlang::abort(
+        sprintf("Runtime projection cannot represent duplicate concrete feature ID `%s`.", feature_id),
+        class = "ledgr_invalid_runtime_projection"
+      )
+    }
+    mat <- matrix(NA_real_, nrow = length(universe), ncol = length(pulses_posix))
+    for (j in seq_along(universe)) {
+      values <- entry$values[[universe[[j]]]]
+      if (is.null(values)) {
+        next
+      }
+      mat[j, seq_along(values)] <- as.numeric(values)
+    }
+    feature_values[[feature_id]] <- mat
+    if (!is.null(entry$planes)) {
+      feature_planes[[feature_id]] <- ledgr_projection_index_planes(
+        entry$planes, universe, length(pulses_posix)
+      )
+    }
   }
-  if (anyDuplicated(feature_ids)) {
-    rlang::abort(
-      sprintf("Runtime projection cannot represent duplicate concrete feature ID `%s`.", feature_ids[[anyDuplicated(feature_ids)]]),
-      class = "ledgr_invalid_runtime_projection"
-    )
-  }
-  planes <- attr(values, "ledgr_feature_planes")
-  same_rows <- identical(rows, seq_len(nrow(values[[1L]])))
-  feature_values <- vector("list", length(values))
-  for (k in seq_along(values)) {
-    feature_values[[k]] <- if (same_rows) values[[k]] else values[[k]][rows, , drop = FALSE]
-    values[k] <- list(NULL)
-  }
-  names(feature_values) <- feature_ids
 
   ledgr_runtime_projection(
     feature_values = feature_values,
@@ -177,10 +184,7 @@ ledgr_projection_from_payload <- function(payload,
     pulses_posix = pulses_posix,
     feature_engine_version = feature_engine_version,
     alias_index = alias_index,
-    feature_planes = stats::setNames(
-      lapply(planes, ledgr_projection_index_planes, universe = universe, n_pulse = length(pulses_posix)),
-      feature_ids
-    )
+    feature_planes = if (length(feature_planes) > 0L) feature_planes else NULL
   )
 }
 

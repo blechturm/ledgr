@@ -392,19 +392,21 @@ ledgr_pulse_inspection <- function(exp, ts_utc, params, feature_params) {
   unique_defs <- ledgr_precompute_unique_feature_defs(
     list(list(feature_defs = feature_result$features))
   )
-  # The projection releases each computed matrix as it projects it (audit F01).
+  payload <- ledgr_history_precompute_payload(
+    unique_defs,
+    substrate,
+    calculation_start = ledgr_history_calculation_start(substrate),
+    calculation_end = cutoff
+  )
   projection <- ledgr_projection_from_payload(
-    payload = ledgr_history_precompute_payload(
-      unique_defs,
-      substrate,
-      calculation_start = ledgr_history_calculation_start(substrate),
-      calculation_end = cutoff
-    ),
+    payload = payload,
     universe = exp$universe,
     pulses_posix = substrate$axis,
     feature_engine_version = ledgr_feature_engine_version(),
     alias_index = NULL
   )
+  # Released at its last read; the projection holds every value (audit F01).
+  rm(payload)
   substrate <- ledgr_history_substrate_bind_features(substrate, projection)
   exp_payload <- ledgr_sweep_exp_payload(exp)
   exp_payload$strategy <- ledgr_pulse_inspection_capture

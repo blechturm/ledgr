@@ -2,8 +2,6 @@
 # order after Cut 20, item b). feature_split.csv gives one "machinery"
 # number (the pin's feature series minus bare TTR); this splits the pin's
 # run and sweep feature paths into named steps by Rprof sampling.
-# Pin-only since Cut 22 (decision 3, candidate 5): the "payload split" and
-# "projection rebuild" steps describe the pin's per-instrument split.
 #
 # Run path, as ledgr_run() calls it (R/backtest-runner.R:664-680):
 #   ledgr_history_compute_feature_series(), then

@@ -88,15 +88,20 @@ ledgr_precompute_features_impl <- function(exp, param_grid, start, end) {
     coverage_start = range$scoring_start
   )
   calculation_start <- ledgr_history_calculation_start(substrate)
-  # The object keeps the projection's matrices only; the payload is read
-  # once and released.
+  payload <- ledgr_history_precompute_payload(
+    unique_defs,
+    substrate,
+    calculation_start = calculation_start,
+    calculation_end = range$scoring_end
+  )
+  available <- ledgr_precompute_available_counts(
+    substrate$instrument_ids,
+    substrate$bars$observed,
+    substrate$axis,
+    range$scoring_start
+  )
   projection <- ledgr_projection_from_payload(
-    payload = ledgr_history_precompute_payload(
-      unique_defs,
-      substrate,
-      calculation_start = calculation_start,
-      calculation_end = range$scoring_end
-    ),
+    payload = payload,
     universe = exp$universe,
     pulses_posix = substrate$axis,
     feature_engine_version = feature_engine_version,
@@ -104,12 +109,6 @@ ledgr_precompute_features_impl <- function(exp, param_grid, start, end) {
   )
   history_axis <- ledgr_precompute_history_axis(
     substrate, calculation_start, range$scoring_end, projection$pulses_iso
-  )
-  available <- ledgr_precompute_available_counts(
-    substrate$instrument_ids,
-    substrate$bars$observed,
-    substrate$axis,
-    range$scoring_start
   )
   warmup <- ledgr_precompute_warmup_table(resolved$candidates, available)
 
@@ -125,6 +124,7 @@ ledgr_precompute_features_impl <- function(exp, param_grid, start, end) {
     candidate_features = resolved$candidate_features,
     warmup = warmup,
     projection = projection,
+    payload = payload,
     history_axis = history_axis,
     clock_kind = substrate$clock_kind
   )

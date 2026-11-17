@@ -655,8 +655,6 @@ peer_ledgr_ephemeral_experiment_setup <- function(prep, features) {
     feature_defs <- ledgr:::ledgr_flatten_feature_list(features, context = "`features`")
     active_alias_map <- NULL
   }
-  # Either payload shape: the pin's per-instrument split or, since Cut 22
-  # (candidate 5), the matrices; it is handed to the projection unchanged.
   payload <- ledgr:::ledgr_history_precompute_payload(
     ledgr:::ledgr_precompute_unique_feature_defs(list(list(feature_defs = feature_defs))),
     prep$history_substrate,

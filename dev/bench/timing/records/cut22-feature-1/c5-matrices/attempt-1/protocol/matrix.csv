@@ -1,0 +1,7 @@
+cell,workload,clock,args,pairs
+run_10x7200,cut22_feature,feature,shape=10x7200;path=run;reps=24,8
+sweep_10x7200,cut22_feature,feature,shape=10x7200;path=sweep;reps=12,8
+run_500x1260,cut22_feature,feature,shape=500x1260;path=run;reps=6,8
+sweep_500x1260,cut22_feature,feature,shape=500x1260;path=sweep;reps=3,8
+run_1166x252,cut22_feature,feature,shape=1166x252;path=run;reps=4,8
+sweep_1166x252,cut22_feature,feature,shape=1166x252;path=sweep;reps=2,8

@@ -171,6 +171,7 @@ testthat::test_that("[LTB-0301] explicit precompute is reused only on its exact 
   early <- ledgr_precompute_features(exp, grid, end = axis[[6L]])
   again <- ledgr_precompute_features(exp, grid)
   testthat::expect_identical(again$projection, full$projection)
+  testthat::expect_identical(again$payload, full$payload)
   testthat::expect_identical(full$history_axis$cutoff_utc, ws42_iso(axis[[8L]]))
   testthat::expect_identical(early$history_axis$cutoff_utc, ws42_iso(axis[[6L]]))
   testthat::expect_identical(

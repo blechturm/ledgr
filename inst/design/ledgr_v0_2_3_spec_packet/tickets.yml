@@ -7483,7 +7483,7 @@ tickets:
   - id: "LDG-3252"
     title: "Matrices only in the prepared representation"
     workstream: 41
-    status: "proposed"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-3251"]
@@ -7494,7 +7494,11 @@ tickets:
       - "The dev/bench split-vector producers updated or marked pin-only"
       - "Registered test changes limited to decision 7's candidate-5 lines, each with its stated reason; the matrix-layout assertions stay"
       - "Candidate 5 kept only if the oracle is identical, the whole explicit-precompute object has fewer bytes, and the median peak R heap of sequential sweep feature preparation is lower on every memory target cell named before comparison (decision 3a: matched arms differing only by candidate 5; object-byte measure, cells, repetitions, worker count and lifecycle declared first; fresh children; sensitivity validated against an extra live allocation); unchanged or increased memory fails, noise is inconclusive; every timing cell within 1.02; keep verdict"
-    evidence: []
+    evidence:
+      - "Verdict: candidate 5 NOT KEPT. Its product change (0fbdffe5) is reverted; the package keeps the pin's per-instrument payload, so no registered test changes (the decision-7 candidate-5 lines are restored with the revert) and the dev/bench producers keep their pin shape."
+      - "What was measured (0fbdffe5): ledgr_history_precompute_payload() (name kept) returned the computed matrices with their plane records, the fingerprint-to-ID mapping and the instrument order; ledgr_projection_from_payload() read it once and released each matrix as it projected it; the sweep, explicit precompute and pulse inspection handed the payload straight to the projection; the explicit precompute object kept the projection only. Oracle (evidence/ldg3252/check.txt; the harness compared the precompute object without its payload, whose logical content is the projection and feature_union): CHECK PASS on all 548 cases against the pin."
+      - "Memory (declared in protocol cut22-feature-1/protocol.md before running; dev/feature_parity/memory.R at 0fbdffe5; base 9f4c1a24 against candidate 0fbdffe5, installed, every observation a fresh child; evidence/ldg3252/memory_*.csv, memory.log, memory_diagnosis.txt). Whole explicit-precompute object: 500x1260 62,655,176 -> 31,792,928 bytes object.size (-49.3 percent; serialized -49.2), 1166x252 31,273,040 -> 15,747,656 (-49.6; serialized -47.3): fewer bytes on both cells. Median peak R heap of sequential sweep feature preparation (8 children per arm and cell, every child identical): 1166x252 226,087,592 -> 193,445,024 (-14.4 percent, the extra 8 MiB raising both arms by 8,366,656 bytes, so resolved); 500x1260 348,346,136 -> 348,344,960 (-1,176 bytes), where the extra 8 MiB moved the peak by only 1,416 and 2,408 bytes: unchanged and unresolved. Diagnosis (memory_diagnosis.txt, scratch runs): on 500x1260 the phase maximum (about 250 Mb, sampled at collections) lies in the calculation, before the payload and projection exist, so the stage candidate 5 changes cannot lower it. A memory target cell named before comparison fails, so the rule fails."
+      - "Timing (record c5-matrices, 9f4c1a24 against 0fbdffe5, 96 slots, CHECK PASS): every cell within 1.02 (0.949 sweep_500x1260 to 1.018 run_500x1260, a run cell candidate 5 does not touch). Not a substitute for the memory rule."
   - id: "LDG-3253"
     title: "Repair the engine version"
     workstream: 41

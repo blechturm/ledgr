@@ -1,0 +1,62 @@
+base 500x1260 heap 1 peak_heap=348346136 
+candidate 500x1260 heap 1 peak_heap=348344960 
+candidate 500x1260 heap 2 peak_heap=348344960 
+base 500x1260 heap 2 peak_heap=348346136 
+base 500x1260 heap 3 peak_heap=348346136 
+candidate 500x1260 heap 3 peak_heap=348344960 
+candidate 500x1260 heap 4 peak_heap=348344960 
+base 500x1260 heap 4 peak_heap=348346136 
+base 500x1260 heap 5 peak_heap=348346136 
+candidate 500x1260 heap 5 peak_heap=348344960 
+candidate 500x1260 heap 6 peak_heap=348344960 
+base 500x1260 heap 6 peak_heap=348346136 
+base 500x1260 heap 7 peak_heap=348346136 
+candidate 500x1260 heap 7 peak_heap=348344960 
+candidate 500x1260 heap 8 peak_heap=348344960 
+base 500x1260 heap 8 peak_heap=348346136 
+base 500x1260 heap_extra 1 peak_heap=348347552 
+candidate 500x1260 heap_extra 1 peak_heap=348347368 
+base 500x1260 heap_extra 2 peak_heap=348347552 
+candidate 500x1260 heap_extra 2 peak_heap=348347368 
+base 500x1260 bytes 1 object_size=62655176 serialized=61747786 
+candidate 500x1260 bytes 1 object_size=31792928 serialized=31360206 
+base 1166x252 heap 1 peak_heap=226087592 
+candidate 1166x252 heap 1 peak_heap=193445024 
+candidate 1166x252 heap 2 peak_heap=193445024 
+base 1166x252 heap 2 peak_heap=226087592 
+base 1166x252 heap 3 peak_heap=226087592 
+candidate 1166x252 heap 3 peak_heap=193445024 
+candidate 1166x252 heap 4 peak_heap=193445024 
+base 1166x252 heap 4 peak_heap=226087592 
+base 1166x252 heap 5 peak_heap=226087592 
+candidate 1166x252 heap 5 peak_heap=193445024 
+candidate 1166x252 heap 6 peak_heap=193445024 
+base 1166x252 heap 6 peak_heap=226087592 
+base 1166x252 heap 7 peak_heap=226087592 
+candidate 1166x252 heap 7 peak_heap=193445024 
+candidate 1166x252 heap 8 peak_heap=193445024 
+base 1166x252 heap 8 peak_heap=226087592 
+base 1166x252 heap_extra 1 peak_heap=234454248 
+candidate 1166x252 heap_extra 1 peak_heap=201833656 
+base 1166x252 heap_extra 2 peak_heap=234454248 
+candidate 1166x252 heap_extra 2 peak_heap=201833656 
+base 1166x252 bytes 1 object_size=31273040 serialized=30529862 
+candidate 1166x252 bytes 1 object_size=15747656 serialized=16084534 
+    shape    measure      metric      base candidate change_pct
+ 1166x252      bytes object_size  31273040  15747656     -49.64
+ 500x1260      bytes object_size  62655176  31792928     -49.26
+ 1166x252       heap   peak_heap 226087592 193445024     -14.44
+ 500x1260       heap   peak_heap 348346136 348344960       0.00
+ 1166x252 heap_extra   peak_heap 234454248 201833656     -13.91
+ 500x1260 heap_extra   peak_heap 348347552 348347368       0.00
+ 1166x252      bytes  serialized  30529862  16084534     -47.32
+ 500x1260      bytes  serialized  61747786  31360206     -49.21
+       arm    shape heap_range_bytes
+      base 1166x252                0
+ candidate 1166x252                0
+      base 500x1260                0
+ candidate 500x1260                0
+sensitivity (extra 8 MiB raises the peak on every arm and cell): FALSE 
+object bytes lower on every cell: TRUE 
+median peak R heap lower on every cell: TRUE 
+MEMORY NOT KEPT 
