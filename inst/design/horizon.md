@@ -29,6 +29,70 @@ an architecture note, or a spec packet.
 
 ## Open
 
+<a id="2026-11-17-ux-instrument-inspection-charts"></a>
+### 2026-11-17 [ux] Instrument inspection: price, indicators and fills on one chart
+
+A maintainer discussion (2026-11-17) asked how a user plots one
+instrument from a run: NVDA's bars, the strategy's own `sma_20`, its fills,
+and a `sma_50` thought of after the run. It extends the
+2026-06-13 visualization entry below.
+
+What the package already offers:
+
+- `ledgr_pulse_snapshot()` accepts an availability-aware experiment
+  (R/pulse-snapshot.R).
+- `ledgr_history_frame()` returns causal feature history in long layout,
+  with missing and carried reasons (R/history-frame.R).
+- Fills carry `recording_pulse_ts_utc` (R/backtest-fills.R), so a fill
+  belongs on its execution session's candle.
+- `plot(bt)` is ggplot2, with gridExtra when installed. ggplot2, gridExtra,
+  quantmod and xts are already in Suggests.
+
+Current bias:
+
+- The interface is three plain tables, kept apart and joined only in the
+  chart: bars, feature values and fills, each filtered by instrument and
+  window. Indicatively `ledgr_bars()`, `ledgr_features()` and
+  `ledgr_fills()`, taking a run or a snapshot plus `instrument_id`, `from`
+  and `to`.
+- No handle objects (an `inspect` or `window` object) unless a probe shows
+  users keep repeating the instrument and the window.
+- No backend registry and no chart specification.
+- A run's own features (an alias the run declared) are distinct from an
+  overlay the user defines now (a feature definition). A chart may show
+  both, labelled as such.
+- A display window must not change values on overlapping dates: a
+  window's first value still uses its warm-up history before the window.
+- Rebuild a run's features exactly from its configuration rather than
+  store an indicator panel per run, as the per-pulse records decision
+  does for traces.
+
+Charting packages:
+
+- ggplot2 is the default static chart: an ordinary ggplot users can extend.
+- plotly and ggiraph are possible optional interactive layers.
+- tidyquant and quantmod are worth an article example.
+- lightweightchartR (TradingView Lightweight Charts as an htmlwidget,
+  quantmod-friendly) looks like what users expect a market chart to look
+  like. It is GitHub-only (arkraieski/lightweightchartR), not on CRAN. It
+  therefore cannot be in ledgr's Suggests once ledgr is on CRAN. Its home
+  would be a pkgdown article not built on CRAN, or a small sister package
+  incubated in ledgr-research. Unverified: drawing several fills at their
+  exact prices in one session, and widget size on a multi-year run.
+
+First step (a probe per the spike protocol, no package change): in
+ledgr-research, follow one NVDA trade end to end using only today's public
+calls (`ledgr_pulse_snapshot()`, `ledgr_history_frame()`,
+`ledgr_results()`). Draw it with lightweightchartR and with ggplot2. Include
+two fills in one session and an SMA whose warm-up starts before the visible
+window. Every bookkeeping step the user writes by hand becomes input for
+the RFC. The interesting interactive test: click a Tuesday fill and see the
+Monday decision behind it.
+
+New user-facing semantics (run feature retrieval, retained versus rebuilt
+values, window warm-up, fill placement on a candle) need an RFC first. This
+is not v0.2.3 work, and it waits behind the fold-core cleanup and CRAN.
+
 <a id="2026-11-05-adapters-mizu-python-bridge"></a>
 ### 2026-11-05 [adapters] mizu: shared-memory sweep staging and a Python model bridge
 
@@ -1529,6 +1593,9 @@ visualization is scoped, with optional adapters for richer or interactive
 surfaces. That does not imply promoting `ggplot2` to `Imports` yet. Treat the
 dependency posture as part of the future visualization/reporting RFC, alongside
 table output and the existing external-package adapter plan.
+
+Continued 2026-11-17: instrument inspection charts (price, indicators and
+fills), see the 2026-11-17 [ux] entry above.
 
 ### 2026-06-12 [evaluation] Per-fold train-sweep PBO column in the walk-forward degradation table
 
