@@ -1137,3 +1137,123 @@ loop_reach <- c(loop_reach, list(
   s4_life_capacity_p5_run = function(t) s4_life_route(t) && s4_capacity_failed(t),
   s4_life_capacity_p5_ok_run = function(t) s4_life_route(t) && s4_life_error(t, "strategy reached after terminal plus fill")
 ))
+
+# --- Close review round 2 (workstream 40), F3: a wrapped append method ------------
+
+# The fold's handler reaches the fold with append_event_rows() replaced by a
+# transparent wrapper, function(rows) append(rows), a closure with no
+# handler state of its own; the capture must still find a retaining
+# handler's room and both handler kinds' append boundary (facts.R
+# lean_facts_run_state). Each case records, per fold, that the append was
+# wrapped, whether the handler retains (has events()) and whether a plan
+# was present (table wrap_route).
+#   plan_p1:  one-candidate sweep, A held (one opening event), three pulses
+#             (room 1 + 3); n dividends on day 1. n = 4 is over the room at
+#             the P1 append, n = 3 fills it exactly.
+#   plan_p5:  as plan_p1 with a buy on day 1. n = 3 dividends leave room for
+#             no fill: the day-1 fill commit is over (P5); n = 2 fits.
+#   life_p1, life_p5: the F1 lifetime-only cases (s4_life_capacity) with the
+#             wrapper added; the room is lowered to n past the entry through
+#             the same seam (the pin's init_buffers(), the loop's
+#             lean_entry$capacity), n = 2 over, n = 3 equal. A lifetime-only
+#             run cannot meet its natural room (one disposition per
+#             instrument takes the slot its fills no longer use), so these
+#             need the seam and have no inert form.
+#   drain:    a run (draining handler, opening rows in the store, seeded
+#             boundary) with n dividends and a buy; completes.
+s4_wrap_fill <- function(ctx, params) {
+  if (ctx$ts_utc != "2020-01-01T16:00:00Z") stop("lean witness: strategy reached after the day-1 fill")
+  t <- ctx$hold()
+  t[["A"]] <- 12
+  t
+}
+s4_wrap_case <- function(name, kind, n, observe) {
+  seen <- new.env(parent = emptyenv())
+  seen$route <- NULL
+  life <- kind %in% c("life_p1", "life_p5")
+  run <- function() {
+    if (life && lw_lean_installed()) lean$lean_entry$capacity <- n
+    restore <- lw_rebind("ledgr_fold_envelope", local({
+      inner <- get("ledgr_fold_envelope", envir = ns)
+      function(execution, output_handler) {
+        seen$route <- rbind(seen$route, data.frame(wrapped = TRUE, retains = is.function(output_handler$events),
+          plan = !is.null(execution$corporate_action_plan)))
+        if (life) {
+          init <- output_handler$init_buffers
+          output_handler$init_buffers <- function(max_events) init(n)
+        }
+        append <- output_handler$append_event_rows
+        output_handler$append_event_rows <- function(rows) append(rows)
+        inner(execution, output_handler)
+      }
+    }))
+    on.exit(restore())
+    divs <- function(day) s4_ca_facts(do.call(rbind, lapply(seq_len(n), function(i) s4_div(paste0("w", i), "A", day, day + 1L))))
+    switch(kind,
+      plan_p1 = s4_ca_sweep(name, list(A = 30 + 1:3), divs(1L), s4_exp(function(ctx, params)
+        stop("lean witness: first strategy reached after the appends"), positions = c(A = 10), cost_basis = c(A = 28))),
+      plan_p5 = s4_ca_sweep(name, list(A = 30 + 1:3), divs(1L), s4_exp(s4_wrap_fill, positions = c(A = 10), cost_basis = c(A = 28))),
+      life_p1 = s4_ca_sweep(name, s4_facts_closes(), ledgr::ledgr_facts(s4_sessions(10L), s4_life("A", 4L)),
+        s4_exp(s4_life_strategy_p1, positions = c(A = 10), cost_basis = c(A = 10))),
+      life_p5 = s4_ca_sweep(name, s4_facts_closes(), ledgr::ledgr_facts(s4_sessions(10L), s4_life("A", 2L)),
+        s4_exp(s4_life_strategy_p5, positions = c(A = 10), cost_basis = c(A = 10))),
+      drain = s4_run(name, list(A = 30 + 1:4), divs(1L), s4_exp(s4_strategy(s4_plan(list(1L, c(A = 12)))),
+        positions = c(A = 10), cost_basis = c(A = 28))))
+  }
+  t <- if (observe) lw_prefix_reads(memory = kind != "drain", workload = run) else run()
+  path <- if (kind == "drain") "run" else "sweep"
+  t[[path]]$wrap_route <- data.frame(folds = NROW(seen$route), wrapped = all(seen$route$wrapped),
+    retains = all(seen$route$retains), plan = all(seen$route$plan))
+  t
+}
+s4_wrap_cases <- list(plan_p1 = c(4L, 3L), plan_p5 = c(3L, 2L), life_p1 = c(2L, 3L), life_p5 = c(2L, 3L))
+s4_wrap_one <- function(nm, kind, n, observe) { force(nm); force(kind); force(n); force(observe); function() s4_wrap_case(nm, kind, n, observe) }
+for (s4_k in names(s4_wrap_cases)) for (s4_form in c("", "_run")) for (s4_j in 1:2) {
+  s4_nm <- paste0("s4_wrap_", s4_k, if (s4_j == 1L) "" else "_eq", s4_form)
+  loop_slice4[[s4_nm]] <- s4_wrap_one(s4_nm, s4_k, s4_wrap_cases[[s4_k]][[s4_j]], !nzchar(s4_form))
+}
+rm(s4_k, s4_form, s4_j, s4_nm)
+loop_slice4$s4_wrap_drain_run <- function() s4_wrap_case("s4_wrap_drain_run", "drain", 2L, FALSE)
+
+# Every fold wrapped, retaining, with (plan_*) or without (life_*) a plan;
+# over the room the pin's capacity refusal, at the room the strategy's own
+# error past the refusal point. Observed forms also pin where: plan_p1
+# before the first strategy call, plan_p5 at day 1's fill commit (no day-1
+# reconciliation read), life_* as the F1 witnesses.
+s4_wrap_route <- function(t, plan, path = "sweep") {
+  r <- t[[path]]$wrap_route
+  NROW(r) == 1L && r$folds >= 1L && isTRUE(r$wrapped) && identical(r$retains, path == "sweep") && identical(r$plan, plan)
+}
+s4_wrap_reads <- function(t) t$sweep$prefix_reads$ts_utc
+loop_reach <- c(loop_reach, list(
+  s4_wrap_plan_p1 = function(t) s4_wrap_route(t, TRUE) && s4_capacity_failed(t) && NROW(t$sweep$prefix_reads) == 0L,
+  s4_wrap_plan_p1_eq = function(t) s4_wrap_route(t, TRUE) && s4_life_error(t, "first strategy reached after the appends") &&
+    identical(s4_wrap_reads(t), "2020-01-01T16:00:00Z"),
+  s4_wrap_plan_p5 = function(t) s4_wrap_route(t, TRUE) && s4_capacity_failed(t) &&
+    identical(s4_wrap_reads(t), "2020-01-01T16:00:00Z"),
+  s4_wrap_plan_p5_eq = function(t) s4_wrap_route(t, TRUE) && s4_life_error(t, "strategy reached after the day-1 fill") &&
+    identical(s4_wrap_reads(t), c("2020-01-01T16:00:00Z", "reconciliation", "2020-01-02T16:00:00Z")),
+  s4_wrap_life_p1 = function(t) s4_wrap_route(t, FALSE) && s4_capacity_failed(t) &&
+    identical(s4_prefix_days(t), c("2020-01-01", "2020-01-02", "2020-01-03")),
+  s4_wrap_life_p1_eq = function(t) s4_wrap_route(t, FALSE) && s4_life_error(t, "terminal pulse strategy reached") &&
+    "2020-01-04" %in% s4_prefix_days(t),
+  s4_wrap_life_p5 = function(t) s4_wrap_route(t, FALSE) && s4_capacity_failed(t) &&
+    identical(s4_wrap_reads(t), c("2020-01-01T16:00:00Z", "reconciliation", "2020-01-02T16:00:00Z")),
+  s4_wrap_life_p5_eq = function(t) s4_wrap_route(t, FALSE) && s4_life_error(t, "strategy reached after terminal plus fill") &&
+    "2020-01-03" %in% s4_prefix_days(t),
+  s4_wrap_plan_p1_run = function(t) s4_wrap_route(t, TRUE) && s4_capacity_failed(t),
+  s4_wrap_plan_p1_eq_run = function(t) s4_wrap_route(t, TRUE) && s4_life_error(t, "first strategy reached after the appends"),
+  s4_wrap_plan_p5_run = function(t) s4_wrap_route(t, TRUE) && s4_capacity_failed(t),
+  s4_wrap_plan_p5_eq_run = function(t) s4_wrap_route(t, TRUE) && s4_life_error(t, "strategy reached after the day-1 fill"),
+  s4_wrap_life_p1_run = function(t) s4_wrap_route(t, FALSE) && s4_capacity_failed(t),
+  s4_wrap_life_p1_eq_run = function(t) s4_wrap_route(t, FALSE) && s4_life_error(t, "terminal pulse strategy reached"),
+  s4_wrap_life_p5_run = function(t) s4_wrap_route(t, FALSE) && s4_capacity_failed(t),
+  s4_wrap_life_p5_eq_run = function(t) s4_wrap_route(t, FALSE) && s4_life_error(t, "strategy reached after terminal plus fill"),
+  # The draining run: the corporate-action rows follow the store's opening
+  # row (event 1, the seeded boundary) and the run completes.
+  s4_wrap_drain_run = function(t) {
+    cf <- s4_cf(t)
+    s4_wrap_route(t, TRUE, "run") && identical(s4_status(t), "DONE") && nrow(cf) == 2L &&
+      identical(as.integer(cf$event_seq), 2:3)
+  }
+))

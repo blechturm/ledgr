@@ -360,12 +360,24 @@ loop_mutations <- list(
   # corporate-action plan treated as one that cannot capture, so its fills
   # leave the capture's boundary and the retaining handler's population; and
   # the handler state read through init_buffers(), which a witness seam wraps.
+  # Round 2 (F3) re-anchors that one to the public-surface route: retaining
+  # decided by the state found in init_buffers()'s closure; adds the same
+  # read through append_event_rows() (the reviewer's wrapped append), and
+  # a room without the handler's entry events.
   lifetime_capture_population_dropped = variant("differ", list(edit("facts.R", "lean_facts_run_state",
     "  s4$captures <- !is.null(s4$plan) || \"lifetime\" %in% s4$provider$identity()$declared_families",
     "  s4$captures <- !is.null(s4$plan)")), error = ".", tables = "^sweep|^prefix_reads$"),
   handler_state_via_init = variant("differ", list(edit("facts.R", "lean_facts_run_state",
-    "  st <- get0(\"state\", envir = environment(handler$append_event_rows), inherits = FALSE)",
-    "  st <- get0(\"state\", envir = environment(handler$init_buffers), inherits = FALSE)")),
+    "  s4$retains <- is.function(handler$events)",
+    "  s4$retains <- is.function(handler$events) && is.environment(get0(\"state\", envir = environment(handler$init_buffers), inherits = FALSE))")),
+    error = ".", tables = "^sweep|^prefix_reads$"),
+  retains_via_append_closure = variant("differ", list(edit("facts.R", "lean_facts_run_state",
+    "  s4$retains <- is.function(handler$events)",
+    "  s4$retains <- is.function(handler$events) && is.environment(get0(\"state\", envir = environment(handler$append_event_rows), inherits = FALSE))")),
+    error = ".", tables = "^sweep|^prefix_reads$"),
+  room_without_entry = variant("differ", list(edit("facts.R", "lean_facts_run_state",
+    "  s4$hmax <- s4$entry + as.integer(lean_hooks$capacity(max_events))",
+    "  s4$hmax <- as.integer(lean_hooks$capacity(max_events))")),
     error = ".", tables = "^sweep|^prefix_reads$"),
   # the valuation state given scoring ordinals instead of prepared columns
   wrong_origin = variant("differ", list(edit("marks.R", "lean_marks_state",

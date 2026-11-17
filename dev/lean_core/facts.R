@@ -18,13 +18,18 @@
 # reader as soon as they are accepted (decision 4(b)).
 
 # `handler` is the fold's own output handler after init_buffers(), before any
-# harness wrapper: the capture starts from its append boundary (opening rows,
-# a sweep's retained rows), read from the handler's state
-# (R/output-handler.R:466-477), and, for a retaining handler, from its event
-# count and maximum (:488-492; workstream 39 close review round 1, F1). The
-# state is read through the handler's append method, the one the capture
-# stands in for, so a wrapped init_buffers() (a witness seam) does not hide
-# it (workstream 40 close review round 1, F1).
+# harness wrapper, and `max_events` the room the loop passed to it. The
+# capture's append boundary and the retaining handler's room come from facts
+# the loop owns and the handler's public surface, never from a method's
+# closure (workstream 40 close review round 2, F3): a handler with events()
+# retains; its entry events are the rows it holds at init, its room their
+# count plus max_events as the fold's capacity hook gives it (the pin's
+# R/output-handler.R:488-492; workstream 39 close review round 1, F1), its
+# boundary its last entry event (:466-477). With no entry event the boundary is
+# the event before execution$event_seq_start, as the pin seeds it
+# (R/backtest-runner.R:555-558); its seeded timestamp is the run's start,
+# which no pulse precedes, so no captured row can fall before it and that
+# bound is left open.
 #
 # On a marked run (LDG-3246, decision 7) s4 also holds each pulse's context:
 # its run positions in one typed vector `cx`, grown by doubling, with an
@@ -33,7 +38,7 @@
 # the strategy state is aligned to (the run axis after the envelope's first
 # alignment). On every run (LDG-3247) `mv` records the P1 position changes
 # (lean_facts_moved), and the constants the dispositions need.
-lean_facts_run_state <- function(execution, handler, ids, marked, cap = 4L) {
+lean_facts_run_state <- function(execution, handler, ids, marked, max_events, cap = 4L) {
   s4 <- new.env(parent = emptyenv())
   s4$plan <- execution$corporate_action_plan
   s4$policy <- execution$corporate_action_policy   # the terminal policy (R/fold-engine.R:1837)
@@ -53,12 +58,13 @@ lean_facts_run_state <- function(execution, handler, ids, marked, cap = 4L) {
     s4$ncx <- 0L
     s4$cxi <- matrix(0L, 2L, length(execution$pulses_posix))
   }
-  st <- get0("state", envir = environment(handler$append_event_rows), inherits = FALSE)
-  s4$bseq <- if (is.environment(st)) st$last_event_seq
-  s4$bts <- if (is.environment(st)) st$last_event_ts_utc
-  s4$retains <- is.function(handler$events) && is.environment(st)
-  s4$entry <- if (s4$retains) st$event_count else 0L
-  s4$hmax <- if (s4$retains) st$event_max_capacity
+  s4$retains <- is.function(handler$events)
+  s4$pre <- ev <- if (s4$retains) handler$events()
+  s4$entry <- NROW(ev)
+  s4$hmax <- s4$entry + as.integer(lean_hooks$capacity(max_events))
+  seq0 <- as.integer(execution$event_seq_start) - 1L
+  s4$bseq <- if (s4$entry > 0L) as.integer(ev$event_seq[[s4$entry]]) else if (isTRUE(seq0 > 0L)) seq0
+  s4$bts <- if (s4$entry > 0L) ev$ts_utc[[s4$entry]]
   s4$nfc <- 0L        # fills the handler holds (committed in P5)
   s4$cap <- cap
   s4$blocks <- vector("list", cap)

@@ -247,6 +247,26 @@ for (w in paste0(life_cap, "_run")) {
            reason = "Workstream 40 close review round 1 (F1) witness under inert hooks, inert-mode count"))
 }
 
+# Workstream 40 close review round 2, F3: a transparent wrapper of the
+# handler's append method; over and at the room, P1 and P5, plan-only
+# (native room) and lifetime-only (room lowered through the seam), observed
+# and _run forms, and a draining run. Inert hooks take the native-room _run
+# forms and the draining run: the lifetime-only cases need the seam's lean
+# half (lean_entry$capacity, a hook), as witness_capacity does.
+wrap_obs <- paste0("s4_wrap_", c("plan_p1", "plan_p1_eq", "plan_p5", "plan_p5_eq", "life_p1", "life_p1_eq", "life_p5", "life_p5_eq"))
+for (w in c(wrap_obs, paste0(wrap_obs, "_run"), "s4_wrap_drain_run")) {
+  add(both(action = "add", mode = "gate", workload = w, lean_folds = 1L, refused = "", backstop = "",
+           reason = "Workstream 40 close review round 2 (F3) wrapped-append witness, declared path"))
+}
+for (w in c(wrap_obs, "s4_wrap_drain_run")) {
+  add(both(action = "add", mode = "batch1", workload = w, lean_folds = 1L, refused = "", backstop = "",
+           reason = "Workstream 40 close review round 2 (F3) wrapped-append witness across terminal batches, declared path"))
+}
+for (w in c(paste0(wrap_obs[1:4], "_run"), "s4_wrap_drain_run")) {
+  add(both(action = "add", mode = "inert", workload = w, lean_folds = 0L, refused = "", backstop = "",
+           reason = "Workstream 40 close review round 2 (F3) wrapped-append witness under inert hooks, inert-mode count"))
+}
+
 out <- do.call(rbind, rows)
 utils::write.csv(out, file.path(here, "loop_freeze_changes.csv"), row.names = FALSE)
 cat(nrow(out), "changes:", paste(names(table(out$action)), table(out$action), collapse = ", "), "\n")

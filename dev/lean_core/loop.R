@@ -243,7 +243,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   # and the accepted rows, and on a marked run each pulse's context; one
   # binding, as s3. Built from the fold's own handler after init_buffers()
   # (its room), before any harness wrapper.
-  s4 <- lean_facts_run_state(execution, output_handler, ids, !is.null(s3$state))
+  s4 <- lean_facts_run_state(execution, output_handler, ids, !is.null(s3$state), max_events)
   projection_idx <- as.integer(unname(projection$pulse_index[ledgr_projection_pulse_names(pulses_posix)]))
   if (anyNA(projection_idx)) {
     rlang::abort("Runtime projection must cover every fold pulse.", class = "ledgr_invalid_fold_execution")
@@ -354,8 +354,8 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   # rows are in the store and are not part of its pending count. Accepted
   # corporate-action rows join it at once (P1, before that pulse's strategy
   # call); a draining handler appends them to the store, outside its count.
-  pre_events <- if (is.function(output_handler$events)) output_handler$events()
-  retains <- is.function(output_handler$events)
+  pre_events <- s4$pre                # its entry events, read once (facts.R)
+  retains <- s4$retains
   hooks$committed(list(
     count = function() NROW(pre_events) + retains * s4$nrows + n_committed,
     events = function() {

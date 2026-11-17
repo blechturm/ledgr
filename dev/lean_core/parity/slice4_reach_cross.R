@@ -55,7 +55,10 @@ sets$slice4 <- c(sets$ws39,
   "s4_prefix_dispose_stop", "s4_moves_growth",
   # workstream 40 close review round 1, F1: lifetime-only capacity
   "s4_life_capacity_p1", "s4_life_capacity_p1_ok", "s4_life_capacity_p5", "s4_life_capacity_p5_ok",
-  "s4_life_capacity_p1_run", "s4_life_capacity_p1_ok_run", "s4_life_capacity_p5_run", "s4_life_capacity_p5_ok_run")
+  "s4_life_capacity_p1_run", "s4_life_capacity_p1_ok_run", "s4_life_capacity_p5_run", "s4_life_capacity_p5_ok_run",
+  # workstream 40 close review round 2, F3: a wrapped append method
+  paste0("s4_wrap_", rep(c("plan_p1", "plan_p1_eq", "plan_p5", "plan_p5_eq", "life_p1", "life_p1_eq", "life_p5",
+    "life_p5_eq"), 2L), rep(c("", "_run"), each = 8L)), "s4_wrap_drain_run")
 set <- arg("set")
 if (is.null(sets[[set]])) stop("unknown --set: ", set, call. = FALSE)
 required <- sets[[set]]
