@@ -51,3 +51,25 @@ explicit precompute, `ledgr_precompute_features()` and
 
 Timing: record `final-vs-cut-base` in
 `dev/bench/timing/records/cut22-feature-1/` (its COMMANDS.md).
+
+## Close review round 1 (evidence in round1/)
+
+Final code R/ at 39ac4ba4, oracle harness at 574770ff; the same commands with:
+
+    Rscript dev/feature_parity/install_arm.R --repo=<ws41> --commit=39ac4ba4 --lib=$S/libs/final-39ac4ba4
+    Rscript dev/feature_parity/runner.R --arm=final_39ac4ba4 --lib=$S/libs/final-39ac4ba4 --out=$S/oracle/v4/final
+    Rscript dev/feature_parity/check.R --pin=$S/oracle/v4/pin --candidate=$S/oracle/v4/final > round1/oracle/check_final.txt
+    Rscript dev/feature_parity/faults.R --lib=$S/libs/final-39ac4ba4 --pin=$S/oracle/v4/pin
+      --scratch=$S/oracle/v4/final_faults --evidence=$S/evidence_round1/faults   (copied to round1/faults)
+    Rscript dev/feature_parity/identity.R --lib=$S/libs/final-39ac4ba4 --out=$S/identity/final_r1 --old=$S/identity/base
+    Rscript dev/feature_parity/identity_check.R --base=$S/identity/base --candidate=$S/identity/final_r1 > round1/identity_check.txt
+    Rscript dev/feature_parity/lines.R --repo=<ws41> --base=b33e01d7 --final=39ac4ba4 --out=round1/lines.csv
+    Rscript dev/feature_parity/lean_gate.R --tree=<ws41> --base=b33e01d7 --overlay-log=$S/lean_r1/overlay_debug<0/1>.txt
+      --lib=<pin> --debug=<0/1> --freeze=dev/lean_core/parity/loop_freeze.csv --out=$S/lean_r1/gate_debug<0/1>.csv
+      (copied to round1/lean)
+
+`$S/oracle/v4/pin` is the pin d5b3a151 run by the round-1 runner (574770ff).
+Full tests and build/check as above, the build into `$S/buildcheck_r1`
+(round1/full_tests_summary.txt, round1/r_cmd_check.log). The census on the
+corrected source is in ../ldg3253/round1/. Timing: record
+`final-vs-cut-base-r1` (dev/bench/timing/records/cut22-feature-1/COMMANDS.md).

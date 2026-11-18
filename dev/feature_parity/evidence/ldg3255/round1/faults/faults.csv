@@ -1,0 +1,13 @@
+"control","expected_exit","exit","expected_signal","signals","ok"
+"changed_value",1,1,"values","history,precompute,proj,reads,routes_equal,routes_equal,routes_equal,values",TRUE
+"moved_na",1,1,"na","history,na,precompute,proj,reads,routes_equal,routes_equal,routes_equal,values",TRUE
+"plane_reason",1,1,"planes","planes,precompute,proj,reads",TRUE
+"refusal_class",1,1,"refusal_class","refusal,refusal_class,refusal_class",TRUE
+"narrowed_callback",1,1,"callback","callback,causality,history,na,planes,precompute,proj,reads,refusal,refusal_class,refusal_class,route,route,routes_equal,routes_equal,sweep_table,values",TRUE
+"reordered_causality",1,1,"causality","callback,causality,refusal,route,route",TRUE
+"wrong_route",1,1,"route","callback,causality,certification,certification,field_union,field_union,history,na,planes,precompute,proj,reads,refusal,refusal_class,refusal_class,route,route,routes_equal,routes_equal,sweep_table,treated_fields,values",TRUE
+"all_fields",1,1,"treated_fields","treated_fields",TRUE
+"missing_arm",2,2,"","",TRUE
+"missing_case",2,2,"","",TRUE
+"missing_component",2,2,"","",TRUE
+"pin_against_pin",0,0,"","",TRUE

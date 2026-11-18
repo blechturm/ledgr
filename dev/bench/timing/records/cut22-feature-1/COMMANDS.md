@@ -26,6 +26,7 @@ The four unit records ran one after another from one driver process under
 | unit23-inputs-ttr | 74d3e886 | 9f4c1a24 | units 2+3 only (LDG-3251 on LDG-3250) |
 | c5-matrices | 9f4c1a24 | 0fbdffe5 | candidate 5 only (LDG-3252 on LDG-3251) |
 | final-vs-cut-base | b33e01d7 | 45df6928 | the whole cut: the final package (R/ as at the close) against the immutable cut base (decision 3a) |
+| final-vs-cut-base-r1 | b33e01d7 | 39ac4ba4 | the whole cut after close review round 1 (unit 4 reverted, the engine version binding 147 helpers) against the immutable cut base; a new label, so the first final record stays as recorded |
 
 ddcdb9d8 and e793cfa6 are timing-arm commits on the local branches
 `ws41-arms` and `ws41-arms-u4` (LDG-3250's tree with candidate 1, or the
@@ -36,3 +37,11 @@ Each record was checked with
 
     Rscript dev/bench/timing/check.R --protocol=dev/bench/timing/protocols/cut22-feature-1 \
       --record=dev/bench/timing/records/cut22-feature-1/<label>/attempt-1
+
+final-vs-cut-base-r1 ran 2026-11-18 04:01-04:28 UTC with the same command
+(log in scratch). One unrelated process was running on the host throughout:
+a rate-limited text-recovery Rscript from another project (R 4.5.2,
+--minimum-interval=3), using about 0.66 CPU seconds per 20 s (about 3
+percent of one core; processor load 7 percent) when measured just before the
+window. No other R job and no heavy job ran. Arms alternate within each
+pair, so both saw it.

@@ -1,0 +1,6 @@
+"file","production_base","bind_list_base","production_final","bind_list_final","change","change_without_bind_list"
+"R/features-engine.R",421,0,341,64,-80,-144
+"R/history-features.R",752,0,763,0,11,11
+"R/precompute-features.R",674,0,677,0,3,3
+"R/runtime-projection.R",522,0,523,0,1,1
+"<total R/>",55048,0,54983,64,-65,-129

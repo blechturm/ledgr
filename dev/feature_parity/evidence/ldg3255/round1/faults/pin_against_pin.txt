@@ -1,0 +1,3 @@
+check.R --pin=<pin> --candidate=<pin_against_pin>: exit 0
+cases 631 (refusing on the pin 57), observations pin 7649 candidate 7649
+CHECK PASS
