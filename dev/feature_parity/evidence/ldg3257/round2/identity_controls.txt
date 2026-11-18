@@ -1,0 +1,8 @@
+none                   unchanged-engine exit 0  IDENTITY CHECK PASS
+changed_engine         unchanged-engine exit 1  IDENTITY CHECK FAIL  (edited: candidate; identity fingerprint:sma_20)
+missing_identity       unchanged-engine exit 1  IDENTITY CHECK FAIL  (edited: candidate; identity fingerprint:sma_20)
+duplicate_identity     unchanged-engine exit 1  IDENTITY CHECK FAIL  (edited: candidate; identity fingerprint:sma_20)
+missing_both           unchanged-engine exit 1  IDENTITY CHECK FAIL  (edited: base+candidate; identity fingerprint:sma_20)
+renamed_both           unchanged-engine exit 1  IDENTITY CHECK FAIL  (edited: base+candidate; identity fingerprint:sma_20)
+none                   changed-engine   exit 1  IDENTITY CHECK FAIL
+CONTROLS PASS

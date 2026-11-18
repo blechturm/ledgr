@@ -58,3 +58,17 @@ and build and check ($S/buildcheck.R: Quarto and Pandoc from
 `C:/Program Files/RStudio/resources/app/bin/quarto/bin`, then
 `R CMD build <ws42>` and `R CMD check --no-manual --no-build-vignettes` in
 $S/buildcheck).
+
+Close review round 1, F1 (round2/): the unchanged-engine mode checks each
+arm's record names against the committed
+dev/feature_parity/identity_names_unchanged_engine.csv (156 names in both
+arms, 2 base-only saved-store records, 8 candidate-only reuse and store-read
+records), so a record lost from both arms alike fails:
+
+    Rscript dev/feature_parity/identity_check.R --base=$S/identity/base_v2 --candidate=$S/identity/final
+      --mode=unchanged-engine --engine-prefix=bc6a3ea2 > round2/identity_check.txt
+    Rscript dev/feature_parity/identity_controls.R --base=$S/identity/base_v2 --candidate=$S/identity/final
+      --scratch=$S/identity/controls_r2 --engine-prefix=bc6a3ea2 > round2/identity_controls.txt
+    # the reviewer's negative records (ws42-close-review-out/identity_negative/<case>/{base,candidate}):
+    Rscript dev/feature_parity/identity_check.R --base=<case>/base --candidate=<case>/candidate
+      --mode=unchanged-engine --engine-prefix=bc6a3ea2      (round2/reviewer_identity_negatives.txt)
