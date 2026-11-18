@@ -10,12 +10,14 @@
 # ledgr_feature_engine_version() binds it.
 #
 # Check: census.csv classifies every walked helper (missing or extra rows
-# fail) as `engine version` (bound by the engine version's helper list),
-# `excluded: <reason>` (not a semantic rule of reusable prepared state), or
-# `identity: <complete identity>` (bound by another complete identity). Each
-# row is proved by replacement: replacing an `engine version` helper must
-# move the version, replacing any other must not (helpers the version
-# computation itself runs are skipped). A false claim either way fails.
+# fail) as `engine version` (bound by the engine version's helper list) or
+# `excluded: <reason>` (not a semantic rule of reusable prepared state).
+# Each row is proved by replacement with a delegating wrapper of different
+# code, so the helper still works, also inside the version computation:
+# replacing an `engine version` helper must move the version, replacing an
+# excluded one must not. A false claim either way fails. A row claiming
+# another identity (`identity: ...`) refuses: an unchanged engine marker
+# cannot prove a separate binding (close review round 1, F1).
 #
 #   Rscript census.R --lib=<library> | --source=<tree>  --out=<dir> [--census=<census.csv>]
 local({
@@ -109,9 +111,11 @@ local({
   if (length(missing)) fail("walked helpers missing from the census:", paste(missing, collapse = ", "))
   if (length(extra)) fail("census rows not reached from the roots:", paste(extra, collapse = ", "))
   kind <- ifelse(census$binding == "engine version", "engine",
-                 ifelse(startsWith(census$binding, "excluded: "), "excluded",
-                        ifelse(startsWith(census$binding, "identity: "), "identity", "invalid")))
-  if (any(kind == "invalid")) fail("rows without a valid binding:", paste(census$helper[kind == "invalid"], collapse = ", "))
+                 ifelse(startsWith(census$binding, "excluded: "), "excluded", "invalid"))
+  if (any(kind == "invalid")) {
+    fail("rows without a provable binding (engine version or excluded):",
+         paste(census$helper[kind == "invalid"], collapse = ", "))
+  }
   claimed <- census$helper[kind == "engine"]
   if (!setequal(claimed, bound)) {
     fail("census engine rows and the engine's helper list differ:",
@@ -120,8 +124,13 @@ local({
   base <- ns$ledgr_feature_engine_version()
   version_with <- function(h) {
     local_env <- new.env(parent = ns)
-    original <- get(h, envir = ns)
-    replacement <- function(...) stop("replaced helper")
+    wrapper_env <- new.env(parent = ns)
+    wrapper_env$census_original <- get(h, envir = ns)
+    replacement <- function(...) {
+      "census replacement"
+      census_original(...)
+    }
+    environment(replacement) <- wrapper_env
     assign(h, replacement, envir = local_env)
     f <- ns$ledgr_feature_engine_version
     environment(f) <- local_env
@@ -131,8 +140,8 @@ local({
     v <- version_with(h)
     if (is.na(v)) NA else !identical(v, base)
   }, NA)
-  # NA: the version computation itself runs the helper (fingerprint
-  # machinery); such a row must not claim an engine binding.
+  if (anyNA(moved)) fail("the version computation failed with a delegating replacement:",
+                         paste(census$helper[is.na(moved)], collapse = ", "))
   census$moved <- moved
   wrong <- (kind == "engine" & !(moved %in% TRUE)) | (kind != "engine" & moved %in% TRUE)
   if (any(wrong)) fail("replacement disagrees with the claimed binding:", paste(census$helper[wrong], collapse = ", "))

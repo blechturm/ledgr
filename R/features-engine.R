@@ -7,28 +7,35 @@ ledgr_feature_engine_version <- function() {
   # built-in and TTR closures. Each helper is named here; the helpers it calls
   # are bound by their own entries, never by a recursive walk. The census
   # (dev/feature_parity/census.csv) classifies every reached helper and proves
-  # each row by replacement. Not bound: the read-side decoders and the
-  # recomputing single-definition read entry, which produce no reusable
-  # prepared state, and substrate guards, fold facts and storage.
+  # each row by replacement. Bound too: the fingerprint, determinism and JSON
+  # helpers certification compares claimed identities with. Not bound: the
+  # read-side helpers (the evidence decoders, the recomputing
+  # single-definition read entry, the bar-history readers), which produce no
+  # reusable prepared state, and substrate guards, fold facts and storage.
   bound <- c(
     # input mapping and treatment (substrate construction included)
     "ledgr_availability_read_table", "ledgr_availability_provider_data",
     "ledgr_availability_calendar", "ledgr_availability_stable_ids", "ledgr_history_price_fields",
     "ledgr_history_feature_fields", "ledgr_history_feature_inputs", "ledgr_history_feature_frame",
-    "ledgr_history_feature_window", "ledgr_history_lifetime_segments",
+    "ledgr_history_feature_window", "ledgr_history_policy", "ledgr_history_policy_normalize",
+    "ledgr_history_policy_identity", "ledgr_history_lifetime_segments",
     "ledgr_history_terminal_segments", "ledgr_bar_native_sessions",
     "ledgr_history_segments_materialize", "ledgr_history_substrate_fact_plane",
-    "ledgr_history_substrate_expected_at", "ledgr_history_substrate_terminal_at",
-    "ledgr_history_substrate_terminal_planes", "ledgr_history_substrate",
-    "ledgr_history_substrate_for_experiment", "ledgr_history_substrate_bar_matrices",
-    "ledgr_history_lifetime_resolve_applicable", "ledgr_history_segment_dictionary",
-    "ledgr_history_segment_epoch_cells", "ledgr_history_segment_bind", "ledgr_history_epoch_start",
-    "ledgr_history_observation_breaks", "ledgr_history_sparse_fact_segments",
-    "ledgr_history_fact_segments_by_instrument", "ledgr_history_input_carry_calculation",
-    "ledgr_history_input_carry", "ledgr_history_required_field_admission", "ledgr_ttr_build_input",
+    "ledgr_history_substrate_expected_at", "ledgr_history_substrate_terminal_planes",
+    "ledgr_history_substrate", "ledgr_history_substrate_for_experiment",
+    "ledgr_history_substrate_bar_matrices", "ledgr_history_lifetime_resolve_applicable",
+    "ledgr_history_segment_dictionary", "ledgr_history_segment_epoch_cells",
+    "ledgr_history_segment_bind", "ledgr_history_epoch_start", "ledgr_history_observation_breaks",
+    "ledgr_history_sparse_fact_segments", "ledgr_history_fact_segments_by_instrument",
+    "ledgr_history_input_carry_calculation", "ledgr_history_input_carry",
+    "ledgr_history_required_field_admission", "ledgr_ttr_build_input",
     "ledgr_precompute_fetch_bars_frame",
     # certification and declarations
-    "ledgr_assert_indicator_fn_pure", "ledgr_assert_indicator_safe", "ledgr_indicator_source",
+    "canonical_json", "ledgr_canonical_json_encode", ".ledgr_json_cache_get",
+    ".ledgr_json_cache_set", ".ledgr_json_cache_key", "ledgr_function_fingerprint",
+    "ledgr_assert_indicator_fn_pure", "ledgr_assert_indicator_safe",
+    "ledgr_are_params_deterministic", "ledgr_deparse_one", "ledgr_static_function_signature",
+    "ledgr_determinism_forbidden_calls", "ledgr_stable_payload", "ledgr_indicator_source",
     "ledgr_new_parameterized_indicator", "ledgr_is_param_ref", "ledgr_contains_param_ref",
     "ledgr_abort_unsupported_param_placement", "ledgr_assert_no_param_refs",
     "ledgr_validate_direct_param_args", "ledgr_feature_def_fingerprint",

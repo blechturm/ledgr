@@ -31,7 +31,7 @@ testthat::test_that("core indicator fingerprints remain stable", {
     return_5 = "d3feff6aeb660729888928583c4cf36150a66dba0053ab944783e064f090d9cb",
     adapter_r = "1db65a21158519f20fed668b45dcedf54cd076c94af7f3c8fb7789dadc675508",
     strategy_fn = "bf2bef3c9c4540717f9165a987e62d35033f4af3c706f22014e5ae78ff6393c8",
-    feature_engine = "034f0c231b72b22078d1ab1ae3e66d2ec232d1f8155ae85629a989dc23d4bd86"
+    feature_engine = "bc6a3ea254d0a37bef4cca31bb715b23c8b67359344dd0d12eb9c1c657bc801d"
   )
 
   observed <- c(

@@ -360,9 +360,8 @@ ledgr_history_feature_calculate <- function(cert, inputs, calc_from, output_carr
   }
   calc <- seq.int(calc_from, n)
   fields <- if (identical(declarations$input_carry, "excluded")) inputs$raw else inputs$treated
-  # Admission reads only the required fields; callbacks still get the frame.
   admission <- ledgr_history_required_field_admission(
-    lapply(fields[declarations$required_fields], function(x) x[calc]),
+    lapply(fields, function(x) x[calc]),
     declarations$required_fields
   )
   available_all[calc] <- admission$available & inputs$expected[calc]
