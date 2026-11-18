@@ -3578,10 +3578,14 @@ cuts:
       ledgr_indicator_gap_parity where the built-ins pass. The maintainer
       chose a probe first and a cleanup decided on its result, taking the
       now test-only ledgr_validate_feature_def() with it (LDG-3255
-      disposition, 2026-11-18). The probe found that no stored config the
-      package writes reaches the old functions; they are dead code with one
-      residual route. This cut deletes them and rebuilds built-in ids from
-      the built-in constructor, with no change to any run.
+      disposition, 2026-11-18). The probe found that ordinary runs still
+      call the old list constructors, but no stored config the package
+      writes ever computes with their fn or series_fn: certification
+      replaces them with the built-in's own functions. The callbacks are
+      unused in current run computation, with one residual route. This cut
+      deletes the three functions and rebuilds built-in ids from the
+      built-in constructor, with no change to any run a public entry point
+      can produce.
     authority: >-
       The maintainer's F6 disposition (LDG-3255 evidence, 2026-11-18) and
       request to write this cut (2026-11-18); ws41_close_review_round1.md,
@@ -3604,9 +3608,16 @@ cuts:
       and computes the feature with the built-in's own functions: sma_3,
       sma_5 and return_1 certify as builtin inside real runs, so the old fn
       and series_fn never run there. (c) The only other read of the rebuilt
-      definition is the history-read width (ledgr_history_feature_width():
-      history class, requires_bars, stable_after), identical for the old
-      list and the built-in; the fold reads only ids. (d) On the reviewer's
+      definition is the history-read width (ledgr_history_feature_width(),
+      R/history-frame.R:731 and :1268), which validates the whole
+      declaration set and then reads history class, requires_bars and
+      stable_after; the result is identical for the old list and the
+      built-in; the fold reads only ids. The cut review's consumer probe
+      (cut_review_23.md) confirms this on both clocks and finds the rebuild
+      called once by a committed run, a promotion and a walk-forward test
+      run, and not at all by a sweep, an explicit precompute, a sweep
+      reusing it, pulse inspection or reopening a stored run, which use the
+      experiment's converted definitions (R/sweep.R:1649). (d) On the reviewer's
       fixture (dev/feature_parity/corpus.R fx_empty) a real run passes, the
       rebuilt definition with its stored fingerprint passes preparation,
       and the same stored definition without a fingerprint certifies as
@@ -3624,17 +3635,23 @@ cuts:
       still call them (dev/bench/v0_2_2_workstream8/strict_feature_benchmark.R,
       dev/spikes/historical-projection/probe.R; Cut 22's legacy inventory).
     decisions: >-
-      (1) The rebuild. For a stored id sma_<n> or return_1 whose stored
-      fingerprint is absent or the built-in's (not shadowed), the rebuilt
-      definition is ledgr_precompute_feature_def_from_indicator() of the
-      built-in the branch already constructs for its shadow test
-      (ledgr_ind_sma(n), ledgr_ind_returns(1L)), with the existing stored
-      overlay (the five declaration fields when stored, and the stored
-      fingerprint, else the definition's own). The built-in is constructed
-      once per entry, before the shadow test, as now, so an invalid width
-      (sma_0) refuses with the same class at the same point. The shadow
-      rule, the registered-indicator branch and every refusal of the
-      function are unchanged.
+      (1) The rebuild. For a stored id sma_<n> or return_1, the branch
+      constructs the built-in once (ledgr_ind_sma(n), ledgr_ind_returns(1L))
+      and reuses it for the shadow comparison and the conversion. When the
+      stored fingerprint is absent or the built-in's (not shadowed), the
+      rebuilt definition is ledgr_precompute_feature_def_from_indicator() of
+      that built-in with the existing stored overlay (each of the five
+      declaration fields when stored, and the stored fingerprint, else the
+      converted definition's own). Fingerprint-bearing entries keep their
+      refusal classes and precedence. For a hand-supplied, fingerprint-free
+      malformed SMA id (sma_0, or a suffix that overflows an integer),
+      construction now refuses with ledgr_invalid_args instead of the old
+      list constructor's ledgr_invalid_feature_def; the integer-coercion
+      warning before the refusal for an overflowing suffix stays. A
+      non-integer suffix (sma_1.5) still goes to registered and unknown-id
+      dispatch. No public constructor produces either malformed definition
+      (cut review 23, R1). The shadow rule, the registered-indicator branch
+      and every other refusal of the function are unchanged.
       (2) Deleted: ledgr_feature_sma_n(), ledgr_feature_return_1() and
       ledgr_validate_feature_def() (R/features-engine.R); the latter's
       test-seam entry in tools/check-codebase-contracts.R; and the test
@@ -3644,54 +3661,98 @@ cuts:
       define a feature are ledgr_indicator()'s, tested in test-indicators.R
       and test-feature-capture-identity.R, which do not change. No other
       registered test, fixture or oracle changes, except the additions of
-      decisions 4 and 5. ledgr_rolling_mean() stays (the built-in SMA and
+      decision 4, the oracle's one added feature (decision 5a) and the
+      identity tooling's unchanged-engine mode (decision 5b), each with its
+      stated reason there. ledgr_rolling_mean() stays (the built-in SMA and
       RSI call it). Historical dev records that call the deleted functions
-      stay as records and are not repaired.
+      stay as records and are not repaired; so do the probe's
+      bare_refusal.R and read_fields.R.
       (3) Same runs. Every stored config ledgr_config() writes, on both
       clocks, produces the same prepared features, history reads, refusals,
-      events, equity and identities as before. The one declared difference:
-      a stored built-in id with no fingerprint (never written by the
-      package) now computes as the built-in, certified builtin, where it ran
-      the old list as a custom definition, which could refuse with
-      ledgr_indicator_gap_parity. This matches the contract rule that a
-      definition named as a built-in is computed with the built-in's own
-      functions; no contract text changes.
-      (4) Witnesses (registered, in test-indicator-dispatch.R): for sma_1,
-      sma_3, sma_200 and return_1, a config built by ledgr_config() on a
-      bar-native and on an availability-active experiment rebuilds each id
-      to the built-in's converted definition with the stored overlay, and
-      ledgr_feature_certify() returns builtin with the same canonical
-      definition and declarations as for the built-in itself; the same
-      stored definition without a fingerprint rebuilds identically and
-      certifies builtin; sma_0 refuses with the class it refuses with
-      before the change; and the three deleted names are absent from the
-      namespace. Each witness is shown to fail on the base (the rebuilt
-      definition differs from the built-in's there).
+      events, equity and identities as before. Two declared differences,
+      both for hand-supplied stored definitions without a fingerprint, which
+      the package never writes and no public entry point accepts (cut
+      review 23, reachability probe): a well-formed built-in id now
+      computes as the built-in, certified builtin, where it ran the old list
+      as a custom definition, which could refuse with
+      ledgr_indicator_gap_parity; and a malformed SMA id refuses with
+      ledgr_invalid_args instead of ledgr_invalid_feature_def (decision 1).
+      The first matches the contract rule that a definition named as a
+      built-in is computed with the built-in's own functions; no contract
+      text changes.
+      (4) Witnesses (registered, in test-indicator-dispatch.R), for sma_1,
+      sma_3, sma_200 and return_1 from configs built by ledgr_config() on a
+      bar-native and on an availability-active experiment. (a) Raw rebuild:
+      the expected definition is built independently from the constructor's
+      conversion, with each stored declaration field applied explicitly and
+      the exact stored fingerprint kept (the active fingerprint on the
+      availability clock, asserted explicitly); non-function fields compare
+      exactly, functions by code, formals and capture identities. A focused
+      case with non-default stored declarations (required_fields,
+      tolerance) makes an omitted overlay fail. (b) Certification: the
+      rebuilt definition certifies builtin with the canonical built-in
+      under the retained fingerprint and the canonical declarations. (c)
+      Without a stored fingerprint: the rebuild carries the converted
+      built-in's own fingerprint (not the active-clock result) and
+      certifies builtin. (d) Widths: old and new history widths agree on
+      both clocks. (e) Refusals: sma_0 and an overflowing suffix without a
+      fingerprint refuse with ledgr_invalid_args (with the coercion
+      warning for the overflow); both with an unknown fingerprint refuse
+      with ledgr_invalid_args before any fingerprint mismatch; sma_1.5
+      refuses with ledgr_invalid_config; sma_997 with an unknown
+      fingerprint refuses with ledgr_run_hash_mismatch. (f) The three
+      deleted names are absent from the namespace. Shown on the base
+      6d12ef79 (transcript committed): (a), (c), (f) and the fingerprint-free
+      refusal class in (e) fail; (b), (d) and the fingerprint-bearing
+      refusals pass on both arms. Shown on the change: dropping the
+      declaration overlay, or the stored active fingerprint, fails (a).
       (5) Proofs on the final code. (a) The oracle (dev/feature_parity/):
-      its public-entry feature set (corpus.R fx_e2e_features(), which
-      already holds ledgr_ind_sma(3)) gains ledgr_ind_returns(1L), the other
-      rebuilt id, so a run, an implicit sweep, an explicit precompute and a
-      sweep reusing it, pulse inspection and a dated run reach both rebuild
-      branches on both clocks; corpus_expected.csv is regenerated from the
-      pin d5b3a151 and the addition is the only change to it; the pin
-      against itself passes, the final code against the pin passes on every
-      case, and the fault controls pass on the final code. (b) Identities:
-      dev/feature_parity/identity.R on the cut base 6d12ef79 and on the
-      final code, identity_check.R: every identity unchanged, the engine
-      version included (bc6a3ea2). (c) The census: census.R on the final
-      tree passes (walked helpers and bindings unchanged; only file:line
-      locations may move, and census.csv is updated for those only). (d) The
-      probe reruns on the final code: run_certification.R reports success
-      without a stored fingerprint (bare_refusal.R stays a record of the
-      base, since it calls the deleted functions). (e) The full test suite and R CMD check
-      --no-manual --no-build-vignettes pass. (f) R/ production lines before
-      and after (dev/feature_parity/lines.R).
-      (6) Not run, with reasons: the lean gate, because its wrapper
-      overlays the candidate's R/ on both arms, so it cannot tell the base
-      from the candidate here, and the lean loop's coverage is untouched;
-      a timing record, because the rebuild runs once per run before the
-      fold, outside every per-pulse path, and v0.2.3 measures performance
-      at milestones (macro plan rule 16).
+      fx_e2e_features() (corpus.R) gains ledgr_ind_returns(1L), because the
+      public-entry corpus lacks the return_1 rebuild branch (it holds
+      ledgr_ind_sma(3) for the sma branch). Ordinary and dated committed
+      runs reach both rebuild branches on each clock; a small observer
+      records that coverage. Sweep, explicit precompute, reuse and pulse
+      inspection use the experiment's converted definitions without this
+      rebuild and keep their public-output comparisons. The same augmented
+      corpus runs on the pin d5b3a151 and the candidate; corpus_expected.csv
+      is regenerated from the augmented pin observations with check.R
+      --write-expected, and its diff is reviewed: only structural
+      observation changes caused by the added feature in existing e2e cases
+      are allowed, all other cases unchanged, no case deleted, never
+      candidate-produced expectations. Pin against pin, candidate against
+      pin and the existing fault controls pass. (b) Identities: the identity
+      tooling gains an unchanged-engine comparison mode beside Cut 22's
+      changed-engine mode, which stays (stated reason: identity_check.R
+      requires the engine to change and an old precompute to refuse, the
+      opposite of this cut's claim; cut review 23, R2). On fixed base and
+      final inputs it compares every recorded identity, requires exactly
+      one equal engine-version record in each arm with the prefix bc6a3ea2,
+      and refuses a missing or duplicate record; it reuses a base explicit
+      precompute on the candidate successfully and compares its logical
+      result with fresh preparation; it keeps the stored-run and
+      stored-sweep read checks. A changed engine record and a missing
+      identity record each fail the mode (transcripts committed). It runs on
+      the base 6d12ef79 and the final code. (c) The census: census.R
+      --source=<final tree> --out=<evidence dir>
+      --census=<final tree>/dev/feature_parity/census.csv prints CENSUS
+      CHECK PASS with its replacement proofs; helper names, roots and
+      bindings equal the base's; only locations may change, and census.csv
+      is updated for those only. (d) The probe's run_certification.R on the
+      final code: without a stored fingerprint the rebuilt definition
+      certifies builtin and passes preparation on the reviewer's substrate.
+      (e) The full test suite and R CMD check --no-manual
+      --no-build-vignettes pass. (f) R/ production lines before and after
+      (dev/feature_parity/lines.R).
+      (6) Not run, with reasons. The lean gate: no lean code or interface
+      changes; the rebuild, certification and width witnesses establish
+      unchanged inputs to the existing fold and lean boundary, and the
+      public differential oracle covers this preparation change. The lean
+      gate compares the candidate package with the lean loop under shared
+      candidate preparation, so it is not the evidence for base-candidate
+      equivalence here. A timing record: the rebuild runs once per run
+      before the fold, outside every per-pulse path, the cut makes no speed
+      claim, and v0.2.3 measures performance at milestones (macro plan rule
+      16).
     identity_and_release_impact: >-
       None. Config identity, the stored config, run identity, indicator and
       feature fingerprints, the feature-set hash and the feature-engine
@@ -3718,6 +3779,7 @@ cuts:
       wrong answer; a third correction round stops for maintainer
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
+    cut_review: "CHANGES_REQUIRED in cut_review_23.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at 7268a8e5): no counterexample to unchanged public runs; R1-R4 required, R5-R6 advisory, all applied with the review's text: the fingerprint-free malformed SMA id's refusal class change declared instead of claimed unchanged (R1); an unchanged-engine identity mode with base-precompute reuse, because identity_check.R requires the engine to change (R2); witnesses rebuilt around the retained stored fingerprint and an explicit overlay case, changed witnesses failing on the base and invariants passing on both arms (R3); oracle coverage corrected to committed runs, since sweeps, precompute and inspection never call the rebuild, with expectations regenerated from the pin and the diff reviewed (R4); the census check named with --census (R5); the lean-gate reason narrowed (R6). The opening and measured input now say the old constructors are still called by runs while their callbacks never compute."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -4103,7 +4165,7 @@ workstreams:
     status: "planned"
     depends_on_workstream: 41
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 42, after LDG-3257", reason: "The rebuild of sma_<n> and return_1 starts from the built-in constructor with the existing overlay and shadow rule, and refuses as before; the three functions and the one test are deleted with the stated reason and nothing else registered changed beyond the added witnesses and the oracle's one added feature; every witness passes and was shown to fail on the base; the oracle passes against the pin with its addition reaching both rebuild branches on both clocks, and its faults pass; every identity, the engine version included, is unchanged; the census passes; the full suite and the package check pass; and the stated reasons for not running the lean gate or a timing record hold."}
+    review: {mode: "Type 1", point: "close of workstream 42, after LDG-3257", reason: "The rebuild of sma_<n> and return_1 starts from one constructed built-in with the existing overlay and shadow rule, and refuses as before except decision 1's declared fingerprint-free case; the three functions and the one test are deleted with the stated reason and nothing else registered changed beyond decision 2's named additions; every witness passes, the changed ones were shown to fail on the base and the invariant ones to pass on both arms, and the overlay faults fail; the oracle passes against the pin, its added feature reaching the return_1 branch through committed runs on both clocks, its expectations regenerated from the pin only, and its faults pass; the unchanged-engine identity mode shows every identity and the engine version unchanged and a base precompute reusable, and fails on its two controls; the census check passes; the full suite and the package check pass; and the stated reasons for not running the lean gate or a timing record hold."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -7763,9 +7825,9 @@ tickets:
       tests/testthat/test-features.R, and the registered witnesses in
       tests/testthat/test-indicator-dispatch.R.
     acceptance:
-      - "For sma_<n> and return_1 not shadowed, the rebuilt definition is the built-in's converted definition with the existing stored overlay; the built-in is constructed once per entry, before the shadow test; the shadow rule, the registered branch and every refusal unchanged (decision 1)"
-      - "ledgr_feature_sma_n, ledgr_feature_return_1 and ledgr_validate_feature_def deleted, with the test-seam entry and the one test, under decision 2's stated reason; no other registered test, fixture or oracle changed"
-      - "Decision 4's witnesses pass on the change and each is shown to fail on the base 6d12ef79 (transcript committed)"
+      - "For sma_<n> and return_1 the built-in is constructed once and reused for the shadow comparison and the conversion; not shadowed, the rebuilt definition is the built-in's converted definition with the existing stored overlay; fingerprint-bearing refusals keep their classes and precedence, and the only refusal change is decision 1's fingerprint-free malformed SMA id; the shadow rule and the registered branch unchanged"
+      - "ledgr_feature_sma_n, ledgr_feature_return_1 and ledgr_validate_feature_def deleted, with the test-seam entry and the one test, under decision 2's stated reason; no other registered test, fixture or oracle changed except decision 2's named additions"
+      - "Decision 4's witnesses (a)-(f) pass on the change; on the base 6d12ef79, (a), (c), (f) and the fingerprint-free refusal class fail while (b), (d) and the fingerprint-bearing refusals pass; on the change, dropping the declaration overlay or the stored active fingerprint fails (a) (transcripts committed)"
       - "Targeted tests (test-indicator-dispatch.R, test-features.R, test-codebase-contracts.R, test-feature-engine-census.R) pass"
     evidence: []
   - id: "LDG-3257"
@@ -7777,12 +7839,13 @@ tickets:
     dependencies: ["LDG-3256"]
     scope: >-
       Cut 23 decisions 5 and 6 on the final code: the oracle with its one
-      added feature, identities, the census, the probe rerun, the full suite
-      and package check, lines; then the Type 1 close review.
+      added feature and coverage observer, the identity tooling's
+      unchanged-engine mode and its run, the census check, the probe rerun,
+      the full suite and package check, lines; then the Type 1 close review.
     acceptance:
-      - "Oracle: fx_e2e_features() gains ledgr_ind_returns(1L) and nothing else in the harness changes; corpus_expected.csv regenerated from the pin, the addition its only change; pin against pin passes; final code against the pin passes on every case; the fault controls pass on the final code (decision 5a)"
-      - "identity.R on 6d12ef79 and on the final code, identity_check.R: every identity unchanged, the engine version bc6a3ea2 included (decision 5b)"
-      - "census.R on the final tree passes; census.csv changes only in locations, if at all (decision 5c)"
+      - "Oracle: fx_e2e_features() gains ledgr_ind_returns(1L); a small observer records that ordinary and dated committed runs reach both rebuild branches on each clock; corpus_expected.csv regenerated from the augmented pin observations with check.R --write-expected, its diff reviewed (only the added feature's structural changes in existing e2e cases, no case deleted); pin against pin passes; final code against the pin passes on every case; the existing fault controls pass on the final code (decision 5a)"
+      - "Identity tooling: the unchanged-engine mode beside the kept changed-engine mode; on 6d12ef79 and the final code every recorded identity equal, exactly one engine-version record per arm with prefix bc6a3ea2, a base explicit precompute reused on the candidate with the same logical result as fresh preparation, stored-run and stored-sweep reads kept; a changed engine record and a missing identity record each fail the mode (decision 5b)"
+      - "census.R with --source, --out and --census on the final tree prints CENSUS CHECK PASS with its replacement proofs; helper names, roots and bindings equal the base's; census.csv changes only in locations, if at all (decision 5c)"
       - "run_certification.R on the final code: without a stored fingerprint the rebuilt definition certifies builtin and passes preparation on the reviewer's substrate (decision 5d)"
       - "Full test suite and R CMD check --no-manual --no-build-vignettes pass (AGENTS.md Local Verification)"
       - "R/ production lines before and after; the seven optimization shapes walked on the changed code"
