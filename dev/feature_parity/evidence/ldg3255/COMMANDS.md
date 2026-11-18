@@ -73,3 +73,20 @@ Full tests and build/check as above, the build into `$S/buildcheck_r1`
 (round1/full_tests_summary.txt, round1/r_cmd_check.log). The census on the
 corrected source is in ../ldg3253/round1/. Timing: record
 `final-vs-cut-base-r1` (dev/bench/timing/records/cut22-feature-1/COMMANDS.md).
+
+## Close re-review 1 (evidence in round2/; G1 and G2, harness only)
+
+R/ unchanged at 39ac4ba4 (library `$S/libs/final-39ac4ba4`); harness at the
+round-2 commit:
+
+    Rscript dev/feature_parity/runner.R --arm=pin --lib=<pin> --out=$S/oracle/v5/pin
+    Rscript dev/feature_parity/runner.R --arm=final_39ac4ba4 --lib=$S/libs/final-39ac4ba4 --out=$S/oracle/v5/final
+    Rscript dev/feature_parity/check.R --pin=$S/oracle/v5/pin --candidate=$S/oracle/v5/pin > round2/oracle/check_pin_self.txt
+    Rscript dev/feature_parity/check.R --pin=$S/oracle/v5/pin --candidate=$S/oracle/v5/final > round2/oracle/check_final.txt
+    Rscript round2/oracle/handoff_summary.R $S/oracle/v5/final > round2/oracle/handoffs_final.txt
+    Rscript dev/feature_parity/faults.R --lib=$S/libs/final-39ac4ba4 --pin=$S/oracle/v5/pin
+      --scratch=$S/oracle/v5/final_faults --evidence=dev/feature_parity/evidence/ldg3255/round2/faults
+
+The reviewer's negative controls, adapted to this tree, are in
+../ldg3249/round2/ (run each script with Rscript; make_driver_probe.R before
+fault_driver_control.R).

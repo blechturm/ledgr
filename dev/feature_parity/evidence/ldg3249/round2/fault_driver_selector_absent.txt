@@ -1,0 +1,20 @@
+library: C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151
+exit: 0
+           control expected_exit exit expected_signal
+        all_fields            NA   NA  treated_fields
+       missing_arm             2    2                
+      missing_case             2    2                
+ missing_component             2    2                
+   cleared_treated             1    1  treated_fields
+ causality_dropped             1    1  treated_fields
+   pin_against_pin             0    0                
+                                                             signals   ok
+ not run: the library has no field selector (checked before running) TRUE
+                                                                     TRUE
+                                                                     TRUE
+                                                                     TRUE
+                                                      treated_fields TRUE
+                                                      treated_fields TRUE
+                                                                     TRUE
+fault signal sets pairwise distinct: TRUE 
+FAULTS PASS

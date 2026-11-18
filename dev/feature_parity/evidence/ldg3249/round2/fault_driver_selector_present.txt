@@ -1,0 +1,23 @@
+library: C:/Users/maxth/ledgr-wt/ws41-scratch/libs/final-39ac4ba4
+exit: 1
+selector present: TRUE; deliberately failing this fault runner before observations
+Error: forced all_fields runner error unrelated to missing selector
+Execution halted
+           control expected_exit exit expected_signal
+        all_fields             1   NA  treated_fields
+       missing_arm             2    2                
+      missing_case             2    2                
+ missing_component             2    2                
+   cleared_treated             1    1  treated_fields
+ causality_dropped             1    1  treated_fields
+   pin_against_pin             0    0                
+                     signals    ok
+ runner.R failed with exit 1 FALSE
+                              TRUE
+                              TRUE
+                              TRUE
+              treated_fields  TRUE
+              treated_fields  TRUE
+                              TRUE
+fault signal sets pairwise distinct: TRUE 
+FAULTS FAIL

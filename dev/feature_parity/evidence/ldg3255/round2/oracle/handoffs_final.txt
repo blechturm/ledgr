@@ -1,0 +1,12 @@
+     family cases refused prep_reached_zero prep_reached prep_short_on_refusal
+       axis     6       0                 6            0                     0
+    compute   441      51               147          294                     6
+        e2e    18       6                 2           16                     0
+ read_entry    22       0                 0           22                     0
+  ttr_route   144       0                 0          144                     0
+ causality_reached causality_checks handoffs_prep handoffs_causality
+                 0                0             0                  0
+               236             1698          1456                494
+                16              174            56                 16
+                 0                0            99                  0
+               144              144          1344                144

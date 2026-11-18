@@ -1,0 +1,65 @@
+
+CENSUS missing_row 
+exit 1 
+ reachable: 278  bound by the engine version: 147 
+bound but not reachable:  
+FAIL: walked helpers missing from the census: ledgr_history_lifetime_segments 
+FAIL: census engine rows and the engine's helper list differ: ledgr_history_lifetime_segments 
+kind
+  engine excluded 
+     146      131 
+CENSUS CHECK FAIL: 2  
+
+CENSUS false_engine 
+exit 1 
+ reachable: 278  bound by the engine version: 147 
+bound but not reachable:  
+FAIL: census engine rows and the engine's helper list differ: ledgr_history_substrate_terminal_at 
+FAIL: replacement disagrees with the claimed binding: ledgr_history_substrate_terminal_at 
+kind
+  engine excluded 
+     148      130 
+CENSUS CHECK FAIL: 2  
+
+CENSUS false_exclusion 
+exit 1 
+ reachable: 278  bound by the engine version: 147 
+bound but not reachable:  
+FAIL: census engine rows and the engine's helper list differ: ledgr_function_fingerprint 
+FAIL: replacement disagrees with the claimed binding: ledgr_function_fingerprint 
+kind
+  engine excluded 
+     146      132 
+CENSUS CHECK FAIL: 2  
+
+CENSUS claimed_identity 
+exit 1 
+ reachable: 278  bound by the engine version: 147 
+bound but not reachable:  
+FAIL: rows without a provable binding (engine version or excluded): ledgr_function_fingerprint 
+FAIL: census engine rows and the engine's helper list differ: ledgr_function_fingerprint 
+FAIL: replacement disagrees with the claimed binding: ledgr_function_fingerprint 
+kind
+  engine excluded  invalid 
+     146      131        1 
+CENSUS CHECK FAIL: 3  
+
+ORACLE empty_treated 
+exit 1 
+ SIGNAL treated_fields 476  (candidate lacks a treated-fields observation where its hand-offs say one was reached; first: compute | hostile_carry2|data_start|close)
+cases 631 (refusing on the pin 57), observations pin 8280 candidate 8280
+CHECK FAIL: 1 signal(s) 
+
+ORACLE prep_only 
+exit 1 
+ SIGNAL treated_fields 396  (candidate lacks a treated-fields observation where its hand-offs say one was reached; first: compute | hostile_carry2|data_start|close)
+cases 631 (refusing on the pin 57), observations pin 8280 candidate 8280
+CHECK FAIL: 1 signal(s) 
+
+ORACLE missing_parameterized 
+exit 2 
+ REFUSED: candidate  misses  83  corpus case(s), first:  compute | empty|data_start|parameterized_bundle  
+
+ORACLE missing_treated_component 
+exit 2 
+ REFUSED: candidate : case  compute | empty|data_start|close  lacks component(s)  treated_fields  
