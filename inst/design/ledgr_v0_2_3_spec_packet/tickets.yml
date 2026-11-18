@@ -3567,7 +3567,8 @@ cuts:
   - id: 23
     name: "Built-in ids rebuild from the built-in: retire the v0.1.4 list definitions (WS41 close review F6)"
     cut: "2026-11-18"
-    status: "draft"
+    status: "accepted"
+    accepted: "2026-11-18 under the maintainer's request to write the F6 cut and implement it as usual (measure, cut, Codex cut review iterated to green, implement, Codex close review iterated to green), after the cut review passed at re-review 1 (cut_review_23_rereview_1.md), as written."
     opening: >-
       Cut 22 closed (29ae4478) with one flag from its close review, F6: the
       run's stored-config rebuild, ledgr_feature_defs_from_config()
@@ -3779,7 +3780,7 @@ cuts:
       wrong answer; a third correction round stops for maintainer
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
-    cut_review: "CHANGES_REQUIRED in cut_review_23.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at 7268a8e5): no counterexample to unchanged public runs; R1-R4 required, R5-R6 advisory, all applied with the review's text: the fingerprint-free malformed SMA id's refusal class change declared instead of claimed unchanged (R1); an unchanged-engine identity mode with base-precompute reuse, because identity_check.R requires the engine to change (R2); witnesses rebuilt around the retained stored fingerprint and an explicit overlay case, changed witnesses failing on the base and invariants passing on both arms (R3); oracle coverage corrected to committed runs, since sweeps, precompute and inspection never call the rebuild, with expectations regenerated from the pin and the diff reviewed (R4); the census check named with --census (R5); the lean-gate reason narrowed (R6). The opening and measured input now say the old constructors are still called by runs while their callbacks never compute."
+    cut_review: "CHANGES_REQUIRED in cut_review_23.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at 7268a8e5): no counterexample to unchanged public runs; R1-R4 required, R5-R6 advisory, all applied with the review's text: the fingerprint-free malformed SMA id's refusal class change declared instead of claimed unchanged (R1); an unchanged-engine identity mode with base-precompute reuse, because identity_check.R requires the engine to change (R2); witnesses rebuilt around the retained stored fingerprint and an explicit overlay case, changed witnesses failing on the base and invariants passing on both arms (R3); oracle coverage corrected to committed runs, since sweeps, precompute and inspection never call the rebuild, with expectations regenerated from the pin and the diff reviewed (R4); the census check named with --census (R5); the lean-gate reason narrowed (R6). The opening and measured input now say the old constructors are still called by runs while their callbacks never compute. Focused re-review 1 (cut_review_23_rereview_1.md, same setup, at 7250158c): PASS, R1-R6 applied faithfully, no new finding."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -4162,7 +4163,7 @@ workstreams:
   - id: 42
     name: "Built-in ids rebuild from the built-in"
     cut: 23
-    status: "planned"
+    status: "in_progress"
     depends_on_workstream: 41
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 42, after LDG-3257", reason: "The rebuild of sma_<n> and return_1 starts from one constructed built-in with the existing overlay and shadow rule, and refuses as before except decision 1's declared fingerprint-free case; the three functions and the one test are deleted with the stated reason and nothing else registered changed beyond decision 2's named additions; every witness passes, the changed ones were shown to fail on the base and the invariant ones to pass on both arms, and the overlay faults fail; the oracle passes against the pin, its added feature reaching the return_1 branch through committed runs on both clocks, its expectations regenerated from the pin only, and its faults pass; the unchanged-engine identity mode shows every identity and the engine version unchanged and a base precompute reusable, and fails on its two controls; the census check passes; the full suite and the package check pass; and the stated reasons for not running the lean gate or a timing record hold."}
