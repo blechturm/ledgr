@@ -7815,7 +7815,7 @@ tickets:
   - id: "LDG-3256"
     title: "Rebuild built-in ids from the built-in and delete the v0.1.4 list definitions"
     workstream: 42
-    status: "planned"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -7830,11 +7830,14 @@ tickets:
       - "ledgr_feature_sma_n, ledgr_feature_return_1 and ledgr_validate_feature_def deleted, with the test-seam entry and the one test, under decision 2's stated reason; no other registered test, fixture or oracle changed except decision 2's named additions"
       - "Decision 4's witnesses (a)-(f) pass on the change; on the base 6d12ef79, (a), (c), (f) and the fingerprint-free refusal class fail while (b), (d) and the fingerprint-bearing refusals pass; on the change, dropping the declaration overlay or the stored active fingerprint fails (a) (transcripts committed)"
       - "Targeted tests (test-indicator-dispatch.R, test-features.R, test-codebase-contracts.R, test-feature-engine-census.R) pass"
-    evidence: []
+    evidence:
+      - "Change at 68b505b9 (branch ws42 from bb86c10e). ledgr_feature_defs_from_config() constructs the built-in once per sma_<n> or return_1 entry (ledgr_ind_sma(n), ledgr_ind_returns(1L)), reuses it for the shadow comparison, and rebuilds an unshadowed entry from ledgr_precompute_feature_def_from_indicator() of it with the unchanged add_def() overlay. Deleted: ledgr_feature_sma_n(), ledgr_feature_return_1(), ledgr_validate_feature_def() (R/features-engine.R, 114 lines), the validator's test-seam entry (tools/check-codebase-contracts.R) and the test 'feature definitions are validated fail-loud' (tests/testthat/test-features.R) under decision 2's stated reason. No R/, tests/, vignettes, man or NAMESPACE reference to the three names remains."
+      - "Witnesses (tests/testthat/test-indicator-dispatch.R, seven test_that blocks [Cut 23 (a)]-(f), configs captured from real ledgr_run() calls on the bar-native and availability clocks with sma_1, sma_3, sma_200 and return_1). evidence/ldg3256/witness_change.txt: all pass (628 expectations in the file). evidence/ldg3256/witness_base.txt (the same file against the base R/, 6d12ef79): (a) FAIL 103 of 254, (c) FAIL 98 of 168, (f) FAIL 3 of 3, the fingerprint-free (e) ERROR (the base refuses with ledgr_invalid_feature_def); (b), (d) and the fingerprint-bearing (e) PASS, as are the existing LTB-0321 dispatch assertions. evidence/ldg3256/overlay_faults.txt: on the change, dropping the declaration overlay fails (a) with 16 failures, dropping the stored fingerprint with 12; restored, 0."
+      - "Targeted tests on the change: test-indicator-dispatch.R 8 tests 628 expectations, test-features.R 3 tests 19, test-codebase-contracts.R 4 tests 33, test-feature-engine-census.R 3 tests 18; 0 failed, 0 errors."
   - id: "LDG-3257"
     title: "Close the built-in rebuild cut"
     workstream: 42
-    status: "planned"
+    status: "in_progress"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-3256"]
@@ -7851,4 +7854,11 @@ tickets:
       - "Full test suite and R CMD check --no-manual --no-build-vignettes pass (AGENTS.md Local Verification)"
       - "R/ production lines before and after; the seven optimization shapes walked on the changed code"
       - "Type 1 close review of workstream 42 (review_lifecycle)"
-    evidence: []
+    evidence:
+      - "Final R/ at 68b505b9; 53798dc4 adds only dev tooling and evidence. Commands in dev/feature_parity/evidence/ldg3257/COMMANDS.md; arms installed with install_arm.R (base 6d12ef79, final 68b505b9)."
+      - "Oracle (decision 5a): fx_e2e_features() gains ledgr_ind_returns(1); nothing else in the harness changed. rebuild_coverage.R (rebuild_coverage_final.txt, identical on the pin): run and dated_run call the rebuild once each and rebuild return_1 and sma_3 on both clocks; sweep, precompute, precompute_reuse and inspect call it zero times. corpus_expected.csv regenerated from the augmented pin run with check.R --write-expected: still 631 cases; the diff (corpus_expected_diff.txt) is 16 route rows of existing e2e cases, only their series_fn call counts higher; no case added or deleted. Pin against pin: CHECK PASS (check_pin_repeat.txt); final against pin: CHECK PASS, 631 cases (57 refusing on the pin), 8,280 observations per arm (check_final.txt, final_provenance.csv). Fault controls on the final code: FAULTS PASS, signal sets pairwise distinct (faults/)."
+      - "Identities (decision 5b): identity_check.R gains --mode=unchanged-engine with --engine-prefix (the changed-engine mode stays the default); identity.R records, when the base precompute is reused, the reused and freshly prepared sweep result tables. identity_check.txt: 156 of 156 identities equal, the engine version included (bc6a3ea254d0a37b... in both arms); the base precompute reused with 30 strategy calls and the same result table digest as fresh preparation; the base store's run readable (30 equity rows) and its sweep keeps its engine version. identity_controls.txt: a changed engine record, a removed identity and a duplicated identity each give IDENTITY CHECK FAIL in the unchanged mode, and the changed-engine mode fails on these unchanged arms; CONTROLS PASS."
+      - "Census (decision 5c): census.R --source=<ws42> --census=<ws42>/dev/feature_parity/census.csv: reachable 278, bound 147, excluded 131, CENSUS CHECK PASS with replacement proofs (census/). The base walk (6d12ef79 R/) has the same helpers, roots and bindings; 8 locations in R/features-engine.R moved, and census.csv was updated for those 8 locations only."
+      - "Probe rerun (decision 5d): run_certification_final.txt: real runs certify sma_3, sma_5 and return_1 as builtin; the stored definition without a fingerprint now certifies builtin and passes preparation on the reviewer's fx_empty substrate (it refused with ledgr_indicator_gap_parity on the base)."
+      - "Full test suite (load_all on ws42, the final library first on .libPaths() and R_LIBS for sweep workers): 232 files, 1,360 tests, 0 failed, 0 errors, 1 skipped (the quantmod missing-package path) (full_tests_summary.txt). R CMD build of ws42 and R CMD check --no-manual --no-build-vignettes: Status: OK (r_cmd_check.log)."
+      - "Lines (lines.csv): R/ production lines 54,983 -> 54,882 (-101: R/features-engine.R -100, R/backtest-runner.R -1); the engine-version bind list unchanged (64). Seven shapes walked on the changed code (shapes.md): none introduced; one discarded construction removed."
