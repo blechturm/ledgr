@@ -10,17 +10,21 @@
   itself. The maintainer's Section 7 answers are restated in Section 7.
 - Stage 1: implemented by Cut 22 (workstream 41, LDG-3249 to LDG-3255,
   tickets.yml), pending the workstream's close review. Kept, each identical
-  to the pin `d5b3a151` on the permanent oracle (`dev/feature_parity/`, 548
-  cases) and faster on its named target cells under protocol
-  `cut22-feature-1`: candidate 1 (the axis formatted once; 10 x 7,200 run
-  and sweep feature clocks 0.52 and 0.47 of their matched base), candidate 4
-  (admission slices only required fields; the wide sweeps 0.99), candidates
-  2 and 3 together (narrowed input treatment and the TTR per-call overhead;
-  the wide runs 0.77, the wide sweeps 0.81-0.83), candidate 7 (the
-  causality comment). The legacy v0.1.4 block is deleted. The engine version
-  now binds the 134 helpers of a census from the preparation roots, each
-  proved by replacement; it costs about 33 ms per run, sweep or precompute
-  (once per call). Not kept: candidate 5 (matrices only): the explicit
+  to the pin `d5b3a151` on the permanent oracle (`dev/feature_parity/`, 631
+  cases after close review round 1) and faster on its named target cells
+  under protocol `cut22-feature-1`: candidate 1 (the axis formatted once;
+  10 x 7,200 run and sweep feature clocks 0.52 and 0.47 of their matched
+  base), candidates 2 and 3 together (narrowed input treatment, observed
+  against the certified union, and the TTR per-call overhead; the wide runs
+  0.77, the wide sweeps 0.81-0.83), candidate 7 (the causality comment).
+  The legacy v0.1.4 block is deleted. The engine version now binds the 147
+  helpers of a census from the preparation roots (the fingerprint,
+  determinism and JSON helpers included), each proved by a delegating
+  replacement; it is computed once per run, sweep or precompute. Not kept:
+  candidate 4 (admission slices only required fields): its wide-sweep
+  ratios 0.990 and 0.992 lie inside the A/A record's label-exchange range,
+  so inconclusive; reverted in close review round 1. Candidate 5 (matrices
+  only): the explicit
   precompute object halves and the 1,166 x 252 sweep's peak R heap falls 14
   percent, but on 500 x 1,260 the peak lies in the calculation and is
   unchanged, so the memory rule fails; reverted. Findings for stages 2-3:

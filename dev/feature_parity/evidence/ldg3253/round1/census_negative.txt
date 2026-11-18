@@ -1,0 +1,21 @@
+missing_row: exit 1
+FAIL: walked helpers missing from the census: ledgr_history_lifetime_segments 
+FAIL: census engine rows and the engine's helper list differ: ledgr_history_lifetime_segments 
+CENSUS CHECK FAIL: 2 
+
+false_engine: exit 1
+FAIL: census engine rows and the engine's helper list differ: ledgr_history_substrate_terminal_at 
+FAIL: replacement disagrees with the claimed binding: ledgr_history_substrate_terminal_at 
+CENSUS CHECK FAIL: 2 
+
+false_exclusion: exit 1
+FAIL: census engine rows and the engine's helper list differ: ledgr_function_fingerprint 
+FAIL: replacement disagrees with the claimed binding: ledgr_function_fingerprint 
+CENSUS CHECK FAIL: 2 
+
+claimed_identity: exit 1
+FAIL: rows without a provable binding (engine version or excluded): ledgr_function_fingerprint 
+FAIL: census engine rows and the engine's helper list differ: ledgr_function_fingerprint 
+FAIL: replacement disagrees with the claimed binding: ledgr_function_fingerprint 
+CENSUS CHECK FAIL: 3 
+
