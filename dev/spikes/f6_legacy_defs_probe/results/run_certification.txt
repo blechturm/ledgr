@@ -1,0 +1,11 @@
+sma_3      run: success
+           certified as: sma_3=builtin
+sma_5      run: success
+           certified as: sma_5=builtin
+return_1   run: success
+           certified as: return_1=builtin
+stored def fields: id,params,requires_bars,stable_after,fingerprint 
+with stored fingerprint -> certification: builtin 
+without stored fingerprint -> certification: custom 
+preparation, with stored fingerprint: success | without: ledgr_indicator_gap_parity 
+done

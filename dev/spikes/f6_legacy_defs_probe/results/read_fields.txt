@@ -1,0 +1,66 @@
+sma_3: declarations identical FALSE; width old 3 new 3; requires_bars 3/3 stable_after 3/3
+List of 9
+ $ history_class         : chr "bounded"
+ $ history_source        : chr "declared"
+ $ gap_contract          : chr "strict_window"
+ $ gap_behavior          : chr "strict_window"
+ $ required_fields       : chr [1:4] "open" "high" "low" "close"
+ $ required_fields_source: chr "default"
+ $ tolerance             : num 0
+ $ input_carry           : chr "eligible"
+ $ input_carry_source    : chr "default"
+List of 9
+ $ history_class         : chr "bounded"
+ $ history_source        : chr "catalogue"
+ $ gap_contract          : chr "strict_window"
+ $ gap_behavior          : chr "strict_window"
+ $ required_fields       : chr "close"
+ $ required_fields_source: chr "catalogue"
+ $ tolerance             : num 0
+ $ input_carry           : chr "eligible"
+ $ input_carry_source    : chr "catalogue"
+  fields only in old:  | only in new: source,history_class,history_source,required_fields,required_fields_source,tolerance,input_carry,input_carry_source 
+sma_20: declarations identical FALSE; width old 20 new 20; requires_bars 20/20 stable_after 20/20
+List of 9
+ $ history_class         : chr "bounded"
+ $ history_source        : chr "declared"
+ $ gap_contract          : chr "strict_window"
+ $ gap_behavior          : chr "strict_window"
+ $ required_fields       : chr [1:4] "open" "high" "low" "close"
+ $ required_fields_source: chr "default"
+ $ tolerance             : num 0
+ $ input_carry           : chr "eligible"
+ $ input_carry_source    : chr "default"
+List of 9
+ $ history_class         : chr "bounded"
+ $ history_source        : chr "catalogue"
+ $ gap_contract          : chr "strict_window"
+ $ gap_behavior          : chr "strict_window"
+ $ required_fields       : chr "close"
+ $ required_fields_source: chr "catalogue"
+ $ tolerance             : num 0
+ $ input_carry           : chr "eligible"
+ $ input_carry_source    : chr "catalogue"
+  fields only in old:  | only in new: source,history_class,history_source,required_fields,required_fields_source,tolerance,input_carry,input_carry_source 
+return_1: declarations identical FALSE; width old 2 new 2; requires_bars 2/2 stable_after 2/2
+List of 9
+ $ history_class         : chr "bounded"
+ $ history_source        : chr "declared"
+ $ gap_contract          : chr "strict_window"
+ $ gap_behavior          : chr "strict_window"
+ $ required_fields       : chr [1:4] "open" "high" "low" "close"
+ $ required_fields_source: chr "default"
+ $ tolerance             : num 0
+ $ input_carry           : chr "eligible"
+ $ input_carry_source    : chr "default"
+List of 9
+ $ history_class         : chr "bounded"
+ $ history_source        : chr "catalogue"
+ $ gap_contract          : chr "strict_window"
+ $ gap_behavior          : chr "strict_window"
+ $ required_fields       : chr "close"
+ $ required_fields_source: chr "catalogue"
+ $ tolerance             : num 0
+ $ input_carry           : chr "excluded"
+ $ input_carry_source    : chr "catalogue"
+  fields only in old:  | only in new: source,history_class,history_source,required_fields,required_fields_source,tolerance,input_carry,input_carry_source 

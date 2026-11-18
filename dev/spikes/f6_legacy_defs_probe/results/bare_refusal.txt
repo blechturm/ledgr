@@ -1,0 +1,8 @@
+legacy ledgr_feature_sma_n(3) : ledgr_indicator_gap_parity - Indicator 'sma_3' fn and series_fn disagree for instrument 'F' at 2020-01-11T21:00:00Z (fn 60.122702389267225, series_fn 60.122702389267239, tolerance 0). 
+built-in ledgr_ind_sma(3)    : success 
+legacy ledgr_feature_sma_n(5) : ledgr_indicator_gap_parity - Indicator 'sma_5' fn and series_fn disagree for instrument 'F' at 2020-01-05T21:00:00Z (fn 53.535232329944478, series_fn 53.535232329944471, tolerance 0). 
+built-in ledgr_ind_sma(5)    : success 
+legacy ledgr_feature_sma_n(20) : success 
+built-in ledgr_ind_sma(20)    : success 
+legacy ledgr_feature_return_1() : success 
+built-in ledgr_ind_returns(1)   : success 
