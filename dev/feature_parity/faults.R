@@ -7,8 +7,10 @@
 # checked before running, and on one without it the fault is recorded as not
 # run. A missing arm, a missing case and a missing component must make
 # check.R refuse (exit 2); the pin's observations with one reached
-# treated-fields observation cleared, or with the causality phase dropped,
-# must fail with treated_fields (exit 1); the pin against itself must pass.
+# treated-fields observation cleared, with the causality phase dropped, or
+# with both outputs of the preparation observer lost on every refusing case
+# in both arms (re-review 2, H1) must fail with treated_fields (exit 1); the
+# pin against itself must pass.
 # Writes one checker transcript per control and faults.csv into --evidence.
 #
 #   Rscript faults.R --lib=<arm library> --pin=<pin runner out dir> --scratch=<dir> --evidence=<dir>
@@ -23,8 +25,8 @@ local({
   evidence <- arg("evidence")
   dir.create(scratch, recursive = TRUE, showWarnings = FALSE)
   dir.create(evidence, recursive = TRUE, showWarnings = FALSE)
-  check <- function(name, candidate) {
-    out <- suppressWarnings(system2(rscript, c(file.path(here, "check.R"), paste0("--pin=", pin),
+  check <- function(name, candidate, pin_dir = pin) {
+    out <- suppressWarnings(system2(rscript, c(file.path(here, "check.R"), paste0("--pin=", pin_dir),
                                                paste0("--candidate=", candidate)), stdout = TRUE, stderr = TRUE))
     status <- attr(out, "status") %||% 0L
     writeLines(c(sprintf("check.R --pin=<pin> --candidate=<%s>: exit %d", name, status), out),
@@ -109,6 +111,21 @@ local({
                                signals = paste(sort(r$signals), collapse = ","),
                                ok = r$status == 1L && identical(unique(r$signals), "treated_fields"))
   }
+  # Shared observer loss (re-review 2, H1): both outputs of the treated-fields
+  # observer (the prep entries and prep_seen) removed on every refusing case,
+  # in both arms alike, the independent reach kept. It must fail.
+  case_key <- paste(obs$family, obs$case, sep = " | ")
+  refusing <- case_key %in% case_key[obs$component == "refusal" & obs$value != "none"]
+  lost <- obs$value
+  hit <- refusing & treated
+  lost[hit] <- gsub("^;|;$", "", gsub("(^|;)prep:[^;]*", "", lost[hit]))
+  hit <- refusing & obs$component == "handoffs"
+  lost[hit] <- sub("prep_seen=[0-9]+", "prep_seen=0", lost[hit])
+  shared <- edited("shared_observer_loss", lost)
+  r <- check("shared_observer_loss", shared, pin_dir = shared)
+  rows$shared_observer_loss <- data.frame(control = "shared_observer_loss", expected_exit = 1L, exit = r$status,
+                                          expected_signal = "treated_fields", signals = paste(sort(r$signals), collapse = ","),
+                                          ok = r$status == 1L && identical(unique(r$signals), "treated_fields"))
   r <- check("pin_against_pin", pin)
   rows$pin_against_pin <- data.frame(control = "pin_against_pin", expected_exit = 0L, exit = r$status,
                                      expected_signal = "", signals = "", ok = r$status == 0L)

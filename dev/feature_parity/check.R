@@ -147,9 +147,12 @@ local({
   #    is checked on its own and must be observed wherever the case reaches
   #    it (re-review 1, G1): handoffs records, from other seams, the hand-offs
   #    reached per phase and the number observed. A phase has field entries
-  #    exactly when it was observed; every reached hand-off is observed (a
-  #    refusal during preparation may stop before the rest of its ranges);
-  #    the causality phase is reached whenever the probe checked a definition,
+  #    exactly when it was observed; every reached hand-off is observed, and
+  #    a case whose preparation reached a hand-off has observed at least one,
+  #    refusals included (re-review 2, H1: the counts come from one observer,
+  #    so only the independent reach can demand it); a refusal during
+  #    preparation may stop before the rest of its ranges, so a refusing case
+  #    may observe fewer, never none. The causality phase is reached whenever the probe checked a definition,
   #    that is whenever cells were calculated, and is absent otherwise; an
   #    empty preparation trace is allowed only where no hand-off was reached
   #    (an early return).
@@ -179,6 +182,7 @@ local({
       ok <- all(tag %in% c("prep", "causality")) &&
         (h[["prep_seen"]] > 0L) == any(tag == "prep") &&
         (h[["causality_seen"]] > 0L) == any(tag == "causality") &&
+        (h[["prep_reached"]] == 0L || h[["prep_seen"]] >= 1L) &&
         (if (refused[[i]]) h[["prep_seen"]] <= h[["prep_reached"]] else h[["prep_seen"]] == h[["prep_reached"]]) &&
         h[["causality_seen"]] == h[["causality_reached"]] &&
         (h[["causality_checks"]] > 0L) == (h[["causality_reached"]] > 0L)
