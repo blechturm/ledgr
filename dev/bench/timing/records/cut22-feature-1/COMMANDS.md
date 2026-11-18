@@ -25,6 +25,7 @@ The four unit records ran one after another from one driver process under
 | unit4-admission | e793cfa6 | 74d3e886 | unit 4 only (LDG-3250 without and with candidate 4) |
 | unit23-inputs-ttr | 74d3e886 | 9f4c1a24 | units 2+3 only (LDG-3251 on LDG-3250) |
 | c5-matrices | 9f4c1a24 | 0fbdffe5 | candidate 5 only (LDG-3252 on LDG-3251) |
+| final-vs-cut-base | b33e01d7 | 45df6928 | the whole cut: the final package (R/ as at the close) against the immutable cut base (decision 3a) |
 
 ddcdb9d8 and e793cfa6 are timing-arm commits on the local branches
 `ws41-arms` and `ws41-arms-u4` (LDG-3250's tree with candidate 1, or the
