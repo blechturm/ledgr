@@ -1,0 +1,42 @@
+pin refusing cases: 57 prep traces removed: 57 
+before:
+  family                                           case      component
+ compute hostile_carry2|data_start|custom_volume_strict treated_fields
+ compute hostile_carry2|data_start|custom_volume_strict       handoffs
+                                                                              value
+                                                    prep:open,high,low,close,volume
+ prep_reached=3;prep_seen=1;causality_checks=0;causality_reached=0;causality_seen=0
+after:
+  family                                           case      component
+ compute hostile_carry2|data_start|custom_volume_strict treated_fields
+ compute hostile_carry2|data_start|custom_volume_strict       handoffs
+                                                                              value
+                                                                                   
+ prep_reached=3;prep_seen=0;causality_checks=0;causality_reached=0;causality_seen=0
+candidate refusing cases: 57 prep traces removed: 57 
+before:
+  family                                           case      component
+ compute hostile_carry2|data_start|custom_volume_strict treated_fields
+ compute hostile_carry2|data_start|custom_volume_strict       handoffs
+                                                                              value
+                                                    prep:open,high,low,close,volume
+ prep_reached=3;prep_seen=1;causality_checks=0;causality_reached=0;causality_seen=0
+after:
+  family                                           case      component
+ compute hostile_carry2|data_start|custom_volume_strict treated_fields
+ compute hostile_carry2|data_start|custom_volume_strict       handoffs
+                                                                              value
+                                                                                   
+ prep_reached=3;prep_seen=0;causality_checks=0;causality_reached=0;causality_seen=0
+
+ candidate-only observer loss exit 1 
+ SIGNAL handoffs 57  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL treated_fields 57  (candidate lacks a treated-fields observation where its hand-offs say one was reached; first: compute | hostile_carry2|data_start|custom_volume_strict)
+cases 631 (refusing on the pin 57), observations pin 8280 candidate 8280
+CHECK FAIL: 2 signal(s) 
+
+ shared observer loss on refusing cases exit 1 
+ SIGNAL treated_fields 57  (pin lacks a treated-fields observation where its hand-offs say one was reached; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL treated_fields 57  (candidate lacks a treated-fields observation where its hand-offs say one was reached; first: compute | hostile_carry2|data_start|custom_volume_strict)
+cases 631 (refusing on the pin 57), observations pin 8280 candidate 8280
+CHECK FAIL: 2 signal(s) 

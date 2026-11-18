@@ -90,3 +90,18 @@ round-2 commit:
 The reviewer's negative controls, adapted to this tree, are in
 ../ldg3249/round2/ (run each script with Rscript; make_driver_probe.R before
 fault_driver_control.R).
+
+## Close re-review 2 (evidence in round3/; H1, checker and fault driver only)
+
+R/ unchanged at 39ac4ba4; runner unchanged since round 2; check.R and
+faults.R at 477d97ef:
+
+    Rscript dev/feature_parity/runner.R --arm=pin --lib=<pin> --out=$S/oracle/v6/pin
+    Rscript dev/feature_parity/runner.R --arm=final_39ac4ba4 --lib=$S/libs/final-39ac4ba4 --out=$S/oracle/v6/final
+    Rscript dev/feature_parity/check.R --pin=$S/oracle/v6/pin --candidate=$S/oracle/v6/pin > round3/oracle/check_pin_self.txt
+    Rscript dev/feature_parity/check.R --pin=$S/oracle/v6/pin --candidate=$S/oracle/v6/final > round3/oracle/check_final.txt
+    Rscript dev/feature_parity/faults.R --lib=$S/libs/final-39ac4ba4 --pin=$S/oracle/v6/pin
+      --scratch=$S/oracle/v6/final_faults --evidence=dev/feature_parity/evidence/ldg3255/round3/faults
+
+The reviewer's re-review 2 probes, adapted to this tree, are in
+../ldg3249/round3/ (each run with Rscript).

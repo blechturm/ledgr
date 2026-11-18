@@ -1,0 +1,55 @@
+[1] TRUE
+
+RUN baseline pin 
+exit 0 
+ runner: pin fault none - 7 cases, 90 observations 
+
+RUN baseline candidate 
+exit 0 
+ runner: candidate fault none - 7 cases, 90 observations 
+
+RUN faulty pin 
+exit 0 
+ runner: pin fault none - 7 cases, 90 observations 
+
+RUN faulty candidate 
+exit 0 
+ runner: candidate fault none - 7 cases, 90 observations 
+
+CHECK baseline 
+exit 0 
+ cases 7 (refusing on the pin 2), observations pin 90 candidate 90
+CHECK PASS 
+
+CHECK faulty 
+exit 1 
+ SIGNAL treated_fields 2  (pin lacks a treated-fields observation where its hand-offs say one was reached; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL treated_fields 2  (candidate lacks a treated-fields observation where its hand-offs say one was reached; first: compute | hostile_carry2|data_start|custom_volume_strict)
+cases 7 (refusing on the pin 2), observations pin 90 candidate 90
+CHECK FAIL: 2 signal(s) 
+
+ pin all non-observer components identical: TRUE 
+Changed observer outputs:
+  family                                           case      component
+ compute hostile_carry2|data_start|custom_volume_strict treated_fields
+ compute hostile_carry2|data_start|custom_volume_strict       handoffs
+ compute hostile_carry2|late_start|custom_volume_strict treated_fields
+ compute hostile_carry2|late_start|custom_volume_strict       handoffs
+                                                                              value
+                                                                                   
+ prep_reached=3;prep_seen=0;causality_checks=0;causality_reached=0;causality_seen=0
+                                                                                   
+ prep_reached=3;prep_seen=0;causality_checks=0;causality_reached=0;causality_seen=0
+
+ candidate all non-observer components identical: TRUE 
+Changed observer outputs:
+  family                                           case      component
+ compute hostile_carry2|data_start|custom_volume_strict treated_fields
+ compute hostile_carry2|data_start|custom_volume_strict       handoffs
+ compute hostile_carry2|late_start|custom_volume_strict treated_fields
+ compute hostile_carry2|late_start|custom_volume_strict       handoffs
+                                                                              value
+                                                                                   
+ prep_reached=3;prep_seen=0;causality_checks=0;causality_reached=0;causality_seen=0
+                                                                                   
+ prep_reached=3;prep_seen=0;causality_checks=0;causality_reached=0;causality_seen=0

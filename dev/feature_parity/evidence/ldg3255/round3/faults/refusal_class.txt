@@ -1,0 +1,6 @@
+check.R --pin=<pin> --candidate=<refusal_class>: exit 1
+SIGNAL refusal_class 34  (candidate differs from the corpus; first: compute | empty|data_start|close_with_lookahead)
+SIGNAL refusal 34  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_lookahead)
+SIGNAL refusal_class 34  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_lookahead)
+cases 631 (refusing on the pin 57), observations pin 8280 candidate 8280
+CHECK FAIL: 3 signal(s)
