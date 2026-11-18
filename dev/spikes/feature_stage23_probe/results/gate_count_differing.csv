@@ -1,0 +1,5 @@
+"substrate","rule","def","instrument","value","segment","exceptions"
+"corpus_panel_carry5","relaxed","ttr_sma_3",5,TRUE,TRUE,"reason_start+reason_end+reason_code"
+"corpus_panel_carry5","relaxed","sma_3",5,TRUE,TRUE,"reason_start+reason_end+reason_code"
+"corpus_panel_strict_outcarry","relaxed","ttr_sma_3",5,TRUE,TRUE,"reason_start+reason_end+reason_code"
+"corpus_panel_strict_outcarry","relaxed","sma_3",5,TRUE,TRUE,"reason_start+reason_end+reason_code"

@@ -1,0 +1,56 @@
+"file","function_name","kind","code_lines","adapter_file"
+"R/feature-inspection.R","ledgr_indicator_source","names TTR",1,FALSE
+"R/feature-parameters.R","ledgr_param_constructor_registry","calls adapter helper",2,FALSE
+"R/features-engine.R","ledgr_feature_engine_version","calls adapter helper",11,FALSE
+"R/history-features.R","ledgr_feature_catalogue_candidates","names TTR",5,FALSE
+"R/history-features.R","ledgr_history_feature_segment","names TTR",5,FALSE
+"R/history-features.R","ledgr_feature_certify","names TTR",3,FALSE
+"R/history-features.R","ledgr_feature_catalogue_candidates","calls adapter helper",1,FALSE
+"R/indicator-history.R","ledgr_indicator_history_catalogue","names TTR",26,FALSE
+"R/indicator.R","ledgr_indicator","names TTR",2,FALSE
+"R/strategy-provenance.R","ledgr_dependency_versions_json","names TTR",1,FALSE
+"R/indicator-ttr.R","ledgr_ind_ttr_outputs","names TTR",27,TRUE
+"R/indicator-ttr.R","ledgr_ind_ttr","names TTR",25,TRUE
+"R/indicator-ttr.R","ledgr_ttr_example_call","calls adapter helper",18,TRUE
+"R/indicator-ttr.R","ledgr_ind_ttr","calls adapter helper",13,TRUE
+"R/indicator-ttr.R","ledgr_ind_ttr_outputs","calls adapter helper",13,TRUE
+"R/indicator-ttr.R","ledgr_ttr_select_output","names TTR",8,TRUE
+"R/indicator-ttr.R","ledgr_ttr_normalize_fn","names TTR",7,TRUE
+"R/indicator-ttr.R","ledgr_ttr_raw_call","names TTR",7,TRUE
+"R/indicator-ttr.R","ledgr_ttr_catalogue_row","names TTR",6,TRUE
+"R/indicator-ttr.R","ledgr_ttr_catalogue_variant","names TTR",4,TRUE
+"R/indicator-ttr.R","ledgr_ttr_default_id","names TTR",4,TRUE
+"R/indicator-ttr.R","ledgr_ttr_discover_outputs","calls adapter helper",3,TRUE
+"R/indicator-ttr.R","ledgr_ttr_validate_output_contract","calls adapter helper",3,TRUE
+"R/indicator-ttr.R","ledgr_ttr_example_call","names TTR",3,TRUE
+"R/indicator-ttr.R","ledgr_ttr_infer_requires_bars","names TTR",3,TRUE
+"R/indicator-ttr.R","ledgr_ttr_known_outputs","names TTR",3,TRUE
+"R/indicator-ttr.R","ledgr_ttr_normalize_outputs","names TTR",3,TRUE
+"R/indicator-ttr.R","ledgr_ttr_bundle_ids","calls adapter helper",2,TRUE
+"R/indicator-ttr.R","ledgr_ttr_call","calls adapter helper",2,TRUE
+"R/indicator-ttr.R","ledgr_ttr_default_id","calls adapter helper",2,TRUE
+"R/indicator-ttr.R","ledgr_ttr_build_input","names TTR",2,TRUE
+"R/indicator-ttr.R","ledgr_ttr_catalogue_spec","names TTR",2,TRUE
+"R/indicator-ttr.R","ledgr_ttr_discover_outputs","names TTR",2,TRUE
+"R/indicator-ttr.R","ledgr_ttr_inputs_for_known_function","names TTR",2,TRUE
+"R/indicator-ttr.R","ledgr_ttr_match_rule","names TTR",2,TRUE
+"R/indicator-ttr.R","ledgr_ttr_normalize_args","names TTR",2,TRUE
+"R/indicator-ttr.R","ledgr_ind_ttr_warmup_rules","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_build_input","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_catalogue_variant","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_declaration_args","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_id_token","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_infer_requires_bars","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_inputs_for_known_function","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_known_outputs","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_match_rule","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_normalize_args","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_normalize_input","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_normalize_output","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_raw_call","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_required_fields","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_synthetic_bars","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_validate_positive_integer","calls adapter helper",1,TRUE
+"R/indicator-ttr.R","ledgr_ind_ttr_warmup_rules","names TTR",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_bundle_ids","names TTR",1,TRUE
+"R/indicator-ttr.R","ledgr_ttr_call","names TTR",1,TRUE
