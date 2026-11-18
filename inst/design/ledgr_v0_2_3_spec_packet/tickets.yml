@@ -3567,7 +3567,8 @@ cuts:
   - id: 23
     name: "Built-in ids rebuild from the built-in: retire the v0.1.4 list definitions (WS41 close review F6)"
     cut: "2026-11-18"
-    status: "accepted"
+    status: "closed"
+    closed: "2026-11-18, after workstream 42 closed: its Type 1 close review passed at re-review 1 (two rounds). Final R/ at 68b505b9: built-in ids sma_<n> and return_1 rebuild from the built-in constructor; ledgr_feature_sma_n(), ledgr_feature_return_1() and ledgr_validate_feature_def() deleted with the one test and the test-seam entry; R/ production lines -101. Oracle identical to the pin on 631 cases with ledgr_ind_returns(1) added (committed and dated runs reach both rebuild branches on both clocks); 156 identities and the engine version bc6a3ea2 unchanged, an old precompute reused with the same result; census unchanged but 8 locations; full tests (1,360) and R CMD check pass. Declared private-input differences: decision 3 plus the close review's F2 (a fingerprint-bearing hand-edited declaration now refuses under the catalogue-family rule). No public-input result changed."
     accepted: "2026-11-18 under the maintainer's request to write the F6 cut and implement it as usual (measure, cut, Codex cut review iterated to green, implement, Codex close review iterated to green), after the cut review passed at re-review 1 (cut_review_23_rereview_1.md), as written."
     opening: >-
       Cut 22 closed (29ae4478) with one flag from its close review, F6: the
@@ -4163,10 +4164,11 @@ workstreams:
   - id: 42
     name: "Built-in ids rebuild from the built-in"
     cut: 23
-    status: "in_progress"
+    status: "complete"
     depends_on_workstream: 41
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 42, after LDG-3257", reason: "The rebuild of sma_<n> and return_1 starts from one constructed built-in with the existing overlay and shadow rule, and refuses as before except decision 1's declared fingerprint-free case; the three functions and the one test are deleted with the stated reason and nothing else registered changed beyond decision 2's named additions; every witness passes, the changed ones were shown to fail on the base and the invariant ones to pass on both arms, and the overlay faults fail; the oracle passes against the pin, its added feature reaching the return_1 branch through committed runs on both clocks, its expectations regenerated from the pin only, and its faults pass; the unchanged-engine identity mode shows every identity and the engine version unchanged and a base precompute reusable, and fails on its two controls; the census check passes; the full suite and the package check pass; and the stated reasons for not running the lean gate or a timing record hold."}
+    close_review: "Independent clean-context Codex CLI (gpt-6.1-sol/high), Type 1; reports in this packet (ws42_close_review_round1.md, ws42_close_rereview_1.md). Round 1 (at a6f94960): CHANGES_REQUIRED, F1 required (the unchanged-engine identity mode took its expected names from the base record, so an identity lost from both arms alike passed), F2 advisory (a fingerprint-bearing hand-edited stored declaration now refuses; record it); the product rebuild, the registered-test changes and every reported number reproduced, and no public-input difference was found. Corrected in 9a4a4697 (tooling and evidence only: a committed expected identity-name set checked per arm, controls missing_both and renamed_both; F2 recorded on LDG-3257). Re-review 1 (at 9a4a4697): PASS, F1 fixed (the name set re-derived independently from identity.R's recording sites; 1,453 checker mutation cases; the changed-engine mode identical to Cut 22's on eight cases), F2 recorded accurately, no new finding. Ratio: 2 reviews, 1 correction pass."
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -7837,7 +7839,7 @@ tickets:
   - id: "LDG-3257"
     title: "Close the built-in rebuild cut"
     workstream: 42
-    status: "in_progress"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-3256"]
@@ -7864,3 +7866,4 @@ tickets:
       - "Lines (lines.csv): R/ production lines 54,983 -> 54,882 (-101: R/features-engine.R -100, R/backtest-runner.R -1); the engine-version bind list unchanged (64). Seven shapes walked on the changed code (shapes.md): none introduced; one discarded construction removed."
       - "Close review round 1 (ws42_close_review_round1.md, at a6f94960): CHANGES_REQUIRED, F1 required, F2 advisory; the product rebuild, the registered-test changes and every reported number reproduced, and no public-input difference was found. F1: the unchanged-engine identity mode took its expected names from the base record, so an identity lost from both arms alike passed (155 of 155). Corrected (tooling only, R/ unchanged at 68b505b9): identity_check.R checks each arm's record names against the committed dev/feature_parity/identity_names_unchanged_engine.csv (156 names in both arms, 2 base-only saved-store records, 8 candidate-only reuse and store-read records; --expected overrides), reporting missing, unexpected and duplicate names per arm; the changed-engine mode is unchanged. identity_controls.R adds missing_both (one identity removed from both arms) and renamed_both (one identity renamed in both arms). round2/identity_check.txt: 156 of 156 equal, PASS; round2/identity_controls.txt: all seven controls as required, CONTROLS PASS; round2/reviewer_identity_negatives.txt: the reviewer's records rerun, original PASS, missing_both now FAIL, the other six still FAIL."
       - "F2 (advisory, recorded): beyond decision 3's two fingerprint-free differences, a hand-edited stored definition that keeps its fingerprint but changes a declaration against the catalogue (the reviewer's probe: return_1 with input_carry 'eligible') now refuses with ledgr_indicator_history_contradiction, where the old list ran it. The converted built-in carries history_source 'catalogue', which activates the existing carry-family check (R/history-features.R:41) under contracts.md's catalogue-family rule (Indicator Computation And Identity). Such a definition is corrupted private input: no public entry point writes it, and its fingerprint no longer describes its declarations. Decision 3's list is therefore not an equivalence claim over arbitrary hand-edited stored definitions; no product change."
+      - "Close re-review 1 (ws42_close_rereview_1.md, at 9a4a4697): PASS; F1 fixed, F2 recorded, no new finding. Workstream 42 and Cut 23 closed."
