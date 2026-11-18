@@ -10,7 +10,7 @@ it lands.
 | `corpus.R` | substrates, definition sets, axes and public-entry fixtures (from `dev/spikes/feature_stage1_probe/fixtures.R`, extended with the RFC's case list) |
 | `runner.R` | one arm per fresh process: loads ledgr from a library (`--lib`) or a source tree (`--source`), runs every case, writes `observations.csv` and `provenance.csv` |
 | `check.R` | diffs a candidate's observations against the pin's and both against `corpus_expected.csv`; exit 0 pass, 1 difference (one `SIGNAL` line per differing component), 2 refusal (missing arm, case or component) |
-| `faults.R` | the fault controls: eight deliberate faults each exit 1 with their own signal; a missing arm, case or component refuses; the pin against itself passes |
+| `faults.R` | the fault controls: eight deliberate faults each exit 1 with their own signal (all_fields not run, and recorded so, on a library without the field selector, checked before running; any runner failure fails the driver); a missing arm, case or component refuses; a cleared treated-fields observation or a dropped causality phase fails; the pin against itself passes |
 | `install_arm.R` | installs a commit as an arm (git archive, `R CMD INSTALL`) with its commit marker and R/ source hashes |
 | `corpus_expected.csv` | the corpus: every case, and each case's certification, field union, route, refusal class and TTR-route agreement as the pin produced them |
 | `memory.R` | candidate 5's memory rule (LDG-3252): object bytes and peak R heap of sweep feature preparation in fresh children |
@@ -62,7 +62,15 @@ identifying field), `refusal_class` and `rng` (the caller's
 `treated_fields` between the arms: an arm with the field selector must treat
 exactly the certified union recorded as `field_union` on a compute case, an
 arm without it (the pin) all five fields, and the single-definition read
-entry all five on every arm. Compute cases add `certification`, `field_union`,
+entry all five on every arm, each phase on its own. `handoffs` (re-review
+1, G1) records, from other seams, the hand-offs each case reaches per phase
+(the ranges the calculation and the causality probe get, the read entry's
+bounded prefix, the definitions the probe checks) and how many were
+observed; it is compared between the arms, and check.R requires a phase's
+`treated_fields` entries exactly where that phase was observed, every
+reached hand-off observed (a preparation refusal may stop early), and the
+causality phase present exactly when the probe checked a definition.
+Compute cases add `certification`, `field_union`,
 `values`, `na`, `planes` (plane records), `proj` (the projection with its
 indexed planes) and `reads` (history-read evidence over every instrument and
 session). Values are sha256 digests of the R objects, so types, attributes,

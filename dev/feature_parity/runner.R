@@ -136,15 +136,44 @@ local({
     rec$causality <- character()
     rec$treated <- character()
     rec$in_causality <- FALSE
+    rec$in_read <- FALSE
+    rec$handoff <- c(prep_reached = 0L, prep_seen = 0L, causality_checks = 0L,
+                     causality_reached = 0L, causality_seen = 0L)
   }
   reset()
+  phase <- function() if (isTRUE(rec$in_causality)) "causality" else "prep"
   # The fields actually treated at each hand-off (close review round 1, F3):
   # every ledgr_history_feature_inputs() call, marked as the preparation's or
   # the causality probe's, records the fields its result treats.
   wrap("ledgr_history_feature_inputs", function(orig) function(...) {
     res <- orig(...)
-    rec$treated <- c(rec$treated, paste0(if (isTRUE(rec$in_causality)) "causality:" else "prep:",
-                                         paste(names(res$treated), collapse = ",")))
+    rec$treated <- c(rec$treated, paste0(phase(), ":", paste(names(res$treated), collapse = ",")))
+    key <- paste0(phase(), "_seen")
+    rec$handoff[[key]] <- rec$handoff[[key]] + 1L
+    res
+  })
+  # Which hand-offs each case reaches (close review re-review 1, G1), from
+  # seams other than the one observed above: every range the calculation or
+  # the causality probe gets from ledgr_history_feature_ranges() is handed
+  # to ledgr_history_feature_inputs() once, and the read entry hands one
+  # instrument's prefix once its bounds are set. The causality probe checks
+  # a definition exactly when that definition calculated cells. The pin and
+  # the candidate must agree on all of it (the handoffs component).
+  wrap("ledgr_history_feature_ranges", function(orig) function(...) {
+    res <- orig(...)
+    key <- paste0(phase(), "_reached")
+    rec$handoff[[key]] <- rec$handoff[[key]] + length(res$start)
+    res
+  })
+  wrap("ledgr_history_feature_planes", function(orig) function(...) {
+    old <- rec$in_read
+    rec$in_read <- TRUE
+    on.exit(rec$in_read <- old)
+    orig(...)
+  })
+  wrap("ledgr_history_feature_bounds", function(orig) function(...) {
+    res <- orig(...)
+    if (isTRUE(rec$in_read)) rec$handoff[["prep_reached"]] <- rec$handoff[["prep_reached"]] + 1L
     res
   })
   wrap("ledgr_history_feature_causality", function(orig) function(...) {
@@ -178,6 +207,7 @@ local({
   custom_scope("ledgr_history_feature_segment")
   wrap("ledgr_history_feature_check_definition", function(orig) function(cert, probe, ...) {
     rec$causality <- c(rec$causality, paste0("def=", cert$def$id, " inst=", probe[[1L]]$inputs$instrument_id))
+    rec$handoff[["causality_checks"]] <- rec$handoff[["causality_checks"]] + 1L
     old <- rec$custom
     rec$custom <- identical(cert$certification, "custom")
     on.exit(rec$custom <- old)
@@ -212,6 +242,7 @@ local({
     emit(family, case, "callback", dig(rec$frames))
     emit(family, case, "causality", dig(rec$causality))
     emit(family, case, "treated_fields", paste(sort(unique(rec$treated), method = "radix"), collapse = ";"))
+    emit(family, case, "handoffs", paste(names(rec$handoff), rec$handoff, sep = "=", collapse = ";"))
     if (inherits(value, "oracle_refusal")) {
       emit(family, case, "refusal", dig(value[[1L]]))
       emit(family, case, "refusal_class", value[[1L]]$class[[1L]])
