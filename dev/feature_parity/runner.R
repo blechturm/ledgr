@@ -61,12 +61,13 @@ local({
   }
   prov <- data.frame(
     field = c("arm", "library", "source", "namespace_path", "installed_marker", "source_commit",
-              "source_status_R", "r_source_hashes", "r_version", "ttr_version", "fault"),
+              "source_status_R", "r_source_hashes", "r_version", "ttr_version", "fault", "field_selector"),
     value = c(arg("arm"), lib %||% "", src %||% "", getNamespaceInfo(ns, "path"),
               if (is.null(lib)) "" else marker(lib),
               if (is.null(src)) "" else paste(git("rev-parse", "HEAD"), collapse = ""),
               if (is.null(src)) "" else paste(git("status", "--porcelain", "--", "R"), collapse = ";"),
-              r_hashes, R.version.string, as.character(utils::packageVersion("TTR")), fault),
+              r_hashes, R.version.string, as.character(utils::packageVersion("TTR")), fault,
+              exists("ledgr_history_feature_fields", envir = ns, inherits = FALSE)),
     stringsAsFactors = FALSE)
   utils::write.csv(prov, file.path(out, "provenance.csv"), row.names = FALSE)
 
@@ -111,6 +112,15 @@ local({
       cert <- orig(...)
       if (identical(cert$kind, "ttr")) { cert$certification <- "custom"; cert$kind <- NULL }
       cert }),
+    # Close review round 1, F3: the candidate treats every field again, values
+    # unchanged; only the observed treated fields can show it.
+    all_fields = {
+      if (!exists("ledgr_history_feature_fields", envir = ns, inherits = FALSE)) {
+        stop("fault all_fields needs a candidate with the field selector")
+      }
+      wrap("ledgr_history_feature_fields", function(orig) function(...) {
+        c("open", "high", "low", "close", "volume") })
+    },
     stop("unknown fault: ", fault))
 
   # ---- recorders ----------------------------------------------------------
@@ -124,8 +134,25 @@ local({
     rec$custom <- FALSE
     rec$frames <- character()
     rec$causality <- character()
+    rec$treated <- character()
+    rec$in_causality <- FALSE
   }
   reset()
+  # The fields actually treated at each hand-off (close review round 1, F3):
+  # every ledgr_history_feature_inputs() call, marked as the preparation's or
+  # the causality probe's, records the fields its result treats.
+  wrap("ledgr_history_feature_inputs", function(orig) function(...) {
+    res <- orig(...)
+    rec$treated <- c(rec$treated, paste0(if (isTRUE(rec$in_causality)) "causality:" else "prep:",
+                                         paste(names(res$treated), collapse = ",")))
+    res
+  })
+  wrap("ledgr_history_feature_causality", function(orig) function(...) {
+    old <- rec$in_causality
+    rec$in_causality <- TRUE
+    on.exit(rec$in_causality <- old)
+    orig(...)
+  })
   counted <- function(name, key) wrap(name, function(orig) function(...) {
     rec$count[[key]] <- rec$count[[key]] + 1L
     orig(...)
@@ -184,6 +211,7 @@ local({
     emit(family, case, "route", paste(names(rec$count), rec$count, sep = "=", collapse = ";"))
     emit(family, case, "callback", dig(rec$frames))
     emit(family, case, "causality", dig(rec$causality))
+    emit(family, case, "treated_fields", paste(sort(unique(rec$treated), method = "radix"), collapse = ";"))
     if (inherits(value, "oracle_refusal")) {
       emit(family, case, "refusal", dig(value[[1L]]))
       emit(family, case, "refusal_class", value[[1L]]$class[[1L]])
@@ -261,9 +289,12 @@ local({
     sub <- substrates[[s]]
     # Chosen by the definition (a TTR catalogue row), not by its certification,
     # so a wrong route shows as a difference, not as a missing case.
-    for (def in sets$catalogue_rows) {
+    route_defs <- c(sets$catalogue_rows, sets$parameterized_single, sets$parameterized_bundle)
+    route_tags <- rep(c("", "param:"), c(length(sets$catalogue_rows), length(route_defs) - length(sets$catalogue_rows)))
+    for (r in seq_along(route_defs)) {
+      def <- route_defs[[r]]
       if (!is.character(def$params$ttr_fn)) next
-      case <- paste(s, def$id, sep = "|")
+      case <- paste(s, paste0(route_tags[[r]], def$id), sep = "|")
       res <- observe("ttr_route", case, {
         cached <- ns$ledgr_history_compute_feature_series(sub, list(def))[[1L]]
         closure <- do.call(rbind, lapply(sub$instrument_ids, function(id) {

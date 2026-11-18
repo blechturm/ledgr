@@ -1,11 +1,14 @@
 # The oracle's fault controls (Cut 22 decision 2, LDG-3249). Each deliberate
-# fault runs the pin with that fault (runner.R --fault=) and must make
+# fault runs the --lib arm with that fault (runner.R --fault=) and must make
 # check.R exit 1 with its own signal; the signal sets of the faults must be
-# pairwise distinct. A missing arm, a missing case and a missing component
-# must make check.R refuse (exit 2), and the pin against itself must pass.
-# Writes one checker transcript per control and faults.csv into --evidence.
+# pairwise distinct. all_fields (close review round 1, F3: the field
+# selector returns all five fields, values unchanged) needs a library with
+# the selector and is recorded as skipped on one without. A missing arm, a
+# missing case and a missing component must make check.R refuse (exit 2),
+# and the pin against itself must pass. Writes one checker transcript per
+# control and faults.csv into --evidence.
 #
-#   Rscript faults.R --lib=<pin library> --pin=<pin runner out dir> --scratch=<dir> --evidence=<dir>
+#   Rscript faults.R --lib=<arm library> --pin=<pin runner out dir> --scratch=<dir> --evidence=<dir>
 local({
   argv <- commandArgs(TRUE)
   arg <- function(name) sub(paste0("^--", name, "="), "", grep(paste0("^--", name, "="), argv, value = TRUE)[[1L]])
@@ -27,14 +30,22 @@ local({
   }
   faults <- c(changed_value = "values", moved_na = "na", plane_reason = "planes",
               refusal_class = "refusal_class", narrowed_callback = "callback",
-              reordered_causality = "causality", wrong_route = "route")
+              reordered_causality = "causality", wrong_route = "route", all_fields = "treated_fields")
   rows <- list()
   sets <- list()
   for (f in names(faults)) {
     out <- file.path(scratch, f)
     status <- system2(rscript, c(file.path(here, "runner.R"), paste0("--arm=pin_", f), paste0("--lib=", arg("lib")),
                                  paste0("--out=", out), paste0("--fault=", f)))
-    if (!identical(as.integer(status), 0L)) stop("runner.R failed for fault ", f)
+    if (!identical(as.integer(status), 0L)) {
+      # all_fields needs the field selector (candidate 2); the pin has none.
+      if (identical(f, "all_fields")) {
+        rows[[f]] <- data.frame(control = f, expected_exit = 1L, exit = NA_integer_, expected_signal = faults[[f]],
+                                signals = "skipped: the library has no field selector", ok = TRUE)
+        next
+      }
+      stop("runner.R failed for fault ", f)
+    }
     r <- check(f, out)
     sets[[f]] <- paste(sort(r$signals), collapse = ",")
     rows[[f]] <- data.frame(control = f, expected_exit = 1L, exit = r$status, expected_signal = faults[[f]],

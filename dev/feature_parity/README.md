@@ -10,7 +10,7 @@ it lands.
 | `corpus.R` | substrates, definition sets, axes and public-entry fixtures (from `dev/spikes/feature_stage1_probe/fixtures.R`, extended with the RFC's case list) |
 | `runner.R` | one arm per fresh process: loads ledgr from a library (`--lib`) or a source tree (`--source`), runs every case, writes `observations.csv` and `provenance.csv` |
 | `check.R` | diffs a candidate's observations against the pin's and both against `corpus_expected.csv`; exit 0 pass, 1 difference (one `SIGNAL` line per differing component), 2 refusal (missing arm, case or component) |
-| `faults.R` | the fault controls: seven deliberate faults each exit 1 with their own signal; a missing arm, case or component refuses; the pin against itself passes |
+| `faults.R` | the fault controls: eight deliberate faults each exit 1 with their own signal; a missing arm, case or component refuses; the pin against itself passes |
 | `install_arm.R` | installs a commit as an arm (git archive, `R CMD INSTALL`) with its commit marker and R/ source hashes |
 | `corpus_expected.csv` | the corpus: every case, and each case's certification, field union, route, refusal class and TTR-route agreement as the pin produced them |
 | `memory.R` | candidate 5's memory rule (LDG-3252): object bytes and peak R heap of sweep feature preparation in fresh children |
@@ -18,19 +18,23 @@ it lands.
 | `timing_launch.R` | starts the shared timing runner with its temporary directory outside AppData/Local/Temp |
 | `evidence/<ticket>/` | each ticket's commands, transcripts and the pin's observations under that ticket's harness |
 
-## Cases (548)
+## Cases (631)
 
-- `compute` (378): 7 substrates x 3 calculation starts (data start, a late
-  start, past the end) x 18 definition sets through
+- `compute` (441): 7 substrates x 3 calculation starts (data start, a late
+  start, past the end) x 21 definition sets through
   `ledgr_history_compute_feature_series()`. The measuring step's 6 x 3 x 15
   are included unchanged; added: an empty and a 12-bar instrument, every
   package catalogue row (all warmup rules and documented or derived
   outputs, MACD histogram included), `stable_after` greater than
   `requires_bars`, and an unregistered ohlc form beside a custom ohlc
-  callback.
-- `read_entry` (14): the single-definition read entry
-  (`ledgr_history_feature_planes()`), the measuring step's cases.
-- `ttr_route` (132): each TTR catalogue row on three one-knowledge-range
+  callback; and (close review round 1, F4) resolved parameterised forms
+  (`ledgr_param()` through a feature map): single-output RSI and ATR, a
+  BBands bundle, and both beside a custom definition.
+- `read_entry` (22): the single-definition read entry
+  (`ledgr_history_feature_planes()`): the measuring step's 14 cases and the
+  four resolved parameterised definitions on two substrates.
+- `ttr_route` (144): each TTR catalogue row and resolved parameterised TTR
+  definition (`param:`) on three one-knowledge-range
   substrates, through the cached raw call (compute) and the emitted closure
   (`ledgr_ttr_call()`, the read entry); the two must be identical.
 - `axis` (6): the formatted pulse axis at every consumer (matrix dimnames,
@@ -52,7 +56,13 @@ entries), `callback` (the columns and rows of every frame handed to a
 custom callback), `causality` (the probe's definitions, instruments and
 sampled positions in order), `refusal` (condition classes and every
 identifying field), `refusal_class` and `rng` (the caller's
-`.Random.seed` unchanged). Compute cases add `certification`, `field_union`,
+`.Random.seed` unchanged) and `treated_fields` (the fields every
+`ledgr_history_feature_inputs()` call actually treated, marked `prep:` or
+`causality:`; close review round 1, F3). check.R does not compare
+`treated_fields` between the arms: an arm with the field selector must treat
+exactly the certified union recorded as `field_union` on a compute case, an
+arm without it (the pin) all five fields, and the single-definition read
+entry all five on every arm. Compute cases add `certification`, `field_union`,
 `values`, `na`, `planes` (plane records), `proj` (the projection with its
 indexed planes) and `reads` (history-read evidence over every instrument and
 session). Values are sha256 digests of the R objects, so types, attributes,

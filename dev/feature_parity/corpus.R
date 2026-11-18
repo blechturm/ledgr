@@ -199,6 +199,15 @@ fx_defs <- function() {
                                  series_fn = function(bars) as.numeric(bars$high - bars$low + bars$open * 0),
                                  required_fields = c("open", "high", "low", "close"))))
   name <- function(x) stats::setNames(x, vapply(x, function(d) d$id, ""))
+  # Resolved parameterised forms (close review round 1, F4): ledgr_param()
+  # arguments resolved through a feature map, single-output and bundled.
+  param_map <- ledgr::ledgr_feature_map(
+    signal = ledgr::ledgr_ind_ttr("RSI", input = "close", n = ledgr::ledgr_param("rsi_n")),
+    range = ledgr::ledgr_ind_ttr("ATR", input = "hlc", output = "atr", n = ledgr::ledgr_param("atr_n")),
+    ledgr::ledgr_ind_ttr_outputs("BBands", input = "close", outputs = c("dn", "up"), n = ledgr::ledgr_param("bb_n")))
+  resolved <- lapply(ns$ledgr_feature_map_indicators(
+    ns$ledgr_resolve_feature_map(param_map, feature_params = list(rsi_n = 3L, atr_n = 3L, bb_n = 4L))), fx_def)
+  is_bundle <- vapply(resolved, function(d) identical(d$params$ttr_fn, "BBands"), logical(1))
   lapply(list(
     close = close, hl = hl, hlc = hlc, hlcv = hlcv, all_cert = all_cert,
     forged = list(forged),
@@ -210,7 +219,10 @@ fx_defs <- function() {
     mixed = c(close, hl, custom, unregistered),
     catalogue_rows = fx_catalogue_rows(),
     stable_late = stable_late,
-    custom_ohlc = custom_ohlc), name)
+    custom_ohlc = custom_ohlc,
+    parameterized_single = resolved[!is_bundle],
+    parameterized_bundle = resolved[is_bundle],
+    parameterized_mixed = c(resolved, list(custom_volume))), name)
 }
 
 # The single-definition read entry (ledgr_history_feature_planes): the
@@ -220,6 +232,12 @@ fx_read_entry_cases <- function(sets) {
   for (s in c("hostile_carry2", "panel_carry5")) {
     for (set in c("close", "hlc", "custom_volume")) {
       for (d in sets[[set]][seq_len(min(3L, length(sets[[set]])))]) {
+        out[[length(out) + 1L]] <- list(substrate = s, name = paste0(set, ":", d$id), def = d)
+      }
+    }
+    # Close review round 1, F4: every resolved parameterised definition.
+    for (set in c("parameterized_single", "parameterized_bundle")) {
+      for (d in sets[[set]]) {
         out[[length(out) + 1L]] <- list(substrate = s, name = paste0(set, ":", d$id), def = d)
       }
     }

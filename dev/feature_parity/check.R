@@ -36,7 +36,7 @@ local({
     x$case_key <- paste(x$family, x$case, sep = " | ")
     x
   }
-  always <- c("rng", "route", "callback", "causality", "refusal", "refusal_class")
+  always <- c("rng", "route", "callback", "causality", "treated_fields", "refusal", "refusal_class")
   per_family <- list(
     compute = list(always = c("certification", "field_union"), data = c("values", "na", "planes", "proj", "reads")),
     read_entry = list(always = "certification", data = "values"),
@@ -117,13 +117,14 @@ local({
       signal(component, paste(want$family[hit], want$case[hit], sep = " | "), paste(arm[[1L]], "differs from the corpus"))
     }
   }
-  # 2. candidate against pin, every component.
+  # 2. candidate against pin, every component but treated_fields, which each
+  #    arm's own mechanism determines (4. below).
   keys <- union(pin$key, cand$key)
   a <- pin$value[match(keys, pin$key)]
   b <- cand$value[match(keys, cand$key)]
   component <- c(pin$component, cand$component)[match(keys, c(pin$key, cand$key))]
   case_key <- c(pin$case_key, cand$case_key)[match(keys, c(pin$key, cand$key))]
-  off <- is.na(a) | is.na(b) | a != b
+  off <- (is.na(a) | is.na(b) | a != b) & component != "treated_fields"
   for (cmp in sort(unique(component[off]), method = "radix")) {
     signal(cmp, unique(case_key[off & component == cmp]), "candidate differs from pin")
   }
@@ -133,6 +134,35 @@ local({
     for (cmp in c("rng", "routes_equal")) {
       hit <- x$component == cmp & x$value != "TRUE"
       if (any(hit)) signal(cmp, x$case_key[hit], paste(arm[[1L]], "has FALSE"))
+    }
+  }
+  # 4. the fields each arm actually treats (close review round 1, F3),
+  #    observed at every ledgr_history_feature_inputs() call of the
+  #    preparation and of the causality probe. An arm with the field selector
+  #    (candidate 2) must treat exactly the certified union the corpus records
+  #    for a compute case; an arm without it (the pin) treats all five; the
+  #    single-definition read entry treats all five on every arm.
+  all5 <- "open,high,low,close,volume"
+  selector <- function(dir) {
+    p <- utils::read.csv(file.path(dir, "provenance.csv"), stringsAsFactors = FALSE, colClasses = "character")
+    v <- p$value[p$field == "field_selector"]
+    if (length(v) != 1L) refuse("no field_selector in ", file.path(dir, "provenance.csv"))
+    identical(v, "TRUE")
+  }
+  union_of <- stats::setNames(expected$value[expected$component == "field_union"],
+                              paste(expected$family, expected$case, sep = " | ")[expected$component == "field_union"])
+  for (arm in list(list("pin", pin, arg("pin")), list("candidate", cand, arg("candidate")))) {
+    x <- arm[[2L]]
+    has_selector <- selector(arm[[3L]])
+    tf <- x[x$component == "treated_fields" & x$family %in% c("compute", "read_entry"), ]
+    wrong <- vapply(seq_len(nrow(tf)), function(i) {
+      sets <- sub("^(prep|causality):", "", strsplit(tf$value[[i]], ";", fixed = TRUE)[[1L]])
+      want <- if (tf$family[[i]] == "read_entry" || !has_selector) all5 else union_of[[tf$case_key[[i]]]]
+      length(sets) > 0L && any(sets != want)
+    }, logical(1))
+    if (any(wrong)) {
+      signal("treated_fields", tf$case_key[wrong],
+             paste(arm[[1L]], if (has_selector) "treats fields other than the certified union" else "does not treat all five fields"))
     }
   }
   n_cases <- length(corpus_cases)
