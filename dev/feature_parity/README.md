@@ -88,4 +88,17 @@ ID is compared only as agreement with its fixture.
     Rscript dev/feature_parity/check.R --pin=<pin out> --candidate=<candidate out>
     Rscript dev/feature_parity/faults.R --lib=<pin library> --pin=<pin out> --scratch=<dir> --evidence=<dir>
 
+Identities (Cut 22 decision 6; Cut 23 decision 5b adds the unchanged-engine
+mode, in which an old precompute must be reused with the same result as fresh
+preparation), the census (decision 5) and the stored-config rebuild coverage
+(Cut 23 decision 5a):
+
+    Rscript dev/feature_parity/identity.R --lib=<base library> --out=<base dir> --save-store=1
+    Rscript dev/feature_parity/identity.R --lib=<candidate library> --out=<dir> --old=<base dir>
+    Rscript dev/feature_parity/identity_check.R --base=<base dir> --candidate=<dir>
+      [--mode=changed-engine | --mode=unchanged-engine --engine-prefix=<hex>]
+    Rscript dev/feature_parity/identity_controls.R --base=<base dir> --candidate=<dir> --scratch=<dir> --engine-prefix=<hex>
+    Rscript dev/feature_parity/census.R --source=<tree> --out=<dir> --census=<tree>/dev/feature_parity/census.csv
+    Rscript dev/feature_parity/rebuild_coverage.R --lib=<library> --out=<scratch dir>
+
 Each ticket's exact commands and results are in `evidence/<ticket>/COMMANDS.md`.

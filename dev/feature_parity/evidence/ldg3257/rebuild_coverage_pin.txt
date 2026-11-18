@@ -1,0 +1,12 @@
+bar_native         run               rebuild calls 1  built-in ids return_1,sma_3
+bar_native         sweep             rebuild calls 0  built-in ids 
+bar_native         precompute        rebuild calls 0  built-in ids 
+bar_native         precompute_reuse  rebuild calls 0  built-in ids 
+bar_native         inspect           rebuild calls 0  built-in ids 
+bar_native         dated_run         rebuild calls 1  built-in ids return_1,sma_3
+declared_sessions  run               rebuild calls 1  built-in ids return_1,sma_3
+declared_sessions  sweep             rebuild calls 0  built-in ids 
+declared_sessions  precompute        rebuild calls 0  built-in ids 
+declared_sessions  precompute_reuse  rebuild calls 0  built-in ids 
+declared_sessions  inspect           rebuild calls 0  built-in ids 
+declared_sessions  dated_run         rebuild calls 1  built-in ids return_1,sma_3

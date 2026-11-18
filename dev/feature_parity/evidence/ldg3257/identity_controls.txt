@@ -1,0 +1,6 @@
+none                   unchanged-engine exit 0  IDENTITY CHECK PASS
+changed_engine         unchanged-engine exit 1  IDENTITY CHECK FAIL
+missing_identity       unchanged-engine exit 1  IDENTITY CHECK FAIL
+duplicate_identity     unchanged-engine exit 1  IDENTITY CHECK FAIL
+none                   changed-engine   exit 1  IDENTITY CHECK FAIL
+CONTROLS PASS

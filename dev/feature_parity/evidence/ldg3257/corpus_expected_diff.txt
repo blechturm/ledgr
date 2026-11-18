@@ -1,0 +1,52 @@
+diff --git a/dev/feature_parity/corpus_expected.csv b/dev/feature_parity/corpus_expected.csv
+index c60c95ac..2f41bfde 100644
+--- a/dev/feature_parity/corpus_expected.csv
++++ b/dev/feature_parity/corpus_expected.csv
+@@ -2227 +2227 @@
+-"e2e","bar_native|dated_run","route","strict_sma=8;ttr_raw_call=47;ttr_call=7;series_fn=24;fn=167"
++"e2e","bar_native|dated_run","route","strict_sma=8;ttr_raw_call=47;ttr_call=7;series_fn=32;fn=167"
+@@ -2230 +2230 @@
+-"e2e","bar_native|inspect","route","strict_sma=8;ttr_raw_call=47;ttr_call=7;series_fn=24;fn=108"
++"e2e","bar_native|inspect","route","strict_sma=8;ttr_raw_call=47;ttr_call=7;series_fn=32;fn=108"
+@@ -2233 +2233 @@
+-"e2e","bar_native|precompute","route","strict_sma=8;ttr_raw_call=47;ttr_call=7;series_fn=24;fn=167"
++"e2e","bar_native|precompute","route","strict_sma=8;ttr_raw_call=47;ttr_call=7;series_fn=32;fn=167"
+@@ -2239 +2239 @@
+-"e2e","bar_native|refuse_precompute","route","strict_sma=8;ttr_raw_call=47;ttr_call=7;series_fn=29;fn=167"
++"e2e","bar_native|refuse_precompute","route","strict_sma=8;ttr_raw_call=47;ttr_call=7;series_fn=37;fn=167"
+@@ -2242 +2242 @@
+-"e2e","bar_native|refuse_run","route","strict_sma=3;ttr_raw_call=22;ttr_call=7;series_fn=14;fn=84"
++"e2e","bar_native|refuse_run","route","strict_sma=3;ttr_raw_call=22;ttr_call=7;series_fn=17;fn=84"
+@@ -2245 +2245 @@
+-"e2e","bar_native|refuse_sweep","route","strict_sma=8;ttr_raw_call=47;ttr_call=7;series_fn=29;fn=167"
++"e2e","bar_native|refuse_sweep","route","strict_sma=8;ttr_raw_call=47;ttr_call=7;series_fn=37;fn=167"
+@@ -2248 +2248 @@
+-"e2e","bar_native|run","route","strict_sma=8;ttr_raw_call=47;ttr_call=7;series_fn=24;fn=167"
++"e2e","bar_native|run","route","strict_sma=8;ttr_raw_call=47;ttr_call=7;series_fn=32;fn=167"
+@@ -2251 +2251 @@
+-"e2e","bar_native|sweep","route","strict_sma=8;ttr_raw_call=47;ttr_call=7;series_fn=24;fn=167"
++"e2e","bar_native|sweep","route","strict_sma=8;ttr_raw_call=47;ttr_call=7;series_fn=32;fn=167"
+@@ -2254 +2254 @@
+-"e2e","declared_sessions|dated_run","route","strict_sma=9;ttr_raw_call=56;ttr_call=7;series_fn=29;fn=133"
++"e2e","declared_sessions|dated_run","route","strict_sma=9;ttr_raw_call=56;ttr_call=7;series_fn=40;fn=133"
+@@ -2257 +2257 @@
+-"e2e","declared_sessions|inspect","route","strict_sma=9;ttr_raw_call=56;ttr_call=7;series_fn=29;fn=114"
++"e2e","declared_sessions|inspect","route","strict_sma=9;ttr_raw_call=56;ttr_call=7;series_fn=40;fn=114"
+@@ -2260 +2260 @@
+-"e2e","declared_sessions|precompute","route","strict_sma=9;ttr_raw_call=56;ttr_call=7;series_fn=29;fn=133"
++"e2e","declared_sessions|precompute","route","strict_sma=9;ttr_raw_call=56;ttr_call=7;series_fn=40;fn=133"
+@@ -2266 +2266 @@
+-"e2e","declared_sessions|refuse_precompute","route","strict_sma=9;ttr_raw_call=56;ttr_call=7;series_fn=35;fn=133"
++"e2e","declared_sessions|refuse_precompute","route","strict_sma=9;ttr_raw_call=56;ttr_call=7;series_fn=46;fn=133"
+@@ -2269 +2269 @@
+-"e2e","declared_sessions|refuse_run","route","strict_sma=4;ttr_raw_call=31;ttr_call=7;series_fn=20;fn=68"
++"e2e","declared_sessions|refuse_run","route","strict_sma=4;ttr_raw_call=31;ttr_call=7;series_fn=26;fn=68"
+@@ -2272 +2272 @@
+-"e2e","declared_sessions|refuse_sweep","route","strict_sma=9;ttr_raw_call=56;ttr_call=7;series_fn=35;fn=133"
++"e2e","declared_sessions|refuse_sweep","route","strict_sma=9;ttr_raw_call=56;ttr_call=7;series_fn=46;fn=133"
+@@ -2275 +2275 @@
+-"e2e","declared_sessions|run","route","strict_sma=9;ttr_raw_call=56;ttr_call=7;series_fn=29;fn=133"
++"e2e","declared_sessions|run","route","strict_sma=9;ttr_raw_call=56;ttr_call=7;series_fn=40;fn=133"
+@@ -2278 +2278 @@
+-"e2e","declared_sessions|sweep","route","strict_sma=9;ttr_raw_call=56;ttr_call=7;series_fn=29;fn=133"
++"e2e","declared_sessions|sweep","route","strict_sma=9;ttr_raw_call=56;ttr_call=7;series_fn=40;fn=133"

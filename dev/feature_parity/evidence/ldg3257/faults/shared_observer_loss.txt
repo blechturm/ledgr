@@ -1,0 +1,5 @@
+check.R --pin=<pin> --candidate=<shared_observer_loss>: exit 1
+SIGNAL treated_fields 57  (pin lacks a treated-fields observation where its hand-offs say one was reached; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL treated_fields 57  (candidate lacks a treated-fields observation where its hand-offs say one was reached; first: compute | hostile_carry2|data_start|custom_volume_strict)
+cases 631 (refusing on the pin 57), observations pin 8280 candidate 8280
+CHECK FAIL: 2 signal(s)

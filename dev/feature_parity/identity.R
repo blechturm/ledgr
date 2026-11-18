@@ -11,12 +11,14 @@
 #     feature_union_hash, a run's config_hash and the stored run's identity
 #     columns;
 #   - a walk-forward session: session_id, its candidate keys and fold keys;
-#   - the engine version (expected to change: reported, not compared).
+#   - the engine version (Cut 22 expected it to change; Cut 23 expects it
+#     unchanged; identity_check.R --mode decides).
 # --save-store also writes the bar-native explicit precompute object and
 # keeps the store (with a durable sweep) at that path, for the other arm:
-# --old=<dir> reads them back: the old precompute must refuse with
-# ledgr_precomputed_engine_mismatch before any candidate, and the stored
-# sweep and run stay readable with their recorded engine version.
+# --old=<dir> reads them back: the old precompute's refusal class (or
+# "none") and strategy calls are recorded, and when it is reused, the
+# reused and a freshly prepared sweep's result tables; the stored sweep and
+# run stay readable with their recorded engine version.
 #
 #   Rscript identity.R --lib=<library> --out=<dir> [--save-store=1] [--old=<dir of the other arm>]
 local({
@@ -141,10 +143,21 @@ local({
     calls$n <- 0L
     counting <- function(ctx, params) { calls$n <- calls$n + 1L; ctx$hold() }
     exp2 <- fx_bar_native(file.path(db_dir, "bar_native_old.duckdb"), counting, features)
-    refusal <- tryCatch({ ledgr::ledgr_sweep(exp2$exp, pre_grid, precomputed_features = old_pre); "none" },
+    reused <- NULL
+    refusal <- tryCatch({ reused <- ledgr::ledgr_sweep(exp2$exp, pre_grid, precomputed_features = old_pre); "none" },
                         error = function(e) class(e)[[1L]])
     rec("old_precompute:refusal", refusal)
     rec("old_precompute:strategy_calls", calls$n)
+    # Under an unchanged engine (Cut 23 decision 5b) the old precompute is
+    # reused; its logical result is compared with fresh preparation.
+    if (!is.null(reused)) {
+      core <- function(x) {
+        x <- as.data.frame(x)
+        x[, intersect(c("candidate_id", "status", "stop_reason", "final_equity", "n_trades"), names(x))]
+      }
+      rec("old_precompute:reused_table", dig(core(reused)))
+      rec("old_precompute:fresh_table", dig(core(ledgr::ledgr_sweep(exp2$exp, pre_grid))))
+    }
     old_ids <- utils::read.csv(file.path(old, "identities.csv"), stringsAsFactors = FALSE)
     snap <- ledgr::ledgr_snapshot_open(file.path(old, "db", "bar_native.duckdb"),
                                        old_ids$value[old_ids$name == "saved_sweep:snapshot_id"])

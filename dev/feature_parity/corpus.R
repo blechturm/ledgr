@@ -263,7 +263,7 @@ fx_axes <- function() {
 
 fx_e2e_features <- function() {
   ind <- ledgr::ledgr_indicator
-  c(list(ledgr::ledgr_ind_sma(3), ledgr::ledgr_ind_ema(3), ledgr::ledgr_ind_returns(2),
+  c(list(ledgr::ledgr_ind_sma(3), ledgr::ledgr_ind_ema(3), ledgr::ledgr_ind_returns(2), ledgr::ledgr_ind_returns(1),
          ledgr::ledgr_ind_ttr("SMA", input = "close", n = 3L),
          ledgr::ledgr_ind_ttr("ATR", input = "hlc", output = "atr", n = 3L),
          ledgr::ledgr_ind_ttr("MFI", input = "hlcv", n = 3L),

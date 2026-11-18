@@ -1,0 +1,4 @@
+check.R --pin=<pin> --candidate=<causality_dropped>: exit 1
+SIGNAL treated_fields 396  (candidate lacks a treated-fields observation where its hand-offs say one was reached; first: compute | hostile_carry2|data_start|close)
+cases 631 (refusing on the pin 57), observations pin 8280 candidate 8280
+CHECK FAIL: 1 signal(s)
