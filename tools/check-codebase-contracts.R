@@ -1431,10 +1431,6 @@ test_seam_contracts <- c(
   ledgr_experiment_materialize_features = paste(
     "Exercise feature-map materialization independently of a complete run."
   ),
-  ledgr_validate_feature_def = paste(
-    "Validate raw feature-definition lists fail-loud; its v0.1.4 engine",
-    "caller was deleted in Cut 22 (decision 4)."
-  ),
   ledgr_equity_from_events = paste(
     "Reconstruct equity from controlled events for fold-parity assertions."
   ),

@@ -48,62 +48,6 @@ live_no_lookahead <- function(feature_def, bars_df, horizons = c(1L, 3L)) {
   invisible(TRUE)
 }
 
-testthat::test_that("feature definitions are validated fail-loud", {
-  good <- list(
-    id = "x",
-    requires_bars = 1L,
-    stable_after = 1L,
-    fn = function(window_bars_df) 1.0,
-    params = list()
-  )
-  testthat::expect_true(ledgr:::ledgr_validate_feature_def(good))
-
-  testthat::expect_error(
-    ledgr:::ledgr_validate_feature_def(list(requires_bars = 1L, stable_after = 1L, fn = function(w) 1.0)),
-    "feature_def$id",
-    fixed = TRUE
-  )
-
-  testthat::expect_error(
-    ledgr:::ledgr_validate_feature_def(list(id = "x", requires_bars = 0L, stable_after = 0L, fn = function(w) 1.0)),
-    "requires_bars",
-    fixed = TRUE
-  )
-
-  testthat::expect_error(
-    ledgr:::ledgr_validate_feature_def(list(id = "x", requires_bars = 2L, stable_after = 1L, fn = function(w) 1.0)),
-    "stable_after",
-    fixed = TRUE
-  )
-
-  testthat::expect_error(
-    ledgr:::ledgr_validate_feature_def(list(id = "x", requires_bars = 1L, stable_after = 1L, fn = 1)),
-    "feature_def$fn",
-    fixed = TRUE
-  )
-
-  testthat::expect_error(
-    ledgr:::ledgr_validate_feature_def(
-      list(id = "x", requires_bars = 1L, stable_after = 1L, fn = function(w) 1.0, series_fn = 1)
-    ),
-    "feature_def$series_fn",
-    fixed = TRUE
-  )
-
-  testthat::expect_error(
-    ledgr:::ledgr_validate_feature_def(
-      list(
-        id = "x",
-        requires_bars = 1L,
-        stable_after = 1L,
-        fn = function(w) 1.0,
-        params = list(env = environment())
-      )
-    ),
-    class = "ledgr_config_non_deterministic"
-  )
-})
-
 testthat::test_that("feature series uses and validates vectorized series functions", {
   local({
   bars <- make_test_bars(c("AAA"), "2020-01-01 00:00:00", n = 6)

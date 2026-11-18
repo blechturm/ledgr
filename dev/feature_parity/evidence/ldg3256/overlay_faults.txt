@@ -1,0 +1,4 @@
+no fault: 254 expectations, 0 failed, error FALSE 
+drop_declaration_overlay : 254 expectations, 16 failed, error FALSE 
+drop_stored_fingerprint : 254 expectations, 12 failed, error FALSE 
+restored: 254 expectations, 0 failed, error FALSE 

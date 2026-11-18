@@ -141,3 +141,202 @@ testthat::test_that("[LTB-0321] a custom indicator with a built-in id runs its o
     class = "ledgr_run_hash_mismatch"
   )
 })
+
+# Cut 23 (LDG-3256): a stored built-in id (`sma_<n>`, `return_1`) that is not
+# shadowed rebuilds from the built-in constructor, with the stored overlay and
+# the stored fingerprint, on both clocks (decision 4). The configs are the
+# ones real runs build (ledgr_config()), captured at the rebuild.
+cut23_builtins <- function() {
+  list(sma_1 = ledgr_ind_sma(1L), sma_3 = ledgr_ind_sma(3L),
+       sma_200 = ledgr_ind_sma(200L), return_1 = ledgr_ind_returns(1L))
+}
+
+cut23_configs <- function() {
+  rebuild <- ledgr:::ledgr_feature_defs_from_config
+  capture <- function(snapshot, availability) {
+    seen <- new.env(parent = emptyenv())
+    testthat::local_mocked_bindings(
+      ledgr_feature_defs_from_config = function(cfg) {
+        seen$cfg <- cfg
+        rebuild(cfg)
+      },
+      .package = "ledgr"
+    )
+    args <- list(snapshot, function(ctx, params) ctx$hold(), features = unname(cut23_builtins()),
+                 opening = ledgr_opening(cash = 1000), cost_model = ledgr_cost_zero())
+    if (availability) args$valuation_policy <- ledgr_valuation_stale(1L)
+    close(ledgr_run(do.call(ledgr_experiment, args), run_id = paste0("cut23_", availability)))
+    seen$cfg
+  }
+  dense <- ws43_dispatch_dense_snapshot()
+  on.exit(ledgr_snapshot_close(dense), add = TRUE)
+  active <- availability_runtime_fixture(days = 55L)
+  on.exit(ledgr_snapshot_close(active), add = TRUE)
+  list(bar_native = capture(dense, FALSE), availability = capture(active, TRUE))
+}
+
+# The expected rebuild, assembled from the constructor's conversion with each
+# stored declaration and the stored fingerprint applied explicitly.
+cut23_expected <- function(builtin, stored) {
+  def <- ledgr:::ledgr_precompute_feature_def_from_indicator(builtin)
+  for (field in c("gap_contract", "history_class", "required_fields", "input_carry", "tolerance")) {
+    if (!is.null(stored[[field]])) def[[field]] <- stored[[field]]
+  }
+  if (!is.null(stored$fingerprint)) def$fingerprint <- stored$fingerprint
+  def
+}
+
+# Non-function fields exactly; functions by code, formals and captures.
+cut23_expect_same_def <- function(actual, expected, info) {
+  fp <- function(f) ledgr:::ledgr_function_fingerprint(f, include_captures = TRUE)
+  testthat::expect_setequal(names(actual), names(expected))
+  for (field in names(expected)) {
+    if (is.function(expected[[field]])) {
+      testthat::expect_true(is.function(actual[[field]]), info = paste(info, field))
+      if (is.function(actual[[field]])) {
+        testthat::expect_identical(fp(actual[[field]]), fp(expected[[field]]), info = paste(info, field))
+      }
+    } else {
+      testthat::expect_identical(actual[[field]], expected[[field]], info = paste(info, field))
+    }
+  }
+}
+
+cut23_rebuilt <- function(cfg) {
+  out <- ledgr:::ledgr_feature_defs_from_config(cfg)
+  stats::setNames(out, vapply(out, function(d) d$id, character(1)))
+}
+
+cut23_stored <- function(cfg) {
+  stats::setNames(cfg$features$defs, vapply(cfg$features$defs, function(d) d$id, character(1)))
+}
+
+cut23_without_fingerprints <- function(cfg) {
+  cfg$features$defs <- lapply(cfg$features$defs, function(d) {
+    d$fingerprint <- NULL
+    d
+  })
+  cfg
+}
+
+testthat::test_that("[Cut 23 (a)] a stored built-in id rebuilds as the built-in with the stored overlay", {
+  configs <- cut23_configs()
+  builtins <- cut23_builtins()
+  for (clock in names(configs)) {
+    cfg <- configs[[clock]]
+    stored <- cut23_stored(cfg)
+    rebuilt <- cut23_rebuilt(cfg)
+    testthat::expect_setequal(names(rebuilt), names(builtins))
+    for (id in names(builtins)) {
+      cut23_expect_same_def(rebuilt[[id]], cut23_expected(builtins[[id]], stored[[id]]), paste(clock, id))
+      testthat::expect_identical(rebuilt[[id]]$fingerprint, stored[[id]]$fingerprint, info = paste(clock, id))
+    }
+  }
+  # The availability clock stores the active fingerprint, not the base one,
+  # and the rebuild keeps it.
+  stored <- cut23_stored(configs$availability)
+  for (id in names(builtins)) {
+    testthat::expect_false(identical(stored[[id]]$fingerprint, ledgr:::ledgr_indicator_fingerprint(builtins[[id]])))
+    testthat::expect_identical(
+      stored[[id]]$fingerprint,
+      ledgr:::ledgr_active_feature_fingerprint(ledgr:::ledgr_precompute_feature_def_from_indicator(builtins[[id]]))
+    )
+  }
+  # Non-default stored declarations are applied, so an omitted overlay fails.
+  cfg <- configs$availability
+  cfg$features$defs <- lapply(cfg$features$defs, function(d) {
+    d$required_fields <- c("open", "close")
+    d$tolerance <- 1e-9
+    d
+  })
+  rebuilt <- cut23_rebuilt(cfg)
+  for (id in names(builtins)) {
+    testthat::expect_identical(rebuilt[[id]]$required_fields, c("open", "close"), info = id)
+    testthat::expect_identical(rebuilt[[id]]$tolerance, 1e-9, info = id)
+    cut23_expect_same_def(rebuilt[[id]], cut23_expected(builtins[[id]], cut23_stored(cfg)[[id]]), paste("overlay", id))
+  }
+})
+
+testthat::test_that("[Cut 23 (b)] the rebuilt built-in certifies as the canonical built-in under its stored fingerprint", {
+  configs <- cut23_configs()
+  builtins <- cut23_builtins()
+  for (clock in names(configs)) {
+    stored <- cut23_stored(configs[[clock]])
+    rebuilt <- cut23_rebuilt(configs[[clock]])
+    for (id in names(builtins)) {
+      cert <- ledgr:::ledgr_feature_certify(rebuilt[[id]])
+      canonical <- ledgr:::ledgr_precompute_feature_def_from_indicator(builtins[[id]])
+      canonical$fingerprint <- stored[[id]]$fingerprint
+      testthat::expect_identical(cert$certification, "builtin", info = paste(clock, id))
+      cut23_expect_same_def(cert$def, canonical, paste(clock, id))
+      testthat::expect_identical(cert$declarations, ledgr:::ledgr_feature_def_declarations(canonical),
+                                 info = paste(clock, id))
+    }
+  }
+})
+
+testthat::test_that("[Cut 23 (c)] a stored built-in id without a fingerprint rebuilds and certifies as the built-in", {
+  configs <- cut23_configs()
+  builtins <- cut23_builtins()
+  for (clock in names(configs)) {
+    cfg <- cut23_without_fingerprints(configs[[clock]])
+    stored <- cut23_stored(cfg)
+    rebuilt <- cut23_rebuilt(cfg)
+    for (id in names(builtins)) {
+      own <- ledgr:::ledgr_precompute_feature_def_from_indicator(builtins[[id]])$fingerprint
+      testthat::expect_identical(rebuilt[[id]]$fingerprint, own, info = paste(clock, id))
+      cut23_expect_same_def(rebuilt[[id]], cut23_expected(builtins[[id]], stored[[id]]), paste(clock, id))
+      testthat::expect_identical(ledgr:::ledgr_feature_certify(rebuilt[[id]])$certification, "builtin",
+                                 info = paste(clock, id))
+    }
+  }
+})
+
+testthat::test_that("[Cut 23 (d)] rebuilt built-ins keep their history-read widths on both clocks", {
+  configs <- cut23_configs()
+  widths <- c(sma_1 = 1L, sma_3 = 3L, sma_200 = 200L, return_1 = 2L)
+  for (clock in names(configs)) {
+    rebuilt <- cut23_rebuilt(configs[[clock]])
+    got <- vapply(names(widths), function(id) ledgr:::ledgr_history_feature_width(rebuilt[[id]]), integer(1))
+    testthat::expect_identical(got, widths, info = clock)
+  }
+})
+
+cut23_config <- function(...) list(features = list(enabled = TRUE, defs = list(list(...))))
+
+testthat::test_that("[Cut 23 (e)] a fingerprint-free malformed SMA id refuses as the built-in constructor does", {
+  testthat::expect_error(ledgr:::ledgr_feature_defs_from_config(cut23_config(id = "sma_0")),
+                         class = "ledgr_invalid_args")
+  testthat::expect_warning(
+    testthat::expect_error(ledgr:::ledgr_feature_defs_from_config(cut23_config(id = "sma_2147483648")),
+                           class = "ledgr_invalid_args"),
+    "integer range"
+  )
+})
+
+testthat::test_that("[Cut 23 (e)] fingerprint-bearing and other malformed ids keep their refusals", {
+  testthat::expect_error(
+    ledgr:::ledgr_feature_defs_from_config(cut23_config(id = "sma_0", fingerprint = "unknown")),
+    class = "ledgr_invalid_args"
+  )
+  testthat::expect_warning(
+    testthat::expect_error(
+      ledgr:::ledgr_feature_defs_from_config(cut23_config(id = "sma_2147483648", fingerprint = "unknown")),
+      class = "ledgr_invalid_args"
+    ),
+    "integer range"
+  )
+  testthat::expect_error(ledgr:::ledgr_feature_defs_from_config(cut23_config(id = "sma_1.5")),
+                         class = "ledgr_invalid_config")
+  testthat::expect_error(
+    ledgr:::ledgr_feature_defs_from_config(cut23_config(id = "sma_997", fingerprint = "not-the-builtin")),
+    class = "ledgr_run_hash_mismatch"
+  )
+})
+
+testthat::test_that("[Cut 23 (f)] the v0.1.4 list definitions and their validator are gone", {
+  ns <- asNamespace("ledgr")
+  for (name in c("ledgr_feature_sma_n", "ledgr_feature_return_1", "ledgr_validate_feature_def")) {
+    testthat::expect_false(exists(name, envir = ns, inherits = FALSE), info = name)
+  }
+})

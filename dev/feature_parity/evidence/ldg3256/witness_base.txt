@@ -1,0 +1,9 @@
+tree: C:/Users/maxth/Documents/GitHub/ledgr 
+PASS   25 expectations,   0 failed  [LTB-0321] a custom indicator with a built-in id runs its own function in both modes
+FAIL  254 expectations, 103 failed  [Cut 23 (a)] a stored built-in id rebuilds as the built-in with the stored overlay
+PASS  168 expectations,   0 failed  [Cut 23 (b)] the rebuilt built-in certifies as the canonical built-in under its stored fingerprint
+FAIL  168 expectations,  98 failed  [Cut 23 (c)] a stored built-in id without a fingerprint rebuilds and certifies as the built-in
+PASS    2 expectations,   0 failed  [Cut 23 (d)] rebuilt built-ins keep their history-read widths on both clocks
+ERROR   0 expectations,   0 failed  [Cut 23 (e)] a fingerprint-free malformed SMA id refuses as the built-in constructor does
+PASS    5 expectations,   0 failed  [Cut 23 (e)] fingerprint-bearing and other malformed ids keep their refusals
+FAIL    3 expectations,   3 failed  [Cut 23 (f)] the v0.1.4 list definitions and their validator are gone

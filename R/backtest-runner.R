@@ -1094,15 +1094,16 @@ ledgr_feature_defs_from_config <- function(cfg) {
       rlang::abort("Each feature def must include `id` (or `name`) as a non-empty string.", class = "ledgr_invalid_config")
     }
 
-    if (identical(id, "return_1") && !shadowed(d, ledgr_ind_returns(1L))) {
-      out[[length(out) + 1L]] <- add_def(ledgr_feature_return_1(), d)
-      next
+    # A built-in id that is not shadowed rebuilds from the built-in
+    # constructor itself (Cut 23 decision 1), constructed once for the
+    # shadow comparison and the conversion.
+    builtin <- if (identical(id, "return_1")) {
+      ledgr_ind_returns(1L)
+    } else if (grepl("^sma_\\d+$", id)) {
+      ledgr_ind_sma(as.integer(sub("^sma_", "", id)))
     }
-
-    if (grepl("^sma_\\d+$", id) &&
-        !shadowed(d, ledgr_ind_sma(as.integer(sub("^sma_", "", id))))) {
-      n <- as.integer(sub("^sma_", "", id))
-      out[[length(out) + 1L]] <- add_def(ledgr_feature_sma_n(n), d)
+    if (!is.null(builtin) && !shadowed(d, builtin)) {
+      out[[length(out) + 1L]] <- add_def(ledgr_precompute_feature_def_from_indicator(builtin), d)
       next
     }
 
