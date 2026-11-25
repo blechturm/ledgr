@@ -1,0 +1,5 @@
+"cell","median_base","median_candidate","statistic","exchange_L","exchange_U","own_noise","extra_lift_base","extra_lift_candidate","noise","sensitive","verdict","overall"
+"500x1260_run",270628344,270628344,0,0,0,0,8388632,8388704,0,TRUE,"retain_ok","retain_ok"
+"500x1260_sweep",288019360,288019360,0,0,0,0,8160,8160,0,TRUE,"retain_ok","retain_ok"
+"1166x252_run",170175960,170175960,0,0,0,0,8388584,8388584,0,TRUE,"retain_ok","retain_ok"
+"1166x252_sweep",190023912,190023912,0,0,0,0,8611912,8082480,0,TRUE,"retain_ok","retain_ok"

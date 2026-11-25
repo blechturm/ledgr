@@ -72,3 +72,29 @@ percent (`canonical_def` includes construction). A TTR definition matches its
 last candidate, after the four built-ins of its width are built and
 converted, so lazy in-order construction (LDG-3260) cannot shorten
 certification of the protocol's TTR definition sets.
+
+## Base A/A records
+
+    pcore.ps1 <log> dev/bench/timing/runner.R --protocol=dev/bench/timing/protocols/cut24-feature-1 --base=ea580bc6 --candidate=ea580bc6 --label=aa-base
+    Rscript dev/bench/timing/check.R --protocol=dev/bench/timing/protocols/cut24-feature-1 --record=<attempt-1> --aa
+    Rscript dev/bench/v0_2_3_cut24_feature/exchange.R --record=<attempt-1> --out=dev/bench/v0_2_3_cut24_feature/records/aa-base --aa
+
+Timing (busy host: another project's R processes, annotated by the
+harness; High performance, P-cores): A/A VALID, 16 cells x 8 pairs, every
+slot ok, every ratio within margin. Label-exchange intervals
+(`records/aa-base/intervals.csv`): U from 1.0042 (adm_custom_run) to 1.0260
+(adm_low_sweep), L from 0.9746 to 0.9958. Each cell's U, rounded up at the
+sixth decimal, is frozen as its bound in `thresholds.csv`.
+
+    pcore.ps1 <log> dev/bench/v0_2_3_cut24_feature/memory.R --base=<base lib> --candidate=<base lib> --work=<scratch> --out=dev/bench/v0_2_3_cut24_feature/records/aa-base-memory --debug=0 --aa
+
+Memory: peak R heap is exactly repeatable (every heap child of a cell gives
+the same bytes), so the label-exchange noise is 0 on all four cells
+(`memory_noise.csv`). Sensitivity: the extra live 8 MiB raises the median
+peak by 8.39 MB on 500 x 1,260 run and 1,166 x 252 run, by 8.08-8.61 MB on
+1,166 x 252 sweep, but by only 8,160 bytes on 500 x 1,260 sweep (both arms),
+where the peak Vcells reading is the same with and without the extra
+vector. The frozen rule (lift above the noise, here 0) counts every cell as
+sensitive; the 500 x 1,260 sweep cell's peak is nonetheless set where the
+gc maxima do not see the live extra vector, so its memory evidence is weak
+and is reported as such at the stage-3 retention decision.
