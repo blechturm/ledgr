@@ -3,8 +3,8 @@
 - Author: Codex, 2026-11-25. Mode: Decision synthesis; RFC cycle stage
   "synthesis". Claude drafted the brief; the maintainer approved its decisions
   on 2026-11-25. Codex wrote the response, not seed v2.
-- Status: proposed binding design for the stages 2-3 cut; **binds nothing until
-  accepted**. Acceptance authorizes pending scope, not a claim of implementation.
+- Status: **accepted by the maintainer on 2026-11-25** as the binding design
+  for the stages 2-3 cut (Cut 24). Acceptance authorizes pending scope, not a claim of implementation.
 - Inputs, all read in full from the supplied `a04ab730` snapshot:
   [seed v1](rfc_feature_engine_stages_v0_2_3_seed.md),
   [Type 2 response](rfc_feature_engine_stages_v0_2_3_response.md),

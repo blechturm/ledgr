@@ -3782,6 +3782,156 @@ cuts:
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
     cut_review: "CHANGES_REQUIRED in cut_review_23.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at 7268a8e5): no counterexample to unchanged public runs; R1-R4 required, R5-R6 advisory, all applied with the review's text: the fingerprint-free malformed SMA id's refusal class change declared instead of claimed unchanged (R1); an unchanged-engine identity mode with base-precompute reuse, because identity_check.R requires the engine to change (R2); witnesses rebuilt around the retained stored fingerprint and an explicit overlay case, changed witnesses failing on the base and invariants passing on both arms (R3); oracle coverage corrected to committed runs, since sweeps, precompute and inspection never call the rebuild, with expectations regenerated from the pin and the diff reviewed (R4); the census check named with --census (R5); the lean-gate reason narrowed (R6). The opening and measured input now say the old constructors are still called by runs while their callbacks never compute. Focused re-review 1 (cut_review_23_rereview_1.md, same setup, at 7250158c): PASS, R1-R6 applied faithfully, no new finding."
+  - id: 24
+    name: "Feature engine stages 2-3: adapter registry and gated direct path"
+    cut: "2026-11-25"
+    status: "proposed"
+    opening: >-
+      Written by Claude on 2026-11-25 at the maintainer's request, after the
+      maintainer accepted the feature-engine stages 2-3 synthesis the same
+      day. This entry, workstreams 43 and 44 and LDG-3258 through LDG-3266
+      become the operative implementation brief once the cut review passes
+      and the maintainer accepts. tickets.yml is the sole ticket and
+      sequencing authority. Implementation starts with LDG-3258.
+    authority: >-
+      inst/design/rfc/rfc_feature_engine_stages_v0_2_3_synthesis.md
+      (accepted 2026-11-25): rules 1-13, the proposed contract replacement,
+      the corrections to seed v2 and the final review's six patches applied
+      in place (rfc_feature_engine_stages_v0_2_3_final_review.md); the
+      maintainer decisions of 2026-11-25 recorded in its header (one
+      unexported debug flag; one cut, two workstreams; a ledgr adapter only
+      if it removes the parallel built-in branch; lazy construction only
+      on a measured saving); the parent
+      rfc_feature_engine_v0_2_3_seed_v2.md Sections 4, 6 and 7; the
+      real-data gate-count deferral of 2026-11-18; inst/design/contracts.md
+      rule groups contract-context-feature-path,
+      contract-context-indicator-computation, contract-context-strict-features,
+      contract-context-ttr-adapter and contract-execution-identity;
+      inst/design/manual/optimization_coding_style.qmd (the seven shapes and
+      the fast-path rule) and benchmark_methodology.qmd; AGENTS.md. The
+      synthesis's timing obligations (rules 4 and 9) take precedence over
+      macro plan rule 16's milestone-only timing for this cut.
+    measured_input: >-
+      dev/spikes/feature_stage23_probe/ at R/ 68b505b9 (busy machine, shares
+      and ratios only): component estimate of stage 3 at 49-59 percent of
+      the wide compute call and 27 percent on 10 x 7,200; 13,408 admitted TTR
+      SMA cells identical to the general path; certification about 14 ms per
+      definition per call; conservative gate coverage on public substrates
+      (all dense cells, 197 of 200 simulated PIT instruments, 4 of 6 on each
+      corpus panel, none on the hostile corpus substrates); 57 TTR-naming
+      code lines in 9 functions outside R/indicator-ttr.R. The response,
+      synthesis and final-review probes (C:/Users/maxth/ledgr-wt/
+      fe-stages-probes/, the synthesis and final-review out folders, kept
+      outside the repository) supply the certification counterexamples:
+      the maximum-width SMA, SMA3 renamed sma_2147483647 and sma_0, SMA3
+      carrying RSI3's fingerprint, ROC with an invalid type, MACD(100, 3, 2),
+      and the admitted runSD(n = 1) refusal. R/ is unchanged from 68b505b9 to
+      the cut's base.
+    decisions: >-
+      (1) Shape. Two serial workstreams: 43 (stage 2, synthesis rules 1-4)
+      and 44 (stage 3, rules 5-9). Workstream 44 starts only after
+      workstream 43's close review passes. Rules 10-13 bind both.
+      (2) Base. The cut base is the release/v0.2.3 commit on which LDG-3258
+      starts, recorded there; R/ there equals 68b505b9. The pin d5b3a151 is
+      the semantic oracle only (dev/feature_parity/), never a timing arm.
+      (3) Timing. One protocol, dev/bench/timing/protocols/cut24-feature-1/,
+      written and frozen in LDG-3258 before any comparison: Cut 22's six
+      feature cells (cut22-feature-1, same fixtures and clock), a
+      certification clock over the same definition sets, three admission
+      cells (zero: the 500 x 1,260 fixture with a custom-only definition
+      set, which the gate never admits; low: the hostile corpus substrates
+      of dev/feature_parity/corpus.R; mixed: the public simulated PIT panel
+      of 200 instruments over 2 years), and peak R heap on the two wide shapes
+      with a recorded noise figure. Reps, bounds and the label-exchange
+      range come from an A/A record on the base. Workers select the debug
+      flag explicitly; production timings run with debug off. The record
+      names its host state (busy or quiet); an inconclusive record
+      establishes no saving.
+      (4) Lazy construction (rule 4, maintainer Q4). Measured in LDG-3260 as
+      a matched pair (the LDG-3259 tree against the same tree with lazy
+      construction) on the certification clock. Adopted only if the record
+      resolves a saving; then candidates are built eagerly exactly when
+      certification discovers two widths (params and ID) and either is 0 or
+      .Machine$integer.max, and the single-width maximum SMA is the one
+      recorded oracle exception, keyed by case. Otherwise eager
+      construction stays, no exception is recorded and the question lapses.
+      (5) Stage 2 oracle. Stage 2 removes no counted work: its close runs
+      the permanent checker with every existing expectation unchanged, and
+      the counted seams keep their names and are reached by namespace
+      lookup (rule 11).
+      (6) Debug flag (maintainer Q1, rule 8). One unexported flag held in a
+      package-local environment, read through one internal accessor and set
+      only through an internal local setter that restores the prior value
+      on every exit; default off. A testthat helper turns it on for the
+      suite. dev/feature_parity/runner.R and the timing workloads take an
+      explicit --debug=0 or 1. Where sweep preparation runs is checked; if
+      any preparation runs on a mirai worker, the parent's value is passed
+      explicitly. No option(), environment variable or exported function.
+      (7) Retention (rule 9 as patched). Stage 3 is kept only if at least one
+      wide fully admitted cell shows a feature-time saving outside the
+      label-exchange range, no measured cell (zero, low or mixed admission,
+      10 x 7,200) is slower than the stage-2 close beyond that range, and
+      wide-cell peak R heap does not exceed stage 2's beyond the recorded
+      noise. Otherwise the gate is simplified and remeasured once, or
+      dropped (the stage-2 calculator stays, the contract bullet is not
+      replaced), or a named exception goes to the maintainer at close
+      review.
+      (8) Contract and map. If stage 3 is kept, LDG-3263 replaces only the
+      bullet at contracts.md Feature Path And Intent Constructors
+      ("Feature computation follows one uncached production path") with the
+      synthesis's exact text, and adds the direct path's row (oracle,
+      predicate, registered differential, exit) to
+      inst/design/ledgr_v0_2_2_spec_packet/history_representation_map.md.
+      (9) Test changes. No registered test, fixture or oracle changes to
+      make a failure pass. Named changes, each with its reason in its
+      ticket: the suite debug helper (decision 6); the checker's
+      mechanism-observation replacement in stage 3 only (rule 11, LDG-3264);
+      corpus additions for the family and refusal witnesses with
+      expectations regenerated from the pin only and the diff reviewed;
+      the keyed oracle exception if decision 4 adopts lazy construction.
+    identity_and_release_impact: >-
+      Logical identity unchanged in both stages: emitted built-in and TTR
+      function bodies, formals, captures, params (ttr_version included),
+      IDs, declarations, base and declared-session fingerprints, feature set
+      and union hashes, config, alias and feature-parameter hashes and the
+      walk-forward identities (rule 13). The feature-engine version changes
+      at each stage; an old explicit precompute refuses with
+      ledgr_precomputed_engine_mismatch before candidates and is
+      regenerated; no store-schema, logical-key or stored-result change. One
+      NEWS line only if decision 4 adopts lazy construction (a valid
+      maximum-width SMA no longer refuses during certification). The
+      contract bullet replacement documents internal behaviour; no exported
+      function or argument changes.
+    sequencing: >-
+      Workstream 43: LDG-3258, then LDG-3259, then LDG-3260, then LDG-3261
+      (close review). Workstream 44, after workstream 43's close review
+      passes: LDG-3262, then LDG-3263, then LDG-3264 and LDG-3265 (either
+      order), then LDG-3266 (close review). Follows Cut 23; precedes
+      lean-loop slice 5 (macro plan, order after Cut 20, items c and d).
+    out_of_scope: >-
+      Everything the synthesis lists as not authorized: a second fold or
+      runner engine, a new execution-mode branch, a public debug or
+      performance switch, compiled code, a matrix entry point, a new
+      adapter or backend, new indicators or catalogue rows, cross-backend
+      equivalence, the looser gate, reconstructed missing-edge reasons,
+      narrowing the custom callback frame, changed carry, history or output
+      validation policy, the post-warmup-NA chore, sweep reuse or
+      architecture changes, cross-preparation memos, precompute
+      representation changes, migrations or old-format readers. Also: the
+      real-data gate count; lean-core code; repairing historical dev
+      records.
+    workstreams: [43, 44]
+    review_lifecycle: >-
+      An independent clean-context Codex CLI cut review, iterated to PASS.
+      Each workstream receives one independent clean-context Type 1 close
+      review of its whole diff and every acceptance item, walking the seven
+      optimization shapes over the changed preparation code; it verifies
+      faithful implementation and contained scope and independently asks
+      whether the inputs are right; a design concern returns NEEDS_TYPE_2.
+      Findings receive one correction pass, with a further round only for a
+      wrong answer; a third correction round stops for maintainer
+      disposition. Findings, reviewed ranges and consequential rejection
+      reasons are kept under rfc_cycle.md's record rule.
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -4169,6 +4319,20 @@ workstreams:
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 42, after LDG-3257", reason: "The rebuild of sma_<n> and return_1 starts from one constructed built-in with the existing overlay and shadow rule, and refuses as before except decision 1's declared fingerprint-free case; the three functions and the one test are deleted with the stated reason and nothing else registered changed beyond decision 2's named additions; every witness passes, the changed ones were shown to fail on the base and the invariant ones to pass on both arms, and the overlay faults fail; the oracle passes against the pin, its added feature reaching the return_1 branch through committed runs on both clocks, its expectations regenerated from the pin only, and its faults pass; the unchanged-engine identity mode shows every identity and the engine version unchanged and a base precompute reusable, and fails on its two controls; the census check passes; the full suite and the package check pass; and the stated reasons for not running the lean gate or a timing record hold."}
     close_review: "Independent clean-context Codex CLI (gpt-6.1-sol/high), Type 1; reports in this packet (ws42_close_review_round1.md, ws42_close_rereview_1.md). Round 1 (at a6f94960): CHANGES_REQUIRED, F1 required (the unchanged-engine identity mode took its expected names from the base record, so an identity lost from both arms alike passed), F2 advisory (a fingerprint-bearing hand-edited stored declaration now refuses; record it); the product rebuild, the registered-test changes and every reported number reproduced, and no public-input difference was found. Corrected in 9a4a4697 (tooling and evidence only: a committed expected identity-name set checked per arm, controls missing_both and renamed_both; F2 recorded on LDG-3257). Re-review 1 (at 9a4a4697): PASS, F1 fixed (the name set re-derived independently from identity.R's recording sites; 1,453 checker mutation cases; the changed-engine mode identical to Cut 22's on eight cases), F2 recorded accurately, no new finding. Ratio: 2 reviews, 1 correction pass."
+  - id: 43
+    name: "Feature engine stage 2: adapter registry"
+    cut: 24
+    status: "open"
+    depends_on_workstream: 42
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 43, after LDG-3261", reason: "Certification, calculator dispatch, source validation and inspection, the parameter registry and dependency provenance read one fixed ordered adapter list instead of naming TTR; the built-ins are its ledgr entry only where that removes their parallel branch, and the close records which case held; certification keeps its candidate order, width discovery, ID substitution, claimed and content comparison, contradiction refusals and the TTR constructor with its synthetic validation, so every certification outcome, canonical definition and refusal equals the pin on the corpus and on the named hostile witnesses; lazy construction is adopted only on a resolved saving, with the eager domain and the one keyed exception, or the question is recorded as lapsed; emitted fingerprints and logical identities are unchanged and only the engine version moves; the permanent checker passes with every existing expectation unchanged; the census, full suite and package check pass."}
+  - id: 44
+    name: "Feature engine stage 3: gated direct path"
+    cut: 24
+    status: "open"
+    depends_on_workstream: 43
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 44, after LDG-3266", reason: "One preparer chooses per cell by the four-clause conservative gate, computed once with an early exit; admitted cells reuse the adapter's segment calculation over the whole slice in the existing instrument, range and definition order, with today's raw-call key and cache lifetime, and write the same values, segment records, calculated counts and empty exception sets; production keeps output validation and the sampled causality refutation; with debug on every admitted cell is also computed generally and outcomes, including refusal class, message and identifying fields, are compared and fail closed; the oracle against the pin passes on both clocks and both debug settings, direct-backend TTR parity passes, the stage-3 mechanism expectations are replaced only as rule 11 allows with the new fault controls failing as they should; the retention test of decision 7 is met or its named disposition is recorded; the contract bullet and the representation-map row match the synthesis; the census, full suite with debug on and package check pass."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -7867,3 +8031,198 @@ tickets:
       - "Close review round 1 (ws42_close_review_round1.md, at a6f94960): CHANGES_REQUIRED, F1 required, F2 advisory; the product rebuild, the registered-test changes and every reported number reproduced, and no public-input difference was found. F1: the unchanged-engine identity mode took its expected names from the base record, so an identity lost from both arms alike passed (155 of 155). Corrected (tooling only, R/ unchanged at 68b505b9): identity_check.R checks each arm's record names against the committed dev/feature_parity/identity_names_unchanged_engine.csv (156 names in both arms, 2 base-only saved-store records, 8 candidate-only reuse and store-read records; --expected overrides), reporting missing, unexpected and duplicate names per arm; the changed-engine mode is unchanged. identity_controls.R adds missing_both (one identity removed from both arms) and renamed_both (one identity renamed in both arms). round2/identity_check.txt: 156 of 156 equal, PASS; round2/identity_controls.txt: all seven controls as required, CONTROLS PASS; round2/reviewer_identity_negatives.txt: the reviewer's records rerun, original PASS, missing_both now FAIL, the other six still FAIL."
       - "F2 (advisory, recorded): beyond decision 3's two fingerprint-free differences, a hand-edited stored definition that keeps its fingerprint but changes a declaration against the catalogue (the reviewer's probe: return_1 with input_carry 'eligible') now refuses with ledgr_indicator_history_contradiction, where the old list ran it. The converted built-in carries history_source 'catalogue', which activates the existing carry-family check (R/history-features.R:41) under contracts.md's catalogue-family rule (Indicator Computation And Identity). Such a definition is corrupted private input: no public entry point writes it, and its fingerprint no longer describes its declarations. Decision 3's list is therefore not an equivalence claim over arbitrary hand-edited stored definitions; no product change."
       - "Close re-review 1 (ws42_close_rereview_1.md, at 9a4a4697): PASS; F1 fixed, F2 recorded, no new finding. Workstream 42 and Cut 23 closed."
+  - id: "LDG-3258"
+    title: "Freeze the cut's timing protocol, pin identities and split certification cost on the base"
+    workstream: 43
+    status: "open"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    scope: >-
+      Cut 24 decisions 2 and 3, and the before-refactoring parts of
+      synthesis rules 4 and 13. Record the cut base. Write and freeze
+      dev/bench/timing/protocols/cut24-feature-1/ (protocol.md, matrix.csv,
+      thresholds.csv, workloads.R) on the shared harness, with an A/A
+      record on the base fixing reps, bounds, the label-exchange range and
+      the peak-heap noise figure. Pin, on the base, the emitted function
+      bodies, formals, captures, params, IDs, declarations and the base and
+      declared-session fingerprints of every built-in and of concrete,
+      parameterised and bundled TTR forms in a committed expected file with
+      a check script under dev/feature_parity/. Measure on the base the
+      split of certification cost (candidate construction, the TTR
+      synthetic validation call, definition building, fingerprints) and the
+      integrated certification call, as a descriptive record.
+    acceptance:
+      - "The cut base commit recorded; R/ there equals 68b505b9"
+      - "cut24-feature-1 frozen before any comparison: Cut 22's six feature cells, the certification clock, the zero, low and mixed admission cells and wide-cell peak R heap as decision 3 names them; each workload takes an explicit --debug value; the A/A record on the base passes the harness check and fixes reps, bounds, the label-exchange range and the memory noise figure; the record names its host state"
+      - "The identity pin covers every built-in and the concrete, parameterised and bundled TTR forms, ordinary and declared-session; its check passes on the base and fails when one emitted function body, one param or one declaration is altered (transcript committed)"
+      - "The certification split is recorded per definition for the run and sweep definition sets, labelled descriptive"
+    evidence: []
+  - id: "LDG-3259"
+    title: "Adapter registry and its readers (stage 2, eager certification)"
+    workstream: 43
+    status: "open"
+    priority: "P1"
+    effort: "L"
+    dependencies: ["LDG-3258"]
+    scope: >-
+      Synthesis rules 1-3 and the stage-2 witnesses of rule 12. Add
+      ledgr_feature_adapters(), a fixed ordered list of package-owned
+      descriptions (ledgr, then TTR) carrying rule 2's contract; move the
+      Section 2 sites (certification and its candidates, the segment
+      dispatch, the catalogue rows, the source values, the parameter
+      registry, dependency provenance, the engine version's bind list) to
+      read it. Certification stays eager with today's candidate order and
+      semantics. Decide maintainer Q3 here: the ledgr entry replaces the
+      built-in candidate list and the kind dispatch, or the registry holds
+      TTR only and the built-in code stays as it is. Extend the engine
+      version's census and replacement proofs to the registry. Register
+      the stage-2 witnesses.
+    acceptance:
+      - "ledgr_feature_adapters() is unexported, fixed and ordered, built from package code only, with no discovery, mutable hook, runtime registration or public schema; describing adapters constructs no indicator and does not load TTR to inspect a built-in"
+      - "The nine sites outside R/indicator-ttr.R that named TTR read the registry; source values and their refusal are still exactly ledgr, TTR and custom, and inspection still resolves an unknown source to custom; the catalogue keeps its 48 rows, layout and order; dependency-version JSON fields and missing-package behaviour unchanged"
+      - "Q3 recorded: either the ledgr entry replaces the built-in candidate list and the kind dispatch with no parallel branch left, or the registry holds TTR only and the built-in code is unchanged"
+      - "Certification keeps width discovery from params then ID, the order SMA, EMA, RSI, returns within each width then TTR, ID substitution, claimed and content identity comparison, the contradiction refusals, canonical function replacement and the custom outcome; each attempted TTR candidate still runs ledgr_ind_ttr() with its synthetic validation and catches construction errors"
+      - "Registered witnesses: every catalogue row certifies as today; wrong widths, edited IDs, copied and forged functions, SMA3 carrying RSI3's claim, carry contradictions, unregistered arguments and outputs, ROC with an invalid type and MACD(100, 3, 2) from a validation-suppressed constructor, the maximum-width SMA and SMA3 renamed sma_2147483647 and sma_0 each certify, refuse or fall to custom exactly as on the base, with the same canonical definition and refusal class and message"
+      - "The LDG-3258 identity pin passes unchanged; the census check passes with the registry bound; targeted tests pass"
+    evidence: []
+  - id: "LDG-3260"
+    title: "Lazy candidate construction, measured and adopted or lapsed"
+    workstream: 43
+    status: "open"
+    priority: "P2"
+    effort: "S"
+    dependencies: ["LDG-3259"]
+    scope: >-
+      Synthesis rule 4 and Cut 24 decision 4 (maintainer Q4). Build an arm
+      that constructs candidates lazily in order and stops at the first
+      identity match, constructing eagerly exactly when two widths are
+      discovered and either is 0 or .Machine$integer.max. Time it against
+      the LDG-3259 tree on the certification clock under cut24-feature-1.
+      Adopt only on a resolved saving, with the single-width maximum SMA as
+      the one keyed oracle exception and a NEWS line; otherwise keep eager
+      construction and record the question as lapsed.
+    acceptance:
+      - "Matched-pair record on the certification clock, harness check passing, host state named"
+      - "If the record resolves a saving: lazy construction adopted with the eager domain exactly as decision 4 states; the maximum-width SMA certifies built-in and prepares an all-warmup result on a short history; SMA3 renamed sma_2147483647 and sma_0 still refuse as on the base; every other certification outcome and refusal equals the base on the corpus and the LDG-3259 witnesses; the exception is keyed in the oracle by case; one NEWS line"
+      - "If not: eager construction kept, no exception recorded, the decision and its record noted in this ticket's evidence"
+      - "Any other semantic difference fails the ticket"
+    evidence: []
+  - id: "LDG-3261"
+    title: "Close stage 2"
+    workstream: 43
+    status: "open"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-3260"]
+    scope: >-
+      Final-code proofs for workstream 43 (synthesis rules 10, 11 and 13 as
+      they apply to stage 2), then its Type 1 close review.
+    acceptance:
+      - "The permanent checker (dev/feature_parity/) passes pin against pin and final code against the pin with every existing expectation unchanged, apart from the keyed exception if LDG-3260 adopted it; the counted seams keep their names and are reached by namespace lookup; the existing fault controls pass"
+      - "Direct-backend TTR parity including derived outputs passes"
+      - "The identity tooling's changed-engine mode on the cut base and the final code: every logical identity equal, the engine version changed, an old explicit precompute refuses with ledgr_precomputed_engine_mismatch before candidates; the LDG-3258 identity pin passes"
+      - "census.R prints CENSUS CHECK PASS with replacement proofs for the registry"
+      - "Full test suite and R CMD check --no-manual --no-build-vignettes pass"
+      - "R/ production lines before and after; the seven optimization shapes walked over the changed preparation code"
+      - "Type 1 close review of workstream 43 (review_lifecycle)"
+    evidence: []
+  - id: "LDG-3262"
+    title: "Internal debug flag"
+    workstream: 44
+    status: "open"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-3261"]
+    scope: >-
+      Cut 24 decision 6 (maintainer Q1, synthesis rule 8's flag): the flag,
+      its accessor and local setter, the suite helper, the --debug argument
+      of dev/feature_parity/runner.R and of the cut24-feature-1 workloads,
+      and the check of where sweep preparation runs.
+    acceptance:
+      - "One unexported flag in a package-local environment, default off, read through one internal accessor and set only through an internal local setter that restores the prior value on every exit, normal or error (witness committed); no option(), environment variable or exported function"
+      - "A testthat helper turns it on for the suite; runner.R and the timing workloads take an explicit --debug=0 or 1 and record it"
+      - "Where sweep preparation runs is recorded; if any preparation runs on a mirai worker, the parent's value reaches it explicitly (witness)"
+      - "The flag enters no identity: the identity tooling shows equal identities with debug on and off"
+    evidence: []
+  - id: "LDG-3263"
+    title: "Gate and direct calculation with debug comparison (stage 3)"
+    workstream: 44
+    status: "open"
+    priority: "P1"
+    effort: "L"
+    dependencies: ["LDG-3262"]
+    scope: >-
+      Synthesis rules 5-8 and the stage-3 witnesses of rule 12, inside
+      ledgr_history_compute_feature_series() only: the four-clause gate as
+      instrument flags computed once with an early exit; the admitted-cell
+      calculation reusing the adapter's segment call over the whole slice
+      in the existing loop order; the debug comparison of outcomes; the
+      contract bullet replacement and the representation-map row (decision
+      8).
+    acceptance:
+      - "Run, sweep, explicit precompute and experiment-derived pulse inspection reach the choice; the single-definition evidence entry and the causality probe keep general calculation; empty bounds and zero definitions return before any gate is built; a custom-only preparation builds no gate planes; no user option or clock-specific fork"
+      - "The gate admits a cell only for a builtin or catalogue certification, exactly one knowledge range, every calculation column expected at the range-end cutoff, every required raw field finite there, and no asserted terminal in the prefix; no sticky scan; ranges computed once and reused by fallback; no field-set by instrument by axis collection retained"
+      - "Admitted cells run in the existing instrument, range and definition order interleaved with fallback cells; the raw-call key and its cache lifetime are today's; values, warmup NAs, one segment record, calculated counts and empty exception sets as rule 7 states; short slices make no adapter call; fallback keeps today's field union and complete custom callback frame"
+      - "Production keeps output validation and the sampled causality refutation with today's instrument choice, definitions and positions"
+      - "With debug on, every admitted cell also runs general calculation with its own cache; success compares exact values, counts, bounds and every plane record; refusal compares class, message and identifying fields; agreement re-raises the product condition; any disagreement raises an internal classed error, never a silent fallback; a mismatch in one condition field alone is detected (witness)"
+      - "Registered stage-3 witnesses: each gate rejection, the terminal and sticky implication, empty, short and never-ready histories, empty bounds and zero definitions, later calculation starts, both carry families, every built-in, every registered input, output and variant, stable_after greater than requires_bars, MACD histogram sharing, BBands sharing and separation, MFI and CMF volume, mixed admitted and fallback cells, the admitted runSD(n = 1) refusal, competing refusals in both definition orders and across instruments and ranges, the unregistered ohlc mapping through fallback; run, implicit sweep, explicit precompute and reuse, pulse inspection, both clocks, debug on and off; preparation refusal before candidates with a FAILED run writing no strategy call, event or equity row and sweep or precompute writing nothing"
+      - "Gut: with the full-coverage clause removed, the debug comparison refuses on the hostile corpus; complete output committed"
+      - "contracts.md Feature Path And Intent Constructors: only the one bullet replaced, with the synthesis's exact text; history_representation_map.md gains the direct path's row"
+    evidence: []
+  - id: "LDG-3264"
+    title: "Stage-3 mechanism observations in the permanent checker"
+    workstream: 44
+    status: "open"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-3263"]
+    scope: >-
+      Synthesis rule 11 for stage 3, with its stated test-change reason:
+      the route and hand-off expectations that assert work the direct path
+      removes are replaced by independently observed gate choices,
+      adapter and backend invocations, raw-cache hits and fallback
+      treatment, against reviewed committed expectations; debug shadow work
+      is counted separately; new fault controls.
+    acceptance:
+      - "Only the mechanism components stage 3 changes are replaced; pin observations, semantic expected answers, causality and read-entry phase observations and field coverage where unchanged, and the required TTR validation observations stay"
+      - "Observations come from execution seams, not from a product-reported flag; no production counter exists only for tests"
+      - "Missing-arm, case and component refusals, pin-self parity and every applicable existing fault control kept; new controls for wrong admission, missing treatment, missing raw sharing and a same-class wrong-payload refusal each fail the checker (transcripts committed); missing traces on refusing cases still fail"
+      - "No semantic expectation regenerated from the candidate"
+    evidence: []
+  - id: "LDG-3265"
+    title: "Measure stage 3 and decide retention"
+    workstream: 44
+    status: "open"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-3263"]
+    scope: >-
+      Synthesis rule 9 and Cut 24 decision 7: the matched-arm record under
+      cut24-feature-1, the workstream-43 close commit against the
+      candidate, debug off, every cell; the retention decision; a separate
+      labelled debug-on cost.
+    acceptance:
+      - "Record with harness check passing and host state named: the six feature cells, the zero, low and mixed admission cells and wide-cell peak R heap"
+      - "Retention decided by decision 7's test and recorded with its numbers; if it fails, the gate is simplified and remeasured once, or stage 3 is dropped (stage-2 calculator kept, contract bullet not replaced, map row not added), or a named exception goes to the maintainer at close review"
+      - "Debug-on cost reported separately, labelled"
+    evidence: []
+  - id: "LDG-3266"
+    title: "Close stage 3 and Cut 24"
+    workstream: 44
+    status: "open"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-3264", "LDG-3265"]
+    scope: >-
+      Final-code proofs for workstream 44 (synthesis rules 10, 12 and 13),
+      then its Type 1 close review and the cut close.
+    acceptance:
+      - "The permanent checker against the pin on both clocks and both debug settings: exact values and NA placement, types, dimensions, names, planes, projections, history reads and reasons, canonical certification, callback frames, refusal classes, messages, identifying fields and first-refusal order, caller RNG and causality selection; only the declared exclusions and the keyed exception if adopted differ; existing and new fault controls pass"
+      - "Direct-backend TTR parity including derived outputs passes"
+      - "Changed-engine identity mode on the workstream-43 close and the final code: logical identities equal, engine version changed, old precompute refuses before candidates; the LDG-3258 identity pin passes"
+      - "census.R prints CENSUS CHECK PASS with the gate, calculator and debug helpers bound or their separate binding named"
+      - "Full test suite with debug on and R CMD check --no-manual --no-build-vignettes pass"
+      - "R/ production lines before and after, debug and witness lines reported beside; the seven optimization shapes walked over the changed preparation code"
+      - "Type 1 close review of workstream 44 (review_lifecycle)"
+    evidence: []
