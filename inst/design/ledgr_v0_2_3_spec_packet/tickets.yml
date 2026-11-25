@@ -3837,16 +3837,68 @@ cuts:
       (3) Timing. One protocol, dev/bench/timing/protocols/cut24-feature-1/,
       written and frozen in LDG-3258 before any comparison: Cut 22's six
       feature cells (cut22-feature-1, same fixtures and clock), a
-      certification clock over the same definition sets, three admission
-      cells (zero: the 500 x 1,260 fixture with a custom-only definition
-      set, which the gate never admits; low: the hostile corpus substrates
-      of dev/feature_parity/corpus.R; mixed: the public simulated PIT panel
-      of 200 instruments over 2 years), and peak R heap on the two wide shapes
-      with a recorded noise figure. Reps, bounds and the label-exchange
-      range come from an A/A record on the base. Workers select the debug
-      flag explicitly; production timings run with debug off. The record
-      names its host state (busy or quiet); an inconclusive record
-      establishes no saving.
+      certification clock over the same definition sets, the admission
+      workloads below, and peak R heap on the two wide shapes. Workers
+      select the debug flag explicitly; production timings run with debug
+      off. An inconclusive record establishes no saving.
+      Admission workloads (cut review 24, R2). Keep the hostile corpus
+      substrates as semantic and small-overhead controls. Time four
+      admission workloads, each on both the run and sweep preparation
+      sequences: (a) custom-only on 500 x 1,260, using a deterministic
+      close-returning series callback with its matching scalar callback,
+      requires_bars=1 and required_fields='close'; (b) certified zero
+      admission on 500 x 1,260, derived from the dense public fixture by
+      removing one middle-session bar from every instrument while retaining
+      that expected session, with price_carry=2; (c) certified low admission
+      on the same shape and policy, leaving exactly five instruments
+      complete and removing the same middle-session bar from the other 495;
+      (d) the existing simulated PIT panel, using the exact generator,
+      dates, seed and policy of feature_stage23_probe/gate_count.R.
+      Certified cells use Cut 22's run and sweep SMA definition sets.
+      Freeze bounds, definitions and fixture digests in LDG-3258.
+      Independently establish and commit expected admission counts before
+      stage 3: custom-only 0 with no gate construction, certified zero 0/500
+      per definition, low 5/500 per definition, and the PIT panel's
+      per-definition counts. Observe actual execution choices separately.
+      Batch complete preparations to the protocol's duration; do not
+      enlarge only the repetition count and describe the tiny corpus as a
+      scaling test. Retention applies to all these measured cells.
+      Decision statistics (cut review 24, R1). Freeze workloads and the
+      calibration method before the base A/A record, and freeze the
+      resulting numeric protocol before any candidate comparison. Use eight
+      alternating fresh-process pairs per cell. Calibrate and freeze
+      repetitions so each timed batch lasts about three seconds or more,
+      including the certification and admission cells. Preserve every pair
+      and attempt. For each cell, compute all 256 within-pair label
+      exchanges of the base A/A observations using the shared checker's
+      statistic, median(candidate) / median(base). Commit their central 95%
+      interval [L, U], using quantile type 7, and the script and raw
+      observations that produce it. A measured ratio below L resolves a
+      saving; above U is a regression; otherwise no saving is established.
+      Apply this separately to every measured feature cell and
+      certification cell. Freeze U as the corresponding no-regression
+      bound; retain the separate saving test. Record the actual host state.
+      Do not infer a saving from CHECK PASS alone.
+      Name and commit the peak-R-heap collector and checker under the cut
+      protocol, reusing or extending dev/feature_parity/memory.R rather than
+      copying the timing harness. Measure both wide shapes on the run and
+      sweep preparation paths, with fixture/substrate construction outside
+      the phase, the production preparation and integrated projection
+      inside it, and the projection retained at the end. In each fresh
+      child, reset GC maxima immediately before the phase and record
+      max-used Ncells and Vcells in bytes afterwards. Use eight alternating
+      children per arm and cell. Record loaded library/commit, debug=0,
+      phase, raw bytes and host state. From the base A/A children compute
+      all within-pair label exchanges of the difference of arm medians;
+      memory noise is the larger absolute endpoint of its central 95%
+      interval (quantile type 7). Retention requires the
+      candidate-minus-stage-2 median to be no greater than this figure on
+      every memory cell. An extra live 8 MiB allocation inside the phase
+      must move the measurement beyond that noise on each arm; otherwise
+      the memory evidence is inconclusive. Commit a machine-readable
+      retention verdict and its inputs. Memory is not encoded as seconds or
+      an equal-work string in the timing harness. Every memory child sets
+      the debug value explicitly.
       (4) Lazy construction (rule 4, maintainer Q4). Measured in LDG-3260 as
       a matched pair (the LDG-3259 tree against the same tree with lazy
       construction) on the certification clock. Adopted only if the record
@@ -3868,11 +3920,12 @@ cuts:
       any preparation runs on a mirai worker, the parent's value is passed
       explicitly. No option(), environment variable or exported function.
       (7) Retention (rule 9 as patched). Stage 3 is kept only if at least one
-      wide fully admitted cell shows a feature-time saving outside the
-      label-exchange range, no measured cell (zero, low or mixed admission,
-      10 x 7,200) is slower than the stage-2 close beyond that range, and
-      wide-cell peak R heap does not exceed stage 2's beyond the recorded
-      noise. Otherwise the gate is simplified and remeasured once, or
+      wide fully admitted cell shows a resolved feature-time saving (its
+      ratio below that cell's L, decision 3), no measured cell (every
+      admission workload, 10 x 7,200) is slower than the stage-2 close
+      beyond its U, and on every memory cell the candidate-minus-stage-2
+      median peak R heap is no greater than the recorded memory noise.
+      Otherwise the gate is simplified and remeasured once, or
       dropped (the stage-2 calculator stays, the contract bullet is not
       replaced), or a named exception goes to the maintainer at close
       review.
@@ -3889,6 +3942,20 @@ cuts:
       corpus additions for the family and refusal witnesses with
       expectations regenerated from the pin only and the diff reviewed;
       the keyed oracle exception if decision 4 adopts lazy construction.
+      At each implemented stage update only the feature-engine literals at
+      test-strict-feature-acceleration.R:205, test-fingerprint-stability.R:34
+      and test-strict-ttr-cleanup.R:182, with the stated reason that engine
+      implementation identity changes; keep every indicator and strategy
+      fingerprint literal. For stage 3, revise only the mechanism-count
+      assertions/recorders in LTB-0143 and LTB-0276 that debug shadow
+      execution changes. Observe production preparation, debug shadow and
+      causality work separately, require the existing production and
+      causality counts where their work is unchanged, and assert the
+      additional shadow counts independently. Keep canonical-dispatch,
+      exact-value, raw-sharing, source and refusal assertions. The suite
+      remains debug-on. Record each test change and its reason in its
+      ticket; these permissions do not extend to semantic expectations or
+      unrelated fixtures (cut review 24, R3).
     identity_and_release_impact: >-
       Logical identity unchanged in both stages: emitted built-in and TTR
       function bodies, formals, captures, params (ttr_version included),
@@ -3932,6 +3999,7 @@ cuts:
       wrong answer; a third correction round stops for maintainer
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
+    cut_review: "Round 1: CHANGES_REQUIRED in cut_review_24.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at fd9dd630): the rule-to-ticket map is faithful and all six final-review patches are carried; R1-R6 required, all applied with the review's text: the decision statistics and a peak-heap collector frozen as calculations, not names (R1); custom-only, certified zero, low (5/500) and PIT admission workloads at 500 x 1,260 with independently committed expected counts, the tiny corpus kept as a control (R2); the three feature-engine test literals and the LTB-0143 and LTB-0276 mechanism counts authorized as named test changes (R3); a completeness guard and committed name sets for the changed-engine identity mode, whose missing-both and renamed-both controls passed falsely on the Cut 22 records (R4); the calculated_count matrix observed and frozen, with count-only and segment-ready comparator negatives (R5); valid negative records and a dropped-stage close branch (R6)."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -8051,10 +8119,14 @@ tickets:
       a check script under dev/feature_parity/. Measure on the base the
       split of certification cost (candidate construction, the TTR
       synthetic validation call, definition building, fingerprints) and the
-      integrated certification call, as a descriptive record.
+      integrated certification call, as a descriptive record. Freeze the
+      changed-engine identity name sets (cut review 24, R4) and the base
+      calculated-count matrices (R5) before any product edit.
     acceptance:
       - "The cut base commit recorded; R/ there equals 68b505b9"
-      - "cut24-feature-1 frozen before any comparison: Cut 22's six feature cells, the certification clock, the zero, low and mixed admission cells and wide-cell peak R heap as decision 3 names them; each workload takes an explicit --debug value; the A/A record on the base passes the harness check and fixes reps, bounds, the label-exchange range and the memory noise figure; the record names its host state"
+      - "cut24-feature-1 frozen as decision 3 states (cut review 24, R1 and R2): workloads, fixtures and their digests, definitions and the calibration method frozen before the base A/A record; eight alternating fresh-process pairs per cell; repetitions calibrated so each batch lasts about three seconds or more; the label-exchange interval [L, U] per feature, certification and admission cell computed from all 256 within-pair exchanges (quantile type 7) with its script and raw observations committed; the peak-R-heap collector and checker committed under the protocol with its noise figure from the base A/A children and the 8 MiB sensitivity check passing on each arm; the expected admission counts committed independently (custom-only 0 with no gate construction, certified zero 0/500, low 5/500 per definition, the PIT panel's per-definition counts); every workload and memory child takes an explicit --debug value; the host state recorded"
+      - "Changed-engine identity completeness (cut review 24, R4): freeze the required record-name sets for changed-engine identity comparisons, including the shared logical identities and the mode-specific base/store/precompute records, independently from identity.R's recording sites and synthesis rule 13. Make changed-engine mode validate each arm against those committed sets, reject missing, unexpected or duplicate records, and require exactly one engine record per arm before comparing values. Keep its engine-change, old-precompute-refusal and stored-result-read checks. Controls removing or renaming one required identity in both arms, dropping one in one arm, duplicating one and removing an engine record must fail; complete original records must pass. Commit the transcripts. The new emitted-function pin also checks its required case/component population independently, so deleting a pinned form cannot pass by reducing both records"
+      - "Calculated counts (cut review 24, R5): observe the actual calculated_count matrix at the causality-entry seam, without a production-only test counter, and freeze base general-path expected matrices for admitted, fallback and mixed preparations, including later starts, short/never-ready slices and output carry"
       - "The identity pin covers every built-in and the concrete, parameterised and bundled TTR forms, ordinary and declared-session; its check passes on the base and fails when one emitted function body, one param or one declaration is altered (transcript committed)"
       - "The certification split is recorded per definition for the run and sweep definition sets, labelled descriptive"
     evidence: []
@@ -8103,8 +8175,8 @@ tickets:
       the one keyed oracle exception and a NEWS line; otherwise keep eager
       construction and record the question as lapsed.
     acceptance:
-      - "Matched-pair record on the certification clock, harness check passing, host state named"
-      - "If the record resolves a saving: lazy construction adopted with the eager domain exactly as decision 4 states; the maximum-width SMA certifies built-in and prepares an all-warmup result on a short history; SMA3 renamed sma_2147483647 and sma_0 still refuse as on the base; every other certification outcome and refusal equals the base on the corpus and the LDG-3259 witnesses; the exception is keyed in the oracle by case; one NEWS line"
+      - "Matched-pair record on the certification clock, host state named. The matched record satisfies every shared-harness validity, provenance, work and completeness check. Keep and report its performance verdict even when ratios fail the frozen bound. A record failing only a performance bound is valid negative evidence for lapse/drop; invalid or inconclusive evidence establishes no saving. Do not obtain a passing record by dropping pairs or retrying without the harness's recorded attempt disposition (cut review 24, R6)"
+      - "If the record resolves a saving (ratio below the certification cell's L): lazy construction adopted with the eager domain exactly as decision 4 states; the maximum-width SMA certifies built-in and prepares an all-warmup result on a short history; SMA3 renamed sma_2147483647 and sma_0 still refuse as on the base; every other certification outcome and refusal equals the base on the corpus and the LDG-3259 witnesses; the exception is keyed in the oracle by case; one NEWS line"
       - "If not: eager construction kept, no exception recorded, the decision and its record noted in this ticket's evidence"
       - "Any other semantic difference fails the ticket"
     evidence: []
@@ -8121,9 +8193,9 @@ tickets:
     acceptance:
       - "The permanent checker (dev/feature_parity/) passes pin against pin and final code against the pin with every existing expectation unchanged, apart from the keyed exception if LDG-3260 adopted it; the counted seams keep their names and are reached by namespace lookup; the existing fault controls pass"
       - "Direct-backend TTR parity including derived outputs passes"
-      - "The identity tooling's changed-engine mode on the cut base and the final code: every logical identity equal, the engine version changed, an old explicit precompute refuses with ledgr_precomputed_engine_mismatch before candidates; the LDG-3258 identity pin passes"
+      - "The identity tooling's changed-engine mode, with the completeness guard and committed name sets of LDG-3258, on the cut base and the final code: every logical identity equal, the engine version changed, an old explicit precompute refuses with ledgr_precomputed_engine_mismatch before candidates; the LDG-3258 identity pin passes with its population check"
       - "census.R prints CENSUS CHECK PASS with replacement proofs for the registry"
-      - "Full test suite and R CMD check --no-manual --no-build-vignettes pass"
+      - "Full test suite and R CMD check --no-manual --no-build-vignettes pass; the only registered-test changes are decision 9's, here the three feature-engine literals with their stated reason, each recorded in this ticket's evidence"
       - "R/ production lines before and after; the seven optimization shapes walked over the changed preparation code"
       - "Type 1 close review of workstream 43 (review_lifecycle)"
     evidence: []
@@ -8165,7 +8237,8 @@ tickets:
       - "The gate admits a cell only for a builtin or catalogue certification, exactly one knowledge range, every calculation column expected at the range-end cutoff, every required raw field finite there, and no asserted terminal in the prefix; no sticky scan; ranges computed once and reused by fallback; no field-set by instrument by axis collection retained"
       - "Admitted cells run in the existing instrument, range and definition order interleaved with fallback cells; the raw-call key and its cache lifetime are today's; values, warmup NAs, one segment record, calculated counts and empty exception sets as rule 7 states; short slices make no adapter call; fallback keeps today's field union and complete custom callback frame"
       - "Production keeps output validation and the sampled causality refutation with today's instrument choice, definitions and positions"
-      - "With debug on, every admitted cell also runs general calculation with its own cache; success compares exact values, counts, bounds and every plane record; refusal compares class, message and identifying fields; agreement re-raises the product condition; any disagreement raises an internal classed error, never a silent fallback; a mismatch in one condition field alone is detected (witness)"
+      - "With debug on, every admitted cell also runs general calculation with its own cache; success compares exact values, counts, bounds and every plane record; refusal compares class, message and identifying fields; agreement re-raises the product condition; any disagreement raises an internal classed error, never a silent fallback; comparator negatives differing only in one condition field, only in one count and only in one segment-ready record are each detected (witnesses; cut review 24, R5)"
+      - "Calculated counts (cut review 24, R5): the candidate's production calculated_count matrix, observed at the causality-entry seam, equals the base general-path matrices frozen in LDG-3258 exactly, with debug work accounted separately; a count-only fault that changes positive counts while preserving which.max and sampled positions fails; values, record and refusal expectations come from the pin or the frozen base general path, never from the candidate"
       - "Registered stage-3 witnesses: each gate rejection, the terminal and sticky implication, empty, short and never-ready histories, empty bounds and zero definitions, later calculation starts, both carry families, every built-in, every registered input, output and variant, stable_after greater than requires_bars, MACD histogram sharing, BBands sharing and separation, MFI and CMF volume, mixed admitted and fallback cells, the admitted runSD(n = 1) refusal, competing refusals in both definition orders and across instruments and ranges, the unregistered ohlc mapping through fallback; run, implicit sweep, explicit precompute and reuse, pulse inspection, both clocks, debug on and off; preparation refusal before candidates with a FAILED run writing no strategy call, event or equity row and sweep or precompute writing nothing"
       - "Gut: with the full-coverage clause removed, the debug comparison refuses on the hostile corpus; complete output committed"
       - "contracts.md Feature Path And Intent Constructors: only the one bullet replaced, with the synthesis's exact text; history_representation_map.md gains the direct path's row"
@@ -8187,7 +8260,7 @@ tickets:
     acceptance:
       - "Only the mechanism components stage 3 changes are replaced; pin observations, semantic expected answers, causality and read-entry phase observations and field coverage where unchanged, and the required TTR validation observations stay"
       - "Observations come from execution seams, not from a product-reported flag; no production counter exists only for tests"
-      - "Missing-arm, case and component refusals, pin-self parity and every applicable existing fault control kept; new controls for wrong admission, missing treatment, missing raw sharing and a same-class wrong-payload refusal each fail the checker (transcripts committed); missing traces on refusing cases still fail"
+      - "Missing-arm, case and component refusals, pin-self parity and every applicable existing fault control kept; new controls for wrong admission, missing treatment, missing raw sharing, a same-class wrong-payload refusal and a count-only calculated_count change each fail the checker (transcripts committed); missing traces on refusing cases still fail; if a certification-refusal case is added to the corpus, its certification is observed inside the refusal boundary"
       - "No semantic expectation regenerated from the candidate"
     evidence: []
   - id: "LDG-3265"
@@ -8203,7 +8276,7 @@ tickets:
       candidate, debug off, every cell; the retention decision; a separate
       labelled debug-on cost.
     acceptance:
-      - "Record with harness check passing and host state named: the six feature cells, the zero, low and mixed admission cells and wide-cell peak R heap"
+      - "Record with host state named: the six feature cells, the four admission workloads of decision 3 on run and sweep, and peak R heap on the memory cells with its machine-readable retention verdict. The matched record satisfies every shared-harness validity, provenance, work and completeness check. Keep and report its performance verdict even when ratios fail the frozen bound. A record failing only a performance bound is valid negative evidence for lapse/drop; invalid or inconclusive evidence establishes no saving. Do not obtain a passing record by dropping pairs or retrying without the harness's recorded attempt disposition (cut review 24, R6)"
       - "Retention decided by decision 7's test and recorded with its numbers; if it fails, the gate is simplified and remeasured once, or stage 3 is dropped (stage-2 calculator kept, contract bullet not replaced, map row not added), or a named exception goes to the maintainer at close review"
       - "Debug-on cost reported separately, labelled"
     evidence: []
@@ -8220,9 +8293,10 @@ tickets:
     acceptance:
       - "The permanent checker against the pin on both clocks and both debug settings: exact values and NA placement, types, dimensions, names, planes, projections, history reads and reasons, canonical certification, callback frames, refusal classes, messages, identifying fields and first-refusal order, caller RNG and causality selection; only the declared exclusions and the keyed exception if adopted differ; existing and new fault controls pass"
       - "Direct-backend TTR parity including derived outputs passes"
-      - "Changed-engine identity mode on the workstream-43 close and the final code: logical identities equal, engine version changed, old precompute refuses before candidates; the LDG-3258 identity pin passes"
+      - "Changed-engine identity mode, with LDG-3258's completeness guard, on the workstream-43 close and the final code: logical identities equal, engine version changed, old precompute refuses before candidates; the LDG-3258 identity pin passes with its population check"
       - "census.R prints CENSUS CHECK PASS with the gate, calculator and debug helpers bound or their separate binding named"
-      - "Full test suite with debug on and R CMD check --no-manual --no-build-vignettes pass"
+      - "Full test suite with debug on and R CMD check --no-manual --no-build-vignettes pass; the only registered-test changes are decision 9's (the three feature-engine literals and the LTB-0143 and LTB-0276 mechanism counts, production, shadow and causality observed separately), each with its reason recorded in this ticket's evidence"
+      - "Dropped branch (cut review 24, R6): LDG-3266 closes the retained implementation if the shortcut is kept. If LDG-3265 drops it, record that disposition, remove its production calculator/gate and candidate-specific mechanism expectations, preserve the stage-2 semantic and unchanged mechanism proofs, and verify the contract/map edits were reverted. Apply engine-change and precompute-refusal checks to actual retained semantic implementation changes; do not require an artificial second engine change when the final semantic implementation is the stage-2 close. Record any retained debug scaffolding and its identity treatment. Prototype measurements and rejection reasons remain evidence. A named retention exception still requires the maintainer's recorded disposition before closing"
       - "R/ production lines before and after, debug and witness lines reported beside; the seven optimization shapes walked over the changed preparation code"
       - "Type 1 close review of workstream 44 (review_lifecycle)"
     evidence: []
