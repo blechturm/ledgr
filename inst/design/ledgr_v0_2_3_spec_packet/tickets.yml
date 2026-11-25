@@ -3785,7 +3785,8 @@ cuts:
   - id: 24
     name: "Feature engine stages 2-3: adapter registry and gated direct path"
     cut: "2026-11-25"
-    status: "proposed"
+    status: "accepted"
+    accepted: "2026-11-25 by the maintainer, revision 2, after the cut review passed at re-review 1 (cut_review_24_rereview_1.md), with the instruction to implement workstream 43 and iterate its Codex close review to green."
     opening: >-
       Written by Claude on 2026-11-25 at the maintainer's request, after the
       maintainer accepted the feature-engine stages 2-3 synthesis the same
