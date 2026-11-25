@@ -1,0 +1,7 @@
+none               exit 0  EMITTED PIN PASS
+fn_body            exit 1  EMITTED PIN FAIL
+params             exit 1  EMITTED PIN FAIL
+declarations       exit 1  EMITTED PIN FAIL
+form_removed_both  exit 1  EMITTED PIN FAIL
+duplicate          exit 1  EMITTED PIN FAIL
+CONTROLS PASS

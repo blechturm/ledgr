@@ -1,6 +1,9 @@
 # Compares two identity.R records. Two modes:
 #
-# --mode=changed-engine (default; Cut 22 decision 6): every identity equal
+# --mode=changed-engine (default; Cut 22 decision 6, Cut 24 cut review R4):
+# each arm's record names equal the committed set
+# identity_names_changed_engine.csv (or --expected=<csv>), with no missing,
+# unexpected or duplicate record and exactly one engine record; every identity equal
 # between the base and the candidate, except the engine version, which must
 # differ; the candidate reading the base's explicit precompute must refuse it
 # with ledgr_precomputed_engine_mismatch before any candidate runs, and the
@@ -33,43 +36,48 @@ local({
   bad <- 0L
   ev <- "engine_version (expected to change)"
   get <- function(n) b$value[b$name == n]
+  # The expected record names are fixed independently of the two arms (Cut 23
+  # close review F1; Cut 24 cut review R4 for the changed-engine mode), so a
+  # record lost from both arms alike still fails. Each mode has its own set:
+  # the changed-engine set lacks the two records written only when the old
+  # precompute is reused.
+  expected_file <- arg("expected", file.path(dirname(normalizePath(sub("^--file=", "",
+    grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/")),
+    sprintf("identity_names_%s.csv", sub("-", "_", mode, fixed = TRUE))))
+  expected <- utils::read.csv(expected_file, stringsAsFactors = FALSE, colClasses = "character")
+  if (!identical(names(expected), c("name", "arm")) || anyDuplicated(expected$name) ||
+      !all(expected$arm %in% c("both", "base", "candidate")) || !(ev %in% expected$name[expected$arm == "both"])) {
+    stop("malformed expected identity names: ", expected_file)
+  }
+  for (arm in list(list("base", a), list("candidate", b))) {
+    dup <- unique(arm[[2]]$name[duplicated(arm[[2]]$name)])
+    if (length(dup)) { cat("DUPLICATE in", arm[[1]], ":", paste(dup, collapse = ", "), "\n"); bad <- bad + 1L }
+    n_ev <- sum(arm[[2]]$name == ev)
+    if (n_ev != 1L) { cat(arm[[1]], "has", n_ev, "engine-version records\n"); bad <- bad + 1L }
+    want <- expected$name[expected$arm %in% c("both", arm[[1]])]
+    missing <- setdiff(want, arm[[2]]$name)
+    extra <- setdiff(arm[[2]]$name, want)
+    if (length(missing)) { cat("MISSING in", arm[[1]], ":", paste(missing, collapse = ", "), "\n"); bad <- bad + 1L }
+    if (length(extra)) { cat("UNEXPECTED in", arm[[1]], ":", paste(extra, collapse = ", "), "\n"); bad <- bad + 1L }
+  }
   if (identical(mode, "changed-engine")) {
-    declared <- grepl("^engine_version|^saved_sweep:|^old_", a$name)
-    comparable <- a$name[!declared]
-    missing <- setdiff(comparable, b$name)
-    if (length(missing)) { cat("MISSING in candidate:", paste(missing, collapse = ", "), "\n"); bad <- bad + 1L }
-    both <- intersect(comparable, b$name)
-    same <- a$value[match(both, a$name)] == b$value[match(both, b$name)]
+    comparable <- setdiff(expected$name[expected$arm == "both"], ev)
+    cat(sprintf("expected identities: %d compared besides the engine version (%s)\n", length(comparable),
+                basename(expected_file)))
+    both <- intersect(comparable, intersect(a$name, b$name))
+    same <- vapply(both, function(n) identical(a$value[a$name == n], b$value[b$name == n]), logical(1))
     cat(sprintf("identities compared: %d, equal: %d\n", length(both), sum(same)))
     if (!all(same)) { cat("DIFFER:", paste(both[!same], collapse = ", "), "\n"); bad <- bad + 1L }
-    cat("engine version base", a$value[a$name == ev], "candidate", b$value[b$name == ev], "\n")
-    if (identical(a$value[a$name == ev], b$value[b$name == ev])) { cat("engine version did not change\n"); bad <- bad + 1L }
+    ea <- a$value[a$name == ev]
+    eb <- b$value[b$name == ev]
+    cat("engine version base", ea, "candidate", eb, "\n")
+    if (length(ea) != 1L || length(eb) != 1L || identical(ea, eb)) { cat("engine version did not change\n"); bad <- bad + 1L }
     cat("old precompute:", get("old_precompute:refusal"), "strategy calls", get("old_precompute:strategy_calls"), "\n")
     if (!identical(get("old_precompute:refusal"), "ledgr_precomputed_engine_mismatch") ||
         !identical(get("old_precompute:strategy_calls"), "0")) bad <- bad + 1L
   } else {
     prefix <- arg("engine-prefix")
     if (is.null(prefix) || !nzchar(prefix)) stop("--mode=unchanged-engine needs --engine-prefix=<hex>")
-    # The expected record names are fixed independently of the two arms (close review F1),
-    # so a record lost from both arms alike still fails.
-    expected_file <- arg("expected", file.path(dirname(normalizePath(sub("^--file=", "",
-      grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/")), "identity_names_unchanged_engine.csv"))
-    expected <- utils::read.csv(expected_file, stringsAsFactors = FALSE, colClasses = "character")
-    if (!identical(names(expected), c("name", "arm")) || anyDuplicated(expected$name) ||
-        !all(expected$arm %in% c("both", "base", "candidate")) || !(ev %in% expected$name[expected$arm == "both"])) {
-      stop("malformed expected identity names: ", expected_file)
-    }
-    for (arm in list(list("base", a), list("candidate", b))) {
-      dup <- unique(arm[[2]]$name[duplicated(arm[[2]]$name)])
-      if (length(dup)) { cat("DUPLICATE in", arm[[1]], ":", paste(dup, collapse = ", "), "\n"); bad <- bad + 1L }
-      n_ev <- sum(arm[[2]]$name == ev)
-      if (n_ev != 1L) { cat(arm[[1]], "has", n_ev, "engine-version records\n"); bad <- bad + 1L }
-      want <- expected$name[expected$arm %in% c("both", arm[[1]])]
-      missing <- setdiff(want, arm[[2]]$name)
-      extra <- setdiff(arm[[2]]$name, want)
-      if (length(missing)) { cat("MISSING in", arm[[1]], ":", paste(missing, collapse = ", "), "\n"); bad <- bad + 1L }
-      if (length(extra)) { cat("UNEXPECTED in", arm[[1]], ":", paste(extra, collapse = ", "), "\n"); bad <- bad + 1L }
-    }
     comparable <- expected$name[expected$arm == "both"]
     cat(sprintf("expected identities: %d compared (%s)\n", length(comparable), basename(expected_file)))
     both <- intersect(comparable, intersect(a$name, b$name))
