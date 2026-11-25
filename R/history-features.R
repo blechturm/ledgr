@@ -17,7 +17,7 @@ ledgr_history_price_fields <- function() c("open", "high", "low", "close")
 # catalogue row can never execute other code under that identity. Anything
 # else is computed with its own functions under the custom rules. The
 # candidates come from the feature adapters (R/feature-adapters.R) in their
-# order; an adapter may defer a candidate's construction to its turn.
+# order, every candidate constructed before any is compared.
 ledgr_feature_certify <- function(def) {
   if (inherits(def, "ledgr_indicator")) {
     def <- ledgr_precompute_feature_def_from_indicator(def)
@@ -30,9 +30,7 @@ ledgr_feature_certify <- function(def) {
     NULL
   }
   for (candidate in ledgr_feature_catalogue_candidates(def)) {
-    # A candidate an adapter defers is constructed here, in order, so
-    # certification stops constructing at the first match.
-    indicator <- candidate$indicator %||% candidate$build()
+    indicator <- candidate$indicator
     indicator$id <- def$id
     canonical <- ledgr_precompute_feature_def_from_indicator(indicator)
     identities <- c(
