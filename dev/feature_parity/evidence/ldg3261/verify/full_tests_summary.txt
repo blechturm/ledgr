@@ -1,0 +1,10 @@
+duckdb 2.0.0 C:/Users/maxth/ledgr-wt/cut24-scratch/verify-lib/duckdb 
+nanonext 1.10.4 C:/Users/maxth/ledgr-wt/cut24-scratch/verify-lib/nanonext 
+mirai 2.7.4 C:/Users/maxth/ledgr-wt/cut24-scratch/verify-lib/mirai 
+══ Skipped ═════════════════════════════════════════════════════════════════════
+1. ledgr_snapshot_from_yahoo requires quantmod ('test-snapshot-adapters.R:343:5') - Reason: quantmod installed; missing-package path not exercised
+
+══ DONE ════════════════════════════════════════════════════════════════════════
+
+FULL: 233 files, 1364 tests, 0 failed, 0 errors, 1 skipped
+FULL: 233 files, 1364 tests, 0 failed, 0 errors, 1 skipped

@@ -68,3 +68,24 @@ which also makes the 15 mirai tests skip (Cut 23's suite skipped only the
 quantmod test). `base_environment_tests.txt` (`base_env_tests.R`): the same
 three fail identically on the cut base's installed library. Not changed
 here: the host's library is shared with other work. R CMD check: Status OK (r_cmd_check.log).
+
+## Close review round 1, F1: full suite and check in a verification library
+
+The record above stays: on the host library the suite has three non-passes
+caused by the host's packages. Close review round 1 (ws43_close_review_round1.md,
+F1) requires a passing run. An isolated library
+`$S/verify-lib` holds duckdb 2.0.0 (the golden schema fixtures' version),
+nanonext 1.10.4 and mirai 2.7.4, installed as Windows binaries from the Posit
+Package Manager snapshot of 2026-11-20
+(`install.packages(c("duckdb", "nanonext", "mirai"), lib = "$S/verify-lib",
+repos = "https://packagemanager.posit.co/cran/2026-11-20", type = "win.binary",
+dependencies = FALSE)`). The host's shared library is unchanged.
+
+    Rscript verify/full_tests_verify.R    # verify-lib, final library, host library on .libPaths() and R_LIBS; load_all(ws43); test_local
+    Rscript verify/buildcheck_verify.R    # verify-lib first on R_LIBS; R CMD build ws43; R CMD check --no-manual --no-build-vignettes
+
+`verify/full_tests_summary.txt`: duckdb 2.0.0, nanonext 1.10.4 and mirai 2.7.4
+loaded from verify-lib; 233 files, 1,364 tests, 0 failed, 0 errors, 1 skipped
+(the quantmod missing-package path, as in Cut 23); the mirai tests ran.
+`verify/r_cmd_check.log`: Status OK. No registered test, golden fixture or skip
+condition changed.
