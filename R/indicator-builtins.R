@@ -216,7 +216,7 @@ ledgr_feature_adapter_ledgr_rows <- function(row) {
 
 # Every built-in at every width the definition's params or ID carry, widths
 # in discovery order (params, then ID) and the four families in this order
-# within each width; all are constructed before certification compares any.
+# within each width (constructed as decided below).
 ledgr_feature_adapter_ledgr_candidates <- function(def) {
   out <- list()
   widths <- integer()
@@ -235,13 +235,25 @@ ledgr_feature_adapter_ledgr_candidates <- function(def) {
     rsi = ledgr_ind_rsi,
     returns = ledgr_ind_returns
   )
-  for (width in widths[!is.na(widths)]) {
+  widths <- widths[!is.na(widths)]
+  # Candidates are constructed lazily, in order, as certification reaches
+  # them (Cut 24 decision 4), except when two widths are discovered and one
+  # is 0 or the integer maximum: there a later candidate's construction
+  # refusal must still precede certification, as with eager construction.
+  eager <- length(widths) == 2L && any(widths %in% c(0L, .Machine$integer.max))
+  for (width in widths) {
     for (kind in names(constructors)) {
+      build <- local({
+        constructor <- constructors[[kind]]
+        w <- width
+        function() constructor(w)
+      })
       out[[length(out) + 1L]] <- list(
         adapter = "ledgr",
         certification = "builtin",
         kind = kind,
-        indicator = constructors[[kind]](width)
+        indicator = if (eager) build() else NULL,
+        build = build
       )
     }
   }
