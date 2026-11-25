@@ -1,0 +1,22 @@
+                    file production_base bind_list_base production_final
+    R/feature-adapters.R               0              0                9
+  R/feature-parameters.R             315              0              308
+     R/features-engine.R             241             64              238
+    R/history-features.R             763              0              682
+  R/indicator-builtins.R             121              0              186
+   R/indicator-history.R             321              0              272
+       R/indicator-ttr.R             819              0              962
+           R/indicator.R             301              0              307
+ R/strategy-provenance.R             155              0              156
+              <total R/>           54882             64            54966
+ bind_list_final change change_without_bind_list
+               0      9                        9
+               0     -7                       -7
+              59     -3                        2
+               0    -81                      -81
+               0     65                       65
+               0    -49                      -49
+               0    143                      143
+               0      6                        6
+               0      1                        1
+              59     84                       89

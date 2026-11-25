@@ -1,0 +1,62 @@
+══ Skipped ═════════════════════════════════════════════════════════════════════
+1. parallel availability sweeps return the same compact terminal evidence ('test-availability-parity.R:562:3') - Reason: {mirai} cannot be loaded
+
+2. [LTB-0295] availability sweeps stage history without semantic drift ('test-history-substrate.R:1440:3') - Reason: {mirai} cannot be loaded
+
+3. [LTB-0296] availability walk-forward accepts staged workers ('test-history-substrate.R:1612:3') - Reason: {mirai} cannot be loaded
+
+4. [LTB-0519] a worker-executed memory sink delivers the in-process native surfaces ('test-output-handler-sinks.R:98:3') - Reason: {mirai} cannot be loaded
+
+5. sweep (one and two workers) and promotion read a straight run's pulse seeds ('test-pulse-seed-v2.R:447:3') - Reason: {mirai} cannot be loaded
+
+6. the contract recipe gives identical fills with one and two workers ('test-rng-isolation.R:250:3') - Reason: {mirai} cannot be loaded
+
+7. two-worker sweeps restore the caller's RNG after daemon start and stop ('test-rng-isolation.R:445:3') - Reason: {mirai} cannot be loaded
+
+8. captured service expressions and returned helpers restore the caller's RNG ('test-rng-isolation.R:518:3') - Reason: {mirai} cannot be loaded
+
+9. ledgr_snapshot_from_yahoo requires quantmod ('test-snapshot-adapters.R:343:5') - Reason: quantmod installed; missing-package path not exercised
+
+10. [LTB-0537] sweep candidates isolate declared state across workers ('test-strategy-state-ws17.R:373:3') - Reason: {mirai} cannot be loaded
+
+11. [LTB-0025] parallel sweep constructs opening lots identically to sequential ('test-sweep-parallel.R:136:3') - Reason: {mirai} cannot be loaded
+
+12. parallel sweep preserves parameterized risk identity and row order ('test-sweep-parallel.R:187:3') - Reason: {mirai} cannot be loaded
+
+13. parallel sweep preserves warning and failure row association ('test-sweep-parallel.R:234:3') - Reason: {mirai} cannot be loaded
+
+14. parallel sweep keeps reproduction key stable modulo sweep id ('test-sweep-parallel.R:277:3') - Reason: {mirai} cannot be loaded
+
+15. parallel sweep workers do not write persistent artifacts ('test-sweep-parallel.R:304:3') - Reason: {mirai} cannot be loaded
+
+16. parallel sweep rejects ambient RNG strategies ('test-sweep-parallel.R:328:3') - Reason: {mirai} cannot be loaded
+
+══ Failed ══════════════════════════════════════════════════════════════════════
+── 1. Failure ('test-schema-current.R:22:3'): [LTB-0258] current schema definiti
+Expected `unique(golden$duckdb_version)` to be identical to `as.character(utils::packageVersion("duckdb"))`.
+Differences:
+`actual`:   "2.0.0"
+`expected`: "2.0.1"
+
+
+── 2. Failure ('test-schema-current.R:35:3'): [LTB-0258] current schema definiti
+Expected `unique(golden_rows$duckdb_version)` to be identical to `as.character(utils::packageVersion("duckdb"))`.
+Differences:
+`actual`:   "2.0.0"
+`expected`: "2.0.1"
+
+
+── 3. Error ('test-strategy-schedule.R:1350:5'): [LTB-0508] orchestration format
+<ledgr_parallel_backend_missing/ledgr_parallel_error/rlang_error/error/condition>
+Error in `ledgr_parallel_require_backend(workers = workers, backend = backend, backend_available = backend_available)`: Parallel sweep with `workers > 1` requires optional package `mirai`. Install it with `install.packages("mirai")`, or run with `workers = 1`.
+Backtrace:
+    ▆
+ 1. └─base::lapply(...) at test-strategy-schedule.R:1349:3
+ 2.   └─ledgr (local) FUN(X[[i]], ...)
+ 3.     └─ledgr::ledgr_sweep(fixture$exp, grid, seed = 91L, workers = workers) at test-strategy-schedule.R:1350:5
+ 4.       ├─ledgr:::ledgr_rng_preserve_caller(...) at ws43/R/sweep.R:108:3
+ 5.       │ └─base::withVisible(expr) at ws43/R/rng.R:199:3
+ 6.       └─ledgr:::ledgr_sweep_impl(...)
+ 7.         └─ledgr:::ledgr_parallel_worker_setup(...) at ws43/R/sweep.R:195:3
+ 8.           └─ledgr:::ledgr_parallel_require_backend(workers = workers, backend = backend, backend_available = backend_available) at ws43/R/parallel-workers.R:185:3
+FULL: 233 files, 1364 tests, 1 failed, 2 errors, 16 skipped

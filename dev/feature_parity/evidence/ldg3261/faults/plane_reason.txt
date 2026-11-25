@@ -1,0 +1,7 @@
+check.R --pin=<pin> --candidate=<plane_reason>: exit 1
+SIGNAL planes 177  (candidate differs from pin; first: compute | hostile_carry2|data_start|close)
+SIGNAL precompute 1  (candidate differs from pin; first: e2e | declared_sessions|precompute)
+SIGNAL proj 177  (candidate differs from pin; first: compute | hostile_carry2|data_start|close)
+SIGNAL reads 177  (candidate differs from pin; first: compute | hostile_carry2|data_start|close)
+cases 631 (refusing on the pin 57), observations pin 8280 candidate 8280
+CHECK FAIL: 4 signal(s)

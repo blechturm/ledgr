@@ -1,0 +1,2 @@
+check.R --pin=<pin> --candidate=<missing_case>: exit 2
+REFUSED: candidate  misses  1  corpus case(s), first:  compute | hostile_carry2|data_start|close 

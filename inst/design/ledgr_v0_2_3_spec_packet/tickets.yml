@@ -8103,7 +8103,7 @@ tickets:
   - id: "LDG-3258"
     title: "Freeze the cut's timing protocol, pin identities and split certification cost on the base"
     workstream: 43
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: []
@@ -8130,11 +8130,17 @@ tickets:
       - "Calculated counts (cut review 24, R5): observe the actual calculated_count matrix at the causality-entry seam, without a production-only test counter, and freeze base general-path expected matrices for admitted, fallback and mixed preparations, including later starts, short/never-ready slices and output carry"
       - "The identity pin covers every built-in and the concrete, parameterised and bundled TTR forms, ordinary and declared-session; its check passes on the base and fails when one emitted function body, one param or one declaration is altered (transcript committed)"
       - "The certification split is recorded per definition for the run and sweep definition sets, labelled descriptive"
-    evidence: []
+    evidence:
+      - "Cut base ea580bc6 (release/v0.2.3 at the cut's acceptance); git diff 68b505b9 ea580bc6 -- R is empty. Tools committed on ws43 at 02b34843 before any record. Commands and results: dev/feature_parity/evidence/ldg3258/COMMANDS.md."
+      - "Protocol dev/bench/timing/protocols/cut24-feature-1/ (16 cells: Cut 22's six feature cells, certify_run, certify_sweep, eight admission cells; workloads take debug=0|1). Reps calibrated on the base before the A/A record (dev/bench/v0_2_3_cut24_feature/results/calibration.csv; 6 s batches for wide and admission cells, 3 s otherwise). Admission fixtures (a) custom-only, (b) certified zero, (c) certified low (5/500 complete), all 500 x 1,260, (d) the simulated PIT panel; digests in results/fixture_digests.csv; expected counts from the measuring step's independent gate committed before stage 3 (results/admission_expected.csv: custom 0, zero 0/500, low 5/500, PIT 197/200 per definition). Base A/A record dev/bench/timing/records/cut24-feature-1/aa-base/attempt-1 (busy host, annotated; High performance, P-cores): A/A VALID, 8 pairs per cell, every slot ok; exchange.R --aa: [L, U] from all 256 within-pair label exchanges, quantile type 7 (dev/bench/v0_2_3_cut24_feature/records/aa-base/intervals.csv; U 1.0042-1.0260, L 0.9746-0.9958), each U frozen as its cell's bound in thresholds.csv. Peak-heap collector memory.R; base memory A/A (records/aa-base-memory): peak heap exactly repeatable, noise 0 on all four cells; the extra 8 MiB lifts the peak by about 8.39 MB on three cells but by 8,160 bytes on 500 x 1,260 sweep (both arms): weak memory evidence for that cell, recorded for the stage-3 retention decision."
+      - "identity_names_changed_engine.csv: Cut 23's reviewed unchanged-engine name set without the two reuse-only records (156 both, 2 base, 6 candidate), equal to Cut 22's changed-engine records on both arms; identity_check.R validates each arm's population (missing, unexpected, duplicate, one engine record) in both modes. identity_controls.R --mode=changed-engine on Cut 22's records: unedited passes; removed from both arms, renamed in both, dropped from one, duplicated and the engine record removed each fail (evidence/ldg3258/identity_controls_changed_engine.txt); the unchanged-engine controls are as before (identity_controls_unchanged_engine.txt)."
+      - "counts.R observes calculated_count at the causality-entry seam (a binding wrapper, no product counter); counts_expected.csv freezes 385 base cells (296 positive) over the dense, hostile, panel, short and empty substrates, with output carry, at the default and a later start, seven definitions; the base check passes and the count-only fault (every positive count plus one) fails (counts_base_check.txt, counts_fault_count.txt)."
+      - "emitted_pin_expected.csv: 134 identities (the four built-ins, ttr_rsi, ttr_atr, ttr_atr_sma, ttr_mfi, ttr_unreg, the bundled MACD outputs: fingerprint, declared-session fingerprint, declarations, id, params, fn and series_fn body, formals and captures; the parameterised form's two fingerprints) frozen from identity.R on the base (identity_base.csv); population fixed in emitted_pin.R; emitted_pin_controls.txt: the base passes, an altered fn body, param or declaration, a form removed from record and pin alike and a duplicated component each fail."
+      - "dev/bench/v0_2_3_cut24_feature/results/cert_split_base.csv (descriptive): about 15 ms (run set) and 18 ms (sweep set) per definition; constructing candidates about 30 percent (the synthetic TTR call 3-4 percent); converting candidates to definitions with their fingerprints about 70 percent."
   - id: "LDG-3259"
     title: "Adapter registry and its readers (stage 2, eager certification)"
     workstream: 43
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "L"
     dependencies: ["LDG-3258"]
@@ -8158,11 +8164,17 @@ tickets:
       - "Certification keeps width discovery from params then ID, the order SMA, EMA, RSI, returns within each width then TTR, ID substitution, claimed and content identity comparison, the contradiction refusals, canonical function replacement and the custom outcome; each attempted TTR candidate still runs ledgr_ind_ttr() with its synthetic validation and catches construction errors"
       - "Registered witnesses: every catalogue row certifies as today; wrong widths, edited IDs, copied and forged functions, SMA3 carrying RSI3's claim, carry contradictions, unregistered arguments and outputs, ROC with an invalid type and MACD(100, 3, 2) from a validation-suppressed constructor, the maximum-width SMA and SMA3 renamed sma_2147483647 and sma_0 each certify, refuse or fall to custom exactly as on the base, with the same canonical definition and refusal class and message"
       - "The LDG-3258 identity pin passes unchanged; the census check passes with the registry bound; targeted tests pass"
-    evidence: []
+    evidence:
+      - "Change at 9ac80163 (branch ws43). R/feature-adapters.R: ledgr_feature_adapters() returns list(ledgr, TTR) of plain descriptions (name, package, catalogue_rows, constructors, candidates, certified, segment, bind) from package code; unexported; tests/testthat/test-feature-adapters.R checks the names and order, the fields, that describing them with every constructor mocked to fail builds nothing, and that the builders call no loader or backend (codetools globals)."
+      - "The former TTR-naming sites read the registry: certification and its candidates and the segment dispatch (R/history-features.R), the catalogue (R/indicator-history.R), the source values (R/indicator.R, R/feature-inspection.R, through ledgr_indicator_sources()), the parameter registry (R/feature-parameters.R), provenance (R/strategy-provenance.R) and the engine bind list (R/features-engine.R, the TTR helper names now in the TTR adapter's bind). Tests: source values exactly ledgr, TTR, custom and the same refusal message; an unknown source inspects as custom; the catalogue's 48 rows, columns and the cut base's digest; the six registry constructor names; provenance's package set."
+      - "Q3: the ledgr entry replaces the built-in candidate list and the kind dispatch (the SMA branch is its segment); no parallel built-in branch remains; the general segment path (ledgr_history_feature_segment_general(), split out unchanged) serves custom definitions."
+      - "Certification keeps width discovery, candidate order (all constructed before any comparison), ID substitution, claimed and content comparison, the contradiction refusal, canonical replacement and the custom outcome; the TTR candidate is still built by ledgr_ind_ttr() with its synthetic validation, errors caught (ledgr_feature_adapter_ttr_candidates())."
+      - "The certification outcomes of 63 witnesses (48 catalogue rows, 15 hostile definitions; tests/testthat/helper-cut24-certification.R) equal fixtures/cut24-certification-outcomes.csv, recorded on the cut base by dev/feature_parity/certification_outcomes.R: SMA3 under RSI3's identity refuses with ledgr_indicator_history_contradiction; the maximum-width SMA and SMA3 renamed sma_2147483647 and sma_0 refuse with ledgr_invalid_args; ROC with an invalid type and MACD(100, 3, 2) from the validation-suppressed constructor certify as custom; runSD(n = 1) certifies as catalogue; the matched adapter's segment is taken (TTR, ledgr) and a custom definition has none."
+      - "The emitted pin passes on the final code (R/ equal to 9ac80163; evidence/ldg3261/emitted_pin_final.txt). Census: census.R reads the adapters' bind names (synthesis rule 13); census.csv gains 31 rows (12 engine-bound adapter helpers; 19 bundle and feature-ID helpers reached only through the TTR adapter's constructor list, excluded); CENSUS CHECK PASS with replacement proofs. Targeted tests (29 files, 163 tests) pass after decision 9's three feature-engine literals (88b4237e... at test-strict-feature-acceleration.R:205 and test-fingerprint-stability.R:34; 71177b19... at test-strict-ttr-cleanup.R:182, computed under that test's mocks), each test failing before only on that literal; every indicator and strategy fingerprint pin unchanged."
   - id: "LDG-3260"
     title: "Lazy candidate construction, measured and adopted or lapsed"
     workstream: 43
-    status: "open"
+    status: "complete"
     priority: "P2"
     effort: "S"
     dependencies: ["LDG-3259"]
@@ -8180,11 +8192,15 @@ tickets:
       - "If the record resolves a saving (ratio below the certification cell's L): lazy construction adopted with the eager domain exactly as decision 4 states; the maximum-width SMA certifies built-in and prepares an all-warmup result on a short history; SMA3 renamed sma_2147483647 and sma_0 still refuse as on the base; every other certification outcome and refusal equals the base on the corpus and the LDG-3259 witnesses; the exception is keyed in the oracle by case; one NEWS line"
       - "If not: eager construction kept, no exception recorded, the decision and its record noted in this ticket's evidence"
       - "Any other semantic difference fails the ticket"
-    evidence: []
+    evidence:
+      - "Record dev/bench/timing/records/cut24-feature-1/ldg3260-lazy/attempt-1: base 9ac80163, candidate d3903a2b (the arm), certification cells, every harness validity and completeness check passing (CHECK PASS), host state recorded; verdicts dev/bench/v0_2_3_cut24_feature/records/ldg3260-lazy/verdicts.csv: certify_run ratio 1.0027, certify_sweep 1.0074, both within [L, U]: no_saving_established."
+      - "Not taken: the record resolves no saving (both ratios above their L). The protocol's TTR definitions match their last candidate, after the four built-ins of the width are built and converted, so there is nothing to stop early."
+      - "Eager construction kept: the arm is reverted (d1b165ca; git diff 9ac80163 d1b165ca -- R is empty); no oracle exception and no NEWS line; the maximum-width SMA question lapses (Cut 24 decision 4)."
+      - "The arm changed only the maximum-width SMA among the 63 witnesses (it certified built-in; SMA3 renamed sma_2147483647 and sma_0 still refused); with the revert no semantic difference remains."
   - id: "LDG-3261"
     title: "Close stage 2"
     workstream: 43
-    status: "open"
+    status: "review_pending"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3260"]
@@ -8199,7 +8215,14 @@ tickets:
       - "Full test suite and R CMD check --no-manual --no-build-vignettes pass; the only registered-test changes are decision 9's, here the three feature-engine literals with their stated reason, each recorded in this ticket's evidence"
       - "R/ production lines before and after; the seven optimization shapes walked over the changed preparation code"
       - "Type 1 close review of workstream 43 (review_lifecycle)"
-    evidence: []
+    evidence:
+      - "Final code R/ at 9ac80163, final arm 8f7c6977 (dev/feature_parity/evidence/ldg3261/COMMANDS.md, run_proofs.R). Pin against pin repeat and final against the pin: CHECK PASS, 631 cases (57 refusing on the pin), 8,280 observations per arm, every existing expectation unchanged, counted seams and hand-offs included; FAULTS PASS (faults.txt)."
+      - "tests/testthat/test-indicator-ttr.R (ledgr output against direct TTR output after normalization, the MACD warmup and percent cases, the bundle histogram derivation) passes in the full suite."
+      - "identity_check.txt (changed-engine mode with the completeness guard, base ea580bc6 record and store against the final library): 155 identities equal besides the engine version, no record missing, unexpected or duplicated; engine version bc6a3ea2... -> 88b4237e...; the base's explicit precompute refuses with ledgr_precomputed_engine_mismatch and 0 strategy calls; the base store's run (30 equity rows) and sweep stay readable with the sweep's recorded engine version. EMITTED PIN PASS (134 of 134); COUNTS CHECK PASS (385 cells)."
+      - "census_check.txt: CENSUS CHECK PASS; 309 reachable helpers, 159 engine-bound, 150 excluded, every row proved by replacement."
+      - "Full suite (full_tests_summary.txt): 233 files, 1,364 tests, 1 failed, 2 errors, 16 skipped; the three non-passes fail identically on the cut base's library (base_environment_tests.txt): LTB-0258 pins the DuckDB 2.0.0 golden version and the host has duckdb 2.0.1 since 2026-11-24; LTB-0508 and LTB-0511 need two-worker sweeps and mirai no longer loads (nanonext 1.10.2, mirai needs 1.10.4), which also skips 15 mirai tests. Registered-test changes: decision 9's three literals only. R CMD build and R CMD check --no-manual --no-build-vignettes: Status OK (r_cmd_check.log)."
+      - "lines.csv: R/ production 54,882 -> 54,966 (+84; +89 without the engine bind list, 5 of whose lines moved into the adapters' bind); shapes.md: the seven shapes walked, none introduced."
+      - "Type 1 close review of workstream 43: pending."
   - id: "LDG-3262"
     title: "Internal debug flag"
     workstream: 44

@@ -1,0 +1,5 @@
+test-schema-current.R : tests 2 failed 1 errors 0 
+[1] "[LTB-0258] current schema definition matches the schema-125 catalogue"
+test-strategy-schedule.R : tests 11 failed 0 errors 2 
+[1] "[LTB-0508] orchestration formats preserve schedule identity"            
+[2] "[LTB-0511] common calendar schedules use generic orchestration carriers"

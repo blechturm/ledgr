@@ -1,0 +1,6 @@
+runner: pin_repeat fault none - 631 cases, 8280 observations
+Warning messages:
+1: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+2: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced

@@ -1,0 +1,93 @@
+runner: pin_changed_value fault changed_value - 631 cases, 8280 observations
+Warning messages:
+1: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+2: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+runner: pin_moved_na fault moved_na - 631 cases, 8280 observations
+Warning messages:
+1: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+2: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+runner: pin_plane_reason fault plane_reason - 631 cases, 8280 observations
+Warning messages:
+1: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+2: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+runner: pin_refusal_class fault refusal_class - 631 cases, 8280 observations
+Warning messages:
+1: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+2: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+runner: pin_narrowed_callback fault narrowed_callback - 631 cases, 7420 observations
+runner: pin_reordered_causality fault reordered_causality - 631 cases, 8280 observations
+Warning messages:
+1: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+2: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+runner: pin_wrong_route fault wrong_route - 631 cases, 7848 observations
+Warning messages:
+1: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+2: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+runner: pin_all_fields fault all_fields - 631 cases, 8280 observations
+Warning messages:
+1: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+2: In sqrt(N/n * runSum(0.5 * log(OHLC[, 2]/OHLC[, 3])^2 - (2 * log(2) -  :
+  NaNs produced
+              control expected_exit exit expected_signal
+        changed_value             1    1          values
+             moved_na             1    1              na
+         plane_reason             1    1          planes
+        refusal_class             1    1   refusal_class
+    narrowed_callback             1    1        callback
+  reordered_causality             1    1       causality
+          wrong_route             1    1           route
+           all_fields             1    1  treated_fields
+          missing_arm             2    2                
+         missing_case             2    2                
+    missing_component             2    2                
+      cleared_treated             1    1  treated_fields
+    causality_dropped             1    1  treated_fields
+ shared_observer_loss             1    1  treated_fields
+      pin_against_pin             0    0                
+                                                                                                                                                                                                                             signals
+                                                                                                                                                         history,precompute,proj,reads,routes_equal,routes_equal,routes_equal,values
+                                                                                                                                                      history,na,precompute,proj,reads,routes_equal,routes_equal,routes_equal,values
+                                                                                                                                                                                                        planes,precompute,proj,reads
+                                                                                                                                                                                                 refusal,refusal_class,refusal_class
+                                                                    callback,causality,handoffs,history,na,planes,precompute,proj,reads,refusal,refusal_class,refusal_class,route,route,routes_equal,routes_equal,sweep_table,values
+                                                                                                                                                                                              callback,causality,refusal,route,route
+ callback,causality,certification,certification,field_union,field_union,handoffs,history,na,planes,precompute,proj,reads,refusal,refusal_class,refusal_class,route,route,routes_equal,routes_equal,sweep_table,treated_fields,values
+                                                                                                                                                                                                                      treated_fields
+                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                      treated_fields
+                                                                                                                                                                                                                      treated_fields
+                                                                                                                                                                                                       treated_fields,treated_fields
+                                                                                                                                                                                                                                    
+   ok
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+fault signal sets pairwise distinct: TRUE 
+FAULTS PASS
