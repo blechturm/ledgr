@@ -14,8 +14,14 @@
   Sections 4, 6 and 7. Recorded provenance: v1 reviewed at `b3454fc7`;
   review/v2 code baseline `ff8e9a63`; parent acceptance corrections `c01e7445`;
   measured R/ `68b505b9`; permanent oracle pin `d5b3a151`. These commit
-  attributions and file-introduction commits are independently **unverified**:
-  Git refused ownership checks, including process-scoped safe-directory attempts.
+  attributions were verified by the final review with `git log`; R/ is
+  unchanged from `68b505b9` to `db3d0502`.
+- Revision note (2026-11-25): patched in place after the
+  [final review](rfc_feature_engine_stages_v0_2_3_final_review.md)
+  (PASS_WITH_PATCHES, findings 1-6), patch texts applied verbatim: rule 4's
+  eager domain, rule 9's retention test, rule 1's Q3 fallback, rule 11's
+  stage-2 checker gate, rules 5 and 12's pulse-inspection reach and
+  empty-bounds witness, and four citations.
 - Maintainer decisions, 2026-11-25: one private R/ debug flag, restoring prior
   state, explicitly set in parity/timing workers and on for the suite, reused by
   the lean core after its switch; one cut with stage 2 then stage 3, separately
@@ -33,13 +39,13 @@ the linked inputs above. Contract citations use stable rule-group addresses.
 
 The measuring step justifies trying stage 3, not shipping an assumed speedup.
 Its six dense rows compare 13,408 TTR SMA cells with no recorded value/segment
-differences (`dev/spikes/feature_stage23_probe/results/direct.csv:2`). Its
+differences (`dev/spikes/feature_stage23_probe/results/direct.csv:2-7`). Its
 49-59% wide-cell figures subtract separately timed components, including an
 empty record assembly; they are neither integrated savings nor an upper bound
 (`direct.R:63`, `common.R:115` in that probe). Public coverage is 197/200 on
 the simulated PIT panel and 4/6 on each corpus panel for the two SMA definitions
 (`results/gate_count.csv:38,62`); these are not all-row or real-data coverage.
-Four additional relaxed cells have reason records (`results/gate_count_differing.csv:2`).
+Four additional relaxed cells have reason records (`results/gate_count_differing.csv:2-5`).
 
 Earlier response probes are read evidence:
 `C:/Users/maxth/ledgr-wt/fe-stages-probes/stages_response_probe.txt:4`,
@@ -74,7 +80,11 @@ access occurred. Implementation parity, speed and memory therefore remain
    `R/feature-parameters.R:290`, `R/strategy-provenance.R:104`). Source values
    and refusals remain exactly `ledgr`, `TTR`, `custom`; inspection's unknown
    source still resolves to custom. This is the parent's Stage 2, not a second
-   session indicator registry. [Indicator identity](../contracts.md#contract-context-indicator-computation).
+   session indicator registry. If the `ledgr` entry cannot replace the built-in
+   candidate list and segment dispatch without keeping a parallel branch, the
+   registry holds `TTR` only and the built-in code stays as it is. The stage-2
+   close review records which case held.
+   [Indicator identity](../contracts.md#contract-context-indicator-computation).
 
 2. **Descriptions contain the complete adapter contract.** Keep deterministic
    adapter/backend identity, package/version and applicable algorithm settings;
@@ -116,9 +126,11 @@ access occurred. Implementation parity, speed and memory therefore remain
    already succeeds; certification no longer refuses during unrelated EMA
    construction and may prepare an all-warmup result on a short history
    (`R/indicator-builtins.R:14,75`, `R/history-features.R:114`). This is not
-   permission to suppress every later-candidate refusal. Retain eager
-   construction outside the proven equivalent domain, including extra ID-width
-   cases described below. Any further semantic difference fails the workstream;
+   permission to suppress every later-candidate refusal. Construct eagerly
+   exactly when certification discovers two widths (params and ID) and either
+   is 0 or `.Machine$integer.max`. In every other case lazy in-order
+   construction matches eager except for the approved single-width maximum
+   SMA. Any further semantic difference fails the workstream;
    keep eager behavior there, or retain eager construction throughout. The
    exception changes neither constructor fingerprints nor short-slice guards.
 
@@ -126,14 +138,15 @@ access occurred. Implementation parity, speed and memory therefore remain
 
 5. **One preparer chooses per cell.** Add the deterministic calculator choice
    only inside `ledgr_history_compute_feature_series()`
-   (`R/history-features.R:467`). Run, sweep and explicit precompute reach it;
+   (`R/history-features.R:467`). Run, sweep, explicit precompute and
+   experiment-derived pulse inspection reach it;
    the single-definition evidence entry and the causality probe keep general
    calculation (`R/backtest-runner.R:668`, `R/history-substrate.R:376`,
    `R/history-features.R:670,793`).
    Authorize the shortcut by the accepted parent's Stage 3 and equivalent
    semantics, not its filename. Keep certification before bounds/early return;
    empty bounds or no definitions return before gate construction
-   (`R/history-features.R:471`). A custom-only preparation allocates no gate
+   (`R/history-features.R:475-489`). A custom-only preparation allocates no gate
    planes. No user option or clock-specific execution fork.
    [Feature Path](../contracts.md#contract-context-feature-path).
 
@@ -207,7 +220,13 @@ access occurred. Implementation parity, speed and memory therefore remain
    is separately labelled. The cut fixes noise/size dispositions before results.
    Zero-admission feature time must remain within the stage-2 label-exchange
    range; otherwise simplify or drop the gate. Report low/mixed costs and
-   memory, not just successful-cell savings. No retained shortcut without
+   memory, not just successful-cell savings. Retain the shortcut only if at
+   least one wide fully admitted cell shows a feature-time saving outside the
+   label-exchange range, no measured cell (zero, low or mixed admission,
+   10 x 7,200) is slower than stage 2 beyond that range, and wide-cell peak R
+   heap does not exceed stage 2's beyond the recorded memory noise. Otherwise
+   simplify or drop the gate, or bring a named exception to the maintainer at
+   close review. No retained shortcut without
    resolved net benefit and an explicit size disposition at close review.
    Remove or merge it when general-path simplification makes the predicate
    unnecessary, or measured saving falls inside that range on recorded target
@@ -232,7 +251,11 @@ access occurred. Implementation parity, speed and memory therefore remain
 
 11. **Change mechanism observations narrowly.** Existing route and preparation
     hand-off counts assert work these stages may remove
-    (`dev/feature_parity/runner.R:133,155`, `check.R:109,141`). The cut records
+    (`dev/feature_parity/runner.R:133,155`, `check.R:109,141`). Stage 2 removes
+    no counted work. Its close runs the permanent checker with every existing
+    expectation unchanged, and the counted seams keep their names and are
+    reached by namespace lookup. Only stage 3 replaces mechanism expectations
+    as below. The cut records
     that distinct test-change reason. Keep pin observations/semantic expected
     answers; replace only obsolete candidate mechanism expectations with
     independently observed actual gate choices, adapter/backend invocations,
@@ -253,8 +276,10 @@ access occurred. Implementation parity, speed and memory therefore remain
     catalogue row and hostile wrong widths, edited IDs, copied/forged functions,
     SMA carrying RSI's claim, carry contradictions, unregistered args/outputs,
     invalid ROC and MACD domains, maximum-width SMA and the extra-ID-width
-    counterexample. Stage 3 covers each gate rejection, terminal/sticky
-    implication, empty/short/never-ready histories, later calculation starts,
+    counterexamples (SMA3 renamed `sma_2147483647` and `sma_0`). Stage 3
+    covers each gate rejection, terminal/sticky implication,
+    empty/short/never-ready histories, empty bounds and zero definitions
+    returning before any gate is constructed, later calculation starts,
     both carry families, all built-ins, every registered input/output/variant
     and `stable_after > requires_bars`. Include MACD histogram sharing, BBands
     sharing/separation, MFI/CMF volume, mixed admitted/fallback cells and
@@ -262,7 +287,8 @@ access occurred. Implementation parity, speed and memory therefore remain
     and across instruments/ranges must preserve the first refusal. `ohlc`
     remains an unregistered fallback mapping witness, not a new catalogue row
     (`R/indicator-history.R:203`, `dev/feature_parity/corpus.R:196`). Cover run,
-    implicit sweep, explicit precompute/reuse and both clocks/settings. Verify
+    implicit sweep, explicit precompute/reuse, pulse inspection and both
+    clocks/settings. Verify
     preparation refusal before candidates/fold; durable run FAILED with no
     strategy/events/equity, sweep/precompute writing nothing
     ([Feature Path](../contracts.md#contract-context-feature-path)). Gut the
