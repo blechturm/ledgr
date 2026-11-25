@@ -102,7 +102,9 @@ ledgr_strategy_reproducibility_level <- function(strategy_type, signature = NULL
 }
 
 ledgr_dependency_versions_json <- function() {
-  packages <- c("ledgr", "collapse", "duckdb", "DBI", "digest", "yyjsonr", "tibble", "TTR")
+  # The core dependencies, then each feature adapter's backend package.
+  packages <- unique(c("ledgr", "collapse", "duckdb", "DBI", "digest", "yyjsonr", "tibble",
+                       unname(vapply(ledgr_feature_adapters(), function(adapter) adapter$package, character(1)))))
   versions <- list(R = as.character(getRversion()))
 
   for (pkg in packages) {

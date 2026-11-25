@@ -102,4 +102,27 @@ and the stored-config rebuild coverage (Cut 23 decision 5a):
     Rscript dev/feature_parity/census.R --source=<tree> --out=<dir> --census=<tree>/dev/feature_parity/census.csv
     Rscript dev/feature_parity/rebuild_coverage.R --lib=<library> --out=<scratch dir>
 
+Cut 24 (LDG-3258 and LDG-3259) adds:
+- the changed-engine mode's completeness guard (cut review 24, R4): each
+  arm's record names must equal the committed identity_names_changed_engine.csv
+  (the unchanged-engine set without the two records written only when an
+  old precompute is reused), with one engine record per arm; controls with
+  `--mode=changed-engine` (removed from both arms, renamed in both, dropped
+  from one, duplicated, engine record removed) must fail;
+- the emitted-function pin (synthesis rule 13): identity.R's records of the
+  built-in, concrete, parameterised and bundled TTR forms against the frozen
+  emitted_pin_expected.csv, with a population fixed in the script;
+- the calculated-count observation (synthesis rule 7, cut review R5): the
+  calculated_count matrix at the causality-entry seam against the frozen
+  base matrices in counts_expected.csv; `--fault=count` must fail;
+- the certification outcomes of every catalogue row and the hostile
+  witnesses (tests/testthat/helper-cut24-certification.R), frozen on the cut
+  base in tests/testthat/fixtures/cut24-certification-outcomes.csv.
+
+    Rscript dev/feature_parity/identity_controls.R --mode=changed-engine --base=<dir> --candidate=<dir> --scratch=<dir>
+    Rscript dev/feature_parity/emitted_pin.R --record=<identity.R out dir> [--write-expected]
+    Rscript dev/feature_parity/emitted_pin_controls.R --record=<identity.R out dir> --scratch=<dir>
+    Rscript dev/feature_parity/counts.R --lib=<library> --out=<dir> [--write-expected] [--fault=count]
+    Rscript dev/feature_parity/certification_outcomes.R --lib=<library> (--write | --out=<csv>)
+
 Each ticket's exact commands and results are in `evidence/<ticket>/COMMANDS.md`.

@@ -4,7 +4,8 @@ ledgr_feature_engine_version <- function() {
   # evidence planes, refusals or the prepared representation, from the run,
   # sweep, explicit precompute and pulse-inspection preparation roots
   # (substrate construction and calculation bounds included) and the emitted
-  # built-in and TTR closures. Each helper is named here; the helpers it calls
+  # built-in and adapter closures. Each helper is named here or in its feature
+  # adapter's `bind` (R/feature-adapters.R; Cut 24); the helpers it calls
   # are bound by their own entries, never by a recursive walk. The census
   # (dev/feature_parity/census.csv) classifies every reached helper and proves
   # each row by replacement. Bound too: the fingerprint, determinism and JSON
@@ -28,7 +29,7 @@ ledgr_feature_engine_version <- function() {
     "ledgr_history_segment_bind", "ledgr_history_epoch_start", "ledgr_history_observation_breaks",
     "ledgr_history_sparse_fact_segments", "ledgr_history_fact_segments_by_instrument",
     "ledgr_history_input_carry_calculation", "ledgr_history_input_carry",
-    "ledgr_history_required_field_admission", "ledgr_ttr_build_input",
+    "ledgr_history_required_field_admission",
     "ledgr_precompute_fetch_bars_frame",
     # certification and declarations
     "canonical_json", "ledgr_canonical_json_encode", ".ledgr_json_cache_get",
@@ -41,30 +42,25 @@ ledgr_feature_engine_version <- function() {
     "ledgr_validate_direct_param_args", "ledgr_feature_def_fingerprint",
     "ledgr_duplicate_feature_ids", "ledgr_abort_duplicate_feature_ids",
     "ledgr_active_feature_fingerprint", "ledgr_feature_certify",
-    "ledgr_feature_catalogue_candidates", "ledgr_ind_sma", "ledgr_ind_returns",
+    "ledgr_feature_catalogue_candidates", "ledgr_feature_adapters", "ledgr_indicator_sources",
+    "ledgr_ind_sma", "ledgr_ind_returns",
     "ledgr_indicator_builtin", "ledgr_ind_ema", "ledgr_ind_rsi", "ledgr_indicator_bar_fields",
     "ledgr_indicator_default_required_fields", "ledgr_feature_def_declarations",
     "ledgr_indicator_history_classes", "ledgr_indicator_apply_declarations",
     "ledgr_indicator_history_catalogue", "ledgr_indicator_abort_declaration",
     "ledgr_indicator_catalogue_index", "ledgr_indicator_catalogue_row",
     "ledgr_indicator_catalogue_declarations", "ledgr_indicator_apply_catalogue",
-    "ledgr_indicator_normalize_required_fields", "ledgr_indicator_declare", "ledgr_ind_ttr",
-    "ledgr_ind_ttr_warmup_rules", "ledgr_ttr_declaration_args", "ledgr_ttr_required_fields",
-    "ledgr_ttr_catalogue_spec", "ledgr_ttr_catalogue_variant", "ledgr_ttr_catalogue_row",
-    "ledgr_ttr_normalize_fn", "ledgr_ttr_normalize_input", "ledgr_ttr_normalize_output",
-    "ledgr_ttr_normalize_args", "ledgr_ttr_match_rule", "ledgr_ttr_inputs_for_known_function",
-    "ledgr_ttr_infer_requires_bars", "ledgr_ttr_validate_positive_integer",
-    "ledgr_ttr_example_call", "ledgr_ttr_default_id", "ledgr_ttr_id_token",
-    "ledgr_ttr_validate_output_contract", "ledgr_ttr_synthetic_bars", "ledgr_indicator_fingerprint",
+    "ledgr_indicator_normalize_required_fields", "ledgr_indicator_declare",
+    "ledgr_indicator_fingerprint",
     "ledgr_indicator_capture_overrides", "ledgr_indicator",
     "ledgr_precompute_feature_def_from_indicator", "ledgr_precompute_unique_feature_defs",
     # calculation and output selection
     "ledgr_rolling_mean", "ledgr_bounded_ema_series", "ledgr_simple_rsi_series",
     "ledgr_call_feature_series_fn", "ledgr_call_feature_fn",
     "ledgr_normalize_feature_series_output", "ledgr_normalize_feature_scalar_output",
-    "ledgr_strict_sma_series", "ledgr_history_feature_segment", "ledgr_history_feature_calculate",
-    "ledgr_history_compute_feature_series", "ledgr_history_output_carry", "ledgr_ttr_call",
-    "ledgr_ttr_raw_call", "ledgr_ttr_select_output",
+    "ledgr_strict_sma_series", "ledgr_history_feature_segment", "ledgr_history_feature_segment_general",
+    "ledgr_history_feature_calculate",
+    "ledgr_history_compute_feature_series", "ledgr_history_output_carry",
     # bounds and ranges
     "ledgr_history_feature_runs", "ledgr_history_feature_terminal_breaks",
     "ledgr_history_feature_ranges", "ledgr_history_feature_bounds", "ledgr_history_utc",
@@ -83,6 +79,8 @@ ledgr_feature_engine_version <- function() {
     "ledgr_projection_pulse_names", "ledgr_projection_from_feature_matrix",
     "ledgr_projection_from_payload"
   )
+  bound <- unique(c(bound, unlist(lapply(ledgr_feature_adapters(), function(adapter) adapter$bind),
+                                  use.names = FALSE)))
   code <- lapply(mget(bound, envir = environment(), inherits = TRUE), function(fn) {
     c(ledgr_deparse_one(formals(fn)), ledgr_deparse_one(body(fn)))
   })

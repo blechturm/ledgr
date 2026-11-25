@@ -180,3 +180,78 @@ ledgr_indicator_builtin <- function(family, indicator) {
   }
   ledgr_indicator_apply_catalogue(indicator, row)
 }
+
+# The ledgr adapter (R/feature-adapters.R): the built-in catalogue rows,
+# constructors, certification candidates and segment calculation.
+ledgr_feature_adapter_ledgr <- function() {
+  list(
+    name = "ledgr",
+    package = "ledgr",
+    catalogue_rows = ledgr_feature_adapter_ledgr_rows,
+    constructors = list(
+      ledgr_ind_sma = ledgr_ind_sma,
+      ledgr_ind_ema = ledgr_ind_ema,
+      ledgr_ind_rsi = ledgr_ind_rsi,
+      ledgr_ind_returns = ledgr_ind_returns
+    ),
+    candidates = ledgr_feature_adapter_ledgr_candidates,
+    certified = function(canonical, declarations) list(),
+    segment = ledgr_feature_adapter_ledgr_segment,
+    bind = c(
+      "ledgr_feature_adapter_ledgr", "ledgr_feature_adapter_ledgr_rows",
+      "ledgr_feature_adapter_ledgr_candidates", "ledgr_feature_adapter_ledgr_segment"
+    )
+  )
+}
+
+ledgr_feature_adapter_ledgr_rows <- function(row) {
+  close <- "close"
+  list(
+    row("ledgr", "sma", "value", "default", "bounded", close, "eligible", "n"),
+    row("ledgr", "ema", "value", "default", "bounded", close, "eligible", "n + 1"),
+    row("ledgr", "rsi", "value", "default", "bounded", close, "excluded", "n + 1"),
+    row("ledgr", "returns", "value", "default", "bounded", close, "excluded", "n + 1")
+  )
+}
+
+# Every built-in at every width the definition's params or ID carry, widths
+# in discovery order (params, then ID) and the four families in this order
+# within each width; all are constructed before certification compares any.
+ledgr_feature_adapter_ledgr_candidates <- function(def) {
+  out <- list()
+  widths <- integer()
+  n <- if (is.list(def$params)) def$params$n else NULL
+  if (is.numeric(n) && length(n) == 1L && !is.na(n) && is.finite(n) &&
+      n >= 1 && n %% 1 == 0 && n <= .Machine$integer.max) {
+    widths <- as.integer(n)
+  }
+  id_width <- regmatches(def$id, regexec("^(sma|ema|rsi|return)_([0-9]+)$", def$id))[[1L]]
+  if (length(id_width) == 3L) {
+    widths <- unique(c(widths, as.integer(id_width[[3L]])))
+  }
+  constructors <- list(
+    sma = ledgr_ind_sma,
+    ema = ledgr_ind_ema,
+    rsi = ledgr_ind_rsi,
+    returns = ledgr_ind_returns
+  )
+  for (width in widths[!is.na(widths)]) {
+    for (kind in names(constructors)) {
+      out[[length(out) + 1L]] <- list(
+        adapter = "ledgr",
+        certification = "builtin",
+        kind = kind,
+        indicator = constructors[[kind]](width)
+      )
+    }
+  }
+  out
+}
+
+ledgr_feature_adapter_ledgr_segment <- function(cert, inputs, fields, rows, cache = NULL) {
+  if (identical(cert$kind, "sma")) {
+    # Exact parity with the scalar mean(window$close) oracle.
+    return(ledgr_strict_sma_series(fields$close[rows], as.integer(cert$def$requires_bars)))
+  }
+  ledgr_history_feature_segment_general(cert, inputs, fields, rows)
+}

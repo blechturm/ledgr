@@ -288,14 +288,8 @@ ledgr_resolve_parameterized_bundle_outputs <- function(x, feature_params) {
 }
 
 ledgr_param_constructor_registry <- function() {
-  list(
-    ledgr_ind_sma = ledgr_ind_sma,
-    ledgr_ind_ema = ledgr_ind_ema,
-    ledgr_ind_rsi = ledgr_ind_rsi,
-    ledgr_ind_returns = ledgr_ind_returns,
-    ledgr_ind_ttr = ledgr_ind_ttr,
-    ledgr_ind_ttr_outputs = ledgr_ind_ttr_outputs
-  )
+  # The feature adapters' public constructors, in adapter order.
+  do.call(c, unname(lapply(ledgr_feature_adapters(), function(adapter) adapter$constructors)))
 }
 
 ledgr_param_constructor <- function(name) {

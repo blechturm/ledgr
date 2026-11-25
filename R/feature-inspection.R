@@ -294,7 +294,7 @@ ledgr_feature_contract_input <- function(features,
 
 ledgr_indicator_source <- function(indicator) {
   source <- indicator$source
-  if (is.character(source) && length(source) == 1L && !is.na(source) && source %in% c("ledgr", "TTR", "custom")) {
+  if (is.character(source) && length(source) == 1L && !is.na(source) && source %in% ledgr_indicator_sources()) {
     return(source)
   }
   "custom"

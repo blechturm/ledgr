@@ -12,10 +12,12 @@
 ledgr_history_price_fields <- function() c("open", "high", "low", "close")
 
 # Certification decides only which functions compute a definition: a package
-# built-in or registered TTR catalogue row is computed with the package
+# built-in or registered adapter catalogue row is computed with the package
 # constructor's own functions, so a definition whose claimed identity is a
 # catalogue row can never execute other code under that identity. Anything
-# else is computed with its own functions under the custom rules.
+# else is computed with its own functions under the custom rules. The
+# candidates come from the feature adapters (R/feature-adapters.R) in their
+# order, every candidate constructed before any is compared.
 ledgr_feature_certify <- function(def) {
   if (inherits(def, "ledgr_indicator")) {
     def <- ledgr_precompute_feature_def_from_indicator(def)
@@ -59,28 +61,18 @@ ledgr_feature_certify <- function(def) {
     if (claimed %in% identities) {
       canonical$fingerprint <- claimed
       canonical_declarations <- ledgr_feature_def_declarations(canonical)
-      # Outputs of one TTR call share inputs, segments and the raw result.
-      call_params <- canonical$params
-      call_params$output <- NULL
-      ttr <- identical(candidate$kind, "ttr")
-      return(list(
-        certification = candidate$certification,
-        kind = candidate$kind,
-        def = canonical,
-        declarations = canonical_declarations,
-        # The TTR function, resolved once per definition.
-        ttr_fn = if (ttr) getExportedValue("TTR", canonical$params$ttr_fn),
-        ttr_call_key = if (ttr) {
-          paste(
-            canonical_json(call_params),
-            paste(canonical_declarations$required_fields, collapse = ","),
-            canonical_declarations$input_carry,
-            canonical_declarations$history_class,
-            sep = "|"
-          )
-        } else {
-          NULL
-        }
+      # The matched adapter computes the definition: its segment
+      # calculation and whatever its calculator needs from certification.
+      adapter <- ledgr_feature_adapters()[[candidate$adapter]]
+      return(c(
+        list(
+          certification = candidate$certification,
+          kind = candidate$kind,
+          def = canonical,
+          declarations = canonical_declarations,
+          segment = adapter$segment
+        ),
+        adapter$certified(canonical, canonical_declarations)
       ))
     }
   }
@@ -94,63 +86,7 @@ ledgr_feature_certify <- function(def) {
 }
 
 ledgr_feature_catalogue_candidates <- function(def) {
-  out <- list()
-  widths <- integer()
-  n <- if (is.list(def$params)) def$params$n else NULL
-  if (is.numeric(n) && length(n) == 1L && !is.na(n) && is.finite(n) &&
-      n >= 1 && n %% 1 == 0 && n <= .Machine$integer.max) {
-    widths <- as.integer(n)
-  }
-  id_width <- regmatches(def$id, regexec("^(sma|ema|rsi|return)_([0-9]+)$", def$id))[[1L]]
-  if (length(id_width) == 3L) {
-    widths <- unique(c(widths, as.integer(id_width[[3L]])))
-  }
-  constructors <- list(
-    sma = ledgr_ind_sma,
-    ema = ledgr_ind_ema,
-    rsi = ledgr_ind_rsi,
-    returns = ledgr_ind_returns
-  )
-  for (width in widths[!is.na(widths)]) {
-    for (kind in names(constructors)) {
-      out[[length(out) + 1L]] <- list(
-        certification = "builtin",
-        kind = kind,
-        indicator = constructors[[kind]](width)
-      )
-    }
-  }
-  params <- def$params
-  if (is.list(params) && is.character(params$ttr_fn) &&
-      length(params$ttr_fn) == 1L && is.list(params$args %||% list()) &&
-      requireNamespace("TTR", quietly = TRUE)) {
-    indicator <- tryCatch(
-      do.call(
-        ledgr_ind_ttr,
-        c(
-          list(
-            ttr_fn = params$ttr_fn,
-            input = params$input,
-            output = params$output,
-            id = def$id,
-            requires_bars = def$requires_bars,
-            stable_after = def$stable_after
-          ),
-          params$args %||% list()
-        )
-      ),
-      error = function(e) NULL
-    )
-    if (inherits(indicator, "ledgr_indicator") &&
-        identical(indicator$history_source, "catalogue")) {
-      out[[length(out) + 1L]] <- list(
-        certification = "catalogue",
-        kind = "ttr",
-        indicator = indicator
-      )
-    }
-  }
-  out
+  unlist(unname(lapply(ledgr_feature_adapters(), function(adapter) adapter$candidates(def))), recursive = FALSE)
 }
 
 # Start and end positions of each contiguous run of TRUE. `breaks` marks
@@ -291,39 +227,25 @@ ledgr_history_feature_refuse_parity <- function(def, inputs, row, fn_value, seri
 }
 
 # Values for one contiguous segment. `rows` index the prefix; the segment is
-# already known to be at least `stable_after` long. `cache` holds raw TTR
-# results so the outputs of one multi-output call share a single TTR call
-# per segment.
+# already known to be at least `stable_after` long. A certified definition is
+# computed by its adapter's segment calculation (R/feature-adapters.R);
+# `cache` is the preparation-local cache an adapter may share raw results in
+# (the outputs of one multi-output call share a single call per segment).
 ledgr_history_feature_segment <- function(cert, inputs, fields, rows, cache = NULL) {
+  if (is.function(cert$segment)) {
+    return(cert$segment(cert, inputs, fields, rows, cache))
+  }
+  ledgr_history_feature_segment_general(cert, inputs, fields, rows)
+}
+
+# The definition's own functions over the segment frame: series_fn, else the
+# scalar fn over each bounded window.
+ledgr_history_feature_segment_general <- function(cert, inputs, fields, rows) {
   def <- cert$def
   stable_after <- as.integer(def$stable_after)
   width <- as.integer(def$requires_bars)
   params <- def$params %||% list()
   m <- length(rows)
-  if (identical(cert$kind, "sma")) {
-    # Exact parity with the scalar mean(window$close) oracle.
-    return(ledgr_strict_sma_series(fields$close[rows], width))
-  }
-  if (identical(cert$kind, "ttr") && is.environment(cache)) {
-    key <- paste(cert$ttr_call_key, rows[[1L]], rows[[m]], sep = "|")
-    raw <- cache[[key]]
-    # On a miss TTR gets the selected close vector directly, or the segment
-    # frame for other inputs; a hit builds nothing.
-    if (is.null(raw)) {
-      raw <- if (identical(params$input, "close")) {
-        ledgr_ttr_raw_call(NULL, params, cert$ttr_fn, as.numeric(fields$close[rows]))
-      } else {
-        ledgr_ttr_raw_call(ledgr_history_feature_frame(inputs, fields, rows), params, cert$ttr_fn)
-      }
-      cache[[key]] <- raw
-    }
-    return(ledgr_normalize_feature_series_output(
-      ledgr_ttr_select_output(raw, params$output, params$ttr_fn),
-      m,
-      stable_after,
-      def$id
-    ))
-  }
   frame <- ledgr_history_feature_frame(inputs, fields, rows)
   if (is.function(def$series_fn)) {
     return(ledgr_normalize_feature_series_output(

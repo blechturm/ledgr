@@ -1012,3 +1012,166 @@ ledgr_ttr_select_output <- function(result, output, ttr_fn) {
   }
   as.numeric(result[, output])
 }
+
+# The TTR adapter (R/feature-adapters.R): the registered TTR catalogue rows,
+# constructors, certification candidate, raw-call identity and segment
+# calculation. The constructors carry the input mapping (close, hl, hlc,
+# ohlc, hlcv and the separate volume argument of MFI and CMF), the forwarded
+# arguments, the warmup and width rules, the algorithm variants and output
+# discovery; the segment carries the raw call, output selection and
+# derivation (MACD histogram), normalisation and raw sharing.
+ledgr_feature_adapter_ttr <- function() {
+  list(
+    name = "TTR",
+    package = "TTR",
+    catalogue_rows = ledgr_feature_adapter_ttr_rows,
+    constructors = list(
+      ledgr_ind_ttr = ledgr_ind_ttr,
+      ledgr_ind_ttr_outputs = ledgr_ind_ttr_outputs
+    ),
+    candidates = ledgr_feature_adapter_ttr_candidates,
+    certified = ledgr_feature_adapter_ttr_certified,
+    segment = ledgr_feature_adapter_ttr_segment,
+    bind = c(
+      "ledgr_feature_adapter_ttr", "ledgr_feature_adapter_ttr_rows", "ledgr_feature_adapter_ttr_candidates",
+      "ledgr_feature_adapter_ttr_certified", "ledgr_feature_adapter_ttr_segment",
+      "ledgr_ttr_build_input", "ledgr_ind_ttr", "ledgr_ind_ttr_warmup_rules", "ledgr_ttr_declaration_args",
+      "ledgr_ttr_required_fields", "ledgr_ttr_catalogue_spec", "ledgr_ttr_catalogue_variant",
+      "ledgr_ttr_catalogue_row", "ledgr_ttr_normalize_fn", "ledgr_ttr_normalize_input",
+      "ledgr_ttr_normalize_output", "ledgr_ttr_normalize_args", "ledgr_ttr_match_rule",
+      "ledgr_ttr_inputs_for_known_function", "ledgr_ttr_infer_requires_bars",
+      "ledgr_ttr_validate_positive_integer", "ledgr_ttr_example_call", "ledgr_ttr_default_id",
+      "ledgr_ttr_id_token", "ledgr_ttr_validate_output_contract", "ledgr_ttr_synthetic_bars",
+      "ledgr_ttr_call", "ledgr_ttr_raw_call", "ledgr_ttr_select_output"
+    )
+  )
+}
+
+ledgr_feature_adapter_ttr_rows <- function(row) {
+  close <- "close"
+  hl <- "high,low"
+  hlc <- "high,low,close"
+  hlcv <- "high,low,close,volume"
+  rows <- list(
+    row("TTR", "RSI", "value", "default", "history_dependent", close, "excluded", "n + 1"),
+    row("TTR", "RSI", "value", "maType=SMA", "bounded", close, "excluded", "n + 1"),
+    row("TTR", "SMA", "value", "default", "bounded", close, "eligible", "n"),
+    row("TTR", "EMA", "value", "default", "history_dependent", close, "eligible", "n"),
+    row("TTR", "EMA", "value", "wilder=TRUE", "history_dependent", close, "eligible", "n")
+  )
+  for (output in c("tr", "trueHigh", "trueLow")) {
+    rows[[length(rows) + 1L]] <- row("TTR", "ATR", output, "default", "bounded", hlc, "excluded", "n + 1")
+    rows[[length(rows) + 1L]] <- row("TTR", "ATR", output, "maType=SMA", "bounded", hlc, "excluded", "n + 1")
+  }
+  rows[[length(rows) + 1L]] <- row("TTR", "ATR", "atr", "default", "history_dependent", hlc, "excluded", "n + 1")
+  rows[[length(rows) + 1L]] <- row("TTR", "ATR", "atr", "maType=SMA", "bounded", hlc, "excluded", "n + 1")
+  for (output in c("macd", "signal", "histogram")) {
+    rows[[length(rows) + 1L]] <- row("TTR", "MACD", output, "default", "history_dependent", close, "eligible", "nSlow + nSig - 1")
+    rows[[length(rows) + 1L]] <- row("TTR", "MACD", output, "maType=SMA", "bounded", close, "eligible", "nSlow + nSig - 1")
+  }
+  rows <- c(rows, list(
+    row("TTR", "WMA", "value", "default", "bounded", close, "eligible", "n"),
+    row("TTR", "ROC", "value", "default", "bounded", close, "excluded", "n + 1"),
+    row("TTR", "momentum", "value", "default", "bounded", close, "excluded", "n + 1"),
+    row("TTR", "CCI", "value", "default", "bounded", hlc, "excluded", "n"),
+    row("TTR", "CCI", "value", "maType=EMA", "history_dependent", hlc, "excluded", "n")
+  ))
+  for (output in c("dn", "mavg", "up", "pctB")) {
+    carry <- if (identical(output, "mavg")) "eligible" else "excluded"
+    rows[[length(rows) + 1L]] <- row("TTR", "BBands", output, "default", "bounded", close, carry, "n")
+    rows[[length(rows) + 1L]] <- row("TTR", "BBands", output, "maType=EMA", "history_dependent", close, carry, "n")
+  }
+  for (output in c("aroonUp", "aroonDn", "oscillator")) {
+    rows[[length(rows) + 1L]] <- row("TTR", "aroon", output, "default", "bounded", hl, "eligible", "n + 1")
+  }
+  for (output in c("high", "mid", "low")) {
+    rows[[length(rows) + 1L]] <- row("TTR", "DonchianChannel", output, "default", "bounded", hl, "eligible", "n")
+  }
+  c(rows, list(
+    row("TTR", "MFI", "value", "default", "bounded", hlcv, "excluded", "n + 1"),
+    row("TTR", "CMF", "value", "default", "bounded", hlcv, "eligible", "n"),
+    row("TTR", "runMean", "value", "default", "bounded", close, "eligible", "n"),
+    row("TTR", "runSD", "value", "default", "bounded", close, "excluded", "n"),
+    row("TTR", "runVar", "value", "default", "bounded", close, "excluded", "n"),
+    row("TTR", "runMAD", "value", "default", "bounded", close, "excluded", "n")
+  ))
+}
+
+# The definition's TTR row rebuilt by the public constructor, synthetic
+# output validation included; a construction error or a non-catalogue form
+# yields no candidate.
+ledgr_feature_adapter_ttr_candidates <- function(def) {
+  params <- def$params
+  if (!(is.list(params) && is.character(params$ttr_fn) &&
+        length(params$ttr_fn) == 1L && is.list(params$args %||% list()) &&
+        requireNamespace("TTR", quietly = TRUE))) {
+    return(list())
+  }
+  indicator <- tryCatch(
+    do.call(
+      ledgr_ind_ttr,
+      c(
+        list(
+          ttr_fn = params$ttr_fn,
+          input = params$input,
+          output = params$output,
+          id = def$id,
+          requires_bars = def$requires_bars,
+          stable_after = def$stable_after
+        ),
+        params$args %||% list()
+      )
+    ),
+    error = function(e) NULL
+  )
+  if (inherits(indicator, "ledgr_indicator") &&
+      identical(indicator$history_source, "catalogue")) {
+    return(list(list(adapter = "TTR", certification = "catalogue", kind = "ttr", indicator = indicator)))
+  }
+  list()
+}
+
+# Outputs of one TTR call share inputs, segments and the raw result: the key
+# is the call's params without the selected output, then the declarations.
+ledgr_feature_adapter_ttr_certified <- function(canonical, declarations) {
+  call_params <- canonical$params
+  call_params$output <- NULL
+  list(
+    # The TTR function, resolved once per definition.
+    ttr_fn = getExportedValue("TTR", canonical$params$ttr_fn),
+    ttr_call_key = paste(
+      canonical_json(call_params),
+      paste(declarations$required_fields, collapse = ","),
+      declarations$input_carry,
+      declarations$history_class,
+      sep = "|"
+    )
+  )
+}
+
+ledgr_feature_adapter_ttr_segment <- function(cert, inputs, fields, rows, cache = NULL) {
+  if (!is.environment(cache)) {
+    return(ledgr_history_feature_segment_general(cert, inputs, fields, rows))
+  }
+  def <- cert$def
+  params <- def$params %||% list()
+  m <- length(rows)
+  key <- paste(cert$ttr_call_key, rows[[1L]], rows[[m]], sep = "|")
+  raw <- cache[[key]]
+  # On a miss TTR gets the selected close vector directly, or the segment
+  # frame for other inputs; a hit builds nothing.
+  if (is.null(raw)) {
+    raw <- if (identical(params$input, "close")) {
+      ledgr_ttr_raw_call(NULL, params, cert$ttr_fn, as.numeric(fields$close[rows]))
+    } else {
+      ledgr_ttr_raw_call(ledgr_history_feature_frame(inputs, fields, rows), params, cert$ttr_fn)
+    }
+    cache[[key]] <- raw
+  }
+  ledgr_normalize_feature_series_output(
+    ledgr_ttr_select_output(raw, params$output, params$ttr_fn),
+    m,
+    as.integer(def$stable_after),
+    def$id
+  )
+}

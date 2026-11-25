@@ -134,8 +134,14 @@ ledgr_indicator <- function(id,
       class = "ledgr_invalid_args"
     )
   }
-  if (!is.character(source) || length(source) != 1L || is.na(source) || !(source %in% c("ledgr", "TTR", "custom"))) {
-    rlang::abort("`source` must be one of 'ledgr', 'TTR', or 'custom'.", class = "ledgr_invalid_args")
+  sources <- ledgr_indicator_sources()
+  if (!is.character(source) || length(source) != 1L || is.na(source) || !(source %in% sources)) {
+    quoted <- sprintf("'%s'", sources)
+    rlang::abort(
+      sprintf("`source` must be one of %s, or %s.", paste(quoted[-length(quoted)], collapse = ", "),
+              quoted[[length(quoted)]]),
+      class = "ledgr_invalid_args"
+    )
   }
   declarations <- ledgr_indicator_declare(
     history_class = history_class,

@@ -83,6 +83,13 @@ local({
     NULL
   }
   bound <- find_bound(body(ns$ledgr_feature_engine_version)) %||% character()
+  # Since Cut 24 (synthesis rule 13, LDG-3259) the engine version also binds
+  # each feature adapter's `bind` names (R/feature-adapters.R), appended to
+  # its literal list exactly as here.
+  if (exists("ledgr_feature_adapters", envir = ns, inherits = FALSE)) {
+    bound <- unique(c(bound, unlist(lapply(ns$ledgr_feature_adapters(), function(adapter) adapter$bind),
+                                    use.names = FALSE)))
+  }
   where <- character()
   r_dir <- if (is.null(src)) NULL else file.path(src, "R")
   if (!is.null(r_dir)) {

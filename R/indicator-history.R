@@ -215,57 +215,9 @@ ledgr_indicator_history_catalogue <- function() {
       stringsAsFactors = FALSE
     )
   }
-  close <- "close"
-  hl <- "high,low"
-  hlc <- "high,low,close"
-  hlcv <- "high,low,close,volume"
-  rows <- list(
-    row("ledgr", "sma", "value", "default", "bounded", close, "eligible", "n"),
-    row("ledgr", "ema", "value", "default", "bounded", close, "eligible", "n + 1"),
-    row("ledgr", "rsi", "value", "default", "bounded", close, "excluded", "n + 1"),
-    row("ledgr", "returns", "value", "default", "bounded", close, "excluded", "n + 1"),
-    row("TTR", "RSI", "value", "default", "history_dependent", close, "excluded", "n + 1"),
-    row("TTR", "RSI", "value", "maType=SMA", "bounded", close, "excluded", "n + 1"),
-    row("TTR", "SMA", "value", "default", "bounded", close, "eligible", "n"),
-    row("TTR", "EMA", "value", "default", "history_dependent", close, "eligible", "n"),
-    row("TTR", "EMA", "value", "wilder=TRUE", "history_dependent", close, "eligible", "n")
-  )
-  for (output in c("tr", "trueHigh", "trueLow")) {
-    rows[[length(rows) + 1L]] <- row("TTR", "ATR", output, "default", "bounded", hlc, "excluded", "n + 1")
-    rows[[length(rows) + 1L]] <- row("TTR", "ATR", output, "maType=SMA", "bounded", hlc, "excluded", "n + 1")
-  }
-  rows[[length(rows) + 1L]] <- row("TTR", "ATR", "atr", "default", "history_dependent", hlc, "excluded", "n + 1")
-  rows[[length(rows) + 1L]] <- row("TTR", "ATR", "atr", "maType=SMA", "bounded", hlc, "excluded", "n + 1")
-  for (output in c("macd", "signal", "histogram")) {
-    rows[[length(rows) + 1L]] <- row("TTR", "MACD", output, "default", "history_dependent", close, "eligible", "nSlow + nSig - 1")
-    rows[[length(rows) + 1L]] <- row("TTR", "MACD", output, "maType=SMA", "bounded", close, "eligible", "nSlow + nSig - 1")
-  }
-  rows <- c(rows, list(
-    row("TTR", "WMA", "value", "default", "bounded", close, "eligible", "n"),
-    row("TTR", "ROC", "value", "default", "bounded", close, "excluded", "n + 1"),
-    row("TTR", "momentum", "value", "default", "bounded", close, "excluded", "n + 1"),
-    row("TTR", "CCI", "value", "default", "bounded", hlc, "excluded", "n"),
-    row("TTR", "CCI", "value", "maType=EMA", "history_dependent", hlc, "excluded", "n")
-  ))
-  for (output in c("dn", "mavg", "up", "pctB")) {
-    carry <- if (identical(output, "mavg")) "eligible" else "excluded"
-    rows[[length(rows) + 1L]] <- row("TTR", "BBands", output, "default", "bounded", close, carry, "n")
-    rows[[length(rows) + 1L]] <- row("TTR", "BBands", output, "maType=EMA", "history_dependent", close, carry, "n")
-  }
-  for (output in c("aroonUp", "aroonDn", "oscillator")) {
-    rows[[length(rows) + 1L]] <- row("TTR", "aroon", output, "default", "bounded", hl, "eligible", "n + 1")
-  }
-  for (output in c("high", "mid", "low")) {
-    rows[[length(rows) + 1L]] <- row("TTR", "DonchianChannel", output, "default", "bounded", hl, "eligible", "n")
-  }
-  rows <- c(rows, list(
-    row("TTR", "MFI", "value", "default", "bounded", hlcv, "excluded", "n + 1"),
-    row("TTR", "CMF", "value", "default", "bounded", hlcv, "eligible", "n"),
-    row("TTR", "runMean", "value", "default", "bounded", close, "eligible", "n"),
-    row("TTR", "runSD", "value", "default", "bounded", close, "excluded", "n"),
-    row("TTR", "runVar", "value", "default", "bounded", close, "excluded", "n"),
-    row("TTR", "runMAD", "value", "default", "bounded", close, "excluded", "n")
-  ))
+  # Each adapter contributes its rows in adapter order (R/feature-adapters.R).
+  rows <- unlist(unname(lapply(ledgr_feature_adapters(), function(adapter) adapter$catalogue_rows(row))),
+                 recursive = FALSE)
   out <- do.call(rbind, rows)
   rownames(out) <- NULL
   out
