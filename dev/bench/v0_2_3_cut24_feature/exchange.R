@@ -10,7 +10,7 @@
 #   (thresholds.csv); L is the saving test.
 # --intervals=<csv>: for a comparison attempt, the per-cell verdict: ratio < L
 #   "saving", ratio > U "regression", otherwise "no_saving_established";
-#   written to verdicts.csv. Only rows with outcome ok and a finite positive
+#   written to verdicts.csv (a cell the record did not measure: "not_measured"). Only rows with outcome ok and a finite positive
 #   time count; a cell without exactly eight valid pairs is "invalid".
 #
 #   Rscript exchange.R --record=<attempt dir> --out=<dir> --aa
@@ -66,7 +66,7 @@ local({
       p <- pairs_of(cell)
       j <- iv$cell == cell
       if (nrow(p) != 8L) {
-        rows[[cell]] <- data.frame(cell = cell, ratio = NA_real_, L = iv$L[j], U = iv$U[j], verdict = "invalid")
+        rows[[cell]] <- data.frame(cell = cell, ratio = NA_real_, L = iv$L[j], U = iv$U[j], verdict = if (nrow(p) == 0L) "not_measured" else "invalid")
         next
       }
       r <- stat(p$secs_base, p$secs_candidate)
