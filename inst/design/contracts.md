@@ -2749,20 +2749,9 @@ Accepted change pending:
   ledger event or equity row (Cut 16 decision 18); sweep and precompute
   refusals write nothing. The segmented feature engine and its admission checks
   serve both execution clocks.
-- Feature computation uses one common preparer for both execution clocks.
-  Within preparation, a deterministic predicate may select an equivalent
-  internal calculator for a certified definition/instrument cell. The general
-  R calculator remains the normative executable oracle. Registered
-  differential tests cover selection, exact values, all evidence records and
-  refusal outcomes/order; internal debug compares every admitted cell and
-  fails closed on disagreement. Production output validation and sampled
-  causality checks remain mandatory. There is no user-selectable calculation
-  mode or implicit reuse of calculated features across preparations. Raw-call
-  sharing is confined to compatible outputs within one instrument and
-  knowledge range of a preparation. Explicit `ledgr_precomputed_features`
-  payloads retain their ownership, causal-axis and current feature/engine
-  identity validation before reuse; a mismatch refuses before candidate
-  execution.
+- Feature computation follows one uncached production path. Explicit
+  `ledgr_precomputed_features` payloads are validated against current feature
+  identity before reuse; a mismatch refuses before candidate execution.
 - In public workflows, `ctx$flat()` creates a full named target vector
   initialized to flat positions. It is appropriate when unspecified instruments
   should go flat.

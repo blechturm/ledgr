@@ -153,6 +153,13 @@ four components to every case and replaces three comparisons:
   causality fields must equal the pin's and inputs observed plus untreated
   ranges the pin's inputs observed; the treated-fields rule counts
   untreated ranges as observed hand-offs.
+Stage 3 was dropped at measurement (Cut 24, LDG-3265: decision 7's
+retention test failed on three records). The released library has no
+direct path and no debug flag: `gate` and `shadow` are empty on every arm,
+`--debug=0` is the only meaningful setting, and the stage-3 faults below
+do not run. The components and faults stay so a later direct path is
+checked by the same harness.
+
 Stage-3 faults (`faults.R`, run only on a library with the direct path):
 `wrong_admission` (gate), `missing_treatment` (gate),
 `missing_raw_sharing` (route), `wrong_payload_refusal` (refusal),

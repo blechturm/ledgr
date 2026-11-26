@@ -8309,7 +8309,7 @@ tickets:
   - id: "LDG-3265"
     title: "Measure stage 3 and decide retention"
     workstream: 44
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3263"]
@@ -8329,6 +8329,11 @@ tickets:
       - "Maintainer named exception, 2026-11-26: one further simplification and one further remeasure beyond decision 7's single one. The admission decision moves ahead of the instrument loop as one instrument-by-definition matrix per preparation; the loop reads rows. If that remeasure fails decision 7's test, stage 3 is dropped by LDG-3266's dropped branch. No other retry."
       - "Open, resolve in this ticket before the further remeasure: adm_custom_sweep (1.0235) is not explained by the gate. A custom-only preparation builds no gate and no finiteness pass; its only new per-instrument work is a few branches, and adm_custom_run passes (1.0026). Profile the custom sweep preparation on both libraries and record the cause or that none was found."
       - "Side finding routed to the macro plan (Per-instrument mask construction in feature preparation): ledgr_history_feature_masks() costs about 80 ms of the 570 ms zero-admission preparation on both arms; outside Cut 24's scope."
+      - "Exception remeasure (ldg3265-stage3-exception; candidate b56eaee9, admission decided once per preparation as an instrument-by-definition matrix, the gate reached only by instruments with a finite gated definition): valid record, CHECK FAIL on four ratios: adm_custom_run 1.0085, adm_custom_sweep 1.0355, adm_zero_run 1.0160, adm_zero_sweep 1.0110. Savings held: feature cells 0.62 to 0.89, adm_low_run 0.989, PIT 0.42 and 0.51 (dev/bench/v0_2_3_cut24_feature/records/ldg3265-stage3-exception/verdicts.csv). Before timing, on b56eaee9: the permanent checker CHECK PASS against the pin with debug 0 and 1 (694 cases, 11,791 observations), the gut demonstration identical to LDG-3263's (30 of 30 extra admissions refused by the debug comparison), targeted tests pass."
+      - "Memory (dev/bench/v0_2_3_cut24_feature/records/ldg3265-stage3-simplified-memory, ffe19415 against the stage-2 close): MEMORY INCONCLUSIVE: 500x1260 run +36,528 bytes against a noise of 0 (exceeds); 500x1260 sweep sensitivity failed (the extra 8 MiB did not raise the candidate's peak); 1166x252 run and sweep 24 to 30 MB lower. Not repeated on b56eaee9: the timing verdict already decided the drop."
+      - "Custom-only (the open item above): no cause found. A custom-only preparation runs no gate and no finiteness pass. In one process with the base and candidate function sets swapped in and byte-compiled (12 alternations), custom compute is 0.437 s base and 0.431 s candidate; the same-code cross-library A/A gives 1.0003. The three records still show adm_custom_sweep 1.023, 1.024 and 1.036 and adm_custom_run 1.0095, 1.0026 and 1.0085. The drop removes the question; a later direct path measures the custom cells first."
+      - "Debug-on cost, labelled descriptive (dev/bench/v0_2_3_cut24_feature/records/ldg3265-stage3-exception/debug_cost.csv; b56eaee9, three alternating pairs, debug_cost.R): debug 1 over debug 0 per preparation: run_10x7200 1.21, sweep_10x7200 1.36, run_500x1260 2.09, sweep_500x1260 2.26, run_1166x252 2.11, sweep_1166x252 2.44; the same logical result on every cell."
+      - "Retention decision: DROP. Decision 7's test failed on all three records; the third ran under the maintainer's named exception, whose agreed consequence on failure was the drop (maintainer, 2026-11-26). Applied by LDG-3266's dropped branch. The three records, the cross-library A/A and the probes above stay as the rejection evidence."
   - id: "LDG-3266"
     title: "Close stage 3 and Cut 24"
     workstream: 44

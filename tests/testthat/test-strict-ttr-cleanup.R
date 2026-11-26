@@ -56,25 +56,11 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
   # whose final segment is new costs one call (dense: 1 + 4 sampled
   # sessions 3, 5, 8 and 11; gapped: 2 + sessions 4, 5 and 10, while the
   # session-11 prefix reuses the full second segment).
-  # Cut 24 decision 9: counted by phase; with debug on, the debug comparison
-  # recomputes the dense series' admitted cell once more on the general
-  # path; the gapped series is never admitted.
-  for (debug in c(FALSE, TRUE)) {
-    counts <- function(substrate) {
-      cut24_phase_counts("ledgr_ttr_raw_call", function() {
-        ledgr:::local_ledgr_debug(debug)
-        ws43_feature_values(substrate, ttr)
-      })$counts
-    }
-    testthat::expect_identical(
-      counts(dense),
-      c(certification = 1L, production = 1L, shadow = if (debug) 1L else 0L, causality = 5L)
-    )
-    testthat::expect_identical(
-      counts(gapped),
-      c(certification = 1L, production = 2L, shadow = 0L, causality = 5L)
-    )
-  }
+  ws43_feature_values(dense, ttr)
+  dense_calls <- ttr_calls
+  ttr_calls <- 0L
+  ws43_feature_values(gapped, ttr)
+  testthat::expect_identical(c(dense_calls, ttr_calls), c(2L + 5L, 3L + 5L))
   # The outputs of one multi-output call share one TTR call per segment;
   # each certification still validates its own constructor once. The
   # causality probe shares its calls across the outputs too: 2 for its
@@ -193,7 +179,7 @@ testthat::test_that("[LTB-0276] strict TTR cleanup is exact and provenance-bound
   if (!under_covr) {
     testthat::expect_identical(
       ledgr:::ledgr_feature_engine_version(),
-      "fdfbaaf0f90689b417c784cb54db1726df76bfcada81fd93aef521c87dc23ead"
+      "71177b19dff14b73f42e76e2db07f777117a07755dc70535b94d6fc7ffff9be4"
     )
   }
 })
