@@ -1,2 +1,2 @@
 check.R --pin=<pin> --candidate=<missing_arm>: exit 2
-REFUSED: missing arm: no observations.csv in  C:/Users/maxth/ledgr-wt/cut25-scratch/faults/no_such_arm 
+REFUSED: missing arm: no observations.csv in  C:/Users/maxth/ledgr-wt/cut25-scratch/faults2/no_such_arm 

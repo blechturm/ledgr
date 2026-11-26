@@ -4710,6 +4710,7 @@ workstreams:
     depends_on_workstream: 44
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 45, after LDG-3270", reason: "The schema test drops only its two environment checks; ledgr_utc() returns bit-identical values and the same refusals in whole-vector passes; series paths accept post-warmup NA exactly as the fn path does, NaN and Inf still refuse, the contract, vignette, NEWS and rules ledger say so; the oracle's only differences from the pin are the 52 declared cases; identities equal except the engine version."}
+    close_review: "Independent clean-context Codex CLI (gpt-6.1-sol/high), Type 1; reports in this packet. Round 1 (ws45_close_review_round1.md, at 7f278de6): CHANGES_REQUIRED, F1-F3 required: F1 ledgr_utc() refused AsIs and other classed character input that the per-element parse accepted (corrected in 812ed1e2: the branch parses as.character(unclass(x)); LTB-0566 covers AsIs forms; the uncorrected rewrite fails it); F2 LTB-0567 compared only sweep summary columns, so a corrupted recovery value passed (corrected in 812ed1e2: the sweep strategy checks the literal value and history evidence at every pulse on serial, reused and worker execution, source_ts_utc joins the carry witness, sweep_witness.R shows a corrupted value and corrupted NA-cell evidence each fail); F3 LDG-3270 had no evidence and the governance equality no saved record (evidence written, governance_compare.R committed and run). Every final-code proof rerun on cand-812ed1e2. Re-review pending."
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -8715,7 +8716,7 @@ tickets:
       - "tests/testthat/test-timestamp.R LTB-0566 (claim LCL-0548 in tests/claims.yml) passes with 195 expectations (dev/bench/v0_2_3_cut25_chores/transcripts/test-timestamp_candidate.txt): the 500-string vector matches the fixture in one call; the 11 accepted edge values match alone; each of the 21 refused values refuses with ledgr_invalid_timestamp and the fixture message alone and first, in the middle and last of a valid vector; the Arabic-Indic string refuses; names are dropped; empty input returns an empty UTC POSIXct; AsIs vectors in date, timed and mixed forms, named or not, match plain input and an invalid AsIs value refuses (F1)."
       - "dev/bench/v0_2_3_cut25_chores/transcripts/test-timestamp_base.txt shows LTB-0566 passes on the base library final-8f7c6977 too, and test-timestamp_prefix_4abdb348.txt shows the uncorrected rewrite fails its AsIs assertion (as.Date cannot convert the classed subset); utc_witness.R with results/utc_witness_none.txt, _hms.txt and _localdate.txt shows the real function passes and both faulted rewrites fail LTB-0566 (no range check: 2 failures; local-time dates under TZ=Europe/Vienna: 7 failures)."
       - "dev/bench/v0_2_3_cut25_chores/transcripts/test-timestamp_base.txt and _candidate.txt: the three existing ledgr_utc and ledgr_iso_utc blocks pass unchanged on the base and the candidate."
-      - "dev/bench/v0_2_3_cut25_chores/results/utc_timing.csv (base ca635540) and results/final/utc_timing.csv (working tree above 91b70f92 with the rewrite before the F1 correction, which adds one unclass and one as.character per call), descriptive medians of 7 blocks, recorded: one string 0.255 to 0.125 ms, 500 strings 67 to 7 ms, 5,000 strings 0.66 to 0.060 s; as.POSIXct over 5,000 strings 18 ms on both."
+      - "dev/bench/v0_2_3_cut25_chores/results/utc_timing.csv (base ca635540) and results/final2/utc_timing.csv (e99afc33, the corrected parser), descriptive medians of 7 blocks, recorded: one string 0.255 to 0.125 ms, 500 strings 67 to 6 ms, 5,000 strings 0.66 to 0.070 s; as.POSIXct over 5,000 strings 18 and 17 ms. results/final/utc_timing.csv holds the round-1 reading before the F1 correction (500 strings 7 ms, 5,000 strings 0.060 s)."
   - id: "LDG-3269"
     title: "Accept post-warmup NA on series paths"
     workstream: 45
@@ -8745,7 +8746,7 @@ tickets:
   - id: "LDG-3270"
     title: "Close Cut 25: final-code proofs"
     workstream: 45
-    status: "open"
+    status: "review_pending"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3267", "LDG-3268", "LDG-3269"]
@@ -8761,4 +8762,10 @@ tickets:
       - "Full test suite in the default library (duckdb 2.0.1) and R CMD check --no-manual --no-build-vignettes pass; governance report: the same finding set as on the cut base ca635540, no finding added"
       - "R/ production lines before and after; the seven optimization shapes walked over the changed parser and normaliser"
       - "Type 1 close review of workstream 45 (review_lifecycle)"
-    evidence: []
+    evidence:
+      - "dev/feature_parity/evidence/ldg3270/check_final.txt (run_proofs.R --final=e99afc33, candidate library cand-812ed1e2) reports CHECK PASS against the pin d5b3a151 with the declared file; check_final_declared_none.txt fails (14 signals), check_pin_repeat.txt passes with --declared=none, check_pin_as_candidate.txt fails (12 signals), oracle_flips_final.csv shows the 52 non-treated-fields differences are exactly the declared cases, semantics_compare.txt and declared_controls.txt pass; faults.txt and faults/faults.csv show FAULTS PASS on cand-812ed1e2 with the declared file after the unfaulted control passed, the eight product faults caught with pairwise-distinct signal sets, every row recording its library and declared option."
+      - "dev/feature_parity/evidence/ldg3270/identity_check.txt reports IDENTITY CHECK PASS in changed-engine mode against the workstream-43 close record (cut24-scratch/ldg3266/identity_ws43): 155 of 155 identities equal, engine 88b4237e to 100eff97, the old precompute refused with ledgr_precomputed_engine_mismatch before any strategy call, the old run and sweep readable."
+      - "dev/feature_parity/evidence/ldg3270/census_check.txt reports CENSUS CHECK PASS with names, roots and bindings unchanged; emitted_pin_final.txt reports EMITTED PIN PASS (134 of 134); counts_final.txt reports COUNTS CHECK PASS (385 of 385)."
+      - "dev/feature_parity/evidence/ldg3270/full_tests_final.log (812ed1e2, cand-812ed1e2 first on the library path, default library duckdb 2.0.1) passes 1,366 tests with 0 failed, 0 errors and 1 skip; full_tests_run1_4abdb348.log records the first run's 3 failures, exactly the engine-version literals of the cut's amendment_engine_literals; r_cmd_check.log (e99afc33) reports Status OK with no WARNING or NOTE; governance/ (governance_compare.R) shows the final finding set equals the cut base ca635540's, no finding added."
+      - "dev/feature_parity/evidence/ldg3270/lines.csv records R/ production lines 54,966 to 54,986 (features-engine.R -3, timestamp.R +23, bind list unchanged at 59); shapes.md walks the seven shapes over the parser and the normaliser and finds the per-element parse removed and no new loop over a growing collection."
+      - "Type 1 close review of workstream 45: round 1 (ws45_close_review_round1.md in this packet, at 7f278de6) returned CHANGES_REQUIRED with F1 (classed character input in ledgr_utc()), F2 (sweep execution, reuse and worker checks of literal values and evidence) and F3 (this evidence and a reproducible governance comparison), each corrected in 812ed1e2 and e99afc33 and the proofs above rerun on the corrected library; re-review pending."
