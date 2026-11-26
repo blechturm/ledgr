@@ -1,0 +1,2 @@
+check.R --candidate=<declared_duplicate_row> --declared=<declared_duplicate_row.csv>: exit 2
+REFUSED: duplicated declared component  compute | empty|data_start|competing_first | calculated_count 

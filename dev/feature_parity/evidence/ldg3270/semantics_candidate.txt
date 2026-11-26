@@ -1,0 +1,4 @@
+arm candidate library C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348 cases 52 
+Warning message:
+In runCov(x, x, n, use = "all.obs", sample = sample, cumulative) :
+  (co-)variance is not defined for one observation; returning NA

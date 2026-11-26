@@ -1,0 +1,11 @@
+"control","expected_exit","exit","expected_signal","signals","ok"
+"declared case values changed",1,1,"values","values",TRUE
+"declared case na changed",1,1,"na","na",TRUE
+"declared case planes changed",1,1,"planes","planes",TRUE
+"declared case handoffs changed",1,1,"handoffs","handoffs,treated_fields",TRUE
+"undeclared case values changed: hostile_carry2|data_start|close",1,1,"values","values",TRUE
+"pin observations as candidate (NA refusal restored)",1,1,"refusal_class","calculated_count,callback,causality,handoffs,na,planes,proj,reads,refusal,refusal_class,route,values",TRUE
+"declared file: missing_case",2,2,"","REFUSED: declared expectation lacks declared case:  compute | hostile_carry2|data_start|custom_volume_strict ",TRUE
+"declared file: duplicate_row",2,2,"","REFUSED: duplicated declared component  compute | empty|data_start|competing_first | calculated_count ",TRUE
+"declared file: extra_case",2,2,"","REFUSED: declared expectation holds an undeclared case:  compute | hostile_carry2|data_start|close ",TRUE
+"candidate unchanged",0,0,"","",TRUE

@@ -1,0 +1,8 @@
+                file production_base bind_list_base production_final
+ R/features-engine.R             238             59              235
+       R/timestamp.R             109              0              132
+          <total R/>           54966             59            54986
+ bind_list_final change change_without_bind_list
+              59     -3                       -3
+               0     23                       23
+              59     20                       20

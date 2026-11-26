@@ -1,0 +1,7 @@
+competing_first        cases 14  cells 6224  NA 6224  finite    0
+competing_second       cases 14  cells 6224  NA 6224  finite    0
+custom_volume_strict   cases 10  cells 3060  NA 1005  finite 2055
+runsd_one              cases 14  cells 3112  NA 3112  finite    0
+cases 52 identical 52 
+declared_expected.csv values equal the pin fn-twin digests: 52 of 52 
+SEMANTICS PASS

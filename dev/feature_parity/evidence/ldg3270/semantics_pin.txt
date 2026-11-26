@@ -1,0 +1,4 @@
+arm pin_fn_twin library C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151 cases 52 
+Warning message:
+In runCov(x, x, n, use = "all.obs", sample = sample, cumulative) :
+  (co-)variance is not defined for one observation; returning NA

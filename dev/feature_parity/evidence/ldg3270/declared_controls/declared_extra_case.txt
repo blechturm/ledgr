@@ -1,0 +1,2 @@
+check.R --candidate=<declared_extra_case> --declared=<declared_extra_case.csv>: exit 2
+REFUSED: declared expectation holds an undeclared case:  compute | hostile_carry2|data_start|close 

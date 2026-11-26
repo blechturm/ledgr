@@ -1,0 +1,15 @@
+SIGNAL calculated_count 52  (candidate differs from the declared expectation; first: compute | empty|data_start|competing_first)
+SIGNAL callback 34  (candidate differs from the declared expectation; first: compute | empty|data_start|competing_first)
+SIGNAL causality 10  (candidate differs from the declared expectation; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL handoffs 40  (candidate differs from the declared expectation; first: compute | hostile_carry2|data_start|competing_first)
+SIGNAL na 52  (candidate differs from the declared expectation; first: compute | empty|data_start|competing_first)
+SIGNAL planes 52  (candidate differs from the declared expectation; first: compute | empty|data_start|competing_first)
+SIGNAL proj 52  (candidate differs from the declared expectation; first: compute | empty|data_start|competing_first)
+SIGNAL reads 52  (candidate differs from the declared expectation; first: compute | empty|data_start|competing_first)
+SIGNAL refusal 52  (candidate differs from the declared expectation; first: compute | empty|data_start|competing_first)
+SIGNAL refusal_class 52  (candidate differs from the declared expectation; first: compute | empty|data_start|competing_first)
+SIGNAL route 48  (candidate differs from the declared expectation; first: compute | empty|data_start|competing_first)
+SIGNAL values 52  (candidate differs from the declared expectation; first: compute | empty|data_start|competing_first)
+cases 694 (refusing on the pin 99), observations pin 11791 candidate 11791
+declared: 52 cases compared with declared_expected.csv
+CHECK FAIL: 12 signal(s)

@@ -1,0 +1,108 @@
+runner: unfaulted fault none - 694 cases, 12051 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_changed_value fault changed_value - 694 cases, 12051 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_moved_na fault moved_na - 694 cases, 12051 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_plane_reason fault plane_reason - 694 cases, 12051 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_refusal_class fault refusal_class - 694 cases, 12051 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_narrowed_callback fault narrowed_callback - 694 cases, 11141 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_reordered_causality fault reordered_causality - 694 cases, 12051 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_wrong_route fault wrong_route - 694 cases, 11619 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_all_fields fault all_fields - 694 cases, 12051 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+               control expected_exit exit  expected_signal
+             unfaulted             0    0                 
+         changed_value             1    1           values
+              moved_na             1    1               na
+          plane_reason             1    1           planes
+         refusal_class             1    1    refusal_class
+     narrowed_callback             1    1         callback
+   reordered_causality             1    1        causality
+           wrong_route             1    1            route
+            all_fields             1    1   treated_fields
+       wrong_admission            NA   NA             gate
+     missing_treatment            NA   NA             gate
+   missing_raw_sharing            NA   NA            route
+ wrong_payload_refusal            NA   NA          refusal
+            count_only            NA   NA calculated_count
+           missing_arm             2    2                 
+          missing_case             2    2                 
+     missing_component             2    2                 
+       cleared_treated             1    1   treated_fields
+     causality_dropped             1    1   treated_fields
+  shared_observer_loss             1    1   treated_fields
+       pin_against_pin             0    0                 
+                                                                                                                                                                                                                                                                                signals
+                                                                                                                                                                                                                                                                                       
+                                                                                                                                                                                          history,precompute,proj,proj,reads,reads,routes_equal,routes_equal,routes_equal,values,values
+                                                                                                                                                                                    history,na,na,precompute,proj,proj,reads,reads,routes_equal,routes_equal,routes_equal,values,values
+                                                                                                                                                                                                                                         planes,planes,precompute,proj,proj,reads,reads
+                                                                                                                                                                                                                                                    refusal,refusal_class,refusal_class
+ calculated_count,calculated_count,callback,callback,causality,causality,handoffs,handoffs,history,na,na,planes,planes,precompute,proj,proj,reads,reads,refusal,refusal,refusal_class,refusal_class,refusal_class,route,route,route,routes_equal,routes_equal,sweep_table,values,values
+                                                                                                                                                                                                                              callback,callback,causality,causality,refusal,route,route
+                          callback,causality,certification,certification,certification,field_union,field_union,field_union,handoffs,history,na,planes,precompute,proj,reads,refusal,refusal_class,refusal_class,route,route,routes_equal,routes_equal,sweep_table,treated_fields,values
+                                                                                                                                                                                                                                                                         treated_fields
+                                                                                                                                                                                                                       not run: the library has no direct path (checked before running)
+                                                                                                                                                                                                                       not run: the library has no direct path (checked before running)
+                                                                                                                                                                                                                       not run: the library has no direct path (checked before running)
+                                                                                                                                                                                                                       not run: the library has no direct path (checked before running)
+                                                                                                                                                                                                                       not run: the library has no direct path (checked before running)
+                                                                                                                                                                                                                                                                                       
+                                                                                                                                                                                                                                                                                       
+                                                                                                                                                                                                                                                                                       
+                                                                                                                                                                                                                                                                         treated_fields
+                                                                                                                                                                                                                                                                         treated_fields
+                                                                                                                                                                                                                                                          treated_fields,treated_fields
+                                                                                                                                                                                                                                                                                       
+   ok                                                  library
+ TRUE C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348
+ TRUE C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348
+ TRUE C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348
+ TRUE C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348
+ TRUE C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348
+ TRUE C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348
+ TRUE C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348
+ TRUE C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348
+ TRUE C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348
+ TRUE C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348
+ TRUE C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348
+ TRUE C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348
+ TRUE C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348
+ TRUE C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348
+ TRUE                                         pin observations
+ TRUE                                         pin observations
+ TRUE                                         pin observations
+ TRUE                                         pin observations
+ TRUE                                         pin observations
+ TRUE                                         pin observations
+ TRUE                                         pin observations
+                                                               declared
+ C:/Users/maxth/ledgr-wt/cut25/dev/feature_parity/declared_expected.csv
+ C:/Users/maxth/ledgr-wt/cut25/dev/feature_parity/declared_expected.csv
+ C:/Users/maxth/ledgr-wt/cut25/dev/feature_parity/declared_expected.csv
+ C:/Users/maxth/ledgr-wt/cut25/dev/feature_parity/declared_expected.csv
+ C:/Users/maxth/ledgr-wt/cut25/dev/feature_parity/declared_expected.csv
+ C:/Users/maxth/ledgr-wt/cut25/dev/feature_parity/declared_expected.csv
+ C:/Users/maxth/ledgr-wt/cut25/dev/feature_parity/declared_expected.csv
+ C:/Users/maxth/ledgr-wt/cut25/dev/feature_parity/declared_expected.csv
+ C:/Users/maxth/ledgr-wt/cut25/dev/feature_parity/declared_expected.csv
+ C:/Users/maxth/ledgr-wt/cut25/dev/feature_parity/declared_expected.csv
+ C:/Users/maxth/ledgr-wt/cut25/dev/feature_parity/declared_expected.csv
+ C:/Users/maxth/ledgr-wt/cut25/dev/feature_parity/declared_expected.csv
+ C:/Users/maxth/ledgr-wt/cut25/dev/feature_parity/declared_expected.csv
+ C:/Users/maxth/ledgr-wt/cut25/dev/feature_parity/declared_expected.csv
+                                                                   none
+                                                                   none
+                                                                   none
+                                                                   none
+                                                                   none
+                                                                   none
+                                                                   none
+fault signal sets pairwise distinct: TRUE 
+FAULTS PASS

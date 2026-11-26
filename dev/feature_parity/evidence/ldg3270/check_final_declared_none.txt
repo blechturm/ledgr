@@ -1,0 +1,17 @@
+SIGNAL refusal_class 52  (candidate differs from the corpus; first: compute | empty|data_start|competing_first)
+SIGNAL route 48  (candidate differs from the corpus; first: compute | empty|data_start|competing_first)
+SIGNAL calculated_count 52  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL callback 34  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL causality 10  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL na 52  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL planes 52  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL proj 52  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL reads 52  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL refusal 52  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL refusal_class 52  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL route 48  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL values 52  (candidate differs from pin; first: compute | hostile_carry2|data_start|custom_volume_strict)
+SIGNAL handoffs 40  (candidate hand-offs differ from the pin's; first: compute | hostile_carry2|data_start|custom_volume_strict)
+cases 694 (refusing on the pin 99), observations pin 11791 candidate 12051
+declared: none
+CHECK FAIL: 14 signal(s)

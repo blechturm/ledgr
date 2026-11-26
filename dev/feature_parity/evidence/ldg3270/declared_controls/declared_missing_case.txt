@@ -1,0 +1,2 @@
+check.R --candidate=<declared_missing_case> --declared=<declared_missing_case.csv>: exit 2
+REFUSED: declared expectation lacks declared case:  compute | hostile_carry2|data_start|custom_volume_strict 

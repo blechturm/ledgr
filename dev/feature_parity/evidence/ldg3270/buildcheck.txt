@@ -1,0 +1,12 @@
+tree C:/Users/maxth/ledgr-wt/cut25 HEAD 74e6f8221b26c9f380ed4e44a99a29cb9ee7a87c duckdb 2.0.1 
+build exit 0 
+check exit 0 
+[1] TRUE
+  'ttr-indicators.qmd' using 'UTF-8'... OK
+  'walk-forward.qmd' using 'UTF-8'... OK
+ OK
+* checking re-building of vignette outputs ... SKIPPED
+* DONE
+
+Status: OK
+

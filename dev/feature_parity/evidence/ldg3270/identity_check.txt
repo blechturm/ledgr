@@ -1,0 +1,7 @@
+expected identities: 155 compared besides the engine version (identity_names_changed_engine.csv)
+identities compared: 155, equal: 155
+engine version base 88b4237e5fc2035dfb29a2108e36277e2d65cb422924001ceb3edb6db30b06c1 candidate 100eff97cee267e26dcf91215512572115e67af7b4fc5ebec0b6dfd7f29e5e67 
+old precompute: ledgr_precomputed_engine_mismatch strategy calls 0 
+old store: run readable equity rows 30 sweep list 1 
+old stored sweep keeps its engine version: 88b4237e5fc2035dfb29a2108e36277e2d65cb422924001ceb3edb6db30b06c1 (saved with 88b4237e5fc2035dfb29a2108e36277e2d65cb422924001ceb3edb6db30b06c1 )
+IDENTITY CHECK PASS

@@ -1,0 +1,5 @@
+check.R --candidate=<declared_values> --declared=<declared_expected.csv>: exit 1
+SIGNAL values 1  (candidate differs from the declared expectation; first: compute | hostile_carry2|data_start|custom_volume_strict)
+cases 694 (refusing on the pin 99), observations pin 11791 candidate 12051
+declared: 52 cases compared with declared_expected.csv
+CHECK FAIL: 1 signal(s)
