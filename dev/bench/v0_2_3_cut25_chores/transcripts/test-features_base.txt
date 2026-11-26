@@ -1,0 +1,5 @@
+ledgr from library C:/Users/maxth/ledgr-wt/cut24-scratch/libs/final-8f7c6977 version 0.2.2 
+FAIL | feature series uses and validates vectorized series functions | expectations 13 failed 1 skipped 0
+   NOT OK: <ledgr_invalid_feature_output/rlang_error/error/condition> Error in `ledgr_normalize_feature_series_output(ledgr_call_feature_series_fn(def$series_fn, frame, params), m, stable_after, def$id)`: Feature bad_series returne 
+ok | fn-only feature fallback uses bounded windows | expectations 3 failed 0 skipped 0
+ok | [LTB-0003] no-lookahead checker detects a leaking series function | expectations 3 failed 0 skipped 0

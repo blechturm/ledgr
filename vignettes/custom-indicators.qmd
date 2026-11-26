@@ -106,8 +106,9 @@ The scalar contract supports both `fn(window)` and `fn(window, params)`. ledgr
 calls the one-argument form with a bounded historical window ending at the
 current bar. When the function declares a second argument, ledgr also supplies
 the indicator's deterministic `params`. Before `stable_after`, ledgr returns
-`NA_real_` for that feature. After warmup, the scalar result must be one finite
-numeric value. Put configuration in `params` so it is part of feature identity;
+`NA_real_` for that feature. After warmup, the scalar result must be one
+numeric value: a finite number, or `NA_real_` when the indicator is undefined
+at that bar. `NaN` and infinite values are errors. Put configuration in `params` so it is part of feature identity;
 use the two-argument form when the calculation needs that configuration.
 
 This path is easy to reason about because the function receives only historical
@@ -164,7 +165,9 @@ The `series_fn(bars, params)` contract is strict:
 - the return length must equal `nrow(bars)`;
 - output position `i` belongs to input row `i`;
 - warmup rows before `stable_after` are normalized to `NA_real_`;
-- post-warmup `NA`, `NaN`, and infinite values are errors.
+- post-warmup `NA_real_` marks a bar where the indicator is undefined, as in
+  the scalar form;
+- post-warmup `NaN` and infinite values are errors.
 
 The example uses `sides = 1`, so row `i` is computed from row `i` and earlier
 rows only. That is the causal alignment a vectorized feature must preserve.
@@ -202,8 +205,10 @@ longer settling period, `stable_after` can be larger. ledgr treats rows before
 `stable_after` as warmup and exposes them as `NA_real_`. `stable_after` is the
 first valid row, not a promise that a recursive indicator has converged.
 
-Warmup `NA` is expected. Post-warmup `NA`, `NaN`, or infinite values mean the
-feature did not satisfy its contract.
+Warmup `NA` is expected. After warmup, `NA` says the indicator is undefined at
+that bar: the strategy reads `NA`, and the history evidence reports the cell as
+`calculation_non_finite` rather than refusing the run. `NaN` or infinite values
+mean the feature did not satisfy its contract, and preparation refuses them.
 
 ## Fingerprints
 

@@ -246,9 +246,8 @@ ledgr_normalize_feature_series_output <- function(value, expected_n, stable_afte
   if (any(is.nan(value) & non_warmup)) {
     rlang::abort(sprintf("Feature %s returned NaN outside the warmup period.", feature_id), class = "ledgr_invalid_feature_output")
   }
-  if (any(is.na(value) & !is.nan(value) & non_warmup)) {
-    rlang::abort(sprintf("Feature %s returned NA outside the warmup period.", feature_id), class = "ledgr_invalid_feature_output")
-  }
+  # Post-warmup NA is accepted: the cell is ready but not calculation-valid
+  # (Cut 25, maintainer decision 2026-11-04), as on the scalar fn path.
   value[is.nan(value)] <- NA_real_
   if (stable_after > 1L && length(value) > 0L) {
     value[seq_len(min(stable_after - 1L, length(value)))] <- NA_real_

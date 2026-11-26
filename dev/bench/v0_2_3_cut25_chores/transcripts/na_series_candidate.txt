@@ -1,0 +1,5 @@
+ledgr from source C:/Users/maxth/ledgr-wt/cut25 
+series_fn post-warmup NA     100 101 102 103  NA  NA
+TTR runSD n = 1              NA NA NA NA NA NA
+all-NA series                NA NA NA NA NA NA
+finite/NA/gap carry          10 11 12 NA 12 16 17

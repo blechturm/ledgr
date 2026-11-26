@@ -314,3 +314,195 @@ testthat::test_that("[LTB-0322] used_before_window reports every returned value 
   testthat::expect_true(slow_window(10:14))
   testthat::expect_false(slow_window(9:14))
 })
+
+testthat::test_that("[LTB-0567] post-warmup NA is accepted on the fn and series_fn paths on both clocks", {
+  # Cut 25 decision 3 (maintainer decision 2026-11-04): an indicator that is
+  # undefined at a cell says so with NA on either path; the strategy reads
+  # NA and the evidence reports calculation_non_finite. NaN and infinite
+  # values still refuse on both paths.
+  probe <- function(path, kind) {
+    scalar <- function(window, params) {
+      x <- window$close[[nrow(window)]]
+      if (x > 103) switch(params$bad, na = NA_real_, nan = NaN, inf = Inf) else x
+    }
+    if (identical(path, "fn")) {
+      return(ledgr_indicator("probe", fn = scalar, requires_bars = 1L, params = list(bad = kind)))
+    }
+    ledgr_indicator("probe", fn = scalar, requires_bars = 1L, params = list(bad = kind),
+      series_fn = function(bars, params) {
+        ifelse(bars$close > 103, switch(params$bad, na = NA_real_, nan = NaN, inf = Inf), bars$close)
+      })
+  }
+  bar_native <- function() {
+    ts <- as.POSIXct("2020-01-01 16:00:00", tz = "UTC") + 86400 * 0:7
+    bars <- data.frame(ts_utc = ts, instrument_id = "AAA", close = 100 + 1:8)
+    bars$open <- bars$high <- bars$low <- bars$close
+    bars$volume <- 1000
+    ledgr_snapshot_from_df(bars, db_path = tempfile(fileext = ".duckdb"))
+  }
+  for (clock in c("bar_native", "declared_sessions")) {
+    for (path in c("fn", "series_fn")) {
+      for (kind in c("na", "nan", "inf")) {
+        label <- paste(clock, path, kind)
+        snapshot <- if (identical(clock, "bar_native")) bar_native() else availability_runtime_fixture(days = 8L)
+        seen <- new.env(parent = emptyenv())
+        seen$x <- numeric()
+        args <- list(
+          snapshot,
+          function(ctx, params) {
+            seen$x <- c(seen$x, ctx[["probe"]][["AAA"]])
+            ctx$hold()
+          },
+          features = list(probe(path, kind)),
+          opening = ledgr_opening(cash = 100000),
+          cost_model = ledgr_cost_zero()
+        )
+        if (identical(clock, "declared_sessions")) args$valuation_policy <- ledgr_valuation_stale(1L)
+        exp <- do.call(ledgr_experiment, args)
+        testthat::expect_identical(isTRUE(exp$availability$active), identical(clock, "declared_sessions"), info = label)
+        run_id <- gsub(" ", "-", label)
+        grid <- ledgr_grid_named(one = list(strategy = list()))
+        if (identical(kind, "na")) {
+          close(ledgr_run(exp, run_id = run_id))
+          testthat::expect_identical(ledgr_run_info(snapshot, run_id)$status, "DONE", info = label)
+          testthat::expect_identical(seen$x, c(101, 102, 103, rep(NA_real_, 5L)), info = label)
+          sweep <- ledgr_sweep(exp, grid, stop_on_error = TRUE)
+          testthat::expect_identical(sweep$status, "DONE", info = label)
+        } else {
+          testthat::expect_error(ledgr_run(exp, run_id = run_id), class = "ledgr_invalid_feature_output", info = label)
+          testthat::expect_identical(ledgr_run_info(snapshot, run_id)$status, "FAILED", info = label)
+          testthat::expect_identical(seen$x, numeric(), info = label)
+          testthat::expect_error(ledgr_sweep(exp, grid, stop_on_error = TRUE),
+                                 class = "ledgr_invalid_feature_output", info = label)
+        }
+        ledgr_snapshot_close(snapshot)
+      }
+    }
+  }
+
+  # The evidence of an accepted post-warmup NA, on either path: ready, not
+  # calculation-valid, calculation_non_finite.
+  levels <- ws43_history_substrate(c(100, 101, 102, 103, 104, 105))
+  for (path in c("fn", "series_fn")) {
+    ev <- ws43_frame_evidence(levels, probe(path, "na"), NULL)
+    testthat::expect_identical(as.numeric(ev$value), c(100, 101, 102, 103, NA, NA), info = path)
+    testthat::expect_identical(as.vector(ev$ready), rep(TRUE, 6L), info = path)
+    testthat::expect_identical(as.vector(ev$calculation_valid), c(rep(TRUE, 4L), FALSE, FALSE), info = path)
+    testthat::expect_identical(as.vector(ev$missing_reason),
+                               c("", "", "", "", "calculation_non_finite", "calculation_non_finite"), info = path)
+  }
+
+  # A TTR row that is undefined after warmup completes with no
+  # calculation-valid cell: runSD over one observation.
+  # TTR warns that variance over one observation is NA; that is the case.
+  ev <- suppressWarnings(ws43_frame_evidence(levels, ledgr_ind_ttr("runSD", input = "close", n = 1L), NULL))
+  testthat::expect_true(all(is.na(as.numeric(ev$value))))
+  testthat::expect_false(any(as.vector(ev$calculation_valid)))
+
+  # Two refusals the normaliser used to pre-empt, and the sampling scope:
+  # the checks sample only finite calculated cells.
+  plain <- ws43_history_substrate(10:15)
+  prefix_na <- ledgr_indicator("prefix_na", fn = function(window) 1, requires_bars = 1L, required_fields = "close",
+    series_fn = function(bars) {
+      v <- rep(1, nrow(bars))
+      if (nrow(bars) < 6L) v[[nrow(bars)]] <- NA_real_
+      v
+    })
+  testthat::expect_error(
+    ledgr:::ledgr_history_compute_feature_series(plain, list(feature = prefix_na)),
+    class = "ledgr_feature_lookahead_detected"
+  )
+  parity_after_na <- ledgr_indicator("parity_after_na", fn = function(window) 0, requires_bars = 1L,
+    gap_contract = "strict_window", required_fields = "close",
+    series_fn = function(bars) ifelse(bars$close == 13, NA_real_, bars$close))
+  testthat::expect_error(
+    ledgr:::ledgr_history_compute_feature_series(plain, list(feature = parity_after_na)),
+    class = "ledgr_indicator_gap_parity"
+  )
+  all_na <- ledgr_indicator("all_na", fn = function(window) 0, requires_bars = 1L,
+    gap_contract = "strict_window", required_fields = "close",
+    series_fn = function(bars) rep(NA_real_, nrow(bars)))
+  testthat::expect_identical(
+    as.numeric(ledgr:::ledgr_history_compute_feature_series(plain, list(feature = all_na))[[1L]]),
+    rep(NA_real_, 6L)
+  )
+
+  # An NA cell is neither filled by output carry nor a carry source; a later
+  # missing input carries the earlier finite output within its age limit,
+  # and the segment recovers. Retained-plane and recomputing evidence agree.
+  gap <- ws43_history_substrate(c(10, 11, 12, 13, NA, 16, 17),
+                                policy = ledgr_history_policy(price_carry = NULL, output_carry = 3L))
+  carry <- ledgr_indicator("carry", requires_bars = 1L, gap_contract = "strict_window", required_fields = "close",
+    fn = function(window) if (utils::tail(window$close, 1L) == 13) NA_real_ else utils::tail(window$close, 1L),
+    series_fn = function(bars) ifelse(bars$close == 13, NA_real_, bars$close))
+  values <- ledgr:::ledgr_history_compute_feature_series(gap, list(feature = carry))
+  testthat::expect_identical(as.numeric(values[[1L]]), c(10, 11, 12, NA, 12, 16, 17))
+  frame <- ws43_frame_evidence(gap, carry, NULL)
+  seam <- ledgr:::ledgr_history_feature_planes(gap, "AAA", carry)
+  fields <- c("value", "calculated", "ready", "calculation_valid", "output_carried", "carry_age_sessions", "missing_reason")
+  for (f in fields) testthat::expect_identical(as.vector(frame[[f]]), as.vector(seam[[f]]), info = f)
+  testthat::expect_identical(as.vector(frame$calculated), c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE))
+  testthat::expect_identical(as.vector(frame$ready), c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE))
+  testthat::expect_identical(as.vector(frame$calculation_valid), c(TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE))
+  testthat::expect_identical(as.vector(frame$output_carried), c(FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE))
+  testthat::expect_identical(as.vector(frame$carry_age_sessions), c(0L, 0L, 0L, NA, 2L, 0L, 0L))
+  testthat::expect_identical(as.vector(frame$missing_reason),
+                             c("", "", "", "calculation_non_finite", "output_carried", "", ""))
+
+  # Public paths on an NA-and-recovery fixture: the NA cell survives the
+  # projection, the precompute payload, a sweep reusing it, pulse
+  # inspection, both history-reader forms and worker execution.
+  recover <- ledgr_indicator("gap", requires_bars = 1L,
+    fn = function(window) {
+      x <- window$close[[nrow(window)]]
+      if (x == 104) NA_real_ else x
+    },
+    series_fn = function(bars) ifelse(bars$close == 104, NA_real_, bars$close))
+  expected <- c(101, 102, 103, NA, 105, 106, 107, 108)
+  snapshot <- availability_runtime_fixture(days = 8L)
+  on.exit(ledgr_snapshot_close(snapshot), add = TRUE)
+  seen <- new.env(parent = emptyenv())
+  seen$flat <- numeric()
+  reading <- function(ctx, params) {
+    seen$flat <- c(seen$flat, ctx[["gap"]][["AAA"]])
+    seen$wide <- ledgr_history_frame(ctx, feature = "gap", lookback = Inf,
+      instruments = "decision_axis", min_observations = 0L)
+    seen$long <- ledgr_history_frame(ctx, feature = "gap", lookback = Inf,
+      instruments = "decision_axis", min_observations = 0L, layout = "long")
+    c(AAA = if (is.na(ctx[["gap"]][["AAA"]])) 1 else 0)
+  }
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, reading,
+    features = list(recover), valuation_policy = ledgr_valuation_stale(1L), cost_model = ledgr_cost_zero())
+  testthat::expect_true(isTRUE(exp$availability$active))
+  close(ledgr_run(exp, run_id = "na-recovery"))
+  testthat::expect_identical(seen$flat, expected)
+  testthat::expect_identical(as.numeric(seen$wide$AAA), expected)
+  testthat::expect_identical(as.numeric(seen$long$value), expected)
+  testthat::expect_identical(seen$long$calculation_valid, !is.na(expected))
+  testthat::expect_identical(seen$long$missing_reason, ifelse(is.na(expected), "calculation_non_finite", ""))
+  axis <- as.POSIXct(paste(as.Date("2020-01-01") + 0:7, "16:00:00"), tz = "UTC")
+  for (k in c(4L, 5L)) {
+    pulse <- ledgr_pulse_snapshot(exp, ts_utc = axis[[k]])
+    testthat::expect_identical(unname(pulse[["gap"]][["AAA"]]), expected[[k]], info = k)
+    close(pulse)
+  }
+
+  acting <- function(ctx, params) c(AAA = if (is.na(ctx[["gap"]][["AAA"]])) 1 else 0)
+  exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, acting,
+    features = list(recover), valuation_policy = ledgr_valuation_stale(1L), cost_model = ledgr_cost_zero())
+  grid <- ledgr_grid_named(one = list(strategy = list()), two = list(strategy = list()))
+  cols <- c("candidate_id", "status", "final_equity", "total_return", "n_trades", "time_in_market")
+  serial <- as.data.frame(ledgr_sweep(exp, grid, stop_on_error = TRUE))[cols]
+  testthat::expect_identical(serial$status, c("DONE", "DONE"))
+  testthat::expect_identical(serial$n_trades, c(1L, 1L))
+  pre <- ledgr_precompute_features(exp, grid)
+  testthat::expect_identical(as.numeric(pre$projection$feature_values$gap[1L, ]), expected)
+  testthat::expect_identical(as.numeric(pre$payload[[1L]]$values$AAA), expected)
+  reused <- as.data.frame(ledgr_sweep(exp, grid, precomputed_features = pre, stop_on_error = TRUE))[cols]
+  testthat::expect_identical(reused, serial)
+  if (!requireNamespace("mirai", quietly = TRUE)) {
+    testthat::skip("the mirai worker backend is not installed")
+  }
+  workers <- as.data.frame(ledgr_sweep(exp, grid, workers = 2L, stop_on_error = TRUE))[cols]
+  testthat::expect_identical(workers, serial)
+})

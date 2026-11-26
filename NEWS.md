@@ -1,5 +1,13 @@
 # ledgr (development version)
 
+- An indicator's `series_fn`, and a TTR-backed indicator, may now return `NA`
+  after warmup where the indicator is undefined, as the scalar `fn` already
+  could: the strategy reads `NA` and the history evidence reports
+  `calculation_non_finite` instead of the run refusing. `NaN` and infinite
+  values still refuse. The feature engine version changes, so objects from
+  `ledgr_precompute_features()` made before this change must be regenerated.
+- `ledgr_utc()` parses character vectors in whole-vector passes, about eight
+  times faster on 500 strings, with the same values and errors.
 - The feature engine version changes: it now binds every helper that prepares
   feature values, evidence or the prepared representation. Objects from
   `ledgr_precompute_features()` made before this change must be regenerated;

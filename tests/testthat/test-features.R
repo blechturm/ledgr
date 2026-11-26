@@ -135,11 +135,9 @@ testthat::test_that("feature series uses and validates vectorized series functio
 
   na_late_def <- base_def
   na_late_def$series_fn <- function(bars, params = list()) c(NA_real_, 1, NA_real_, 3)
-  testthat::expect_error(
-    live_feature_series(bars, na_late_def),
-    "NA outside",
-    fixed = TRUE
-  )
+  # Post-warmup NA is accepted and a later finite value recovers (Cut 25).
+  values <- live_feature_series(bars, na_late_def)
+  testthat::expect_identical(values, c(NA_real_, 1, NA_real_, 3))
   })
 })
 

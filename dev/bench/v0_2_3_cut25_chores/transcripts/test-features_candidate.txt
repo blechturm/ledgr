@@ -1,0 +1,4 @@
+ledgr from source C:/Users/maxth/ledgr-wt/cut25 
+ok | feature series uses and validates vectorized series functions | expectations 13 failed 0 skipped 0
+ok | fn-only feature fallback uses bounded windows | expectations 3 failed 0 skipped 0
+ok | [LTB-0003] no-lookahead checker detects a leaking series function | expectations 3 failed 0 skipped 0

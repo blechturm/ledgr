@@ -2553,9 +2553,6 @@ and `AAA` a held nonmember, each holding 5:
 <a id="contract-context-indicator-computation"></a>
 ### Indicator Computation And Identity
 
-Accepted change pending:
-[post-warmup `NA` in indicator output](decisions.md#post-warmup-na-indicator-output).
-
 - Every indicator definition is `bounded` or `history_dependent`.
   `gap_contract = "strict_window"` declares a bounded window; combined with
   `history_class = "history_dependent"` it refuses with
@@ -2597,7 +2594,10 @@ Accepted change pending:
   calling `series_fn()` when `nrow(bars) < stable_after`; strategy-visible
   output remains an aligned all-`NA_real_` series for that feature/instrument.
 - Feature warmup `NA_real_` and warmup `NaN` are normalized to `NA_real_`.
-  Infinite values, post-warmup `NA`, and post-warmup `NaN` values are invalid.
+  Post-warmup `NA_real_` is accepted on both the scalar `fn` and the
+  `series_fn` path: the cell is ready but not calculation-valid, and history
+  evidence reports `calculation_non_finite`. Infinite values and post-warmup
+  `NaN` values are invalid on both paths.
 - Indicator fingerprints include `series_fn` when present and bind deterministic
   direct captures of `fn` and `series_fn`. Changing either function, its direct
   atomic/list captures, parameters, or warmup requirements changes the

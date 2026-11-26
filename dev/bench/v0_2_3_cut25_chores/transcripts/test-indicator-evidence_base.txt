@@ -1,0 +1,6 @@
+ledgr from library C:/Users/maxth/ledgr-wt/cut24-scratch/libs/final-8f7c6977 version 0.2.2 
+ok | [LTB-0319] frame feature evidence separates every v12 feature state | expectations 41 failed 0 skipped 0
+ok | [LTB-0320] a terminal interval ends feature carry and bounded windows | expectations 10 failed 0 skipped 0
+ok | [LTB-0322] used_before_window reports every returned value that used earlier history | expectations 8 failed 0 skipped 0
+FAIL | [LTB-0567] post-warmup NA is accepted on the fn and series_fn paths on both clocks | expectations 16 failed 1 skipped 0
+   NOT OK: <ledgr_invalid_feature_output/rlang_error/error/condition> Error in `ledgr_normalize_feature_series_output(ledgr_call_feature_series_fn(def$series_fn, frame, params), m, stable_after, def$id)`: Feature probe returned NA  

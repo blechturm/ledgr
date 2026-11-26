@@ -1,0 +1,5 @@
+ledgr from library C:/Users/maxth/ledgr-wt/cut24-scratch/libs/final-8f7c6977 
+series_fn post-warmup NA     refused ledgr_invalid_feature_output
+TTR runSD n = 1              refused ledgr_invalid_feature_output
+all-NA series                refused ledgr_invalid_feature_output
+finite/NA/gap carry          refused ledgr_invalid_feature_output
