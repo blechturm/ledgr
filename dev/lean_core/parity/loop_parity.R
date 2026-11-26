@@ -15,7 +15,13 @@
 #   Rscript dev/lean_core/parity/loop_parity.R --lib=<pinned library>
 #     --debug=0|1 --out=<csv> [--workloads=<id,...>] [--batch-rows=<n>]
 #     [--mutation=<name>] [--inert=1] [--freeze=<loop_freeze.csv>] [--dump=<dir>]
-#     [--witness=<file>]
+#     [--witness=<file>] [--workdir=<dir>]
+#
+# Cut 26 (LDG-3271): the runner resolves its path arguments, then works in a
+# fresh directory outside any ledgr source package, so sweep workers load the
+# pinned library; every worker either arm starts must report the pinned
+# build as its ledgr origin, or the workload fails as WORKER. --workdir=<dir>
+# runs from <dir> instead: the source-package control, which must fail.
 #
 # --witness sources one test-only file into the lean environment after
 # loading (Cut 20: the hashed-frame witness's adapter, which runs the
@@ -57,6 +63,15 @@ freeze_file <- arg("freeze", "")
 dump_dir <- arg("dump", "")                  # saves each workload's pin tables (slice2_reach_cross.R)
 dump_lean <- identical(arg("dump-lean", "0"), "1")   # slice 4: also the lean arm, as <id>_lean.rds
 witness_file <- arg("witness", "")           # Cut 20: a test-only file sourced into the lean environment (hashed_frame_witness.R)
+workdir_control <- arg("workdir", "")          # Cut 26: run from this directory (the source-package control)
+# Cut 26 (LDG-3271): path arguments are resolved before the working directory changes.
+resolve <- function(path) if (nzchar(path)) normalizePath(path, winslash = "/", mustWork = FALSE) else path
+lib <- resolve(lib)
+out <- resolve(out)
+freeze_file <- resolve(freeze_file)
+dump_dir <- resolve(dump_dir)
+witness_file <- resolve(witness_file)
+workdir_control <- resolve(workdir_control)
 source(file.path(here, "loop_edits.R"))
 
 # Variants. `expect` names the signal that must fire; `error` is a pattern
@@ -436,6 +451,8 @@ source(file.path(repo, "dev/bench/v0_2_3_ws16_entry/workloads.R"))
 source(file.path(repo, "dev/bench/v0_2_3_output_freeze/lib.R"))
 source(file.path(repo, "dev/spikes/r_floor/fixture.R"))
 source(file.path(here, "prep_fixture.R"))
+lean_harness_workdir(if (nzchar(workdir_control)) workdir_control else NULL)
+worker_origin <- lean_worker_origin_install(file.path(lib, "ledgr"))
 work <- file.path(tempdir(), "loop_parity")
 dir.create(work, showWarnings = FALSE)
 
@@ -562,9 +579,11 @@ for (id in ids) {
   # reruns (loop_entry_rng), so a rerun that does not restore it differs.
   entry_rng <- loop_entry_rng[[id]] %||% function() NULL
   t0 <- proc.time()[["elapsed"]]
+  worker_origin$read()
   entry_rng()
   pinned <- tryCatch(run_tables(id), error = escaped)
   t1 <- proc.time()[["elapsed"]]
+  workers_pinned <- worker_origin$read()
   if (nzchar(dump_dir)) saveRDS(pinned, file.path(dump_dir, paste0(id, ".rds")))
   # The branch the workload is named for, on the pin's own tables (Cut 16
   # decision 4): NA without a predicate; a predicate error counts as not reached.
@@ -584,6 +603,7 @@ for (id in ids) {
     run_tables(id)
   }), error = function(e) structure(list(value = escaped(e)), lean = as.list(lean$lean_entry)))
   t2 <- proc.time()[["elapsed"]]
+  workers_lean <- worker_origin$read()
   # Slice 4: the lean arm too, for reach cross-checks and diagnosis.
   if (nzchar(dump_dir) && dump_lean) saveRDS(attempt$value, file.path(dump_dir, paste0(id, "_lean.rds")))
   if (!is.null(loop_entry_rng[[id]])) RNGkind("default", "default", "default")
@@ -610,6 +630,8 @@ for (id in ids) {
   expected_refusal <- loop_expect_refused[[id]]
   seen <- list(
     differ = !all(res$identical),
+    # Cut 26: a worker in either arm on another build than the pin
+    worker = !workers_pinned$ok || !workers_lean$ok,
     sink = length(rec$sink_calls) > 0L,
     store = length(rec$store_access) > 0L,
     hold = rec$hold_calls > 0L,
@@ -629,7 +651,7 @@ for (id in ids) {
   lost_errors <- setdiff(cond_messages(pinned), cond_messages(candidate))
   # read live: the harness entry copies its record before deciding a rerun
   reached <- isTRUE(lean$lean_entry$variant_reached)
-  verdict <- if (!nzchar(mutation)) {
+  verdict <- if (seen$worker) "WORKER" else if (!nzchar(mutation)) {
     if (seen$differ || seen$sink || seen$store || seen$hold || seen$unrefused || seen$unbounded) "FAIL"
     else if (identical(branch, FALSE)) "BRANCH"
     else if (!path_ok) "PATH"
@@ -673,12 +695,17 @@ for (id in ids) {
   }
   res$lost_errors <- paste(lost_errors, collapse = " | ")
   res$new_errors <- paste(new_errors, collapse = " | ")
+  # Cut 26: worker setups and the origins the workers reported, per arm.
+  worker_text <- function(w) if (!length(w$setups)) "" else sprintf("%d/%d %s", w$reported, w$workers, paste(w$origins, collapse = "; "))
+  res$workers_pinned <- worker_text(workers_pinned)
+  res$workers_lean <- worker_text(workers_lean)
   res$verdict <- verdict
   rows <- c(rows, list(res))
-  cat(sprintf("%-28s %-9s %s  lean %d  refused [%s]  backstop [%s]  store [%s]  sink [%s]  holds %d  append<=%d  range<=%d  pinned %.1f s  lean %.1f s%s\n",
+  cat(sprintf("%-28s %-9s %s  lean %d  refused [%s]  backstop [%s]  store [%s]  sink [%s]  holds %d  append<=%d  range<=%d  pinned %.1f s  lean %.1f s%s%s\n",
               id, verdict, if (seen$differ) "DIFFERENT" else "identical", rec$lean_folds, show(rec$refused),
               show(rec$backstop), show(rec$store_access), show(rec$sink_calls), rec$hold_calls, rec$max_append_rows,
               rec$max_range_pulses, t1 - t0, t2 - t1,
+              if (length(workers_pinned$setups) || length(workers_lean$setups)) sprintf("  workers pin %d/%d lean %d/%d", workers_pinned$reported, workers_pinned$workers, workers_lean$reported, workers_lean$workers) else "",
               if (length(new_errors)) paste0("  new errors [", paste(substr(new_errors, 1L, 120L), collapse = " | "), "]") else ""))
 }
 full_run_requested <- !any(grepl("^--workloads=", commandArgs(TRUE)))
@@ -698,5 +725,5 @@ dir.create(dirname(out), recursive = TRUE, showWarnings = FALSE)
 utils::write.csv(res, out, row.names = FALSE)
 cat(sprintf("%d tables, %d different; verdicts: %s\n", nrow(res), sum(!res$identical),
             paste(names(table(verdicts)), table(verdicts), sep = " ", collapse = ", ")))
-bad <- if (nzchar(mutation)) verdicts != "CAUGHT" else verdicts %in% c("FAIL", "PATH", "BRANCH")
+bad <- if (nzchar(mutation)) verdicts != "CAUGHT" else verdicts %in% c("FAIL", "PATH", "BRANCH", "WORKER")
 if (any(bad) || length(missing_frozen)) quit(status = 1L)

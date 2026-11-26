@@ -22,6 +22,10 @@ lib <- arg("lib")
 out <- arg("out")
 only_debug <- arg("debug", "")
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
+# Cut 26 (LDG-3271): absolute paths for the child runs, which work outside the
+# source tree (loop_parity.R moves its working directory before running).
+lib <- normalizePath(lib, winslash = "/", mustWork = TRUE)
+out <- normalizePath(out, winslash = "/", mustWork = TRUE)
 read <- function(f) utils::read.csv(file.path(here, f), stringsAsFactors = FALSE, na.strings = character())
 key <- function(x) paste(x$mutation, x$workload, x$debug, x$batch_rows, sep = "|")
 manifest <- read("loop_variants.csv")

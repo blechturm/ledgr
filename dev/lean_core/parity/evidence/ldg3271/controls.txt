@@ -1,0 +1,24 @@
+== t_lp (worktree root, normal)
+avail_incomplete             PASS      identical  lean 4  refused [sweep workers]  backstop []  store []  sink []  holds 0  append<=4  range<=3  pinned 3.9 s  lean 4.0 s  workers pin 2/2 lean 2/2
+30 tables, 0 different; verdicts: PASS 1
+== t_pp (worktree root, normal)
+NULL
+avail_incomplete       identical  lean P3 calls 8  pinned 4.0 s  lean 3.5 s
+30 tables, 0 different
+== t_rec (worktree root, normal)
+capture build: installed pin C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr 
+avail_incomplete: 112 records, 0 fail; capture 5s, replay 3s, 3 MB
+replay evidence written to C:/Users/maxth/ledgr-wt/slice5-scratch/rec_out 
+== loop_parity control
+avail_incomplete             WORKER    identical  lean 4  refused [sweep workers]  backstop []  store []  sink []  holds 0  append<=4  range<=3  pinned 5.6 s  lean 5.6 s  workers pin 2/2 lean 2/2
+30 tables, 0 different; verdicts: WORKER 1
+== plan_parity control
+avail_incomplete       WORKER  lean P3 calls 8  pinned 5.6 s  lean 5.2 s
+30 tables, 0 different
+== recorder control
+capture build: installed pin C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr 
+Error: WORKER: avail_incomplete: 2 of 2 workers reported C:/Users/maxth/ledgr-wt/slice5-probe, not the installed pin C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr
+Execution halted
+loop_parity control exit 1
+plan_parity control exit 1
+recorder control exit 1

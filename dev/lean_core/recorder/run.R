@@ -10,6 +10,11 @@
 # Captures are large and never committed. All data is simulated
 # (dev/bench/v0_2_3_output_freeze/fixtures.R and dev/bench/v0_2_3_ws16_entry/workloads.R,
 # reused, not copied; the history fixture is the pinned tests' own).
+#
+# Cut 26 (LDG-3271): the capture run resolves its paths and works outside any
+# ledgr source package; every sweep worker must report the declared build
+# (an installed pin, or the source pin a --src child loads) as its ledgr
+# origin, or the capture stops with WORKER. Each run prints which it is.
 
 # Replay process: only the pinned build, the recorder and one capture; it
 # defines nothing in the global environment.
@@ -35,9 +40,15 @@ captures <- lc_arg("captures") %||% stop("--captures= is required", call. = FALS
 out <- lc_arg("out", file.path(lc_here, "evidence"))
 manifests <- lc_arg("manifests", file.path(lc_here, "manifests"))
 for (d in c(captures, out, manifests)) dir.create(d, recursive = TRUE, showWarnings = FALSE)
+# Cut 26 (LDG-3271): absolute paths before the working directory changes.
+lib <- normalizePath(lib, winslash = "/", mustWork = TRUE)
+captures <- normalizePath(captures, winslash = "/", mustWork = TRUE)
+out <- normalizePath(out, winslash = "/", mustWork = TRUE)
+manifests <- normalizePath(manifests, winslash = "/", mustWork = TRUE)
 
 source(file.path(lc_here, "..", "load.R"))
 lean <- lean_core_load(lib)
+lc_origin <- lean_declared_origin(lib)
 bench <- file.path(lean_core_home, "..", "bench")
 lean_core_source(lean, c(file.path(bench, "v0_2_3_ws16_entry", "common.R"),
                          file.path(lc_here, c("fields.R", "capture.R", "compare.R", "replay.R"))))
@@ -46,6 +57,9 @@ lean_core_source(lean, c(file.path(bench, "v0_2_3_ws16_entry", "common.R"),
 source(file.path(bench, "v0_2_3_ws16_entry", "workloads.R"))
 source(file.path(bench, "v0_2_3_output_freeze", "lib.R"))
 source(file.path(lc_here, "..", "parity", "prep_fixture.R"))
+lean_harness_workdir(lc_arg("workdir"))  # --workdir=<dir>: the source-package control, which must stop with WORKER
+lc_workers <- lean_worker_origin_install(lc_origin$path)
+cat("capture build:", lc_origin$label, lc_origin$path, "\n")
 # Byte compilation would change a closure's serialization between pulses.
 invisible(compiler::enableJIT(0L))
 # Taken before any wrapper is installed.
@@ -174,7 +188,14 @@ lc_capture_workload <- function(id, by_reference = character(), name = id, only 
   set.seed(1L)
   lean$lc_capture_begin(by_reference = by_reference, only = only)
   on.exit(lean$lc_rec$on <- FALSE)
+  lc_workers$read()
   lc_workloads[[id]]()
+  workers <- lc_workers$read()
+  if (!workers$ok) {
+    stop(sprintf("WORKER: %s: %d of %d workers reported %s, not the %s %s", id, workers$reported,
+                 workers$workers, paste(workers$origins, collapse = "; "), lc_origin$label, lc_origin$path),
+         call. = FALSE)
+  }
   # The wrappers must not change a value the pinned build computes from its
   # own function bodies (capture.R, ledgr_feature_engine_version()).
   if (!identical(ledgr:::ledgr_feature_engine_version(), lc_engine_version)) {
@@ -228,6 +249,7 @@ if (sys.nframe() == 0L) {
   # beside the installed build: a child run appends its rows.
   src <- lc_arg("src")
   if (!is.null(src)) {
+    src <- normalizePath(src, winslash = "/", mustWork = TRUE)
     part <- file.path(captures, "history_part")
     lc_rscript(c(paste0("--lib=", src), paste0("--captures=", captures), paste0("--out=", part),
                  paste0("--manifests=", manifests), "--workloads=history_fixture"))

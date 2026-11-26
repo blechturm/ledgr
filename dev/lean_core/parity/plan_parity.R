@@ -14,6 +14,11 @@
 # the portable shapes portable_500x1260/2520/5040. A0's sweep_w2 path runs in
 # worker processes that load the plain pin: it is compared, but it does not
 # exercise the lean stage.
+#
+# Cut 26 (LDG-3271): the runner resolves its path arguments and works outside
+# any ledgr source package; every worker either arm starts must report the
+# pinned build as its ledgr origin, or the run fails (WORKER). --workdir=<dir>
+# runs from <dir> instead: the source-package control, which must fail.
 
 here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/"))
 arg <- function(name, default = NULL) {
@@ -27,6 +32,9 @@ debug <- identical(arg("debug", "0"), "1")
 out <- arg("out")
 stage <- arg("stage", "plan")
 source(file.path(here, "..", "load.R"))
+workdir_control <- arg("workdir", "")
+lib <- normalizePath(lib, winslash = "/", mustWork = TRUE)
+out <- normalizePath(out, winslash = "/", mustWork = FALSE)
 lean <- lean_core_load(lib, debug = debug)
 if (!identical(stage, "plan")) stop("unknown --stage=", stage, call. = FALSE)
 # Counts lean P3 calls, so a run the lean stage never reached cannot pass.
@@ -73,6 +81,8 @@ source(file.path(repo, "dev/bench/v0_2_3_ws16_entry/workloads.R"))
 source(file.path(repo, "dev/bench/v0_2_3_output_freeze/lib.R"))
 source(file.path(repo, "dev/spikes/r_floor/fixture.R"))
 source(file.path(here, "prep_fixture.R"))
+lean_harness_workdir(if (nzchar(workdir_control)) workdir_control else NULL)
+worker_origin <- lean_worker_origin_install(file.path(lib, "ledgr"))
 ns <- asNamespace("ledgr")
 work <- file.path(tempdir(), "plan_parity")
 dir.create(work, showWarnings = FALSE)
@@ -165,12 +175,16 @@ first_difference <- function(a, b) {
 rows <- list()
 for (id in ids) {
   t0 <- proc.time()[["elapsed"]]
+  worker_origin$read()
   pinned <- run_tables(id)
   t1 <- proc.time()[["elapsed"]]
+  workers_pinned <- worker_origin$read()
   lean_calls <- 0L
   restore <- install()
   candidate <- tryCatch(run_tables(id), finally = restore())
   t2 <- proc.time()[["elapsed"]]
+  workers_lean <- worker_origin$read()
+  workers_ok <- workers_pinned$ok && workers_lean$ok
   for (path in union(names(pinned), names(candidate))) {
     for (tab in union(names(pinned[[path]]), names(candidate[[path]]))) {
       a <- pinned[[path]][[tab]]; b <- candidate[[path]][[tab]]
@@ -179,15 +193,18 @@ for (id in ids) {
         workload = id, path = path, table = tab, debug = as.integer(debug), stage = stage, mutation = mutation,
         lean_calls = lean_calls, rows = if (is.null(a)) NA_integer_ else nrow(a), identical = same,
         first_difference = if (same) "" else if (is.null(a) || is.null(b)) "<missing>" else first_difference(a, b),
-        pinned_s = round(t1 - t0, 2), lean_s = round(t2 - t1, 2), stringsAsFactors = FALSE)
+        pinned_s = round(t1 - t0, 2), lean_s = round(t2 - t1, 2),
+        workers_pinned = sprintf("%d/%d %s", workers_pinned$reported, workers_pinned$workers, paste(workers_pinned$origins, collapse = "; ")),
+        workers_lean = sprintf("%d/%d %s", workers_lean$reported, workers_lean$workers, paste(workers_lean$origins, collapse = "; ")),
+        workers_ok = workers_ok, stringsAsFactors = FALSE)
     }
   }
   res <- do.call(rbind, rows)
   cat(sprintf("%-22s %s  lean P3 calls %d  pinned %.1f s  lean %.1f s\n", id,
-              if (all(res$identical[res$workload == id])) "identical" else "DIFFERENT", lean_calls, t1 - t0, t2 - t1))
+              if (!workers_ok) "WORKER" else if (all(res$identical[res$workload == id])) "identical" else "DIFFERENT", lean_calls, t1 - t0, t2 - t1))
 }
 res <- do.call(rbind, rows)
 dir.create(dirname(out), recursive = TRUE, showWarnings = FALSE)
 utils::write.csv(res, out, row.names = FALSE)
 cat(sprintf("%d tables, %d different\n", nrow(res), sum(!res$identical)))
-if (any(!res$identical) || any(res$lean_calls == 0L)) quit(status = 1L)
+if (any(!res$identical) || any(res$lean_calls == 0L) || any(!res$workers_ok)) quit(status = 1L)
