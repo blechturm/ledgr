@@ -696,8 +696,9 @@ CRAN release.
   builds the expected-session mask and the terminal planes one instrument
   and knowledge range at a time inside the preparation loop of
   `ledgr_history_compute_feature_series()`. On the 500 x 1,260 admission
-  fixture it costs about 80 ms of a 570 ms preparation (measured while stage
-  3 held it in a separate helper; stage 3 was dropped). It is an R-level loop over
+  fixture it costs about 80 to 100 ms of a preparation of about 0.6 s
+  (`dev/bench/v0_2_3_cut24_feature/probes_ldg3265/`, descriptive; measured
+  while stage 3 held it in a separate helper; stage 3 was dropped). It is an R-level loop over
   instruments on a preparation path (optimization coding style); the
   candidate is one panel-wide computation of the expected and terminal
   planes, read per instrument by index. Measure first, then a later

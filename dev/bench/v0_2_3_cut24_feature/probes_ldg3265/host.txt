@@ -1,0 +1,4 @@
+date 2026-11-26 14:07:30 CET
+R R version 4.6.1 (2026-06-24 ucrt)
+platform x86_64-w64-mingw32
+power plan Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)

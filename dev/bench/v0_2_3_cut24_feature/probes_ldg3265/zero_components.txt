@@ -1,0 +1,5 @@
+lib ldg3265-ffe19415 n_inst 500 n_ranges 500 defs 2 
+finite once (ms): 2 
+gate x n (ms): 6.666667 
+masks x n (ms): 96.66667 
+ranges x n (ms): 3.333333 

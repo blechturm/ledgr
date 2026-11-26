@@ -25,11 +25,12 @@ and no second engine change is required (LDG-3266's dropped-branch item).
 - Removed from the design records: the contract bullet replacement and map
   row R36 (back to 2dee0f98); the census rows of the stage-3 helpers
   (dev/feature_parity/census.csv back to 2dee0f98).
-- Retained, inert without the direct path: the checker's stage-3
-  components (gate_expected, gate, shadow, calculated_count, prep_direct),
-  the five stage-3 faults (not run: "the library has no direct path"), the
-  63 pin-derived corpus cases and gate_expected.csv; dev/feature_parity/
-  README.md says so. The rejected implementations stay in history: dc70fc0d,
+- Retained and still active on the final library: gate_expected (the
+  harness's own predicate, compared with gate_expected.csv), calculated_count
+  and the 63 pin-derived corpus cases. Retained and inactive without the
+  direct path: the gate and shadow observations, prep_direct and the five
+  stage-3 faults (not run: "the library has no direct path");
+  dev/feature_parity/README.md says so (close review round 1, F3). The rejected implementations stay in history: dc70fc0d,
   ffe19415, b56eaee9.
 
 ## Proofs (run_proofs.R, outputs in this folder)

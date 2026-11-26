@@ -157,8 +157,10 @@ Stage 3 was dropped at measurement (Cut 24, LDG-3265: decision 7's
 retention test failed on three records). The released library has no
 direct path and no debug flag: `gate` and `shadow` are empty on every arm,
 `--debug=0` is the only meaningful setting, and the stage-3 faults below
-do not run. The components and faults stay so a later direct path is
-checked by the same harness.
+do not run. gate_expected, calculated_count and the 63 added corpus cases
+stay active checks of the stage-2 path; the gate and shadow components,
+prep_direct and the stage-3 faults stay so a later direct path is checked
+by the same harness.
 
 Stage-3 faults (`faults.R`, run only on a library with the direct path):
 `wrong_admission` (gate), `missing_treatment` (gate),
