@@ -1,0 +1,91 @@
+runner: pin_changed_value fault changed_value - 694 cases, 11791 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_moved_na fault moved_na - 694 cases, 11791 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_plane_reason fault plane_reason - 694 cases, 11791 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_refusal_class fault refusal_class - 694 cases, 11791 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_narrowed_callback fault narrowed_callback - 694 cases, 10931 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_reordered_causality fault reordered_causality - 694 cases, 11791 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_wrong_route fault wrong_route - 694 cases, 11359 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_all_fields fault all_fields - 694 cases, 11791 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_wrong_admission fault wrong_admission - 694 cases, 11791 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_missing_treatment fault missing_treatment - 694 cases, 11523 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_missing_raw_sharing fault missing_raw_sharing - 694 cases, 11791 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_wrong_payload_refusal fault wrong_payload_refusal - 694 cases, 11791 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+runner: pin_count_only fault count_only - 694 cases, 11791 observations
+There were 50 or more warnings (use warnings() to see the first 50)
+               control expected_exit exit  expected_signal
+         changed_value             1    1           values
+              moved_na             1    1               na
+          plane_reason             1    1           planes
+         refusal_class             1    1    refusal_class
+     narrowed_callback             1    1         callback
+   reordered_causality             1    1        causality
+           wrong_route             1    1            route
+            all_fields             1    1   treated_fields
+       wrong_admission             1    1             gate
+     missing_treatment             1    1             gate
+   missing_raw_sharing             1    1            route
+ wrong_payload_refusal             1    1          refusal
+            count_only             1    1 calculated_count
+           missing_arm             2    2                 
+          missing_case             2    2                 
+     missing_component             2    2                 
+       cleared_treated             1    1   treated_fields
+     causality_dropped             1    1   treated_fields
+  shared_observer_loss             1    1   treated_fields
+       pin_against_pin             0    0                 
+                                                                                                                                                                                                                                  signals
+                                                                                                                                                              history,precompute,proj,reads,routes_equal,routes_equal,routes_equal,values
+                                                                                                                                                           history,na,precompute,proj,reads,routes_equal,routes_equal,routes_equal,values
+                                                                                                                                                                                                             planes,precompute,proj,reads
+                                                                                                                                                                                                      refusal,refusal_class,refusal_class
+                                                        calculated_count,callback,causality,handoffs,history,na,planes,precompute,proj,reads,refusal,refusal_class,refusal_class,route,route,routes_equal,routes_equal,sweep_table,values
+                                                                                                                                                                                                   callback,causality,refusal,route,route
+ callback,causality,certification,certification,field_union,field_union,gate,handoffs,history,na,planes,precompute,proj,reads,refusal,refusal_class,refusal_class,route,route,routes_equal,routes_equal,sweep_table,treated_fields,values
+                                                                                                                                                                                                                           treated_fields
+                                                                                                                                                                                                                                     gate
+                                                calculated_count,callback,causality,gate,handoffs,history,na,planes,precompute,proj,reads,refusal,refusal_class,refusal_class,route,route,routes_equal,routes_equal,treated_fields,values
+                                                                                                                                                                                                                              route,route
+                                                                                                                                                                                                                                  refusal
+                                                                                                                                                                                                                         calculated_count
+                                                                                                                                                                                                                                         
+                                                                                                                                                                                                                                         
+                                                                                                                                                                                                                                         
+                                                                                                                                                                                                                           treated_fields
+                                                                                                                                                                                                                           treated_fields
+                                                                                                                                                                                                            treated_fields,treated_fields
+                                                                                                                                                                                                                                         
+   ok
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+fault signal sets pairwise distinct: TRUE 
+FAULTS PASS

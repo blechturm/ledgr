@@ -1,0 +1,12 @@
+check.R --pin=<pin> --candidate=<moved_na>: exit 1
+SIGNAL routes_equal 144  (candidate differs from the corpus; first: ttr_route | empty|param:bbands_dn_pf3123f19)
+SIGNAL history 10  (candidate differs from pin; first: e2e | bar_native|run)
+SIGNAL na 197  (candidate differs from pin; first: compute | hostile_carry2|data_start|close)
+SIGNAL precompute 2  (candidate differs from pin; first: e2e | bar_native|precompute)
+SIGNAL proj 197  (candidate differs from pin; first: compute | hostile_carry2|data_start|close)
+SIGNAL reads 197  (candidate differs from pin; first: compute | hostile_carry2|data_start|close)
+SIGNAL routes_equal 144  (candidate differs from pin; first: ttr_route | panel_carry5|ttr_rsi_3)
+SIGNAL values 341  (candidate differs from pin; first: compute | hostile_carry2|data_start|close)
+SIGNAL routes_equal 144  (candidate has FALSE; first: ttr_route | panel_carry5|ttr_rsi_3)
+cases 694 (refusing on the pin 99), observations pin 11791 candidate 11791
+CHECK FAIL: 9 signal(s)

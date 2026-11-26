@@ -8285,7 +8285,7 @@ tickets:
   - id: "LDG-3264"
     title: "Stage-3 mechanism observations in the permanent checker"
     workstream: 44
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3263"]
@@ -8301,7 +8301,11 @@ tickets:
       - "Observations come from execution seams, not from a product-reported flag; no production counter exists only for tests"
       - "Missing-arm, case and component refusals, pin-self parity and every applicable existing fault control kept; new controls for wrong admission, missing treatment, missing raw sharing, a same-class wrong-payload refusal and a count-only calculated_count change each fail the checker (transcripts committed); missing traces on refusing cases still fail; if a certification-refusal case is added to the corpus, its certification is observed inside the refusal boundary"
       - "No semantic expectation regenerated from the candidate"
-    evidence: []
+    evidence:
+      - "Replaced only (harness 931c2499; reason: the direct path removes treatment hand-offs and adds debug shadow work; on the old checker the candidate differed from the pin only in handoffs and treated_fields with debug off and in route with debug on, LDG-3263): handoffs is compared structurally (reach and causality fields equal to the pin's, inputs observed plus untreated ranges equal to the pin's inputs observed) and the treated-fields rule counts untreated ranges; gate, gate_expected, shadow and calculated_count are added. route now counts production work only and is still compared with the pin and the corpus; values, NA, planes, projections, history reads, certification, field union, callback frames, causality, read-entry and TTR-route observations, refusals and RNG are compared exactly as before. dev/feature_parity/evidence/ldg3264/COMMANDS.md."
+      - "Observation from execution seams: gate choices at ledgr_history_feature_direct() and ledgr_history_feature_direct_inputs(), shadow work at ledgr_history_feature_calculate() inside the debug comparison, calculated counts at the causality seam (innermost); all are wrappers the runner installs in its own process. The expectation is the harness's own predicate on the arm's substrate primitives taken before any fault or recorder, written from the pin into the committed gate_expected.csv (288 cases with admitted cells). No production counter or product-reported flag."
+      - "Controls (faults.txt, faults/faults.csv, transcripts per control): FAULTS PASS, signal sets pairwise distinct. New: wrong_admission fails with gate only (values unchanged), missing_treatment with gate and what it breaks, missing_raw_sharing with route, wrong_payload_refusal with refusal only (same class, changed identifying field; the admitted runSD(n = 1) corpus cases), count_only with calculated_count only. Kept: the eight existing faults, missing arm, case and component (exit 2), cleared treated fields, dropped causality phase and shared observer loss on refusing cases (treated_fields), pin against pin (exit 0). Checks: pin against pin repeat, candidate debug 0 and debug 1 each CHECK PASS on 694 cases (99 refusing), 11,791 observations per arm; 3,786 direct cells in 272 cases, reached by run, sweep, precompute and inspection on both clocks. No certification-refusal case was added."
+      - "No semantic expectation from the candidate: corpus_expected.csv regenerated from the pin run with 315 rows added for the 63 new cases and none removed or changed (git diff: 315 insertions, 0 deletions); gate_expected.csv from the pin's harness predicate; a harness predicate bug found on the first pin run (a stray entry for an instrument with no admitted cell) was fixed and the pin rerun before anything was committed."
   - id: "LDG-3265"
     title: "Measure stage 3 and decide retention"
     workstream: 44
