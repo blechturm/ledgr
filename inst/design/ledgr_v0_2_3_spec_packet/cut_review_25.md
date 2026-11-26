@@ -1,6 +1,10 @@
 CHANGES_REQUIRED
 Mode: Type 2 cut review, before implementation; fresh reviewer at the supplied fc66c0f8 checkout.
 
+**Role:** record
+**Status:** accepted
+**Authority:** Non-binding review record. Its disposition is recorded in Cut 25 cut_review in tickets.yml.
+
 The three chores follow the maintainer's direction. TTR catalogue rows are within Section 6's decision: it says an undefined indicator cell reports NA, without a custom-indicator exception. Keeping the common normaliser is faithful; no maintainer question is needed. The required corrections concern an omitted existing test change, the oracle's fault proof, and the reach and coverage of the NA change.
 
 R1. Required: name the existing NA-refusal expectation that must change.

@@ -1,6 +1,10 @@
 PASS
 Mode: focused Type 2 re-review of Cut 25 revision 2 at abfd3f9c; round 1 findings R1-R6 only, plus material new contradictions or proof gaps.
 
+**Role:** record
+**Status:** accepted
+**Authority:** Non-binding review record. Its disposition is recorded in Cut 25 cut_review in tickets.yml.
+
 R1: Applied faithfully and completely. The existing na_late_def setup and literal recovery result, stated reason, unchanged surrounding expectations, transcripts and test-change allowance are specified in inst/design/ledgr_v0_2_3_spec_packet/tickets.yml:4175 and :8727; LDG-3269's scope incorporates decision 3 at :8716.
 R2: Applied faithfully and completely. Final-library product faults use the frozen declaration after an unfaulted passing control; required signals and pairwise distinction remain; pin-only controls use --declared=none; per-control options and library are recorded in inst/design/ledgr_v0_2_3_spec_packet/tickets.yml:4222, :4237, :8726 and :8742.
 R3: Applied faithfully and completely. Exact case keys, complete unique components, independent semantics before recording, four separate declared-case mutations, undeclared/refusal controls, malformed declarations and frozen negative-control expectations are required in inst/design/ledgr_v0_2_3_spec_packet/tickets.yml:4203, :8726 and :8727; LDG-3270 requires every decision 4 control at :8742.
