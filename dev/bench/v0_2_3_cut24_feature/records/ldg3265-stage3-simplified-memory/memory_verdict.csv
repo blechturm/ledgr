@@ -1,0 +1,5 @@
+"cell","median_base","median_candidate","statistic","exchange_L","exchange_U","own_noise","extra_lift_base","extra_lift_candidate","noise","sensitive","verdict","overall"
+"500x1260_run",266528608,266565136,36528,-36528,36528,36528,4296,1384,0,TRUE,"exceeds","inconclusive"
+"500x1260_sweep",266583664,266675264,91600,-91600,91600,91600,6912,-4248,0,FALSE,"inconclusive","inconclusive"
+"1166x252_run",170884872,141116504,-29768368,-29768368,29768368,29768368,8389968,8388616,0,TRUE,"retain_ok","inconclusive"
+"1166x252_sweep",205975080,182058216,-23916864,-23916864,23916864,23916864,8388760,8390472,0,TRUE,"retain_ok","inconclusive"

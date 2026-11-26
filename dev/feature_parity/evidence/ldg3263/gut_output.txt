@@ -1,0 +1,149 @@
+ledgr C:/Users/maxth/ledgr-wt/cut24-scratch/libs/ldg3263-dc70fc0d/ledgr engine 743b9e7fbec200f3 
+ substrate             set                  admitted_real admitted_gutted debug_on                     debug_off_vs_real                            
+ hostile_carry2        close                  0             0             ok                           same                                         
+ hostile_carry2        hl                     0             0             ok                           same                                         
+ hostile_carry2        hlc                    0             0             ok                           same                                         
+ hostile_carry2        hlcv                   0             0             ok                           same                                         
+ hostile_carry2        all_cert               0             0             ok                           same                                         
+ hostile_carry2        catalogue_rows         0             0             ok                           same                                         
+ hostile_carry2        stable_late            0             0             ok                           same                                         
+ hostile_carry2        parameterized_single   0             0             ok                           same                                         
+ hostile_carry2        parameterized_bundle   0             0             ok                           same                                         
+ hostile_carry2        mixed                  0             0             ok                           same                                         
+ hostile_strict        close                  0             0             ok                           same                                         
+ hostile_strict        hl                     0             0             ok                           same                                         
+ hostile_strict        hlc                    0             0             ok                           same                                         
+ hostile_strict        hlcv                   0             0             ok                           same                                         
+ hostile_strict        all_cert               0             0             ok                           same                                         
+ hostile_strict        catalogue_rows         0             0             ok                           same                                         
+ hostile_strict        stable_late            0             0             ok                           same                                         
+ hostile_strict        parameterized_single   0             0             ok                           same                                         
+ hostile_strict        parameterized_bundle   0             0             ok                           same                                         
+ hostile_strict        mixed                  0             0             ok                           same                                         
+ hostile_outcarry      close                  0             0             ok                           same                                         
+ hostile_outcarry      hl                     0             0             ok                           same                                         
+ hostile_outcarry      hlc                    0             0             ok                           same                                         
+ hostile_outcarry      hlcv                   0             0             ok                           same                                         
+ hostile_outcarry      all_cert               0             0             ok                           same                                         
+ hostile_outcarry      catalogue_rows         0             0             ok                           same                                         
+ hostile_outcarry      stable_late            0             0             ok                           same                                         
+ hostile_outcarry      parameterized_single   0             0             ok                           same                                         
+ hostile_outcarry      parameterized_bundle   0             0             ok                           same                                         
+ hostile_outcarry      mixed                  0             0             ok                           same                                         
+ panel_carry5          close                 68           102             ledgr_feature_debug_mismatch real ok / gutted ledgr_invalid_feature_output
+ panel_carry5          hl                    24            36             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ panel_carry5          hlc                   15            30             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ panel_carry5          hlcv                   4            12             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ panel_carry5          all_cert             111           180             ledgr_feature_debug_mismatch real ok / gutted ledgr_invalid_feature_output
+ panel_carry5          catalogue_rows       178           288             ledgr_feature_debug_mismatch real ok / gutted ledgr_invalid_feature_output
+ panel_carry5          stable_late            4             6             ledgr_feature_debug_mismatch real ok / gutted ledgr_invalid_feature_output
+ panel_carry5          parameterized_single   7            12             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ panel_carry5          parameterized_bundle   8            12             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ panel_carry5          mixed                 92           138             ledgr_feature_debug_mismatch real ok / gutted ledgr_invalid_feature_output
+ panel_strict_outcarry close                 68           102             ledgr_feature_debug_mismatch real ok / gutted ledgr_invalid_feature_output
+ panel_strict_outcarry hl                    24            36             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ panel_strict_outcarry hlc                   15            30             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ panel_strict_outcarry hlcv                   4            12             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ panel_strict_outcarry all_cert             111           180             ledgr_feature_debug_mismatch real ok / gutted ledgr_invalid_feature_output
+ panel_strict_outcarry catalogue_rows       178           288             ledgr_feature_debug_mismatch real ok / gutted ledgr_invalid_feature_output
+ panel_strict_outcarry stable_late            4             6             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ panel_strict_outcarry parameterized_single   7            12             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ panel_strict_outcarry parameterized_bundle   8            12             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ panel_strict_outcarry mixed                 92           138             ledgr_feature_debug_mismatch real ok / gutted ledgr_invalid_feature_output
+ short                 close                 17            17             ok                           same                                         
+ short                 hl                     6             6             ok                           same                                         
+ short                 hlc                    5             5             ok                           same                                         
+ short                 hlcv                   2             2             ok                           same                                         
+ short                 all_cert              30            30             ok                           same                                         
+ short                 catalogue_rows        48            48             ok                           same                                         
+ short                 stable_late            1             1             ok                           same                                         
+ short                 parameterized_single   2             2             ok                           same                                         
+ short                 parameterized_bundle   2             2             ok                           same                                         
+ short                 mixed                 23            23             ok                           same                                         
+ empty                 close                 17            34             ledgr_feature_debug_mismatch real ok / gutted ledgr_invalid_feature_output
+ empty                 hl                     6            12             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ empty                 hlc                    5            10             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ empty                 hlcv                   2             4             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ empty                 all_cert              30            60             ledgr_feature_debug_mismatch real ok / gutted ledgr_invalid_feature_output
+ empty                 catalogue_rows        48            96             ledgr_feature_debug_mismatch real ok / gutted ledgr_invalid_feature_output
+ empty                 stable_late            1             2             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ empty                 parameterized_single   2             4             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ empty                 parameterized_bundle   2             4             ledgr_feature_debug_mismatch real ok / gutted simpleError                 
+ empty                 mixed                 23            46             ledgr_feature_debug_mismatch real ok / gutted ledgr_invalid_feature_output
+ message                                                                                                               
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+ Internal: the direct calculation of feature `sma_3` for instrument `P1` disagrees with the general path.              
+ Internal: the direct calculation of feature `aroon_aroonup` for instrument `P2` disagrees with the general path.      
+ Internal: the direct calculation of feature `atr_tr` for instrument `P1` disagrees with the general path.             
+ Internal: the direct calculation of feature `ttr_mfi_3` for instrument `P1` disagrees with the general path.          
+ Internal: the direct calculation of feature `sma_3` for instrument `P1` disagrees with the general path.              
+ Internal: the direct calculation of feature `sma_3` for instrument `P1` disagrees with the general path.              
+ Internal: the direct calculation of feature `ttr_sma_late` for instrument `P1` disagrees with the general path.       
+ Internal: the direct calculation of feature `ttr_rsi_3` for instrument `P1` disagrees with the general path.          
+ Internal: the direct calculation of feature `bbands_dn_pf3123f19` for instrument `P1` disagrees with the general path.
+ Internal: the direct calculation of feature `sma_3` for instrument `P1` disagrees with the general path.              
+ Internal: the direct calculation of feature `sma_3` for instrument `P1` disagrees with the general path.              
+ Internal: the direct calculation of feature `aroon_aroonup` for instrument `P2` disagrees with the general path.      
+ Internal: the direct calculation of feature `atr_tr` for instrument `P1` disagrees with the general path.             
+ Internal: the direct calculation of feature `ttr_mfi_3` for instrument `P1` disagrees with the general path.          
+ Internal: the direct calculation of feature `sma_3` for instrument `P1` disagrees with the general path.              
+ Internal: the direct calculation of feature `sma_3` for instrument `P1` disagrees with the general path.              
+ Internal: the direct calculation of feature `ttr_sma_late` for instrument `P1` disagrees with the general path.       
+ Internal: the direct calculation of feature `ttr_rsi_3` for instrument `P1` disagrees with the general path.          
+ Internal: the direct calculation of feature `bbands_dn_pf3123f19` for instrument `P1` disagrees with the general path.
+ Internal: the direct calculation of feature `sma_3` for instrument `P1` disagrees with the general path.              
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+                                                                                                                       
+ Internal: the direct calculation of feature `sma_3` for instrument `E` disagrees with the general path.               
+ Internal: the direct calculation of feature `aroon_aroonup` for instrument `E` disagrees with the general path.       
+ Internal: the direct calculation of feature `atr_tr` for instrument `E` disagrees with the general path.              
+ Internal: the direct calculation of feature `ttr_mfi_3` for instrument `E` disagrees with the general path.           
+ Internal: the direct calculation of feature `sma_3` for instrument `E` disagrees with the general path.               
+ Internal: the direct calculation of feature `sma_3` for instrument `E` disagrees with the general path.               
+ Internal: the direct calculation of feature `ttr_sma_late` for instrument `E` disagrees with the general path.        
+ Internal: the direct calculation of feature `ttr_rsi_3` for instrument `E` disagrees with the general path.           
+ Internal: the direct calculation of feature `bbands_dn_pf3123f19` for instrument `E` disagrees with the general path. 
+ Internal: the direct calculation of feature `sma_3` for instrument `E` disagrees with the general path.               
+
+cases where the gutted gate admits more cells: 30 
+  of these, debug on refused with ledgr_feature_debug_mismatch: 30 
+  of these, debug off returned a different answer from the real gate: 30 
+cases with no extra admission (gut cannot act): 40 ; of these refusing with debug on: 0 
+GUT PASS: every extra admission is refused by the debug comparison

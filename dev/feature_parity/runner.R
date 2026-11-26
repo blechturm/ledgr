@@ -11,7 +11,11 @@
 #                     source tree's commit and status, R/ source hashes, R
 #                     and TTR versions, the fault (if any)
 #
-#   Rscript runner.R --arm=<label> (--lib=<library> | --source=<tree>) --out=<dir> [--fault=<name>]
+#   Rscript runner.R --arm=<label> (--lib=<library> | --source=<tree>) --out=<dir> --debug=<0|1> [--fault=<name>]
+#
+# --debug sets the arm's internal debug flag explicitly for the whole run
+# (Cut 24 decision 6) and is recorded in provenance.csv; an arm without the
+# flag (the pin, the cut base) accepts only --debug=0.
 #
 # Faults (decision 2) are deliberate changes applied to the loaded namespace
 # in this process only, for check.R's fault controls (faults.R).
@@ -27,8 +31,9 @@ local({
   lib <- arg("lib")
   src <- arg("source")
   fault <- arg("fault", "none")
-  if (is.null(out) || is.null(arg("arm")) || (is.null(lib) == is.null(src))) {
-    stop("usage: runner.R --arm=<label> (--lib=<dir> | --source=<dir>) --out=<dir> [--fault=<name>]")
+  debug <- arg("debug")
+  if (is.null(out) || is.null(arg("arm")) || (is.null(lib) == is.null(src)) || !identical(debug, "0") && !identical(debug, "1")) {
+    stop("usage: runner.R --arm=<label> (--lib=<dir> | --source=<dir>) --out=<dir> --debug=<0|1> [--fault=<name>]")
   }
   dir.create(out, recursive = TRUE, showWarnings = FALSE)
   if (!is.null(lib)) {
@@ -41,6 +46,11 @@ local({
   }
   ns <- asNamespace("ledgr")
   stopifnot(requireNamespace("TTR", quietly = TRUE), requireNamespace("digest", quietly = TRUE))
+  if (exists("local_ledgr_debug", envir = ns, inherits = FALSE)) {
+    ns$local_ledgr_debug(identical(debug, "1"))
+  } else if (identical(debug, "1")) {
+    stop("runner.R: this arm has no debug flag; only --debug=0 is valid")
+  }
 
   # ---- provenance ---------------------------------------------------------
   marker <- function(dir) {
@@ -61,15 +71,25 @@ local({
   }
   prov <- data.frame(
     field = c("arm", "library", "source", "namespace_path", "installed_marker", "source_commit",
-              "source_status_R", "r_source_hashes", "r_version", "ttr_version", "fault", "field_selector"),
+              "source_status_R", "r_source_hashes", "r_version", "ttr_version", "fault", "field_selector", "debug",
+              "direct_path"),
     value = c(arg("arm"), lib %||% "", src %||% "", getNamespaceInfo(ns, "path"),
               if (is.null(lib)) "" else marker(lib),
               if (is.null(src)) "" else paste(git("rev-parse", "HEAD"), collapse = ""),
               if (is.null(src)) "" else paste(git("status", "--porcelain", "--", "R"), collapse = ";"),
               r_hashes, R.version.string, as.character(utils::packageVersion("TTR")), fault,
-              exists("ledgr_history_feature_fields", envir = ns, inherits = FALSE)),
+              exists("ledgr_history_feature_fields", envir = ns, inherits = FALSE),
+              if (exists("ledgr_debug", envir = ns, inherits = FALSE)) as.character(as.integer(ns$ledgr_debug())) else "0 (no flag)",
+              exists("ledgr_history_feature_direct", envir = ns, inherits = FALSE)),
     stringsAsFactors = FALSE)
   utils::write.csv(prov, file.path(out, "provenance.csv"), row.names = FALSE)
+  direct_path <- exists("ledgr_history_feature_direct", envir = ns, inherits = FALSE)
+  # The substrate primitives the harness's own gate predicate reads (below),
+  # taken before any fault or recorder replaces a binding.
+  pristine <- mget(c("ledgr_precompute_feature_def_from_indicator", "ledgr_history_feature_bounds",
+                     "ledgr_feature_certify", "ledgr_history_feature_ranges",
+                     "ledgr_history_substrate_expected_at", "ledgr_history_substrate_terminal_planes"),
+                   envir = ns)
 
   set_binding <- function(name, value) {
     unlockBinding(name, ns)
@@ -80,6 +100,15 @@ local({
     orig <- get(name, envir = ns)
     set_binding(name, make(orig))
   }
+
+  # The calculated-count matrix as the causality probe receives it (Cut 24
+  # LDG-3264; cut review 24, R5). Installed first, so it sits innermost and
+  # sees what any fault hands the probe.
+  wrap("ledgr_history_feature_causality", function(orig) function(substrate, certified, bounds,
+                                                                  calculated_count, values) {
+    rec$calculated_count <- c(rec$calculated_count, digest::digest(calculated_count, algo = "sha256"))
+    orig(substrate, certified, bounds, calculated_count, values)
+  })
 
   # ---- faults (applied before the recorders, so the recorders see them) ----
   first_finite <- function(res, f) {
@@ -121,6 +150,41 @@ local({
       wrap("ledgr_history_feature_fields", function(orig) function(...) {
         c("open", "high", "low", "close", "volume") })
     },
+    # Stage-3 controls (Cut 24 LDG-3264, synthesis rule 11); they need a
+    # library with the direct path. wrong_admission: the gate rejects the
+    # first cell it admits in each range (values unchanged; only the gate
+    # observation can show it).
+    wrong_admission = wrap("ledgr_history_feature_gate", function(orig) function(...) {
+      res <- orig(...)
+      if (any(res)) res[[which(res)[[1L]]]] <- FALSE
+      res }),
+    # missing_treatment: every range that needs the general path gets the
+    # untreated inputs the direct path reads (its masks kept), as if the
+    # shortcut skipped treatment for a fallback instrument.
+    missing_treatment = wrap("ledgr_history_feature_inputs", function(orig) function(substrate, instrument_idx,
+                                                                                      prefix_end, cutoff, fields, ...) {
+      res <- orig(substrate, instrument_idx, prefix_end, cutoff, fields, ...)
+      untreated <- ns$ledgr_history_feature_direct_inputs(substrate, instrument_idx, prefix_end, fields)
+      res$raw <- untreated$raw
+      res$treated <- untreated$treated
+      res$carried <- lapply(res$carried, function(x) x & FALSE)
+      res }),
+    # missing_raw_sharing: each direct cell gets a cache of its own.
+    missing_raw_sharing = wrap("ledgr_history_feature_direct", function(orig) function(cert, inputs, calc_from,
+                                                                                        output_carry = NULL, cache = NULL) {
+      orig(cert, inputs, calc_from, output_carry, new.env(hash = TRUE, parent = emptyenv())) }),
+    # wrong_payload_refusal: a direct cell's refusal keeps its class and
+    # message but carries a changed identifying field.
+    wrong_payload_refusal = wrap("ledgr_history_feature_direct", function(orig) function(...) {
+      tryCatch(orig(...), error = function(e) {
+        e$feature_id <- paste0(e$feature_id %||% "", "_changed")
+        stop(e) }) }),
+    # count_only: every positive calculated count is one higher at the
+    # causality seam; which.max and the sampled positions are unchanged.
+    count_only = wrap("ledgr_history_feature_causality", function(orig) function(substrate, certified, bounds,
+                                                                                  calculated_count, values) {
+      calculated_count[calculated_count > 0L] <- calculated_count[calculated_count > 0L] + 1L
+      orig(substrate, certified, bounds, calculated_count, values) }),
     stop("unknown fault: ", fault))
 
   # ---- recorders ----------------------------------------------------------
@@ -138,7 +202,19 @@ local({
     rec$in_causality <- FALSE
     rec$in_read <- FALSE
     rec$handoff <- c(prep_reached = 0L, prep_seen = 0L, causality_checks = 0L,
-                     causality_reached = 0L, causality_seen = 0L)
+                     causality_reached = 0L, causality_seen = 0L, prep_direct = 0L)
+    # Stage 3 (Cut 24 LDG-3264): per preparation, the cells the direct path
+    # computed and the ranges it left untreated, as observed at its seams;
+    # the harness's own expectation of both; the debug shadow's work, kept
+    # out of the route; the calculated-count matrices.
+    rec$prep <- 0L
+    rec$gate <- character()
+    rec$gate_expected <- character()
+    rec$in_checked <- FALSE
+    rec$in_shadow <- FALSE
+    rec$quiet <- FALSE
+    rec$shadow <- c(cells = 0L, strict_sma = 0L, ttr_raw_call = 0L, ttr_call = 0L, series_fn = 0L, fn = 0L)
+    rec$calculated_count <- character()
   }
   reset()
   phase <- function() if (isTRUE(rec$in_causality)) "causality" else "prep"
@@ -182,22 +258,112 @@ local({
     on.exit(rec$in_causality <- old)
     orig(...)
   })
+  # Route counts are production work: the debug shadow's calls go to its own
+  # counts, and the harness's gate predicate is not counted at all.
+  tally <- function(key) {
+    if (isTRUE(rec$quiet)) return(invisible())
+    if (isTRUE(rec$in_shadow)) {
+      rec$shadow[[key]] <- rec$shadow[[key]] + 1L
+    } else {
+      rec$count[[key]] <- rec$count[[key]] + 1L
+    }
+  }
   counted <- function(name, key) wrap(name, function(orig) function(...) {
-    rec$count[[key]] <- rec$count[[key]] + 1L
+    tally(key)
     orig(...)
   })
   counted("ledgr_strict_sma_series", "strict_sma")
   counted("ledgr_ttr_raw_call", "ttr_raw_call")
   counted("ledgr_ttr_call", "ttr_call")
   callback <- function(name, key) wrap(name, function(orig) function(f, bars_df, params) {
-    rec$count[[key]] <- rec$count[[key]] + 1L
-    if (isTRUE(rec$custom)) {
+    tally(key)
+    if (isTRUE(rec$custom) && !isTRUE(rec$quiet)) {
       rec$frames <- c(rec$frames, paste0(paste(names(bars_df), collapse = ","), "#", nrow(bars_df)))
     }
     orig(f, bars_df, params)
   })
   callback("ledgr_call_feature_series_fn", "series_fn")
   callback("ledgr_call_feature_fn", "fn")
+
+  # ---- stage 3: gate choices, untreated ranges, debug shadow (LDG-3264) ----
+  # The harness's own conservative predicate (feature-engine stages synthesis
+  # rule 6), computed from the arm's substrate primitives (taken before any
+  # fault or recorder) on each preparation's own arguments, never from the
+  # candidate's gate: per preparation, the admitted cells in instrument and
+  # definition order, and the instruments whose every cell is admitted (the
+  # ranges a debug-off preparation leaves untreated). Run on the pin, it
+  # gives the committed gate_expected.csv.
+  gate_predicate <- function(substrate, definitions, calculation_start = NULL, calculation_end = NULL) {
+    rec$quiet <- TRUE
+    on.exit(rec$quiet <- FALSE)
+    none <- list(cells = character(), untreated = character())
+    if (!length(definitions)) return(none)
+    defs <- lapply(definitions, function(d) {
+      if (inherits(d, "ledgr_indicator")) pristine$ledgr_precompute_feature_def_from_indicator(d) else d
+    })
+    bounds <- pristine$ledgr_history_feature_bounds(substrate, calculation_start, calculation_end)
+    if (bounds$from > bounds$to) return(none)
+    certs <- tryCatch(lapply(defs, pristine$ledgr_feature_certify), error = function(e) NULL)
+    if (is.null(certs)) return(none)
+    gated <- vapply(certs, function(cert) cert$certification %in% c("builtin", "catalogue"), logical(1))
+    if (!any(gated)) return(none)
+    calc <- seq.int(bounds$from, bounds$to)
+    prefix <- seq_len(bounds$to)
+    cutoff <- substrate$axis[[bounds$to]]
+    out <- none
+    for (i in seq_along(substrate$instrument_ids)) {
+      if (length(pristine$ledgr_history_feature_ranges(substrate, i, bounds$from, bounds$to)$start) != 1L) next
+      expected <- pristine$ledgr_history_substrate_expected_at(substrate, cutoff, prefix, i)[1L, calc]
+      asserted <- pristine$ledgr_history_substrate_terminal_planes(substrate, cutoff, prefix, i)$asserted
+      if (!all(expected) || any(asserted)) next
+      admitted <- gated & vapply(certs, function(cert) {
+        all(vapply(cert$declarations$required_fields, function(f) all(is.finite(substrate$bars[[f]][i, calc])),
+                   logical(1)))
+      }, logical(1))
+      if (!any(admitted)) next
+      id <- substrate$instrument_ids[[i]]
+      out$cells <- c(out$cells, paste0(vapply(certs[admitted], function(cert) cert$def$id, ""), "@", id))
+      if (all(admitted)) out$untreated <- c(out$untreated, id)
+    }
+    out
+  }
+  wrap("ledgr_history_compute_feature_series", function(orig) function(substrate, definitions,
+                                                                      calculation_start = NULL,
+                                                                      calculation_end = NULL) {
+    rec$prep <- rec$prep + 1L
+    expect <- gate_predicate(substrate, definitions, calculation_start, calculation_end)
+    rec$gate_expected <- c(rec$gate_expected,
+      paste0("#", rec$prep, " cells=", paste(expect$cells, collapse = ","),
+             " untreated=", paste(expect$untreated, collapse = ",")))
+    orig(substrate, definitions, calculation_start, calculation_end)
+  })
+  if (direct_path) {
+    wrap("ledgr_history_feature_direct", function(orig) function(cert, inputs, ...) {
+      rec$gate <- c(rec$gate, paste0("#", rec$prep, " cell=", cert$def$id, "@", inputs$instrument_id))
+      orig(cert, inputs, ...)
+    })
+    wrap("ledgr_history_feature_direct_inputs", function(orig) function(substrate, instrument_idx, ...) {
+      rec$handoff[["prep_direct"]] <- rec$handoff[["prep_direct"]] + 1L
+      rec$gate <- c(rec$gate, paste0("#", rec$prep, " untreated=", substrate$instrument_ids[[instrument_idx]]))
+      orig(substrate, instrument_idx, ...)
+    })
+    wrap("ledgr_history_feature_direct_checked", function(orig) function(...) {
+      old <- rec$in_checked
+      rec$in_checked <- TRUE
+      on.exit(rec$in_checked <- old)
+      orig(...)
+    })
+    # Inside the debug comparison the product's cell runs through the direct
+    # calculator; the general calculator there is the shadow.
+    wrap("ledgr_history_feature_calculate", function(orig) function(...) {
+      if (isTRUE(rec$in_checked) && !isTRUE(rec$in_shadow)) {
+        rec$in_shadow <- TRUE
+        rec$shadow[["cells"]] <- rec$shadow[["cells"]] + 1L
+        on.exit(rec$in_shadow <- FALSE)
+      }
+      orig(...)
+    })
+  }
   custom_scope <- function(name) wrap(name, function(orig) function(cert, ...) {
     old <- rec$custom
     rec$custom <- identical(cert$certification, "custom")
@@ -243,6 +409,10 @@ local({
     emit(family, case, "causality", dig(rec$causality))
     emit(family, case, "treated_fields", paste(sort(unique(rec$treated), method = "radix"), collapse = ";"))
     emit(family, case, "handoffs", paste(names(rec$handoff), rec$handoff, sep = "=", collapse = ";"))
+    emit(family, case, "gate_expected", paste(rec$gate_expected, collapse = ";"))
+    emit(family, case, "gate", paste(rec$gate, collapse = ";"))
+    emit(family, case, "shadow", paste(names(rec$shadow), rec$shadow, sep = "=", collapse = ";"))
+    emit(family, case, "calculated_count", dig(rec$calculated_count))
     if (inherits(value, "oracle_refusal")) {
       emit(family, case, "refusal", dig(value[[1L]]))
       emit(family, case, "refusal_class", value[[1L]]$class[[1L]])

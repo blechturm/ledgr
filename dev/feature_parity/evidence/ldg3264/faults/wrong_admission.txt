@@ -1,0 +1,4 @@
+check.R --pin=<pin> --candidate=<wrong_admission>: exit 1
+SIGNAL gate 264  (candidate gate choices differ from gate_expected.csv; first: compute | panel_carry5|data_start|close)
+cases 694 (refusing on the pin 99), observations pin 11791 candidate 11791
+CHECK FAIL: 1 signal(s)

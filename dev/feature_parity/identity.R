@@ -20,7 +20,11 @@
 # reused and a freshly prepared sweep's result tables; the stored sweep and
 # run stay readable with their recorded engine version.
 #
-#   Rscript identity.R --lib=<library> --out=<dir> [--save-store=1] [--old=<dir of the other arm>]
+# --debug=1 sets the arm's internal debug flag for the whole record (Cut 24
+# decision 6; LDG-3262 shows the identities equal with debug on and off);
+# the default 0 also runs on arms without the flag.
+#
+#   Rscript identity.R --lib=<library> --out=<dir> [--save-store=1] [--old=<dir of the other arm>] [--debug=0|1]
 local({
   argv <- commandArgs(TRUE)
   arg <- function(name, default = NULL) {
@@ -29,6 +33,13 @@ local({
   }
   suppressPackageStartupMessages(library(ledgr, lib.loc = normalizePath(arg("lib"), winslash = "/")))
   ns <- asNamespace("ledgr")
+  debug <- arg("debug", "0")
+  if (!debug %in% c("0", "1")) stop("identity.R: --debug must be 0 or 1")
+  if (exists("local_ledgr_debug", envir = ns, inherits = FALSE)) {
+    ns$local_ledgr_debug(identical(debug, "1"))
+  } else if (identical(debug, "1")) {
+    stop("identity.R: this arm has no debug flag; only --debug=0 is valid")
+  }
   here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]),
                                 winslash = "/"))
   out <- arg("out")

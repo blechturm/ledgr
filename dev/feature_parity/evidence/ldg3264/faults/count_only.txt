@@ -1,0 +1,4 @@
+check.R --pin=<pin> --candidate=<count_only>: exit 1
+SIGNAL calculated_count 396  (candidate differs from pin; first: compute | hostile_carry2|data_start|close)
+cases 694 (refusing on the pin 99), observations pin 11791 candidate 11791
+CHECK FAIL: 1 signal(s)

@@ -1,0 +1,24 @@
+Cells (ratio = median candidate / median base; PASS when ratio <= bound):
+             cell   clock    bound n_candidate n_base median_candidate median_base     ratio verdict
+      run_10x7200 feature 1.013983           8      8         2.539907    2.903444 0.8747912    PASS
+    sweep_10x7200 feature 1.014596           8      8         2.628263    3.222888 0.8154992    PASS
+     run_500x1260 feature 1.012559           8      8         3.846941    5.731300 0.6712162    PASS
+   sweep_500x1260 feature 1.006777           8      8         4.243787    6.801291 0.6239679    PASS
+     run_1166x252 feature 1.006836           8      8         4.149813    5.910196 0.7021446    PASS
+   sweep_1166x252 feature 1.007056           8      8         3.815687    6.039225 0.6318174    PASS
+      certify_run certify 1.009680           8      8         2.658939    2.637914 1.0079705    PASS
+    certify_sweep certify 1.009840           8      8         2.951523    2.946298 1.0017734    PASS
+   adm_custom_run feature 1.004165           8      8         5.615082    5.562227 1.0095026    FAIL
+ adm_custom_sweep feature 1.007850           8      8         5.726710    5.596762 1.0232184    FAIL
+     adm_zero_run feature 1.007827           8      8         6.013765    5.804608 1.0360331    FAIL
+   adm_zero_sweep feature 1.009767           8      8         7.057073    6.902735 1.0223589    FAIL
+      adm_low_run feature 1.008845           8      8         5.887998    5.882222 1.0009818    PASS
+    adm_low_sweep feature 1.026042           8      8         7.022145    6.895755 1.0183287    PASS
+      adm_pit_run feature 1.004957           8      8         2.940499    5.632287 0.5220790    PASS
+    adm_pit_sweep feature 1.014036           8      8         2.885986    6.736213 0.4284285    PASS
+
+CHECK FAIL (4): ratio above bound 4
+  ratio above bound: adm_custom_run ratio 1.009503 > 1.004165
+  ratio above bound: adm_custom_sweep ratio 1.023218 > 1.00785
+  ratio above bound: adm_zero_run ratio 1.036033 > 1.007827
+  ratio above bound: adm_zero_sweep ratio 1.022359 > 1.009767

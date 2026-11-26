@@ -1,0 +1,19 @@
+engine 743b9e7fbec200f361c44e599cdc639821aa1d28711f741a428c90c5201a0a04 
+debug-flag: ...................
+feature-direct-path: ........................................W......................W...WW.............
+fingerprint-stability: ..........
+strict-feature-acceleration: ................................................................
+strict-ttr-cleanup: .....................................
+
+══ Warnings ════════════════════════════════════════════════════════════════════
+1. [Cut 24 direct] refusals keep the general path's class, payload and order ('test-feature-direct-path.R:311:3') - (co-)variance is not defined for one observation; returning NA
+
+2. [Cut 24 direct] the debug comparison fails closed on any single disagreement ('test-feature-direct-path.R:380:3') - (co-)variance is not defined for one observation; returning NA
+
+3. [Cut 24 direct] an admitted preparation refusal precedes candidates and writes nothing ('test-feature-direct-path.R:403:3') - (co-)variance is not defined for one observation; returning NA
+
+4. [Cut 24 direct] an admitted preparation refusal precedes candidates and writes nothing ('test-feature-direct-path.R:403:3') - (co-)variance is not defined for one observation; returning NA
+
+══ DONE ════════════════════════════════════════════════════════════════════════
+
+TARGETED: 5 files, 20 tests, 0 failed, 0 errors, 0 skipped

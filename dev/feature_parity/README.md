@@ -10,18 +10,19 @@ it lands.
 | `corpus.R` | substrates, definition sets, axes and public-entry fixtures (from `dev/spikes/feature_stage1_probe/fixtures.R`, extended with the RFC's case list) |
 | `runner.R` | one arm per fresh process: loads ledgr from a library (`--lib`) or a source tree (`--source`), runs every case, writes `observations.csv` and `provenance.csv` |
 | `check.R` | diffs a candidate's observations against the pin's and both against `corpus_expected.csv`; exit 0 pass, 1 difference (one `SIGNAL` line per differing component), 2 refusal (missing arm, case or component) |
-| `faults.R` | the fault controls: eight deliberate faults each exit 1 with their own signal (all_fields not run, and recorded so, on a library without the field selector, checked before running; any runner failure fails the driver); a missing arm, case or component refuses; a cleared treated-fields observation, a dropped causality phase, or the preparation observer's outputs lost on refusing cases in both arms fails; the pin against itself passes |
+| `faults.R` | the fault controls: eight deliberate faults, and on a library with the direct path five stage-3 faults (LDG-3264), each exit 1 with their own signal (all_fields not run, and recorded so, on a library without the field selector, checked before running; any runner failure fails the driver); a missing arm, case or component refuses; a cleared treated-fields observation, a dropped causality phase, or the preparation observer's outputs lost on refusing cases in both arms fails; the pin against itself passes |
 | `install_arm.R` | installs a commit as an arm (git archive, `R CMD INSTALL`) with its commit marker and R/ source hashes |
 | `corpus_expected.csv` | the corpus: every case, and each case's certification, field union, route, refusal class and TTR-route agreement as the pin produced them |
+| `gate_expected.csv` | per case and preparation, the cells the conservative gate admits and the instruments it leaves untreated, from the harness's own predicate on the pin (Cut 24 LDG-3264) |
 | `memory.R` | candidate 5's memory rule (LDG-3252): object bytes and peak R heap of sweep feature preparation in fresh children |
 | `census.R`, `census.csv` | the engine-version census (LDG-3253): the walk from the preparation roots and the replacement proof of every row |
 | `timing_launch.R` | starts the shared timing runner with its temporary directory outside AppData/Local/Temp |
 | `evidence/<ticket>/` | each ticket's commands, transcripts and the pin's observations under that ticket's harness |
 
-## Cases (631)
+## Cases (694)
 
-- `compute` (441): 7 substrates x 3 calculation starts (data start, a late
-  start, past the end) x 21 definition sets through
+- `compute` (504): 7 substrates x 3 calculation starts (data start, a late
+  start, past the end) x 24 definition sets through
   `ledgr_history_compute_feature_series()`. The measuring step's 6 x 3 x 15
   are included unchanged; added: an empty and a 12-bar instrument, every
   package catalogue row (all warmup rules and documented or derived
@@ -29,7 +30,10 @@ it lands.
   `requires_bars`, and an unregistered ohlc form beside a custom ohlc
   callback; and (close review round 1, F4) resolved parameterised forms
   (`ledgr_param()` through a feature map): single-output RSI and ATR, a
-  BBands bundle, and both beside a custom definition.
+  BBands bundle, and both beside a custom definition; and (Cut 24 LDG-3264)
+  an admitted refusing cell (TTR runSD with n = 1, admitted on the complete
+  instruments of the short and empty substrates) alone and competing with
+  a custom refusal in both definition orders.
 - `read_entry` (22): the single-definition read entry
   (`ledgr_history_feature_planes()`): the measuring step's 14 cases and the
   four resolved parameterised definitions on two substrates.
@@ -83,8 +87,8 @@ ID is compared only as agreement with its fixture.
 ## Commands
 
     Rscript dev/feature_parity/install_arm.R --repo=<git tree> --commit=<sha> --lib=<new dir>
-    Rscript dev/feature_parity/runner.R --arm=<label> --lib=<library> --out=<dir>
-    Rscript dev/feature_parity/runner.R --arm=<label> --source=<tree> --out=<dir>
+    Rscript dev/feature_parity/runner.R --arm=<label> --lib=<library> --out=<dir> --debug=<0|1>
+    Rscript dev/feature_parity/runner.R --arm=<label> --source=<tree> --out=<dir> --debug=<0|1>
     Rscript dev/feature_parity/check.R --pin=<pin out> --candidate=<candidate out>
     Rscript dev/feature_parity/faults.R --lib=<pin library> --pin=<pin out> --scratch=<dir> --evidence=<dir>
 
@@ -124,5 +128,46 @@ Cut 24 (LDG-3258 and LDG-3259) adds:
     Rscript dev/feature_parity/emitted_pin_controls.R --record=<identity.R out dir> --scratch=<dir>
     Rscript dev/feature_parity/counts.R --lib=<library> --out=<dir> [--write-expected] [--fault=count]
     Rscript dev/feature_parity/certification_outcomes.R --lib=<library> (--write | --out=<csv>)
+
+Cut 24 stage 3 (LDG-3264, synthesis rule 11; the test-change reason: the
+direct path removes treatment hand-offs and adds debug shadow work, so
+these mechanism observations no longer equal the pin's as text) adds
+four components to every case and replaces three comparisons:
+- `gate_expected`: the harness's own conservative predicate (rule 6),
+  computed from the arm's substrate primitives taken before any fault or
+  recorder, on each preparation's own arguments; equal on every arm to the
+  committed `gate_expected.csv` (written from the pin with
+  `check.R --write-gate-expected=`).
+- `gate`: per preparation, the cells the direct calculator computed and
+  the instruments whose inputs it read untreated, observed at those seams.
+  An arm with the direct path must match the expectation exactly
+  (untreated instruments only with debug off; a refusing case may stop
+  early, so its observations are a prefix); an arm without it (the pin)
+  records none.
+- `shadow`: the debug shadow's work (cells and calls), kept out of
+  `route`, which counts production work only and still equals the pin.
+  Debug off: none; debug on: one shadow cell per direct cell.
+- `calculated_count`: the calculated-count matrices as the causality
+  probe receives them, recorded innermost; compared with the pin.
+- `handoffs` gains `prep_direct` (ranges read untreated); the reach and
+  causality fields must equal the pin's and inputs observed plus untreated
+  ranges the pin's inputs observed; the treated-fields rule counts
+  untreated ranges as observed hand-offs.
+Stage 3 was dropped at measurement (Cut 24, LDG-3265: decision 7's
+retention test failed on three records). The released library has no
+direct path and no debug flag: `gate` and `shadow` are empty on every arm,
+`--debug=0` is the only meaningful setting, and the stage-3 faults below
+do not run. gate_expected, calculated_count and the 63 added corpus cases
+stay active checks of the stage-2 path; the gate and shadow components,
+prep_direct and the stage-3 faults stay so a later direct path is checked
+by the same harness.
+
+Stage-3 faults (`faults.R`, run only on a library with the direct path):
+`wrong_admission` (gate), `missing_treatment` (gate),
+`missing_raw_sharing` (route), `wrong_payload_refusal` (refusal),
+`count_only` (calculated_count).
+
+    Rscript dev/feature_parity/check.R --pin=<pin out> --write-gate-expected=<csv>
+    Rscript dev/feature_parity/faults.R --lib=<candidate library> --pin=<pin out> --scratch=<dir> --evidence=<dir>
 
 Each ticket's exact commands and results are in `evidence/<ticket>/COMMANDS.md`.

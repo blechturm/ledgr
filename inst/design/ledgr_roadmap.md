@@ -250,7 +250,9 @@ order and cut implementation respectively.
   [inventory reconciliation](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/inventory_reconciliation.md).
   - **First CRAN release:** a version below 0.3.0. No version number is
     committed. Work bound to "the first CRAN release" keys on that release,
-    not on v0.2.3.
+    not on v0.2.3. Whether ledgr goes to CRAN at all is undecided
+    (maintainer, 2026-11-26); until then such work waits, and the
+    no-backward-compatibility rule holds.
   - **Caller RNG:** with `seed = NULL`, save and restore the caller's RNG
     around worker start and stop. This is the 2026-10-22 decision that missed
     its cut.

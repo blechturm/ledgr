@@ -1,0 +1,7 @@
+"cell","debug0_s","debug1_s","ratio_debug1_over_debug0","same_logical_result","label"
+"run_10x7200",0.1258,0.1524,1.211,TRUE,"descriptive: debug-on cost, not a decision statistic"
+"run_1166x252",0.5693,1.2037,2.114,TRUE,"descriptive: debug-on cost, not a decision statistic"
+"run_500x1260",0.378,0.7901,2.09,TRUE,"descriptive: debug-on cost, not a decision statistic"
+"sweep_10x7200",0.2292,0.3122,1.362,TRUE,"descriptive: debug-on cost, not a decision statistic"
+"sweep_1166x252",1.2541,3.0538,2.435,TRUE,"descriptive: debug-on cost, not a decision statistic"
+"sweep_500x1260",0.8509,1.9222,2.259,TRUE,"descriptive: debug-on cost, not a decision statistic"

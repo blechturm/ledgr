@@ -1,0 +1,4 @@
+     arm custom  zero
+1   base  0.436 0.583
+2   cand  0.433 0.599
+3 hybrid  0.427 0.592

@@ -1,0 +1,12 @@
+zero final-8f7c6977 version=0.0240 compute=0.6000 projection=0.0067 
+zero ldg3265-ffe19415 version=0.0240 compute=0.5833 projection=0.0100 
+zero ldg3265-b56eaee9 version=0.0250 compute=0.5833 projection=0.0067 
+zero final-8f7c6977 version=0.0230 compute=0.5833 projection=0.0067 
+zero ldg3265-ffe19415 version=0.0240 compute=0.5900 projection=0.0100 
+zero ldg3265-b56eaee9 version=0.0240 compute=0.5867 projection=0.0100 
+custom final-8f7c6977 version=0.0230 compute=0.4167 projection=0.0067 run_prep=0.4400 sweep_prep=0.4600 payload=0.4200 
+custom ldg3265-ffe19415 version=0.0240 compute=0.4233 projection=0.0100 run_prep=0.4567 sweep_prep=0.4633 payload=0.4267 
+custom ldg3265-b56eaee9 version=0.0240 compute=0.4167 projection=0.0100 run_prep=0.4433 sweep_prep=0.4633 payload=0.4233 
+custom final-8f7c6977 version=0.0240 compute=0.4000 projection=0.0067 run_prep=0.4433 sweep_prep=0.4533 payload=0.4167 
+custom ldg3265-ffe19415 version=0.0240 compute=0.4167 projection=0.0100 run_prep=0.4600 sweep_prep=0.4567 payload=0.4167 
+custom ldg3265-b56eaee9 version=0.0240 compute=0.4167 projection=0.0067 run_prep=0.4433 sweep_prep=0.4567 payload=0.4267 

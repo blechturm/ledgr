@@ -35,18 +35,27 @@ local({
   }
   faults <- c(changed_value = "values", moved_na = "na", plane_reason = "planes",
               refusal_class = "refusal_class", narrowed_callback = "callback",
-              reordered_causality = "causality", wrong_route = "route", all_fields = "treated_fields")
+              reordered_causality = "causality", wrong_route = "route", all_fields = "treated_fields",
+              # Stage 3 (Cut 24 LDG-3264): run only on a library with the direct path.
+              wrong_admission = "gate", missing_treatment = "gate", missing_raw_sharing = "route",
+              wrong_payload_refusal = "refusal", count_only = "calculated_count")
+  stage3 <- c("wrong_admission", "missing_treatment", "missing_raw_sharing", "wrong_payload_refusal", "count_only")
   # all_fields needs the field selector (candidate 2). Whether the library has
   # it is established before any run (re-review 1, G2): without it (the pin)
   # the fault is not run and is recorded as such; with it the fault must run
   # and be caught like every other. A runner failure fails the driver.
-  has_selector <- local({
-    ns <- loadNamespace("ledgr", lib.loc = normalizePath(arg("lib"), winslash = "/"))
-    exists("ledgr_history_feature_fields", envir = ns, inherits = FALSE)
-  })
+  ns_lib <- loadNamespace("ledgr", lib.loc = normalizePath(arg("lib"), winslash = "/"))
+  has_selector <- exists("ledgr_history_feature_fields", envir = ns_lib, inherits = FALSE)
+  has_direct <- exists("ledgr_history_feature_direct", envir = ns_lib, inherits = FALSE)
   rows <- list()
   sets <- list()
   for (f in names(faults)) {
+    if (f %in% stage3 && !has_direct) {
+      rows[[f]] <- data.frame(control = f, expected_exit = NA_integer_, exit = NA_integer_,
+                              expected_signal = faults[[f]],
+                              signals = "not run: the library has no direct path (checked before running)", ok = TRUE)
+      next
+    }
     if (identical(f, "all_fields") && !has_selector) {
       rows[[f]] <- data.frame(control = f, expected_exit = NA_integer_, exit = NA_integer_,
                               expected_signal = faults[[f]],
@@ -55,7 +64,7 @@ local({
     }
     out <- file.path(scratch, f)
     status <- system2(rscript, c(file.path(here, "runner.R"), paste0("--arm=pin_", f), paste0("--lib=", arg("lib")),
-                                 paste0("--out=", out), paste0("--fault=", f)))
+                                 paste0("--out=", out), paste0("--fault=", f), "--debug=0"))
     if (!identical(as.integer(status), 0L)) {
       rows[[f]] <- data.frame(control = f, expected_exit = 1L, exit = NA_integer_, expected_signal = faults[[f]],
                               signals = paste("runner.R failed with exit", status), ok = FALSE)

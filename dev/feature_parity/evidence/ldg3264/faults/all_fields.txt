@@ -1,0 +1,4 @@
+check.R --pin=<pin> --candidate=<all_fields>: exit 1
+SIGNAL treated_fields 120  (candidate treats fields other than the certified union; first: compute | hostile_carry2|data_start|close)
+cases 694 (refusing on the pin 99), observations pin 11791 candidate 11791
+CHECK FAIL: 1 signal(s)

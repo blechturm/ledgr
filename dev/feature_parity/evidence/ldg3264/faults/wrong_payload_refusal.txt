@@ -1,0 +1,4 @@
+check.R --pin=<pin> --candidate=<wrong_payload_refusal>: exit 1
+SIGNAL refusal 8  (candidate differs from pin; first: compute | short|data_start|runsd_one)
+cases 694 (refusing on the pin 99), observations pin 11791 candidate 11791
+CHECK FAIL: 1 signal(s)
