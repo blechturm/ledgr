@@ -19,31 +19,37 @@ local({
                                 winslash = "/"))
   source(file.path(here, "..", "..", "corpus.R"), local = TRUE)
   cat("ledgr", find.package("ledgr"), "engine", substr(ns$ledgr_feature_engine_version(), 1L, 16L), "\n")
-  real_gate <- ns$ledgr_history_feature_gate
-  gutted_gate <- function(substrate, certified, gated, gate_fields, masks, instrument_idx, calc) {
-    admitted <- gated & FALSE
-    if (any(masks$terminal_asserted)) return(admitted)
-    gated
-  }
+  # The clause lives in two places since LDG-3265's exception simplification:
+  # the finiteness matrix and the gate's expected check. Both are gutted.
+  real_fns <- list(gate = ns$ledgr_history_feature_gate, finite = ns$ledgr_history_feature_finite)
+  gutted_fns <- list(
+    gate = function(finite, masks, calc) if (any(masks$terminal_asserted)) finite & FALSE else finite,
+    finite = function(substrate, certified, gated, calc) {
+      matrix(gated, nrow = length(substrate$instrument_ids), ncol = length(gated), byrow = TRUE)
+    })
   set_gate <- function(f) {
-    unlockBinding("ledgr_history_feature_gate", ns)
-    assign("ledgr_history_feature_gate", f, envir = ns)
-    lockBinding("ledgr_history_feature_gate", ns)
+    for (name in names(f)) {
+      binding <- paste0("ledgr_history_feature_", name)
+      unlockBinding(binding, ns)
+      assign(binding, f[[name]], envir = ns)
+      lockBinding(binding, ns)
+    }
   }
   admissions <- function(substrate, defs) {
     certified <- lapply(defs, ns$ledgr_feature_certify)
     gated <- vapply(certified, function(cert) cert$certification %in% c("builtin", "catalogue"), logical(1))
-    fields <- unique(unlist(lapply(certified[gated], function(cert) cert$declarations$required_fields)))
     bounds <- ns$ledgr_history_feature_bounds(substrate, NULL, NULL)
     if (bounds$from > bounds$to || !any(gated)) return(c(real = 0L, gutted = 0L))
+    calc <- seq.int(bounds$from, bounds$to)
+    finite <- list(real = real_fns$finite(substrate, certified, gated, calc),
+                   gutted = gutted_fns$finite(substrate, certified, gated, calc))
     n <- c(real = 0L, gutted = 0L)
     for (i in seq_along(substrate$instrument_ids)) {
       ranges <- ns$ledgr_history_feature_ranges(substrate, i, bounds$from, bounds$to)
       if (length(ranges$start) != 1L) next
       masks <- ns$ledgr_history_feature_masks(substrate, i, bounds$to, substrate$axis[[bounds$to]])
-      calc <- seq.int(bounds$from, bounds$to)
-      n[["real"]] <- n[["real"]] + sum(real_gate(substrate, certified, gated, fields, masks, i, calc))
-      n[["gutted"]] <- n[["gutted"]] + sum(gutted_gate(substrate, certified, gated, fields, masks, i, calc))
+      n[["real"]] <- n[["real"]] + sum(real_fns$gate(finite$real[i, ], masks, calc))
+      n[["gutted"]] <- n[["gutted"]] + sum(gutted_fns$gate(finite$gutted[i, ], masks, calc))
     }
     n
   }
@@ -62,12 +68,12 @@ local({
     for (set in certified_sets) {
       defs <- sets[[set]]
       adm <- admissions(substrates[[s]], defs)
-      set_gate(real_gate)
+      set_gate(real_fns)
       real <- local({ ns$local_ledgr_debug(FALSE); outcome(ns$ledgr_history_compute_feature_series(substrates[[s]], defs)) })
-      set_gate(gutted_gate)
+      set_gate(gutted_fns)
       on <- local({ ns$local_ledgr_debug(TRUE); outcome(ns$ledgr_history_compute_feature_series(substrates[[s]], defs)) })
       off <- local({ ns$local_ledgr_debug(FALSE); outcome(ns$ledgr_history_compute_feature_series(substrates[[s]], defs)) })
-      set_gate(real_gate)
+      set_gate(real_fns)
       wrong <- if (identical(real$kind, "ok") && identical(off$kind, "ok")) {
         if (identical(real$value, off$value)) "same" else "differs"
       } else if (identical(real$kind, off$kind)) "same refusal" else paste("real", real$kind, "/ gutted", off$kind)

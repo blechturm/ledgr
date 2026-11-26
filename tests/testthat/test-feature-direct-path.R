@@ -102,7 +102,7 @@ cut24_direct_defs <- function() {
 # The preparation with the gate refusing every cell: the general path.
 cut24_general <- function(substrate, defs, ...) {
   testthat::local_mocked_bindings(
-    ledgr_history_feature_gate = function(substrate, certified, gated, ...) gated & FALSE,
+    ledgr_history_feature_gate = function(finite, ...) finite & FALSE,
     .package = "ledgr")
   ledgr:::ledgr_history_compute_feature_series(substrate, defs, ...)
 }

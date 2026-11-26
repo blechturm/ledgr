@@ -205,7 +205,7 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
   if (!under_covr) {
     testthat::expect_identical(
       ledgr:::ledgr_feature_engine_version(),
-      "743b9e7fbec200f361c44e599cdc639821aa1d28711f741a428c90c5201a0a04"
+      "9e0da65e2cc82d3f8b9f86b0b3c088842a8a38bec80e5d2e07e1376e9e5dd45e"
     )
     testthat::expect_identical(
       ledgr:::ledgr_indicator_fingerprint(ledgr_ind_sma(20L)),
