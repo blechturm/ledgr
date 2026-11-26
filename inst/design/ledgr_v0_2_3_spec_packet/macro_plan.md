@@ -1096,7 +1096,9 @@ public behavior except the explicit pulse-plumbing ledger differences.
      fix) as its own cut right after Cut 21, before the RFC's stages 2-3
      (an internal adapter registry; a plain-R path for simple instruments).
      Stage 1 is Cut 22 (workstream 41, LDG-3249 to LDG-3255), written on
-     the measuring step `dev/spikes/feature_stage1_probe/`.
+     the measuring step `dev/spikes/feature_stage1_probe/`. Stages 2-3 are
+     Cut 24 (closed 2026-11-26): stage 2, the adapter registry, shipped;
+     stage 3, the gated direct path, was dropped at measurement (LDG-3265).
   d. **Slice 5** (sweeps and workers, restart, walk-forward) on the new
      feature path, since the sweep's feature preparation (precompute
      payload, per-instrument split and rebuild) is what the RFC may change.
