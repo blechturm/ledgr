@@ -8228,7 +8228,7 @@ tickets:
   - id: "LDG-3262"
     title: "Internal debug flag"
     workstream: 44
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: ["LDG-3261"]
@@ -8242,7 +8242,11 @@ tickets:
       - "A testthat helper turns it on for the suite; runner.R and the timing workloads take an explicit --debug=0 or 1 and record it"
       - "Where sweep preparation runs is recorded; if any preparation runs on a mirai worker, the parent's value reaches it explicitly (witness)"
       - "The flag enters no identity: the identity tooling shows equal identities with debug on and off"
-    evidence: []
+    evidence:
+      - "Flag (015546c3, R/debug.R): .ledgr_debug_state, a package-local environment with on = FALSE, read by ledgr_debug() and set only by local_ledgr_debug(on, frame = parent.frame()), which registers its restore in frame with on.exit(add = TRUE, after = FALSE) so nested settings unwind last in, first out; neither is exported and neither reads an option or environment variable. Witness tests/testthat/test-debug-flag.R (default off as found by the setup file, suite on, restore on normal, error and nested exit, invalid values refused, no public surface) passes."
+      - "Suite and tools: tests/testthat/setup-debug.R turns the flag on through the setter with testthat::teardown_env() as frame, so it stays on until the test process ends (a first version as a helper file restored at once when testthat's eval() exited; the witness caught it). runner.R requires --debug=0|1, sets the flag for the whole run (checked to hold inside its local() block) and records debug in provenance.csv, refusing --debug=1 on an arm without the flag; faults.R passes --debug=0; identity.R takes --debug. The cut24-feature-1 workloads and memory.R already set the flag through local_ledgr_debug() (LDG-3258). Record: dev/feature_parity/evidence/ldg3262/COMMANDS.md."
+      - "Sweep preparation runs in the calling process: R/sweep.R:279 prepares and projects before any worker is staged; workers only load ledgr and the declared packages (R/parallel-workers.R) and receive the projection. Runs (R/backtest-runner.R:668), explicit precompute (R/precompute-features.R:91) and pulse inspection (R/pulse-snapshot.R:395) also prepare in the calling process. No preparation runs on a mirai worker, so the flag is not forwarded and no worker witness applies."
+      - "Identity: the 015546c3 library recorded with --debug=0 and --debug=1 (--old on the debug-off arm) gives 156 of 156 expected identities equal under identity_check.R --mode=unchanged-engine --engine-prefix=88b4237e, the explicit precompute reused with the same result table as fresh preparation, stored run and sweep readable: IDENTITY CHECK PASS (dev/feature_parity/evidence/ldg3262/identity_check_debug.txt and the two identity records). The flag is bound by no identity."
   - id: "LDG-3263"
     title: "Gate and direct calculation with debug comparison (stage 3)"
     workstream: 44

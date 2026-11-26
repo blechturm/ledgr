@@ -1,0 +1,7 @@
+expected identities: 156 compared (identity_names_unchanged_engine.csv)
+identities compared: 156, equal: 156 (engine version included)
+engine version base 88b4237e5fc2035dfb29a2108e36277e2d65cb422924001ceb3edb6db30b06c1 candidate 88b4237e5fc2035dfb29a2108e36277e2d65cb422924001ceb3edb6db30b06c1 expected prefix 88b4237e 
+old precompute: none strategy calls 30 | reused table df047686a7aa973ee3bd614e42bb6a7015bc8e14fc6212af33b4b638157a5ed6 fresh table df047686a7aa973ee3bd614e42bb6a7015bc8e14fc6212af33b4b638157a5ed6 
+old store: run readable equity rows 30 sweep list 1 
+old stored sweep keeps its engine version: 88b4237e5fc2035dfb29a2108e36277e2d65cb422924001ceb3edb6db30b06c1 (saved with 88b4237e5fc2035dfb29a2108e36277e2d65cb422924001ceb3edb6db30b06c1 )
+IDENTITY CHECK PASS
