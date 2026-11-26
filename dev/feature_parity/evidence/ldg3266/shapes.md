@@ -14,5 +14,5 @@ and zero-admission cells. Diagnostic probes
 admission work on the zero cells without establishing the cause; the cause
 on the custom cells, which run no gate, is unexplained. The pre-existing
 per-instrument mask construction in `ledgr_history_feature_inputs()` (about
-80 to 100 ms of a preparation of about 0.6 s on 500 x 1,260, descriptive) is
-routed to the macro plan.
+97 ms on ffe19415 in the fresh descriptive probe, with compute about 0.6 s on
+500 x 1,260) is routed to the macro plan.

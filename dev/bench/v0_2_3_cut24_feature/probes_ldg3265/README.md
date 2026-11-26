@@ -36,19 +36,24 @@ The fresh run is from 2026-11-26 14:07 CET, about 25 minutes wall.
 - `pieces.txt` (whole-library piece timings, two alternations per case):
   zero-admission compute 0.583 to 0.600 s on the base library, 0.583 to
   0.590 s on the candidates; custom-only compute 0.400 to 0.417 s base,
-  0.417 to 0.423 s candidates; engine version and projection equal. This
+  0.417 to 0.423 s candidates; engine-version computation and projection
+  costs are broadly comparable at this probe's resolution. This
   probe does not resolve differences of 1 to 4 %. The first session's
-  reading of 570 ms base against 590 ms candidate (zero) is not reproduced.
+  reading of 570 ms base against 590 ms candidate (zero), an unverified
+  original observation whose record is unavailable, is not reproduced and
+  is withdrawn.
 - `zero_components.txt` (ffe19415, per preparation, zero-admission): the
   finiteness pass about 2 ms, the gate over all 500 instruments about 7 ms,
-  mask construction over all instruments about 97 ms (about 80 ms in the
-  first session), knowledge ranges about 3 ms.
+  mask construction over all instruments about 97 ms, knowledge ranges
+  about 3 ms.
 - `swap.txt` (one process, function sets swapped and byte-compiled, 12
   alternations of 5 calls): zero-admission compute 0.583 s base, 0.599 s
   candidate (ffe19415), 0.592 s hybrid (base with the candidate's input and
   mask helpers); custom-only 0.436 s base, 0.433 s candidate, 0.427 s
-  hybrid. The first session's run gave the same pattern (zero 0.593 /
-  0.606 / 0.594; custom 0.437 / 0.431 / 0.435).
+  hybrid.
+
+The first session's scratch outputs were not kept; any figure from that
+session is an unverified original observation and is not used here.
 
 ## Reading
 
