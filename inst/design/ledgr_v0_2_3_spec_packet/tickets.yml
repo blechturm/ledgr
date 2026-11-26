@@ -8692,7 +8692,7 @@ tickets:
   - id: "LDG-3268"
     title: "ledgr_utc(): whole-vector character parsing"
     workstream: 45
-    status: "open"
+    status: "complete"
     priority: "P2"
     effort: "S"
     dependencies: []
@@ -8708,7 +8708,13 @@ tickets:
       - "LTB-0566 passes on the base code too (the fixture freezes it), and utc_witness.R shows both faulted rewrites (no hour/minute/second range check; date-only parsed in local time) fail it"
       - "The existing ledgr_utc and ledgr_iso_utc tests pass unchanged"
       - "utc_probe.R timing on the final code recorded beside the base timing, descriptive"
-    evidence: []
+    evidence:
+      - "R/timestamp.R: ledgr_utc()'s character branch calls ledgr_utc_parse_character(unname(x)), which works in whole-vector passes: the original space-form predicate, then sub(); classification by the date and T-time (optional Z) anchored regexes; one refusal if any element matches none; one as.Date(format = ) over the date subset; vectorised substr()/as.integer() range checks and one as.POSIXct(format = ) over the timed subset (its first 19 characters, which the anchored regex makes exact); each element's canonical ISO string built as ledgr_iso_utc() builds it; one final as.POSIXct over the whole vector. No per-element R iteration. The POSIXt and Date branches, the leading NA/empty check and ledgr_iso_utc() are unchanged."
+      - "LTB-0566 (tests/testthat/test-timestamp.R, claim LCL-0548 in tests/claims.yml, fast profile), 188 expectations: the 500-string vector equals the fixture in one call; the 11 accepted edge values alone equal their rows; each of the 21 refused values alone and first, in the middle and last of a valid vector refuses with ledgr_invalid_timestamp and the fixture message; the Arabic-Indic string refuses; names are dropped; empty input gives an empty UTC POSIXct."
+      - "Transcripts (dev/bench/v0_2_3_cut25_chores/transcripts/test-timestamp_base.txt, _candidate.txt; test_transcript.R): every block of test-timestamp.R, LTB-0566 included, passes on the base library final-8f7c6977 (R/ equal to 2dee0f98) and on the candidate; the three existing blocks are unchanged."
+      - "Fault witness (utc_witness.R; results/utc_witness_none.txt, _hms.txt, _localdate.txt): the real function passes; without the hour/minute/second range check LTB-0566 fails (2020-01-01T23:59:60Z and the other range refusals are accepted); parsing date-only strings in local time under TZ=Europe/Vienna fails LTB-0566 (7 failures) and the existing ledgr_utc block."
+      - "Timing (utc_probe.R, descriptive, medians of 7 blocks; base results/utc_timing.csv on ca635540, final results/final/utc_timing.csv on the working tree above 91b70f92 with this rewrite): one string 0.255 to 0.125 ms, 500 strings 67 to 7 ms, 5,000 strings 0.66 to 0.060 s; one as.POSIXct(format = ) over 5,000 strings 18 ms on both. The probe's own check (one whole-vector call equal to the per-element results) passes on the final code."
+      - "Seven shapes: the rewrite removes a per-element vapply() over a closure (shape: R-level iteration over a growing collection) and adds no loop, no repeated name matching and no data-frame manifesting; ledgr_utc() stays off every per-pulse, per-fill and per-event path."
   - id: "LDG-3269"
     title: "Accept post-warmup NA on series paths"
     workstream: 45

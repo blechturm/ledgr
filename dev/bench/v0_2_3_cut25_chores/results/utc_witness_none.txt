@@ -1,0 +1,6 @@
+fault none TZ  
+ok | ledgr_iso_utc normalizes supported inputs | failed 0 of 5
+ok | ledgr_iso_utc rejects unsupported formats | failed 0 of 4
+ok | ledgr_utc returns UTC POSIXct vectors | failed 0 of 6
+ok | [LTB-0566] ledgr_utc parses character vectors exactly as one value at a time | failed 0 of 188
+WITNESS PASS 

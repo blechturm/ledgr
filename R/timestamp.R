@@ -118,15 +118,43 @@ ledgr_utc <- function(x) {
     )
   }
 
-  parse_one <- function(value) {
-    if (grepl("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$", value)) {
-      value <- sub(" ", "T", value, fixed = TRUE)
-    }
-    as.POSIXct(ledgr_iso_utc(value), tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
-  }
+  ledgr_utc_parse_character(unname(x))
+}
 
-  out <- unname(vapply(x, parse_one, as.POSIXct(NA_real_, origin = "1970-01-01", tz = "UTC")))
-  out <- as.POSIXct(out, origin = "1970-01-01", tz = "UTC")
+# The character branch of ledgr_utc() in whole-vector passes: the forms and
+# refusals of ledgr_iso_utc() applied to every element at once, then the same
+# canonical ISO round trip, so each value equals a per-element parse. Every
+# invalid element refuses with the one message ledgr_iso_utc() uses.
+ledgr_utc_parse_character <- function(x) {
+  refuse <- function() {
+    rlang::abort(
+      "`x` must be a UTC timestamp such as '2020-01-01T00:00:00Z' with trailing `Z`, a Date, or POSIXct.",
+      class = "ledgr_invalid_timestamp"
+    )
+  }
+  space <- grepl("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$", x)
+  x[space] <- sub(" ", "T", x[space], fixed = TRUE)
+  date_only <- grepl("^\\d{4}-\\d{2}-\\d{2}$", x)
+  timed <- grepl("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z?$", x)
+  if (!all(date_only | timed)) refuse()
+
+  iso <- character(length(x))
+  if (any(date_only)) {
+    d <- as.Date(x[date_only], format = "%Y-%m-%d")
+    if (anyNA(d)) refuse()
+    iso[date_only] <- sprintf("%sT00:00:00Z", format(d, "%Y-%m-%d"))
+  }
+  if (any(timed)) {
+    t <- substr(x[timed], 1L, 19L)
+    h <- as.integer(substr(t, 12L, 13L))
+    m <- as.integer(substr(t, 15L, 16L))
+    s <- as.integer(substr(t, 18L, 19L))
+    if (anyNA(h) || anyNA(m) || anyNA(s) || any(h > 23L | m > 59L | s > 59L)) refuse()
+    ts <- as.POSIXct(t, tz = "UTC", format = "%Y-%m-%dT%H:%M:%S")
+    if (anyNA(ts)) refuse()
+    iso[timed] <- format(ts, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  }
+  out <- as.POSIXct(iso, tz = "UTC", format = "%Y-%m-%dT%H:%M:%SZ")
   attr(out, "tzone") <- "UTC"
   out
 }

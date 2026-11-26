@@ -1,0 +1,8 @@
+fault hms TZ  
+ok | ledgr_iso_utc normalizes supported inputs | failed 0 of 5
+ok | ledgr_iso_utc rejects unsupported formats | failed 0 of 4
+ok | ledgr_utc returns UTC POSIXct vectors | failed 0 of 6
+FAIL | [LTB-0566] ledgr_utc parses character vectors exactly as one value at a time | failed 2 of 59
+   NOT OK: Expected `alone` to inherit from "ledgr_invalid_timestamp". Actual class: "POSIXct"/"POSIXt". 
+   NOT OK: Error in `UseMethod("conditionMessage")`: no applicable method for 'conditionMessage' applied to an object of class "c('POSIXct', 'POSIXt')" 
+WITNESS FAIL 

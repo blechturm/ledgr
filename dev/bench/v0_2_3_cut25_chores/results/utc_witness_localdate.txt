@@ -1,0 +1,10 @@
+fault localdate TZ Europe/Vienna 
+ok | ledgr_iso_utc normalizes supported inputs | failed 0 of 5
+ok | ledgr_iso_utc rejects unsupported formats | failed 0 of 4
+FAIL | ledgr_utc returns UTC POSIXct vectors | failed 1 of 6
+   NOT OK: Expected `format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")` to be identical to `c("2020-01-01T00:00:00Z", "2020-01-01T09:30:00Z", "2020-01-01T10:30:00Z")`. Differenc 
+FAIL | [LTB-0566] ledgr_utc parses character vectors exactly as one value at a time | failed 7 of 188
+   NOT OK: Expected `as.numeric(whole)` to be identical to `valid$seconds`. Differences: actual | expected [1] 2633464800.0 - 2633472000.0 [1] [2] 1566930215.0 | 156693021 
+   NOT OK: Expected `as.numeric(ledgr_utc(edge$input[[i]]))` to be identical to `edge$seconds[[i]]`. Differences: `actual`: -62167223121.0 `expected`: -62167219200.0 0000- 
+   NOT OK: Expected `as.numeric(ledgr_utc(edge$input[[i]]))` to be identical to `edge$seconds[[i]]`. Differences: `actual`: -62135600721.0 `expected`: -62135596800.0 0001- 
+WITNESS FAIL 
