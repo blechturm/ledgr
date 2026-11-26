@@ -61,6 +61,10 @@ ledgr_feature_engine_version <- function() {
     "ledgr_strict_sma_series", "ledgr_history_feature_segment", "ledgr_history_feature_segment_general",
     "ledgr_history_feature_calculate",
     "ledgr_history_compute_feature_series", "ledgr_history_output_carry",
+    # the gated direct path (stage 3); its debug comparison and the debug
+    # flag change assertions only and are excluded (census.csv)
+    "ledgr_history_feature_masks", "ledgr_history_feature_gate",
+    "ledgr_history_feature_direct_inputs", "ledgr_history_feature_direct",
     # bounds and ranges
     "ledgr_history_feature_runs", "ledgr_history_feature_terminal_breaks",
     "ledgr_history_feature_ranges", "ledgr_history_feature_bounds", "ledgr_history_utc",

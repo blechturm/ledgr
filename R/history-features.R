@@ -114,12 +114,10 @@ ledgr_history_feature_fields <- function(certified) {
   fields[fields %in% used]
 }
 
-# Treated inputs for one instrument over the prefix 1..prefix_end, with the
-# expected-session mask and terminal barrier knowable at `cutoff`. Price
-# fields are carried by the shared calculation; volume is never carried.
-# Only `fields` are treated (ledgr_history_feature_fields()).
-ledgr_history_feature_inputs <- function(substrate, instrument_idx, prefix_end, cutoff,
-                                         fields = c(ledgr_history_price_fields(), "volume")) {
+# The expected-session mask and terminal planes of one instrument over the
+# prefix 1..prefix_end, knowable at `cutoff`. Preparation computes them once
+# per instrument and knowledge range for both the gate and the treatment.
+ledgr_history_feature_masks <- function(substrate, instrument_idx, prefix_end, cutoff) {
   prefix <- seq_len(prefix_end)
   expected <- as.logical(ledgr_history_substrate_expected_at(
     substrate, cutoff, prefix, instrument_idx
@@ -127,10 +125,28 @@ ledgr_history_feature_inputs <- function(substrate, instrument_idx, prefix_end, 
   terminal_planes <- ledgr_history_substrate_terminal_planes(
     substrate, cutoff, prefix, instrument_idx
   )
-  terminal <- as.logical(terminal_planes$sticky[1L, ])
-  # Columns inside a terminal interval; every relisting after one restarts
-  # windows and segments (Cut 16 decision 20).
-  terminal_asserted <- as.logical(terminal_planes$asserted[1L, ])
+  list(
+    expected = expected,
+    terminal = as.logical(terminal_planes$sticky[1L, ]),
+    # Columns inside a terminal interval; every relisting after one restarts
+    # windows and segments (Cut 16 decision 20).
+    terminal_asserted = as.logical(terminal_planes$asserted[1L, ])
+  )
+}
+
+# Treated inputs for one instrument over the prefix 1..prefix_end, with the
+# expected-session mask and terminal barrier knowable at `cutoff`. Price
+# fields are carried by the shared calculation; volume is never carried.
+# Only `fields` are treated (ledgr_history_feature_fields()).
+ledgr_history_feature_inputs <- function(substrate, instrument_idx, prefix_end, cutoff,
+                                         fields = c(ledgr_history_price_fields(), "volume"),
+                                         masks = ledgr_history_feature_masks(
+                                           substrate, instrument_idx, prefix_end, cutoff
+                                         )) {
+  prefix <- seq_len(prefix_end)
+  expected <- masks$expected
+  terminal <- masks$terminal
+  terminal_asserted <- masks$terminal_asserted
   axis <- substrate$axis[prefix]
   policy <- substrate$history_policy
   raw <- list()
@@ -384,6 +400,119 @@ ledgr_history_feature_bounds <- function(substrate, calculation_start, calculati
   list(from = as.integer(calc_from), to = as.integer(calc_to))
 }
 
+# Stage 3 of the feature engine (feature-engine stages synthesis rules 5-8;
+# Cut 24, LDG-3263). The conservative gate admits a built-in or catalogue
+# definition on one instrument only when the preparation has exactly one
+# knowledge range for it, every calculation column is expected at the
+# range-end cutoff, every required raw field is finite there and no terminal
+# is asserted anywhere in the prefix (so no sticky barrier either). Then
+# treatment carries nothing, required-field admission is complete, the
+# calculation slice is one segment and output carry has no eligible gap: the
+# general path computes the adapter's segment calculation over the whole
+# slice and records one segment and no carry or reason exception, which is
+# what the direct path does without that machinery. Harmless second ranges
+# and early terminals are rejected on purpose. One flag per definition.
+ledgr_history_feature_gate <- function(substrate, certified, gated, gate_fields, masks, instrument_idx, calc) {
+  admitted <- gated & FALSE
+  if (!all(masks$expected[calc]) || any(masks$terminal_asserted)) return(admitted)
+  finite <- vapply(gate_fields, function(field) {
+    all(is.finite(substrate$bars[[field]][instrument_idx, calc]))
+  }, logical(1))
+  for (d in which(gated)) {
+    admitted[[d]] <- all(finite[certified[[d]]$declarations$required_fields])
+  }
+  admitted
+}
+
+# Untreated inputs for an instrument whose cells are all admitted: the raw
+# fields over the prefix, equal to the treated ones on the admitted slice.
+ledgr_history_feature_direct_inputs <- function(substrate, instrument_idx, prefix_end, fields) {
+  prefix <- seq_len(prefix_end)
+  values <- lapply(stats::setNames(fields, fields), function(field) {
+    as.numeric(substrate$bars[[field]][instrument_idx, prefix])
+  })
+  list(
+    instrument_id = substrate$instrument_ids[[instrument_idx]],
+    axis = substrate$axis[prefix],
+    raw = values,
+    treated = values
+  )
+}
+
+# One admitted cell: the adapter's segment calculation over the whole slice
+# calc_from..prefix end, values from its stable_after-th position on. A slice
+# shorter than stable_after never becomes ready and makes no adapter call.
+# Returns the value over the prefix, the calculated count (ready and finite)
+# and the cell's plane exceptions, which are its one segment record.
+ledgr_history_feature_direct <- function(cert, inputs, calc_from, output_carry = NULL, cache = NULL) {
+  n <- length(inputs$axis)
+  calc <- seq.int(calc_from, n)
+  m <- length(calc)
+  stable_after <- as.integer(cert$def$stable_after)
+  value <- rep(NA_real_, n)
+  ready <- NA_integer_
+  if (m >= stable_after) {
+    ready <- calc[[stable_after]]
+    fields <- if (identical(cert$declarations$input_carry, "excluded")) inputs$raw else inputs$treated
+    segment_value <- ledgr_history_feature_segment(cert, inputs, fields, calc, cache)
+    take <- seq.int(stable_after, m)
+    value[calc[take]] <- segment_value[take]
+  }
+  calculated <- is.finite(value)
+  # Output carry finds no eligible gap here; it only clears non-finite values.
+  if (!is.null(output_carry)) value[!calculated] <- NA_real_
+  list(
+    value = value,
+    count = sum(calculated[calc]),
+    exceptions = list(segment_start = calc_from, segment_ready = ready, segment_end = n)
+  )
+}
+
+# Debug only (rule 8): the admitted cell is also computed by the general path
+# with its own raw cache. Success must agree on the values, the calculated
+# count and every plane record; a refusal on the class, the message and
+# every identifying field (call, trace, parent and rlang's own fields
+# excluded, as the parity runner does). Disagreement raises
+# ledgr_feature_debug_mismatch and never falls back; an agreed refusal
+# re-raises the product condition.
+ledgr_history_feature_direct_checked <- function(cert, inputs, calc_from, output_carry, cache, shadow_cache, keep) {
+  run <- function(f) tryCatch(list(value = f()), error = function(e) list(error = e))
+  direct <- run(function() ledgr_history_feature_direct(cert, inputs, calc_from, output_carry, cache))
+  general <- run(function() {
+    calculated <- ledgr_history_feature_calculate(cert, inputs, calc_from, output_carry, shadow_cache)
+    list(
+      value = calculated$value,
+      count = sum(calculated$calculated[keep]),
+      exceptions = ledgr_feature_plane_exceptions(cert, inputs, calculated, calc_from, keep)
+    )
+  })
+  outcome <- function(o) {
+    if (is.null(o$error)) {
+      return(list(value = o$value$value[keep], count = o$value$count, exceptions = o$value$exceptions))
+    }
+    fields <- unclass(o$error)
+    fields <- fields[setdiff(names(fields), c("call", "trace", "parent", "rlang"))]
+    list(
+      class = class(o$error),
+      message = conditionMessage(o$error),
+      fields = fields[order(names(fields), method = "radix")]
+    )
+  }
+  if (!identical(outcome(direct), outcome(general))) {
+    rlang::abort(
+      sprintf(
+        "Internal: the direct calculation of feature `%s` for instrument `%s` disagrees with the general path.",
+        cert$def$id, inputs$instrument_id
+      ),
+      class = c("ledgr_feature_debug_mismatch", "ledgr_internal_error"),
+      feature_id = cert$def$id,
+      instrument_id = inputs$instrument_id
+    )
+  }
+  if (!is.null(direct$error)) stop(direct$error)
+  direct$value
+}
+
 # Feature values for every definition and instrument on the substrate axis.
 # Bounds arrive as ISO strings or POSIXct and are parsed as exact instants.
 ledgr_history_compute_feature_series <- function(substrate,
@@ -414,24 +543,58 @@ ledgr_history_compute_feature_series <- function(substrate,
   # Calculated (not carried) cells per definition and instrument choose each
   # definition's causality probe.
   calculated_count <- matrix(0L, nrow = length(certified), ncol = n_inst)
+  # Only built-in and catalogue definitions can take the direct path; a
+  # custom-only preparation builds no gate.
+  gated <- vapply(certified, function(cert) cert$certification %in% c("builtin", "catalogue"), logical(1))
+  gate_fields <- unique(unlist(lapply(certified[gated], function(cert) cert$declarations$required_fields),
+                               use.names = FALSE))
+  debug <- ledgr_debug()
+  # Instruments, knowledge ranges and definitions keep their order, direct and
+  # general cells interleaved, so the first refusal and the adapter calls are
+  # those of the general path.
   for (i in seq_len(n_inst)) {
     ranges <- ledgr_history_feature_ranges(substrate, i, bounds$from, bounds$to)
     for (r in seq_along(ranges$start)) {
       range_end <- ranges$end[[r]]
-      inputs <- ledgr_history_feature_inputs(
-        substrate, i, range_end, substrate$axis[[range_end]], fields
-      )
+      cutoff <- substrate$axis[[range_end]]
+      masks <- ledgr_history_feature_masks(substrate, i, range_end, cutoff)
       keep <- seq.int(ranges$start[[r]], range_end)
+      admitted <- if (any(gated) && length(ranges$start) == 1L) {
+        ledgr_history_feature_gate(substrate, certified, gated, gate_fields, masks, i, keep)
+      } else {
+        gated & FALSE
+      }
+      # Treatment only where a cell needs the general path (or debug compares
+      # with it); admitted cells read their inputs untreated.
+      inputs <- if (debug || !all(admitted)) {
+        ledgr_history_feature_inputs(substrate, i, range_end, cutoff, fields, masks)
+      } else {
+        ledgr_history_feature_direct_inputs(substrate, i, range_end, fields)
+      }
       cache <- new.env(hash = TRUE, parent = emptyenv())
+      shadow_cache <- if (debug && any(admitted)) new.env(hash = TRUE, parent = emptyenv())
       for (d in seq_along(certified)) {
-        calculated <- ledgr_history_feature_calculate(
-          certified[[d]], inputs, bounds$from, output_carry, cache
-        )
-        out[[d]][i, keep] <- calculated$value[keep]
-        calculated_count[d, i] <- calculated_count[d, i] + sum(calculated$calculated[keep])
-        exceptions <- ledgr_feature_plane_exceptions(
-          certified[[d]], inputs, calculated, ranges$start[[r]], keep
-        )
+        if (admitted[[d]]) {
+          cell <- if (debug) {
+            ledgr_history_feature_direct_checked(
+              certified[[d]], inputs, bounds$from, output_carry, cache, shadow_cache, keep
+            )
+          } else {
+            ledgr_history_feature_direct(certified[[d]], inputs, bounds$from, output_carry, cache)
+          }
+          out[[d]][i, keep] <- cell$value[keep]
+          calculated_count[d, i] <- calculated_count[d, i] + cell$count
+          exceptions <- cell$exceptions
+        } else {
+          calculated <- ledgr_history_feature_calculate(
+            certified[[d]], inputs, bounds$from, output_carry, cache
+          )
+          out[[d]][i, keep] <- calculated$value[keep]
+          calculated_count[d, i] <- calculated_count[d, i] + sum(calculated$calculated[keep])
+          exceptions <- ledgr_feature_plane_exceptions(
+            certified[[d]], inputs, calculated, ranges$start[[r]], keep
+          )
+        }
         for (field in names(exceptions)) {
           if (length(exceptions[[field]]) > 0L) {
             planes[[d]][[field]][[i]] <- c(planes[[d]][[field]][[i]], exceptions[[field]])

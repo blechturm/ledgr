@@ -145,25 +145,28 @@ testthat::test_that("[LTB-0143] strict dispatch is canonical and bounded", {
   tampered <- ledgr:::ledgr_precompute_feature_def_from_indicator(ledgr_ind_sma(3L))
   tampered$fn <- function(window) stop("tampered fn must not run")
   tampered$series_fn <- function(bars, params) stop("tampered series_fn must not run")
-  segment_calls <- 0L
-  original_segment <- ledgr:::ledgr_history_feature_segment
-  testthat::local_mocked_bindings(
-    ledgr_history_feature_segment = function(...) {
-      segment_calls <<- segment_calls + 1L
-      original_segment(...)
-    },
-    .package = "ledgr"
-  )
   tampered_returns <- ledgr:::ledgr_precompute_feature_def_from_indicator(ledgr_ind_returns(2L))
   tampered_returns$fn <- function(window) stop("tampered fn must not run")
   tampered_returns$series_fn <- function(bars, params) stop("tampered series_fn must not run")
-  values <- lapply(c(definitions, list(tampered, tampered_returns)), function(definition) {
-    ws43_feature_values(substrate, definition)
-  })
   # One segment covers the complete series for every definition. The sampled
   # causality check (LDG-3067) adds a fixed five per definition: the probe's
   # own segment and four sampled prefixes, independent of history length.
-  testthat::expect_identical(segment_calls, 7L * (1L + 1L + 4L))
+  # Cut 24 decision 9: counted by phase; with debug on, the debug comparison
+  # recomputes each admitted cell (the four built-in definitions on this
+  # dense series) once more on the general path.
+  for (debug in c(FALSE, TRUE)) {
+    counted <- cut24_phase_counts("ledgr_history_feature_segment", function() {
+      ledgr:::local_ledgr_debug(debug)
+      lapply(c(definitions, list(tampered, tampered_returns)), function(definition) {
+        ws43_feature_values(substrate, definition)
+      })
+    })
+    testthat::expect_identical(
+      counted$counts,
+      c(certification = 0L, production = 7L, shadow = if (debug) 4L else 0L, causality = 7L * (1L + 4L))
+    )
+    values <- counted$value
+  }
   testthat::expect_identical(values[[7L]], values[[2L]])
   testthat::expect_identical(values[[3L]][[3L]], mean(close[1:3]) + 1)
   testthat::expect_identical(values[[6L]], values[[1L]])
@@ -202,7 +205,7 @@ testthat::test_that("[LTB-0144] strict helper provenance is availability-only", 
   if (!under_covr) {
     testthat::expect_identical(
       ledgr:::ledgr_feature_engine_version(),
-      "88b4237e5fc2035dfb29a2108e36277e2d65cb422924001ceb3edb6db30b06c1"
+      "743b9e7fbec200f361c44e599cdc639821aa1d28711f741a428c90c5201a0a04"
     )
     testthat::expect_identical(
       ledgr:::ledgr_indicator_fingerprint(ledgr_ind_sma(20L)),
