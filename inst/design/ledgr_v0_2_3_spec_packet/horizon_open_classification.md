@@ -12,7 +12,7 @@ reads this table instead of the
 [v0.2.2 classification](../ledgr_v0_2_2_spec_packet/horizon_open_classification.md).
 Every v0.2.2 row is carried with its ID and evidence. Each Open entry was
 checked against the accepted [v0.2.3 macro plan](macro_plan.md) and the
-[inventory reconciliation](inventory_reconciliation.md), which records the
+[inventory reconciliation](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/inventory_reconciliation.md), which records the
 v0.2.3 disposition of every horizon entry naming the next release. The
 v0.2.2 rule holds: a mixed entry stays `genuine` while any unowned design
 question survives. An entry whose every question now has a v0.2.3 owner is

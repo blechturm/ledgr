@@ -3,8 +3,8 @@
 **Status:** Accepted by the maintainer on 2026-10-28 (revision 8, written by
 Claude and amended by the maintainer). It is the within-release order for
 uncut work. Revision 2 applies
-the [Type 2 review](macro_plan_review.md) (RESTRUCTURE) as dispositioned in
-the [response](macro_plan_response.md), the maintainer's scope answers of
+the [Type 2 review](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/macro_plan_review.md) (RESTRUCTURE) as dispositioned in
+the [response](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/macro_plan_response.md), the maintainer's scope answers of
 2026-10-28 (Section 6) and the release-process proposal of the same day.
 Revision 3 records the accepted typed-accounting synthesis of 2026-10-29 and
 moves WS8 into one ordered cut with WS7 after execution-core consolidation.
@@ -65,7 +65,7 @@ Revision 16 corrects that entry (maintainer, 2026-11-14, after workstream
 36's close review round 1): the replaced package functions remain the
 lean checks' fallback and differential oracle; a deletion-readiness audit
 classifies each fallback dependency before the switch.
-Inputs: the roadmap and the [inventory reconciliation](inventory_reconciliation.md).
+Inputs: the roadmap and the [inventory reconciliation](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
 portfolio targets and inspectable results, on one consolidated and faster

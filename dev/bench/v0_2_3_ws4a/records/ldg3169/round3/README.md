@@ -1,7 +1,7 @@
 # LDG-3169 round 3: WS13 close correction 1
 
 Correction round 1 for the workstream 13 close review
-([ws13_close_review.md](../../../../../../inst/design/ledgr_v0_2_3_spec_packet/ws13_close_review.md):
+([ws13_close_review.md](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/ws13_close_review.md):
 NEEDS_TYPE_2 on F1, F2-F4 blocking, O1 optional), after the maintainer's
 `amendment_valuation` (cut 5, 2026-10-31). Final candidate `d027c242` on
 `claude/ws4a-carrier`; the evidence commit after it adds this folder,

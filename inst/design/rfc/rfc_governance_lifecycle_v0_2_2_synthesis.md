@@ -169,6 +169,11 @@ from the first review after acceptance; closed tickets and past fields stay
 records (M:47-54). This adds a findings-home rule to D4, not a claim that
 D4 already required it. Reject the review's optional-file alternative.
 
+Maintainer amendment, 2026-11-26: the finding-file rule still applies while
+a cut is open. After cut closure, the v0.2.3 and later packets may replace
+the files in the checkout with commit-pinned references under the
+[review record rule](../rfc_cycle.md#review-modes-workstreams-and-routes).
+
 M1 is decided: retire the 0.5 gate; record the ratio without gating.
 One invocation is one independent verdict at cut review, workstream close,
 focused re-review or final review, from a session other than the implementing

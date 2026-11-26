@@ -309,7 +309,14 @@ reasons; neither all raw files nor summary-only evidence is a universal rule.
 A review with findings writes a file in the owning packet named for its review
 point. Its `tickets.yml` review result records verdict, link and one line on
 what changed. A finding-free `PASS` gets that one line and no file. Closed
-tickets and old review fields remain historical records.
+tickets and old review fields remain historical records. After cut closure,
+the active packet may remove review files and superseded working documents
+from the checkout. Preserve their originals in Git and replace live
+references with links to the exact commit and path. Keep reviewed ranges,
+verdicts, consequential findings and dispositions, and pointers to necessary
+evidence in the cut or ticket record. A document still required by an active
+cut or read by a tool stays available in the checkout. This retention rule
+applies to v0.2.3 and later packets (maintainer, 2026-11-26).
 
 **Review measurement and escalation.** Review ratios are measured, not gated.
 One invocation is one independent verdict at cut review, workstream close,

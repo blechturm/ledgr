@@ -83,7 +83,7 @@ the checker's gutted path exercises the reference's stop branch.
 ## Correction (cut review 18, 2026-11-14)
 
 The first paragraph's "every guarantee" is too strong. Cut review 18 (R1,
-`inst/design/ledgr_v0_2_3_spec_packet/cut_review_18.md`) showed with two
+[inst/design/ledgr_v0_2_3_spec_packet/cut_review_18.md](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/cut_review_18.md)) showed with two
 probes outside the registered fixtures: a context the strategy keeps from
 pulse 1 returns a later pulse's position from `hold()`, because the
 reference's `hold()` closes over a variable the loop reassigns; and sizing

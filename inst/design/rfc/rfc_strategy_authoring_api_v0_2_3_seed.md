@@ -11,10 +11,10 @@ listed in Section 9.
 **Roadmap anchor:** v0.2.3 "Research UX completion". The inventory
 reconciliation rows are X3 (this RFC), H3 (F8 naming) and U3 (helper
 bundles).
-**Inputs:** the [spike closeout](../ledgr_v0_2_3_spec_packet/strategy_grammar_closeout.md),
-the [UX brief](../ledgr_v0_2_3_spec_packet/strategy_grammar_ux_brief.md), its
-[worked examples](../ledgr_v0_2_3_spec_packet/strategy_grammar_worked_examples.md),
-the [Codex Type 2 review](../ledgr_v0_2_3_spec_packet/strategy_grammar_type2_review.md),
+**Inputs:** the [spike closeout](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/strategy_grammar_closeout.md),
+the [UX brief](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/strategy_grammar_ux_brief.md), its
+[worked examples](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/strategy_grammar_worked_examples.md),
+the [Codex Type 2 review](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/strategy_grammar_type2_review.md),
 and the spike branch's `benchmark/findings.md` and `benchmark/flattening.md`.
 
 ## 1. Problem

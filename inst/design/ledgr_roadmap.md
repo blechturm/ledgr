@@ -247,7 +247,7 @@ order and cut implementation respectively.
   - The publication rule is unchanged: no public performance claim until the
     suite exists and its results are accepted.
 - **Inventory decisions (maintainer, 2026-10-27):** these come from the
-  [inventory reconciliation](ledgr_v0_2_3_spec_packet/inventory_reconciliation.md).
+  [inventory reconciliation](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/inventory_reconciliation.md).
   - **First CRAN release:** a version below 0.3.0. No version number is
     committed. Work bound to "the first CRAN release" keys on that release,
     not on v0.2.3.

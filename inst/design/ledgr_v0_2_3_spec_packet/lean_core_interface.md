@@ -773,7 +773,7 @@ workloads.
 - Status: accepted by the maintainer on 2026-11-10 after a section-by-section
   walkthrough (A1; macro WS16 "Compact-state loop", accepted 2026-11-09),
   including the three 19.2 decisions. Binding for slice 1. Patched on
-  2026-11-10 with cut review R1, R2 and R4-R9 (`cut_review_13.md`); R3 is
+  2026-11-10 with cut review R1, R2 and R4-R9 ([cut_review_13.md](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/cut_review_13.md)); R3 is
   resolved by the accepted diagnostic-records D3 synthesis
   (`rfc_diagnostic_records_v0_2_3_synthesis_d3.md`, accepted 2026-11-10):
   per-pulse logical commitment in memory, followed by bounded terminal

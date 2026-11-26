@@ -1,7 +1,7 @@
 # RNG baseline probe: findings
 
 Measurement step for the v0.2.3 RNG cut (macro WS2: inventory X1 absorbing
-H8; plus C4). Brief: `inst/design/ledgr_v0_2_3_spec_packet/rng_probe_brief.md`.
+H8; plus C4). Brief: [inst/design/ledgr_v0_2_3_spec_packet/rng_probe_brief.md](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/rng_probe_brief.md).
 Tree `release/v0.2.3` at `c836d291`. R 4.6.1, digest 0.6.39, withr 3.0.3,
 mirai 2.7.2, duckdb 2.0.0. No product change; nothing here binds. Rerun with
 `Rscript probe.R` (add `--cost` for timings), `Rscript check.R`,

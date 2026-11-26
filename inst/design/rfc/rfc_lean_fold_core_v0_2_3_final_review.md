@@ -99,7 +99,7 @@ switch parity, private-data evidence or performance results.
    author's assertion of complete-engine equivalence. Memory and omitted
    interactions are correctly retained as future proof gates (S:155-177,
    :194-219). The private Sharadar gate is actually still open in the current
-   packet (`inst/design/ledgr_v0_2_3_spec_packet/close_review_23_rereview_2.md:101-126`);
+   packet ([inst/design/ledgr_v0_2_3_spec_packet/close_review_23_rereview_2.md:101-126](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/close_review_23_rereview_2.md#L101-L126));
    S:181-186 correctly does not inherit a PASS. These inputs are appropriate
    for settling the route; they are not sufficient switch-entry evidence.
 
