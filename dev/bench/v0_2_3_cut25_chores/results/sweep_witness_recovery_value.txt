@@ -1,0 +1,39 @@
+library C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-812ed1e2 fault recovery_value 
+── Error: [LTB-0567] post-warmup NA is accepted on the fn and series_fn paths on both clocks ──
+<ledgr_strategy_error/simpleError/rlang_error/error/condition>
+Error in `ledgr_fold_stage_decide(fold_state = fold_state, services = services, observation = observation, sample_telemetry = sample_telemetry, sample_start = sample_start)`: Strategy error at ts_utc=2020-01-05T16:00:00Z for run_id=one. Instruments: AAA. Available feature IDs: gap. Original error: gap at pulse 5 reads -999, expected 105
+Caused by error in `fn()`:
+! gap at pulse 5 reads -999, expected 105
+Backtrace:
+     ▆
+  1. ├─base::as.data.frame(ledgr_sweep(exp, grid, stop_on_error = TRUE))
+  2. └─ledgr::ledgr_sweep(exp, grid, stop_on_error = TRUE)
+  3.   ├─ledgr:::ledgr_rng_preserve_caller(...)
+  4.   │ └─base::withVisible(expr)
+  5.   └─ledgr:::ledgr_sweep_impl(...)
+  6.     └─base::lapply(tasks, ledgr_sweep_eval_candidate_task, stop_on_error = stop_on_error)
+  7.       └─ledgr (local) FUN(X[[i]], ...)
+  8.         ├─base::tryCatch(...)
+  9.         │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 10.         │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 11.         │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 12.         ├─base::withCallingHandlers(...)
+ 13.         └─ledgr:::ledgr_sweep_run_candidate(...)
+ 14.           └─ledgr:::ledgr_execute_fold(execution, output_handler)
+ 15.             └─ledgr:::ledgr_fold_envelope(execution, output_handler)
+ 16.               ├─base::tryCatch(...)
+ 17.               │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 18.               │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 19.               │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 20.               └─output_handler$run_transaction(run_loop)
+ 21.                 └─ledgr (local) fn()
+ 22.                   └─ledgr:::ledgr_fold_stage_decide(...)
+ 23.                     └─base::tryCatch(...)
+ 24.                       └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 25.                         └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 26.                           └─value[[3L]](cond)
+ 27.                             └─ledgr:::ledgr_abort_strategy_error(e, ctx)
+ 28.                               └─rlang::abort(...)
+LTB-0567: failed: Test failed with 1 failure and 93 successes. 
+corrupted candidate executions: 1 
+WITNESS FAIL 

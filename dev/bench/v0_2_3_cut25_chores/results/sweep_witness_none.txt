@@ -1,0 +1,5 @@
+library C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-812ed1e2 fault none 
+Test passed with 99 successes 😀.
+LTB-0567: passed 
+corrupted candidate executions: 0 
+WITNESS PASS 
