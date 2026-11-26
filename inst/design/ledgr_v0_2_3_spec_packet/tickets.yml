@@ -4036,7 +4036,8 @@ cuts:
       (a) Schema golden test: under duckdb 2.0.1 (the maintainer's default
       library) LTB-0258 fails exactly its two version expectations, the
       fixtures being stamped 2.0.0; the catalogue-row comparison, the
-      per-dimension digest and the two mutant checks pass; under 2.0.0
+      per-dimension digest and all five existing definition-mutant checks
+      pass (cut review 25, R6); under 2.0.0
       (the verification library) everything passes. (b) ledgr_utc():
       one string 0.26 ms, 500 strings 67 ms, 5,000 strings 0.66 s,
       against 18 ms for one as.POSIXct(format = ) over 5,000. The base's
@@ -4064,8 +4065,9 @@ cuts:
       the decision too; it is in the engine-version census
       (dev/feature_parity/census.csv row 89, binding "engine version").
       The causality probe samples only calculated cells
-      (ready & is.finite(value), R/history-features.R:323), so a matching
-      pair of NA cells is never compared by the fn/series_fn refutation.
+      (ready & is.finite(value), R/history-features.R:323), so an NA cell
+      is never refuted and an all-NA series has no probe sample (cut
+      review 25, R4).
       ledgr_utc() and ledgr_iso_utc() are not in the census. The lean-core
       gate workloads (dev/lean_core/parity/loop_workloads*.R) declare only
       TTR SMA over finite closes.
@@ -4119,15 +4121,29 @@ cuts:
       series path that calls the normaliser follows: custom series_fn and
       the TTR adapter's segment calculation, so a TTR row that returns NA
       after warmup (runSD with n = 1) now completes with those cells not
-      calculated. Declared consequence: a series_fn whose prefix
-      recomputation in the causality probe is NA at a sampled (finite)
-      cell now refuses with ledgr_feature_lookahead_detected, a subclass
-      of ledgr_invalid_feature_output, where the normaliser refused first
-      with ledgr_invalid_feature_output. Contract: the Indicator
+      calculation-valid. Declared consequences (cut review 25, R4):
+      acceptance of post-warmup NA removes only the normaliser's NA
+      refusal. Existing checks still apply: a prefix mismatch can now
+      refuse with ledgr_feature_lookahead_detected, and a sampled
+      fn/series_fn disagreement can now refuse with
+      ledgr_indicator_gap_parity, where the normaliser previously refused
+      first. Both inherit ledgr_invalid_feature_output. Checks still
+      sample only finite calculated cells; an NA cell is not refuted even
+      if fn would return a finite value there, and an all-NA series has no
+      probe samples. Test both newly reachable refusal classes and retain
+      this sampling scope. An admitted post-warmup NA cell is ready but not
+      calculation-valid; public evidence keeps calculated TRUE and reports
+      calculation_non_finite, with no output source or age. It is not
+      filled by output carry and is not a carry source. A later
+      unavailable-input cell can still carry an earlier finite output
+      within its existing age limit. Segment readiness and subsequent
+      finite recovery are unchanged. Add a literal finite/NA/finite-and-gap
+      witness and require retained-plane and recomputing evidence to
+      agree. Contract: the Indicator
       Computation sentence "Infinite values, post-warmup NA, and
       post-warmup NaN values are invalid." becomes "Post-warmup NA_real_
       is accepted on both the scalar fn and the series_fn path: the cell
-      is not calculated and history evidence reports
+      is ready but not calculation-valid, and history evidence reports
       calculation_non_finite. Infinite values and post-warmup NaN values
       are invalid on both paths.", and its accepted-change-pending notice
       is removed; decisions.md's row stays until release closeout, its
@@ -4143,7 +4159,31 @@ cuts:
       completes, the run is DONE, the strategy reads NA from the fourth
       session, evidence reads calculation_non_finite; NaN and Inf refuse
       on both paths, the run FAILED; a TTR runSD n = 1 row completes with
-      no calculated cell. No registered test changes.
+      no calculation-valid cell; the two newly reachable refusal classes
+      and the finite/NA/finite-and-gap evidence and carry witness above.
+      Both clocks (cut review 25, R5): LTB-0567 explicitly crosses
+      fn/series_fn with bar-native/declared-session clocks and durable
+      run/sweep for NA, NaN and Inf. Assert the expected clock on each
+      fixture. On a small NA-and-recovery fixture, also check explicit
+      precompute, a sweep reusing that precompute, pulse inspection, and
+      a two-worker sweep against the same literal values and evidence as
+      serial execution. Assert that NA cells survive projection/payload
+      handoffs and both history-reader forms. The worker check uses the
+      supported installed backend and reports a skip only when that
+      backend is unavailable. These are focused semantic witnesses; the
+      existing 694-case corpus and its 52-case declared set remain
+      unchanged. One existing expectation changes (cut review 25, R1): in
+      test-features.R, block "feature series uses and validates vectorized
+      series functions", the na_late_def case keeps its setup and series
+      c(NA_real_, 1, NA_real_, 3), and replaces the "NA outside"
+      expect_error with expect_identical(values, c(NA_real_, 1, NA_real_,
+      3)). Stated reason: the maintainer's 2026-11-04 decision replaces
+      this obsolete refusal with accepted post-warmup NA; the literal
+      result also proves that a later finite value recovers after NA. All
+      other expectations in that block, including length, type, warmup,
+      NaN and Inf, stay unchanged. Commit the base and candidate
+      transcripts. No other existing test changes beyond decision 1 are
+      authorized.
       (4) The oracle's declared difference. dev/feature_parity/check.R
       gains --declared=<csv>, default dev/feature_parity/declared_expected.csv,
       and --declared=none. The file holds, for each declared case, every
@@ -4160,14 +4200,42 @@ cuts:
       Stated reason for a candidate-produced expectation: the pin cannot
       produce the decided behaviour; the registered tests of decision 3
       check it independently, and the file pins it against later drift.
-      faults.R and the pin-against-pin repeat pass --declared=none. Controls
+      Semantics before recording (cut review 25, R3): freeze the exact
+      declared case-key set from the committed oracle_flips.csv, excluding
+      treated_fields-only differences. Require exactly those 52 cases,
+      unique complete component keys, and refusal none; a missing,
+      duplicate or additional declaration refuses. Before writing the
+      final-candidate record, independently verify the newly accepted
+      values from the fixture inputs and declarations: runSD(n = 1) and
+      custom_na supply all-NA outputs, and custom_volume_strict supplies
+      the volume values with their missingness and existing admission
+      rules. The literal NA-recovery and carry/evidence assertions are
+      additional semantic checks. Candidate output is not the expected
+      value for these checks. With that file frozen, separately mutate
+      only one declared case's values, NA mask, planes and handoffs; each
+      comparison must fail with the relevant signal. Also show that one
+      undeclared-case flip fails, that restoring the old NA refusal fails,
+      and that removing the NaN refusal fails the independent tests. Run
+      malformed-declaration controls for missing, duplicate and extra
+      keys. Never regenerate the file for a negative control. Keep the
+      pin-only corpus expectations unchanged.
+      Faults (cut review 25, R2): faults.R accepts an explicit
+      declared-file option. Its product faults run on the final candidate
+      library against the pin using the frozen declared_expected.csv; an
+      unfaulted final-library control must first CHECK PASS under the
+      same comparison. Every active fault must then exit 1 with its
+      required signal and the existing pairwise-distinct signal
+      requirement. The pin-against-pin repeat and structural controls
+      manufactured solely from pin observations use --declared=none.
+      Record the library and declared option for every control. Do not
+      regenerate declared expectations during fault runs. Further controls
       (transcripts committed): final against pin with the declared file
       passes; with --declared=none it fails, and oracle_flips.R shows the
       non-treated-fields differences are exactly the 52 declared cases;
       the pin as candidate with the declared file fails (the declared
-      difference is absent); pin against pin with --declared=none passes;
-      faults.R passes.
-      (5) Proofs on the final code. The oracle and its controls (4);
+      difference is absent); pin against pin with --declared=none passes.
+      (5) Proofs on the final code. The oracle, its controls and faults.R
+      on the final library with the declared file (4);
       identities in changed-engine mode (identity_check.R) against the
       workstream-43 close record (C:/Users/maxth/ledgr-wt/cut24-scratch/
       ldg3266/identity_ws43, engine 88b4237e): every logical identity
@@ -4196,7 +4264,9 @@ cuts:
       config, run identity, indicator and feature fingerprints, the
       feature-set hash and the store format are unchanged. Runs and sweeps
       whose indicator returned NA after warmup from a series path, custom
-      or TTR, now complete where they refused. ledgr_utc() returns the
+      or TTR, now complete where they refused, unless a sampled causality
+      check refuses them with ledgr_feature_lookahead_detected or
+      ledgr_indicator_gap_parity (decision 3). ledgr_utc() returns the
       same values and refusals, faster. NEWS: one line for post-warmup NA
       (with the engine-version consequence) and one for ledgr_utc(). No
       exported function, schema or stored format changes; the schema test
@@ -4225,6 +4295,7 @@ cuts:
       wrong answer; a third correction round stops for maintainer
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
+    cut_review: "CHANGES_REQUIRED in cut_review_25.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at fc66c0f8): R1-R5 required, R6 advisory, each applied in revision 2 with the reviewer's replacement text: R1 the na_late_def expectation in test-features.R named with its reason; R2 faults.R on the final library with the declared file; R3 declared-case semantics verified independently before recording, single-case mutation and malformed-declaration controls; R4 the gap-parity refusal and NA-cell evidence and carry behaviour declared and witnessed; R5 both clocks and the precompute, reuse, inspection and worker paths; R6 five mutant checks. TTR inclusion judged within the decision; identity design, the utc rewrite, the schema change and the not-run claims confirmed."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -8650,10 +8721,10 @@ tickets:
       declared_expected.csv, faults.R and the README.
     acceptance:
       - "Post-warmup NA from custom series_fn and from the TTR adapter completes; post-warmup NaN and infinite values refuse with ledgr_invalid_feature_output on both paths; warmup normalisation and the scalar path are unchanged"
-      - "LTB-0567 passes: for fn and series_fn through ledgr_run() and ledgr_sweep(), NA completes (run DONE), the strategy reads NA from the fourth session, evidence reads calculation_non_finite; NaN and Inf refuse on both paths with the run FAILED; TTR runSD n = 1 completes with no calculated cell. On the base, its series_fn NA and runSD expectations fail (transcript committed)"
+      - "LTB-0567 passes on both clocks (bar-native and declared-session, asserted per fixture): for fn and series_fn through ledgr_run() and ledgr_sweep(), NA completes (run DONE), the strategy reads NA from the fourth session, evidence reads calculation_non_finite; NaN and Inf refuse on both paths with the run FAILED; TTR runSD n = 1 completes with no calculation-valid cell; the newly reachable ledgr_feature_lookahead_detected and ledgr_indicator_gap_parity refusals; the literal finite/NA/finite-and-gap evidence and carry witness with retained-plane and recomputing evidence agreeing; on the NA-and-recovery fixture, explicit precompute, a sweep reusing it, pulse inspection and a two-worker sweep give the serial literal values and evidence (skip only when the worker backend is unavailable). On the base, its series_fn NA and runSD expectations fail (transcript committed)"
       - "contracts.md Indicator Computation carries decision 3's sentence and no accepted-change-pending notice for this decision; decisions.md's row names Cut 25 as owner; vignettes/custom-indicators.qmd's three passages say post-warmup NA is accepted on both paths and NaN and infinite values are errors; NEWS has one line naming the engine-version consequence; lean_core_rules_ledger.md has LR-24 with disposition change"
-      - "check.R --declared works as decision 4 states; declared_expected.csv holds exactly the 52 measured cases, each with refusal none, and its reason; faults.R and the pin repeat pass --declared=none; dev/feature_parity/README.md documents the option and the declared cases"
-      - "No registered test, fixture or oracle changes other than decision 1's, the added fixture and blocks, and decision 4's declared file, each with its stated reason"
+      - "check.R --declared works as decision 4 states; declared_expected.csv holds exactly the 52 cases frozen from oracle_flips.csv, each with refusal none, unique complete component keys, and its reason; missing, duplicate and extra declarations refuse; the accepted values were verified independently of candidate output before the file was written; single-component mutations of one declared case (values, NA mask, planes, handoffs), one undeclared flip and a restored NA refusal each fail; faults.R takes an explicit declared option, its product faults run on the final library with the declared file, the pin repeat and pin-only structural controls use --declared=none; dev/feature_parity/README.md documents the option and the declared cases"
+      - "No registered test, fixture or oracle changes other than decision 1's, the na_late_def expectation in test-features.R (decision 3, with base and candidate transcripts), the added fixture and blocks, and decision 4's declared file, each with its stated reason; removing the NaN refusal fails the independent tests"
     evidence: []
   - id: "LDG-3270"
     title: "Close Cut 25: final-code proofs"
@@ -8668,7 +8739,7 @@ tickets:
       dev/feature_parity/evidence/ldg3270/ runs each step in a fresh
       Rscript and keeps its output.
     acceptance:
-      - "Oracle: final against the pin d5b3a151 with the declared file CHECK PASS; the four controls of decision 4 behave as stated; faults.R FAULTS PASS"
+      - "Oracle: final against the pin d5b3a151 with the declared file CHECK PASS; every control of decision 4 behaves as stated; faults.R FAULTS PASS on the final library with the declared file after its unfaulted control passes, signal sets pairwise distinct, library and declared option recorded per control"
       - "identity_check.R --mode=changed-engine against the workstream-43 close record: logical identities equal, engine version changed from 88b4237e, old precompute refused before any candidate runs, stored runs and sweeps readable"
       - "census.R CENSUS CHECK PASS, names, roots and bindings unchanged; emitted_pin.R and counts.R pass unchanged"
       - "Full test suite in the default library (duckdb 2.0.1) and R CMD check --no-manual --no-build-vignettes pass; governance report: the same finding set as on the cut base ca635540, no finding added"
