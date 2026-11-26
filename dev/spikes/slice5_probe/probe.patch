@@ -1,0 +1,200 @@
+diff --git a/dev/lean_core/loop.R b/dev/lean_core/loop.R
+index 04743931..4ce59c82 100644
+--- a/dev/lean_core/loop.R
++++ b/dev/lean_core/loop.R
+@@ -73,11 +73,12 @@ lean_loop_coverage <- function(execution, entry = NULL) {
+   if (!is.null(entry)) lean_not_covered(entry)
+   substrate <- execution$history_substrate
+   pulses <- execution$pulses_posix
+-  if (!is.null(execution$compiled_accounting_model)) lean_not_covered("compiled FIFO")
++  # slice-5 probe: compiled FIFO refusal lifted (the lean FIFO runs instead)
++  # if (!is.null(execution$compiled_accounting_model)) lean_not_covered("compiled FIFO")
+   if (!identical(execution$event_mode, "buffered")) lean_not_covered("db_live")
+   # D3 Section 2: only the pin's default (a control key is an entry refusal); a sweep candidate
+   # carries the sweep's own 0L.
+-  if (!(as.integer(execution$checkpoint_every) %in% c(10000L, 0L))) {
++  if (FALSE && !(as.integer(execution$checkpoint_every) %in% c(10000L, 0L))) {  # slice-5 probe: lifted
+     lean_not_covered("a checkpoint_every control")
+   }
+   if (!identical(as.integer(execution$start_idx), 1L)) lean_not_covered("restart")
+diff --git a/dev/lean_core/loop_harness.R b/dev/lean_core/loop_harness.R
+index c9b4388d..a4326e09 100644
+--- a/dev/lean_core/loop_harness.R
++++ b/dev/lean_core/loop_harness.R
+@@ -53,8 +53,10 @@ lean_mark <- function(feature) lean_entry$backstop <- c(lean_entry$backstop, fea
+ 
+ lean_harness_hooks <- function() list(
+   entry_refusal = function() {
+-    if (isTRUE(lean_entry$walk_forward)) return("walk-forward")
+-    if (isTRUE(lean_entry$control_checkpoint)) return("a checkpoint_every control")
++    # slice-5 probe: walk-forward entry refusal lifted
++    # if (isTRUE(lean_entry$walk_forward)) return("walk-forward")
++    # slice-5 probe: checkpoint control entry refusal lifted
++    # if (isTRUE(lean_entry$control_checkpoint)) return("a checkpoint_every control")
+     NULL
+   },
+   refused = function(feature) lean_entry$refused <- c(lean_entry$refused, feature),
+@@ -155,14 +157,58 @@ lean_pin_sweep_impl <- get("ledgr_sweep_impl", envir = asNamespace("ledgr"))
+ lean_sweep_impl <- local({
+   w <- lean_pin_sweep_impl
+   body(w) <- substitute({
+-    if (isTRUE(tryCatch(ledgr_parallel_workers_normalize(workers) > 1L, error = function(e) FALSE))) {
+-      lean_entry$refused <- c(lean_entry$refused, "sweep workers")
+-    }
++    # slice-5 probe: sweep workers load the lean core (lean_worker_setup)
++    # if (isTRUE(tryCatch(ledgr_parallel_workers_normalize(workers) > 1L, error = function(e) FALSE))) {
++    #   lean_entry$refused <- c(lean_entry$refused, "sweep workers")
++    # }
+     B
+   }, list(B = body(lean_pin_sweep_impl)))
+   environment(w) <- list2env(list(lean_entry = lean_entry), parent = environment(lean_pin_sweep_impl))
+   w
+ })
++# slice-5 probe: after the pin starts its workers, each worker loads the lean
++# core from the same pinned library and installs the lean loop with the
++# harness hooks; every fold a worker runs appends one line to
++# Sys.getenv("LEAN_PROBE_WORKER_LOG"): pid, lean folds so far, refused,
++# backstop, store accesses, sink calls while pulses ran.
++lean_pin_worker_setup <- get("ledgr_parallel_worker_setup", envir = asNamespace("ledgr"))
++lean_worker_setup <- function(workers = 1L, preflight, worker_packages = NULL, backend = "mirai",
++                              backend_available = NULL, dry_run = TRUE) {
++  cat("SETUP", Sys.getpid(), "workers", workers, "dry_run", dry_run, "\n",
++      file = Sys.getenv("LEAN_PROBE_WORKER_LOG"), append = TRUE)
++  plan <- lean_pin_worker_setup(workers = workers, preflight = preflight, worker_packages = worker_packages,
++                                backend = backend, backend_available = backend_available, dry_run = dry_run)
++  if (!isTRUE(dry_run) && ledgr_parallel_workers_normalize(workers) > 1L) {
++    expr <- substitute(tryCatch({
++      cat("WORKER", Sys.getpid(), "ledgr from", getNamespaceInfo("ledgr", "path"), "\n", file = LOG, append = TRUE)
++      source(LOAD_R)
++      .lean <- lean_core_load(LIB, debug = DEBUG)
++      .lean$lean_loop_install(hooks = TRUE)
++      local({
++        ns <- asNamespace("ledgr")
++        env <- .lean
++        inner <- get("ledgr_fold_envelope", envir = ns)
++        log <- LOG
++        wrapped <- function(...) {
++          on.exit(cat(Sys.getpid(), env$lean_entry$lean_folds,
++                      paste(env$lean_entry$refused, collapse = ";"),
++                      paste(env$lean_entry$backstop, collapse = ";"),
++                      length(env$lean_entry$store_access), length(env$lean_entry$sink_calls),
++                      "\n", file = log, append = TRUE))
++          inner(...)
++        }
++        unlockBinding("ledgr_fold_envelope", ns)
++        assign("ledgr_fold_envelope", wrapped, envir = ns)
++        lockBinding("ledgr_fold_envelope", ns)
++      })
++      cat("WORKER", Sys.getpid(), "lean installed\n", file = LOG, append = TRUE)
++    }, error = function(e) cat("WORKER", Sys.getpid(), "ERROR", conditionMessage(e), "\n", file = LOG, append = TRUE)),
++    list(LOAD_R = file.path(.lean_home, "load.R"), LIB = .lean_lib, DEBUG = .lean_debug,
++            LOG = Sys.getenv("LEAN_PROBE_WORKER_LOG")))
++    ledgr_parallel_mirai_everywhere_expr(expr, workers = ledgr_parallel_workers_normalize(workers))
++  }
++  plan
++}
+ lean_walk_forward <- local({
+   w <- lean_pin_walk_forward
+   body(w) <- substitute({
+@@ -206,7 +252,8 @@ lean_loop_install <- function(hooks = TRUE) {
+   lean <- list(ledgr_fold_envelope = lean_fold_envelope,
+                "$.ledgr_pulse_context" = lean_ctx_dollar,
+                ledgr_run_fold = lean_run_fold, ledgr_walk_forward = lean_walk_forward,
+-               ledgr_sweep_impl = lean_sweep_impl)
++               ledgr_sweep_impl = lean_sweep_impl,
++               ledgr_parallel_worker_setup = lean_worker_setup)  # slice-5 probe
+   if (!hooks) lean <- lean[1:2]
+   pinned <- lapply(stats::setNames(names(lean), names(lean)), get, envir = ns)
+   if (!identical(pinned[[2L]], lean_pin_ctx_dollar)) {
+diff --git a/dev/lean_core/parity/loop_parity.R b/dev/lean_core/parity/loop_parity.R
+index bba844c0..157d5d6d 100644
+--- a/dev/lean_core/parity/loop_parity.R
++++ b/dev/lean_core/parity/loop_parity.R
+@@ -480,6 +480,7 @@ source(file.path(here, "loop_workloads.R"))
+ source(file.path(here, "loop_workloads_slice2.R"))
+ source(file.path(here, "loop_workloads_slice3.R"))
+ source(file.path(here, "loop_workloads_slice4.R"))
++source(file.path(here, "loop_workloads_slice5.R"))  # slice-5 probe
+ extra <- c(list(
+   crossover_3x40 = crossover(3L, 40L),
+   crossover_10x300 = crossover(10L, 300L),
+@@ -504,7 +505,7 @@ extra <- c(list(
+     collect_open(fx$snapshot, db, "lp-prep-fixture", fx$exp, seed = 1L,
+                  params = utils::modifyList(lc_prep_fixture_params, list(trade = TRUE, lookback = 10L, n = 3L)))
+   }
+-), loop_constructed, loop_witnesses, loop_slice2, loop_slice3, loop_slice4)
++), loop_constructed, loop_witnesses, loop_slice2, loop_slice3, loop_slice4, loop_slice5)  # slice-5 probe
+ all_ids <- c(names(a0_workloads), names(extra))
+ ids <- strsplit(arg("workloads", paste(all_ids, collapse = ",")), ",")[[1L]]
+ if (length(bad <- setdiff(ids, all_ids))) stop("unknown workload(s): ", paste(bad, collapse = ", "), call. = FALSE)
+diff --git a/dev/lean_core/parity/loop_workloads.R b/dev/lean_core/parity/loop_workloads.R
+index 4410010d..9149241c 100644
+--- a/dev/lean_core/parity/loop_workloads.R
++++ b/dev/lean_core/parity/loop_workloads.R
+@@ -675,8 +675,11 @@ loop_witnesses <- list(
+ # Workloads whose lean arm must name this refusal before the first pulse;
+ # a missing refusal fails the workload even when the outputs match.
+ loop_expect_refused <- list(
+-  witness_walk_forward = "walk-forward",
+-  witness_checkpoint_control = "a checkpoint_every control",
+-  witness_checkpoint_null = "a checkpoint_every control",
+-  witness_sweep_workers = "sweep workers"
++  # slice-5 probe: walk-forward refusal lifted
++  # witness_walk_forward = "walk-forward",
++  # slice-5 probe: checkpoint refusals lifted
++  # witness_checkpoint_control = "a checkpoint_every control",
++  # witness_checkpoint_null = "a checkpoint_every control",
++  # slice-5 probe: sweep workers run lean
++  # witness_sweep_workers = "sweep workers"
+ )
+diff --git a/dev/lean_core/parity/loop_workloads_slice5.R b/dev/lean_core/parity/loop_workloads_slice5.R
+new file mode 100644
+index 00000000..65f88460
+--- /dev/null
++++ b/dev/lean_core/parity/loop_workloads_slice5.R
+@@ -0,0 +1,45 @@
++# slice-5 probe: workloads for the slice-5 features with no workload of their
++# own. Sourced by loop_parity.R after loop_workloads_slice4.R (whose s4_
++# helpers it uses).
++#
++# Restart (a ledgr_run() of an existing nonterminal run_id): the first
++# attempt fails in the strategy at day 5, after fills on days 2 and 4; the
++# second attempt, under the same run_id, replaces it and completes. The
++# failure is switched by an option, not a captured variable (preflight
++# refuses captured state); the pulse dates are literals in the body.
++
++s5_restart_strategy <- function() {
++  f <- function(ctx, params) NULL
++  body(f) <- substitute({
++    target <- ctx$hold()
++    if (isTRUE(getOption("ledgr.s5_probe_fail")) && identical(ctx$ts_utc, D5)) stop("s5 probe failure")
++    if (identical(ctx$ts_utc, D2)) target[["A"]] <- 5
++    if (identical(ctx$ts_utc, D4)) target[["B"]] <- 2
++    if (identical(ctx$ts_utc, D7)) {
++      target[["A"]] <- 1
++      target[["C"]] <- 4
++    }
++    target
++  }, list(D2 = s4_iso(2L), D4 = s4_iso(4L), D5 = s4_iso(5L), D7 = s4_iso(7L)))
++  environment(f) <- ns
++  f
++}
++
++s5_restart <- function(name, positions = NULL, cost_basis = NULL) function() {
++  db <- s4_snapshot(name, s4_closes(), NULL)
++  snapshot <- ledgr::ledgr_snapshot_open(db, name, verify = TRUE)
++  on.exit(ledgr::ledgr_snapshot_close(snapshot))
++  exp <- s4_exp(s5_restart_strategy(), positions = positions, cost_basis = cost_basis)(snapshot)
++  run_id <- paste0("s5-", name)
++  old <- options(ledgr.s5_probe_fail = TRUE)
++  on.exit(options(old), add = TRUE)
++  first <- collect_open(snapshot, db, run_id, exp, seed = 21L)
++  options(ledgr.s5_probe_fail = FALSE)
++  second <- collect_open(snapshot, db, run_id, exp, seed = 21L)
++  list(attempt1 = first$run, run = second$run)
++}
++
++loop_slice5 <- list(
++  s5_restart_plain = s5_restart("s5_restart_plain"),
++  s5_restart_opening = s5_restart("s5_restart_opening", positions = c(A = 3, B = 1), cost_basis = c(A = 30, B = 44))
++)
