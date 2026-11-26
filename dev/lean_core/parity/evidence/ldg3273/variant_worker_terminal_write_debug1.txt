@@ -1,0 +1,2 @@
+witness_sweep_workers        CAUGHT    identical  lean 2  refused []  backstop []  store [duckdb:::rapi_startup; duckdb:::rapi_lock; duckdb:::rapi_connect; duckdb:::rapi_prepare; duckdb:::rapi_execute; duckdb:::rapi_release; ledgr::ledgr_store_append; duckdb:::rapi_connection_valid; duckdb:::rapi_register_df; duckdb:::rapi_unregister_df; duckdb:::rapi_disconnect]  sink []  holds 0  append<=1  range<=14  pinned 1.4 s  lean 4.1 s  workers pin 2/2 lean 2/2 records 2 entries 2
+10 tables, 0 different; verdicts: CAUGHT 1

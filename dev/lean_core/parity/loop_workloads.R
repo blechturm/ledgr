@@ -560,9 +560,9 @@ loop_witnesses <- list(
     tables$run$rng_entry <- entry
     tables
   },
-  # Round 4, finding 3: a sweep with workers is refused by name at entry
-  # and runs whole on the pin. The workers load the pinned library, not
-  # this source tree (the working directory is moved off it).
+  # Round 4, finding 3: a sweep with workers. Since Cut 26 every worker
+  # loads the lean fold (loop_workers.R); the workers load the pinned
+  # library, not this source tree (the working directory is moved off it).
   witness_sweep_workers = function() {
     db <- lw_witness_db()
     snapshot <- ledgr::ledgr_snapshot_open(db, "lw_witness", verify = TRUE)
@@ -676,6 +676,5 @@ loop_witnesses <- list(
 # a missing refusal fails the workload even when the outputs match.
 loop_expect_refused <- list(
   witness_checkpoint_control = "a checkpoint_every control",
-  witness_checkpoint_null = "a checkpoint_every control",
-  witness_sweep_workers = "sweep workers"
+  witness_checkpoint_null = "a checkpoint_every control"
 )

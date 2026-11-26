@@ -1,0 +1,2 @@
+s5_workers_consecutive       CAUGHT    DIFFERENT  lean 4  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.4 s  lean 6.5 s  workers pin 4/4 lean 4/4 records 4 entries 4  new errors [Ledger event buffer exceeded the run's maximum event capacity.]
+20 tables, 4 different; verdicts: CAUGHT 1

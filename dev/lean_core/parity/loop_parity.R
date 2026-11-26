@@ -431,8 +431,67 @@ loop_mutations <- list(
     prepare = TRUE, dead = "DBI::dbBind(stmt, list(7L))"),
   control_unreached = variant("differ", list(edit("loop.R", "lean_loop_debug_packet",
     "  full <- stats::setNames(pos, ids)", "  stop(\"control: never reached with debug off\")", "before"))),
-  workers_guard_off = variant("unrefused", list(edit("loop_harness.R", "lean_sweep_impl",
-    "      lean_entry$refused <- c(lean_entry$refused, \"sweep workers\")")), tables = "^$")
+  # Cut 26 (LDG-3273): the sweep-worker channel (loop_workers.R). A worker
+  # without the lean loop, a dropped or duplicated record and a worker on
+  # another build of the same commit each fail the channel check ("worker");
+  # the backstop rerun and its RNG restore skipped on a worker backstop.
+  worker_lean_not_installed = variant("worker", list(edit("loop_workers.R", "lean_worker_start",
+    "  lean_loop_install(hooks = identical(spec$hooks, \"harness\"))", "  lean_entry$variant_reached <- TRUE", mark = FALSE)),
+    tables = "^$"),
+  worker_record_dropped = variant("worker", list(edit("loop_workers.R", "lean_worker_task",
+    "    saveRDS(rec, file.path(spec$channel, sprintf(\"rec_%d_%d_%d.rds\", spec$sweep_seq, Sys.getpid(), lean_workers$tasks)))",
+    c("    rec$variant_reached <- TRUE",
+      "    if (!identical(rec$run_id, \"b\")) saveRDS(rec, file.path(spec$channel, sprintf(\"rec_%d_%d_%d.rds\", spec$sweep_seq, Sys.getpid(), lean_workers$tasks)))"),
+    mark = FALSE)), tables = "^$"),
+  worker_record_duplicated = variant("worker", list(edit("loop_workers.R", "lean_worker_task",
+    "    saveRDS(rec, file.path(spec$channel, sprintf(\"rec_%d_%d_%d.rds\", spec$sweep_seq, Sys.getpid(), lean_workers$tasks)))",
+    c("    rec$variant_reached <- TRUE",
+      "    saveRDS(rec, file.path(spec$channel, sprintf(\"rec_%d_%d_%d.rds\", spec$sweep_seq, Sys.getpid(), lean_workers$tasks)))",
+      "    saveRDS(rec, file.path(spec$channel, sprintf(\"rec_%d_%d_%d_again.rds\", spec$sweep_seq, Sys.getpid(), lean_workers$tasks)))"),
+    mark = FALSE)), tables = "^$"),
+  worker_wrong_build = variant("worker", list(
+    edit("loop_workers.R", "lean_worker_setup", "  ledgr_parallel_mirai_everywhere_expr(substitute({", c(
+      "  wrong <- file.path(tempdir(), \"lean_wrong_build\")",
+      "  if (!dir.exists(wrong)) {",
+      "    dir.create(wrong)",
+      "    file.copy(file.path(.lean_lib, c(\"ledgr\", \"LEDGR_INSTALLED_FROM_COMMIT\")), wrong, recursive = TRUE)",
+      "  }",
+      "  spec$lib <- normalizePath(wrong, winslash = \"/\")"), "before"),
+    edit("loop_workers.R", "lean_worker_setup", "      source(.lean_spec$load_r)",
+      "      if (\"ledgr\" %in% loadedNamespaces()) unloadNamespace(\"ledgr\")", "before", mark = FALSE)),
+    tables = "^$"),
+  worker_backstop_rerun_skipped = variant("differ", list(edit("loop_harness.R", "lean_loop_run",
+    "  if (length(lean_entry$backstop) > 0L) {", "  if (FALSE) {")),
+    error = "The lean loop does not cover test seam: backstop"),
+  worker_rng_restore_skipped = variant("differ", list(edit("loop_harness.R", "lean_loop_run", "    ledgr_rng_restore(rng)")),
+    tables = "^rng_(entry|after)$"),
+  # Worker-local faults (decision 5): each signal reaches the parent through
+  # the worker records, with the public tables identical where the fault is
+  # silent. The store, sink and expansion variants above run on worker
+  # workloads too (loop_variants.csv); these exist for workers only. A sweep
+  # candidate's memory sink has no implicit-record encoder (the pin's
+  # R/output-handler.R:625), so a worker never computes holds; the hold
+  # variant drives the detector's hook directly to prove its transport.
+  worker_terminal_write = variant("store", list(edit("loop.R", "run_loop", "    hooks$publish(lean_loop_publish)", c(
+    "    lean_entry$variant_reached <- TRUE",
+    "    scratch <- DBI::dbConnect(duckdb::duckdb())",
+    "    DBI::dbExecute(scratch, \"CREATE TABLE probe (value INTEGER)\")",
+    "    ledgr_store_append(scratch, \"probe\", data.frame(value = 1L))",
+    "    DBI::dbDisconnect(scratch, shutdown = TRUE)"), "after", mark = FALSE)),
+    tables = "^$", path = "ledgr::ledgr_store_append"),
+  worker_capacity_lowered = variant("differ", list(edit("loop.R", "lean_fold_envelope_plain",
+    "  capacity <- as.integer(hooks$capacity(max_events))", "  capacity <- 1L", "after")),
+    error = "exceeded the run's maximum event capacity", tables = "^sweep"),
+  # Cut 26 (LDG-3272): the lean E stage without one of the pin's two compiled
+  # selector admission checks runs the lean FIFO where the pin refuses.
+  compiled_dispatch_skipped = variant("differ", list(edit("loop.R", "lean_fold_envelope_plain",
+    "    ledgr_require_compiled_spot_fifo_dispatch(execution, output_handler)")),
+    lost = "Compiled spot-FIFO accelerator is unavailable", tables = "^sweep"),
+  compiled_event_kinds_skipped = variant("differ", list(edit("loop.R", "lean_fold_envelope_plain",
+    "      ledgr_require_compiled_spot_fifo_event_kinds(execution$corporate_action_plan$event_kinds())")),
+    lost = "CASHFLOW", tables = "^sweep"),
+  worker_hold_signal = variant("hold", list(edit("loop.R", "lean_p5_commit", "    hd_has_recon[[i]] <<- TRUE",
+    "    if (i == 1L) hooks$hold_expansion(isTRUE(live$in_pulses), 1L)", "after")), tables = "^$")
 )
 if (nzchar(mutation) && is.null(loop_mutations[[mutation]])) stop("unknown --mutation: ", mutation, call. = FALSE)
 
@@ -443,6 +502,10 @@ if (nzchar(mutation)) {
   lean_load_edited(lean, lean_core_home, loop_mutations[[mutation]]$edits,
                    marker = "lean_entry$variant_reached <- TRUE")
   lean$lean_entry$mutation <- mutation
+  # Cut 26: sweep workers load the same edits (loop_workers.R).
+  lean$lean_workers$edits <- loop_mutations[[mutation]]$edits
+  lean$lean_workers$edits_file <- file.path(here, "loop_edits.R")
+  lean$lean_workers$marker <- "lean_entry$variant_reached <- TRUE"
 }
 if (nzchar(witness_file)) lean_core_source(lean, witness_file)
 
@@ -574,6 +637,7 @@ if (!is.null(freeze)) {
 mode <- if (inert) "inert" else if (batch_rows == 1L) "batch1" else "gate"
 frozen <- if (is.null(freeze)) NULL else freeze[freeze$mode == mode & freeze$debug == as.integer(debug), ]
 rows <- list()
+worker_rows <- list()   # Cut 26: the lean arm's worker records, per workload
 verdicts <- character()
 for (id in ids) {
   # The caller's RNG state at entry, set outside the workload lean_loop_run()
@@ -596,6 +660,7 @@ for (id in ids) {
   lean$lean_entry$variant_reached <- FALSE
   if (exists("capacity", envir = lean$lean_loop_last_times, inherits = FALSE)) rm("capacity", envir = lean$lean_loop_last_times)
   attempt <- if (inert) {
+    lean$lean_entry_reset()
     restore <- lean$lean_loop_install(hooks = FALSE)
     value <- tryCatch(run_tables(id), error = escaped, finally = restore())
     structure(list(value = value), lean = as.list(lean$lean_entry))
@@ -607,6 +672,14 @@ for (id in ids) {
   workers_lean <- worker_origin$read()
   # Slice 4: the lean arm too, for reach cross-checks and diagnosis.
   if (nzchar(dump_dir) && dump_lean) saveRDS(attempt$value, file.path(dump_dir, paste0(id, "_lean.rds")))
+  # Cut 26: the lean arm's merged worker records, one row per record.
+  if (!is.null(attr(attempt, "lean")$worker_table)) {
+    worker_rows[[length(worker_rows) + 1L]] <- cbind(workload = id, debug = as.integer(debug), mode = mode,
+      attr(attempt, "lean")$worker_table, stringsAsFactors = FALSE)
+  }
+  if (nzchar(dump_dir) && !is.null(attr(attempt, "lean")$worker_table)) {
+    saveRDS(attr(attempt, "lean")$worker_table, file.path(dump_dir, paste0(id, "_workers.rds")))
+  }
   if (!is.null(loop_entry_rng[[id]])) RNGkind("default", "default", "default")
   candidate <- attempt$value
   rec <- attr(attempt, "lean")
@@ -631,10 +704,12 @@ for (id in ids) {
   expected_refusal <- loop_expect_refused[[id]]
   seen <- list(
     differ = !all(res$identical),
-    # Cut 26: a worker in either arm on another build than the pin
-    worker = !workers_pinned$ok || !workers_lean$ok,
+    # Cut 26: a worker in either arm on another build than the pin, or a
+    # failed check of the lean arm's worker records (loop_workers.R)
+    worker = !workers_pinned$ok || !workers_lean$ok || length(rec$worker_faults) > 0L,
     sink = length(rec$sink_calls) > 0L,
-    store = length(rec$store_access) > 0L,
+    # a store call while pulses ran, or in a worker candidate at any time
+    store = length(rec$store_access) > 0L || length(rec$worker_store) > 0L,
     hold = rec$hold_calls > 0L,
     unrefused = !is.null(expected_refusal) && !expected_refusal %in% rec$refused,
     unbounded = rec$lean_folds > 0L && (rec$max_append_rows > batch_rows || (batch_rows == 1L && rec$max_range_pulses > 1L)),
@@ -652,7 +727,7 @@ for (id in ids) {
   lost_errors <- setdiff(cond_messages(pinned), cond_messages(candidate))
   # read live: the harness entry copies its record before deciding a rerun
   reached <- isTRUE(lean$lean_entry$variant_reached)
-  verdict <- if (seen$worker) "WORKER" else if (!nzchar(mutation)) {
+  verdict <- if (seen$worker && !(nzchar(mutation) && identical(loop_mutations[[mutation]]$expect, "worker"))) "WORKER" else if (!nzchar(mutation)) {
     if (seen$differ || seen$sink || seen$store || seen$hold || seen$unrefused || seen$unbounded) "FAIL"
     else if (identical(branch, FALSE)) "BRANCH"
     else if (!path_ok) "PATH"
@@ -665,8 +740,8 @@ for (id in ids) {
     tables_ok <- is.null(v$tables) || (identical(v$tables, "^$") && !length(differing)) ||
       any(grepl(v$tables, differing))
     lost_ok <- is.null(v$lost) || any(grepl(v$lost, lost_errors))
-    path_ok <- is.null(v$path) || any(grepl(v$path, c(rec$store_access, rec$sink_calls)))
-    if (needs_lean && rec$lean_folds == 0L && !length(rec$backstop)) "NOT RUN"
+    path_ok <- is.null(v$path) || any(grepl(v$path, c(rec$store_access, rec$sink_calls, rec$worker_store)))
+    if (needs_lean && rec$lean_folds == 0L && !length(rec$backstop) && rec$worker_records == 0L) "NOT RUN"
     else if (!reached) "UNREACHED"
     else if (length(unrelated)) "UNRELATED"
     else if (isTRUE(seen[[v$expect]]) && tables_ok && lost_ok && path_ok) "CAUGHT" else "MISSED"
@@ -700,13 +775,17 @@ for (id in ids) {
   worker_text <- function(w) if (!length(w$setups)) "" else sprintf("%d/%d %s", w$reported, w$workers, paste(w$origins, collapse = "; "))
   res$workers_pinned <- worker_text(workers_pinned)
   res$workers_lean <- worker_text(workers_lean)
+  res$worker_records <- rec$worker_records
+  res$worker_entries <- rec$worker_entries
+  res$worker_faults <- paste(rec$worker_faults, collapse = " | ")
+  res$worker_store <- show(rec$worker_store)
   res$verdict <- verdict
   rows <- c(rows, list(res))
   cat(sprintf("%-28s %-9s %s  lean %d  refused [%s]  backstop [%s]  store [%s]  sink [%s]  holds %d  append<=%d  range<=%d  pinned %.1f s  lean %.1f s%s%s\n",
               id, verdict, if (seen$differ) "DIFFERENT" else "identical", rec$lean_folds, show(rec$refused),
-              show(rec$backstop), show(rec$store_access), show(rec$sink_calls), rec$hold_calls, rec$max_append_rows,
+              show(rec$backstop), show(c(rec$store_access, rec$worker_store)), show(rec$sink_calls), rec$hold_calls, rec$max_append_rows,
               rec$max_range_pulses, t1 - t0, t2 - t1,
-              if (length(workers_pinned$setups) || length(workers_lean$setups)) sprintf("  workers pin %d/%d lean %d/%d", workers_pinned$reported, workers_pinned$workers, workers_lean$reported, workers_lean$workers) else "",
+              if (length(workers_pinned$setups) || length(workers_lean$setups)) sprintf("  workers pin %d/%d lean %d/%d records %d entries %d%s", workers_pinned$reported, workers_pinned$workers, workers_lean$reported, workers_lean$workers, rec$worker_records, as.integer(rec$worker_entries), if (length(rec$worker_faults)) paste0(" faults [", paste(rec$worker_faults, collapse = " | "), "]") else "") else "",
               if (length(new_errors)) paste0("  new errors [", paste(substr(new_errors, 1L, 120L), collapse = " | "), "]") else ""))
 }
 full_run_requested <- !any(grepl("^--workloads=", commandArgs(TRUE)))
@@ -724,6 +803,7 @@ if (!is.null(frozen)) {
 res <- do.call(rbind, rows)
 dir.create(dirname(out), recursive = TRUE, showWarnings = FALSE)
 utils::write.csv(res, out, row.names = FALSE)
+if (length(worker_rows)) utils::write.csv(do.call(rbind, worker_rows), sub("[.]csv$", "_workers.csv", out), row.names = FALSE)
 cat(sprintf("%d tables, %d different; verdicts: %s\n", nrow(res), sum(!res$identical),
             paste(names(table(verdicts)), table(verdicts), sep = " ", collapse = ", ")))
 bad <- if (nzchar(mutation)) verdicts != "CAUGHT" else verdicts %in% c("FAIL", "PATH", "BRANCH", "WORKER")

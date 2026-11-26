@@ -1,0 +1,5 @@
+pin build: C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr @ d5b3a151
+final build: C:/Users/maxth/ledgr-wt/slice5-scratch/lib-final-2bd1a33e/ledgr @ 2bd1a33e
+records: pin 96, final 96
+BRIDGE CHECK PASS
+exit 0

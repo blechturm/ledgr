@@ -1,0 +1,17 @@
+pin build: C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr @ d5b3a151
+final build: C:/Users/maxth/ledgr-wt/slice5-scratch/lib-final-2bd1a33e/ledgr @ 2bd1a33e
+records: pin 96, final 96
+SIGNAL route final bar_native feature_128418ae19fa/strategy_041a774a1128 values: 2 distinct values across routes implicit,implicit_w2,reuse,reuse_w2
+SIGNAL route final bar_native feature_a82ff44ebfb8/strategy_041a774a1128 values: 2 distinct values across routes implicit,implicit_w2,reuse,reuse_w2
+SIGNAL route final declared_sessions feature_128418ae19fa/strategy_041a774a1128 values: 2 distinct values across routes implicit,implicit_w2,reuse,reuse_w2
+SIGNAL route final declared_sessions feature_a82ff44ebfb8/strategy_041a774a1128 values: 2 distinct values across routes implicit,implicit_w2,reuse,reuse_w2
+SIGNAL values bar_native implicit_w2 feature_a82ff44ebfb8/strategy_041a774a1128: final differs from the pin
+SIGNAL values bar_native implicit_w2 feature_128418ae19fa/strategy_041a774a1128: final differs from the pin
+SIGNAL values bar_native reuse_w2 feature_128418ae19fa/strategy_041a774a1128: final differs from the pin
+SIGNAL values bar_native reuse_w2 feature_a82ff44ebfb8/strategy_041a774a1128: final differs from the pin
+SIGNAL values declared_sessions implicit_w2 feature_128418ae19fa/strategy_041a774a1128: final differs from the pin
+SIGNAL values declared_sessions implicit_w2 feature_a82ff44ebfb8/strategy_041a774a1128: final differs from the pin
+SIGNAL values declared_sessions reuse_w2 feature_128418ae19fa/strategy_041a774a1128: final differs from the pin
+SIGNAL values declared_sessions reuse_w2 feature_a82ff44ebfb8/strategy_041a774a1128: final differs from the pin
+BRIDGE CHECK FAIL
+exit 1

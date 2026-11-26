@@ -7,14 +7,15 @@
 #
 # What the harness adds around a lean fold:
 # - the entry record (`lean_entry`): folds run lean, refusals, attempt marks;
-# - entry refusals the fold cannot see: a control$checkpoint_every key (D3
-#   Section 2) and a sweep with workers (slice 5); walk-forward runs lean
-#   since Cut 26;
+# - the entry refusal the fold cannot see: a control$checkpoint_every key
+#   (D3 Section 2); walk-forward and sweep workers run lean since Cut 26
+#   (sweep workers through loop_workers.R);
 # - the attempt mark and whole-workload retry (19.2 point 1): a coverage
 #   condition raised mid-run (lean_abort_attempt()) marks the attempt, and
 #   the complete workload reruns on the pin with the entry RNG restored.
 #   Slice 3 removed the history-name backstop stubs (Section 19.11): no
-#   strategy call is scanned any more;
+#   strategy call is scanned any more. A test seam (Cut 26) marks the
+#   attempt after a set number of strategy calls (`backstop_after`);
 # - two detectors while pulses run: every call into the DuckDB backend
 #   bridges (any store statement, registration or relation) and every call
 #   to the fold's output handler (the terminal sink);
@@ -45,6 +46,13 @@ lean_entry_reset <- function() {
   lean_entry$measure <- FALSE                 # seam: record the terminal-transfer peak
   lean_entry$mutation <- ""                   # the text mutation loaded, for the record only
   lean_entry$max_range_pulses <- 0L           # widest expanded pulse range
+  lean_entry$backstop_after <- NULL           # seam: mark the attempt after this many strategy calls
+  lean_entry$seam_calls <- 0L
+  lean_entry$worker_records <- 0L             # sweep-worker records merged (loop_workers.R)
+  lean_entry$worker_entries <- 0              # envelope entries the workers observed
+  lean_entry$worker_faults <- character()     # failed channel checks
+  lean_entry$worker_store <- character()      # store calls in a worker candidate, at any time
+  lean_entry$worker_table <- NULL             # one row per worker record
 }
 lean_entry_reset()
 
@@ -62,7 +70,16 @@ lean_harness_hooks <- function() list(
     lean_watch_backend(live)
   },
   handler = function(h, live) lean_watch_handler(h, live),
-  uncovered = function() lean_entry$uncovered,
+  uncovered = function() {
+    if (!is.null(lean_entry$backstop_after)) {
+      lean_entry$seam_calls <- lean_entry$seam_calls + 1L
+      if (lean_entry$seam_calls > lean_entry$backstop_after) {
+        lean_mark("test seam: backstop")
+        return("test seam: backstop")
+      }
+    }
+    lean_entry$uncovered
+  },
   mark = lean_mark,
   committed = function(reader) lean_entry$committed <- reader,
   capacity = function(default) lean_entry$capacity %||% default,
@@ -146,22 +163,6 @@ lean_run_fold <- function(config, run_id = NULL, control = list(), metric_contex
   on.exit(lean_entry$control_checkpoint <- FALSE)
   lean_pin_run_fold(config, run_id, control, metric_context, history_substrate)
 }
-# A sweep with more than one worker (slice 5) runs its candidates in other
-# processes, which never load the lean fold: refused by name at sweep entry,
-# before dispatch, and run whole on the pin.
-lean_pin_sweep_impl <- get("ledgr_sweep_impl", envir = asNamespace("ledgr"))
-lean_sweep_impl <- local({
-  w <- lean_pin_sweep_impl
-  body(w) <- substitute({
-    if (isTRUE(tryCatch(ledgr_parallel_workers_normalize(workers) > 1L, error = function(e) FALSE))) {
-      lean_entry$refused <- c(lean_entry$refused, "sweep workers")
-    }
-    B
-  }, list(B = body(lean_pin_sweep_impl)))
-  environment(w) <- list2env(list(lean_entry = lean_entry), parent = environment(lean_pin_sweep_impl))
-  w
-})
-
 # The harness entry (19.2 point 1): runs `fn` (a complete public workload)
 # with the lean loop installed. If the attempt was marked, however it ended
 # (returned, failed, or failed inside a caller's own handler), it is
@@ -184,18 +185,20 @@ lean_loop_run <- function(fn) {
   structure(list(value = out), lean = record)
 }
 
-# Binds the lean envelope, the context read method and the entry recorders
-# over the pin and installs the harness hooks; returns the function that
-# restores the pin and the inert hooks. With hooks = FALSE only the envelope
-# and the read method are bound and the hooks stay inert, as the fold would
-# run in production (checklist row 15).
+# Binds the lean envelope, the context read method, the sweep-worker loader
+# and dispatch recorder (loop_workers.R) and the entry recorder over the pin
+# and installs the harness hooks; returns the function that restores the pin
+# and the inert hooks and merges the workers' records. With hooks = FALSE the
+# entry recorder is not bound and the hooks stay inert, as the fold would run
+# in production (checklist row 15); workers still load the lean fold.
 lean_loop_install <- function(hooks = TRUE) {
   ns <- asNamespace("ledgr")
   lean <- list(ledgr_fold_envelope = lean_fold_envelope,
                "$.ledgr_pulse_context" = lean_ctx_dollar,
-               ledgr_run_fold = lean_run_fold,
-               ledgr_sweep_impl = lean_sweep_impl)
-  if (!hooks) lean <- lean[1:2]
+               ledgr_parallel_worker_setup = lean_worker_setup,
+               ledgr_sweep_eval_candidate_tasks_parallel = lean_worker_dispatch,
+               ledgr_run_fold = lean_run_fold)
+  if (!hooks) lean <- lean[1:4]
   pinned <- lapply(stats::setNames(names(lean), names(lean)), get, envir = ns)
   if (!identical(pinned[[2L]], lean_pin_ctx_dollar)) {
     stop("lean_loop_install: the pinned read method is not bound (already installed?)", call. = FALSE)
@@ -208,10 +211,12 @@ lean_loop_install <- function(hooks = TRUE) {
     }
     registerS3method("$", "ledgr_pulse_context", values[[2L]], envir = ns)
   }
+  lean_workers_open(hooks, pinned)
   bind(lean)
   if (hooks) lean_hooks <<- lean_harness_hooks()
   function() {
     bind(pinned)
     lean_hooks <<- lean_hooks_inert()
+    lean_workers_merge()
   }
 }

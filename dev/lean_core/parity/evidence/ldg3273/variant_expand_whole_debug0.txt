@@ -1,0 +1,2 @@
+witness_sweep_workers        CAUGHT    identical  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=14  pinned 1.4 s  lean 2.8 s  workers pin 2/2 lean 2/2 records 2 entries 2
+10 tables, 0 different; verdicts: CAUGHT 1

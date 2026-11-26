@@ -379,3 +379,219 @@ loop_reach <- c(loop_reach, list(
       !is.null(t$escaped_escape) && !is.null(t$sweep$prefix_reads)
   }
 ))
+
+# --- sweep workers (decision 5, LDG-3273) ----------------------------------------
+# Two-worker sweeps whose every worker fold runs lean (loop_workers.R): a
+# slice-2 sizing shape with costs, slice-3 missing bars, slice-4 member
+# facts, a corporate action; consecutive sweeps; walk-forward training
+# sweeps; the backstop seam and an unmarked failing candidate. Each reach
+# predicate also asserts that the pinned arm's sweeps
+# dispatched its candidates to workers (counted in the pinned arm).
+s5_count_parallel <- function() {
+  s5_seen$parallel <- 0L
+  inner <- get("ledgr_sweep_eval_candidate_tasks_parallel", envir = ns)
+  lw_rebind("ledgr_sweep_eval_candidate_tasks_parallel", function(tasks, workers, ...) {
+    s5_seen$parallel <- s5_seen$parallel + length(tasks)
+    inner(tasks, workers, ...)
+  })
+}
+s5_worker_sweep <- function(db, id, exp, grid, seed = 17L, stop_on_error = FALSE) {
+  snapshot <- ledgr::ledgr_snapshot_open(db, id, verify = TRUE)
+  on.exit(ledgr::ledgr_snapshot_close(snapshot))
+  obs <- a0_observe_memory(ledgr::ledgr_sweep(exp(snapshot), grid, seed = seed, workers = 2L,
+                                              stop_on_error = stop_on_error, retain = a0_retain()))
+  list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value)))
+}
+s5_staged <- function(n) identical(s5_seen$parallel, as.integer(n))
+s5_done <- function(p, n) NROW(p$sweep) == n && all(as.character(p$sweep$status) == "DONE")
+# A worker candidate's memory tables stay in the worker; the returned
+# sweep rows and equity series carry the route. Candidate a's equity
+# change from day `from` to day `to` equals `step` (to 1e-6).
+s5_equity_step <- function(p, to, from, step) {
+  r <- p$sweep_returns[p$sweep_returns$candidate_id == "a", ]
+  e <- as.numeric(r$equity[match(c(s4_iso(from), s4_iso(to)), as.character(r$ts_utc))])
+  isTRUE(abs(diff(e) - step) < 1e-6)
+}
+# The sweep recorded the fee-bearing cost chain and every candidate held
+# positions (so its fills paid the fixed fee).
+s5_cost_paid <- function(p) {
+  plan <- p$sweep_attrs$value[p$sweep_attrs$attribute == "cost_plan_json"]
+  length(plan) == 1L && grepl("fixed_fee", plan, fixed = TRUE) && all(as.numeric(p$sweep$time_in_market) > 0)
+}
+s5_grid2 <- function(key = "q", a = 2, b = 3) {
+  ledgr::ledgr_grid_named(a = list(strategy = stats::setNames(list(a), key)),
+                          b = list(strategy = stats::setNames(list(b), key)))
+}
+# Buys params$q of A on day 2 and 2 B on day 4; with params$fail, fails on day 3.
+s5_worker_strategy <- function() {
+  f <- function(ctx, params) NULL
+  body(f) <- substitute({
+    target <- ctx$hold()
+    if (isTRUE(params$fail) && identical(ctx$ts_utc, D3)) stop("s5 worker failure")
+    if (identical(ctx$ts_utc, D2)) target[["A"]] <- params$q
+    if (identical(ctx$ts_utc, D4)) target[["B"]] <- 2
+    target
+  }, list(D2 = s4_iso(2L), D3 = s4_iso(3L), D4 = s4_iso(4L)))
+  environment(f) <- ns
+  f
+}
+s5_workers_sizing <- function() {
+  db <- lw_snapshot("s5_workers_sizing", lw_bars(c(A = 30, B = 45, C = 12), 30L, drift = 0.05))
+  # the weights inline: a worker has no s2_w3 binding to resolve a promise against
+  exp <- s2_sizing_exp(s2_every(seq(3L, 30L, by = 3L), s2_rebal(c(A = 0.3, B = 0.3, C = 0.2))), cost = s2_chain())
+  restore <- s5_count_parallel()
+  on.exit(restore())
+  s5_worker_sweep(db, "s5_workers_sizing", exp, s5_grid2("fraction", 0.9, 0.5))
+}
+s5_workers_missing <- function() {
+  db <- s3_snapshot("s5_workers_missing", s3_closes(list(B = 8:14)))
+  strategy <- function(ctx, params) {
+    t <- ctx$hold()
+    if (substr(ctx$ts_utc, 1L, 10L) == "2020-01-02") t[c("A", "B")] <- params$q
+    t
+  }
+  environment(strategy) <- ns
+  exp <- function(snapshot) ledgr::ledgr_experiment(snapshot, strategy, opening = ledgr::ledgr_opening(cash = 1e4),
+    cost_model = ledgr::ledgr_cost_zero(), valuation_policy = s3_stale(2L, "freeze"))
+  restore <- s5_count_parallel()
+  on.exit(restore())
+  s5_worker_sweep(db, "s5_workers_missing", exp, s5_grid2("q", 10, 20))
+}
+s5_workers_facts <- function() {
+  db <- s4_snapshot("s5_workers_facts", s4_facts_closes(),
+    ledgr::ledgr_facts(s4_sessions(10L), s4_universe(list("1" = c("A", "B", "C"), "4" = c("B", "C", "D")))))
+  exp <- s4_members_exp(s4_strategy(s4_plan(list(1L, c(B = 3)), list(3L, c(A = 4)), list(5L, c(D = 2)))))
+  restore <- s5_count_parallel()
+  on.exit(restore())
+  s5_worker_sweep(db, "s5_workers_facts", exp, s5_grid2("k", 1, 2))
+}
+s5_workers_dividend <- function() {
+  db <- s4_snapshot("s5_workers_dividend", s4_closes(), s4_ca_facts(s4_div("d1", "A", 3L, 6L)))
+  exp <- s4_exp(s4_strategy(s4_plan(list(1L, c(B = 2)))), positions = c(A = 10), cost_basis = c(A = 28))
+  restore <- s5_count_parallel()
+  on.exit(restore())
+  s5_worker_sweep(db, "s5_workers_dividend", exp, s5_grid2("k", 1, 2))
+}
+# Two consecutive two-worker sweeps in one workload: each gets its own
+# workers and its own records (fresh channel state).
+s5_workers_consecutive <- function() {
+  db <- s4_snapshot("s5_workers_consecutive", s4_closes(), NULL)
+  exp <- s4_exp(s5_worker_strategy())
+  restore <- s5_count_parallel()
+  on.exit(restore())
+  first <- s5_worker_sweep(db, "s5_workers_consecutive", exp, s5_grid2("q", 2, 3))
+  second <- s5_worker_sweep(db, "s5_workers_consecutive", exp, s5_grid2("q", 5, 1), seed = 18L)
+  list(sweep = first$sweep, sweep2 = second$sweep)
+}
+# Unmarked failing candidates: the worker's own strategy error, as a row
+# (stop_on_error FALSE) and escaping (TRUE), with no rerun.
+s5_workers_failing <- function() {
+  db <- s4_snapshot("s5_workers_failing", s4_closes(), NULL)
+  exp <- s4_exp(s5_worker_strategy())
+  grid <- ledgr::ledgr_grid_named(a = list(strategy = list(q = 2)), c = list(strategy = list(q = 3, fail = TRUE)))
+  restore <- s5_count_parallel()
+  on.exit(restore())
+  row <- s5_worker_sweep(db, "s5_workers_failing", exp, grid)
+  escape <- tryCatch(s5_worker_sweep(db, "s5_workers_failing", exp, grid, stop_on_error = TRUE),
+                     error = function(e) list(escaped = list(condition = s5_cond(e))))
+  stats::setNames(c(row, escape), c("sweep", paste0(names(escape), "_escape")))
+}
+# A late worker backstop: the lean arm's harness seam marks every worker
+# candidate at its sixth strategy call (after the day-2 and day-4 fills).
+# The workload changes the caller's RNG state first and reports the entry
+# state (loop_entry_rng sets it): a seeded entry draws once, an unseeded
+# one with another kind is reseeded under the default kind (as
+# witness_backstop_kind), so a rerun that does not restore the entry kind and
+# seed, or its absence, differs. With stop_on_error FALSE the marked candidates come back as
+# rows beside an unmarked failing one; with TRUE the first marked failure
+# escapes. Either way the whole workload reruns on pin-only workers.
+s5_workers_backstop <- function(name, stop_on_error) function() {
+  entry <- if (stop_on_error) lw_rng_state() else lw_entry_draw()
+  if (stop_on_error) set.seed(78L, kind = "Mersenne-Twister", normal.kind = "Inversion", sample.kind = "Rejection")
+  restore <- s5_count_parallel()
+  on.exit(restore())
+  db <- s4_snapshot(name, s4_closes(), NULL)
+  if (lw_lean_installed()) lean$lean_entry$backstop_after <- 5L
+  grid <- if (stop_on_error) s5_grid2("q", 2, 3) else
+    ledgr::ledgr_grid_named(a = list(strategy = list(q = 2)), b = list(strategy = list(q = 3)),
+                            c = list(strategy = list(q = 4, fail = TRUE)))
+  out <- tryCatch(s5_worker_sweep(db, name, s4_exp(s5_worker_strategy()), grid, stop_on_error = stop_on_error),
+                  error = function(e) list(escaped = list(condition = s5_cond(e))))
+  lw_rng_table(entry = entry, out, path = names(out)[[1L]])
+}
+s5_walk_forward_workers <- function() {
+  db <- lw_witness_db()
+  snapshot <- ledgr::ledgr_snapshot_open(db, "lw_witness", verify = TRUE)
+  on.exit(ledgr::ledgr_snapshot_close(snapshot))
+  strategy <- function(ctx, params) {
+    targets <- ctx$hold()
+    targets[["A"]] <- params$qty
+    targets[["B"]] <- params$qty / 2
+    targets
+  }
+  environment(strategy) <- ns
+  exp <- ledgr::ledgr_experiment(snapshot, strategy, opening = ledgr::ledgr_opening(cash = 5000),
+    cost_model = s2_chain(), risk_chain = ledgr::ledgr_risk_max_weight(0.4))
+  grid <- ledgr::ledgr_grid_named(small = list(strategy = list(qty = 2)), large = list(strategy = list(qty = 6)))
+  folds <- ns$ledgr_fold_list(list(
+    ledgr::ledgr_fold("2021-01-04T00:00:00Z", "2021-01-07T00:00:00Z", "2021-01-08T00:00:00Z", "2021-01-11T00:00:00Z", fold_seq = 1L),
+    ledgr::ledgr_fold("2021-01-08T00:00:00Z", "2021-01-11T00:00:00Z", "2021-01-12T00:00:00Z", "2021-01-17T00:00:00Z", fold_seq = 2L)
+  ), constructor = list(type_id = "explicit"))
+  restore <- s5_count_parallel()
+  on.exit(restore(), add = TRUE)
+  wf <- ledgr::ledgr_walk_forward(exp, grid = grid, folds = folds, workers = 2L,
+                                  selection_rule = ledgr::ledgr_rule_argmax("sharpe_ratio"), seed = 3L)
+  ids <- vapply(wf$test_runs, function(bt) bt$run_id, character(1L))
+  lapply(wf$test_runs, close)
+  list(walk_forward = c(list(
+    wf_folds = a0_canon(as.data.frame(wf$folds), "wf_folds", "fold_seq"),
+    wf_scores = a0_canon(as.data.frame(wf$scores), "wf_scores", c("fold_seq", "window", "candidate_key", "metric_name")),
+    wf_status = a0_canon(data.frame(status = wf$status, test_run_ids = paste(ids, collapse = ","), stringsAsFactors = FALSE),
+                         "wf_status", "status")), a0_store_tables(db, ids)))
+}
+
+loop_slice5 <- c(loop_slice5, list(
+  s5_workers_sizing = s5_workers_sizing,
+  s5_workers_missing = s5_workers_missing,
+  s5_workers_facts = s5_workers_facts,
+  s5_workers_dividend = s5_workers_dividend,
+  s5_workers_consecutive = s5_workers_consecutive,
+  s5_workers_failing = s5_workers_failing,
+  s5_workers_backstop = s5_workers_backstop("s5_workers_backstop", FALSE),
+  s5_workers_backstop_escape = s5_workers_backstop("s5_workers_backstop_escape", TRUE),
+  s5_walk_forward_workers = s5_walk_forward_workers
+))
+loop_entry_rng <- c(loop_entry_rng, list(
+  s5_workers_backstop = function() set.seed(4251L),
+  # No seed and a non-default kind: the rerun must restore both.
+  s5_workers_backstop_escape = function() {
+    suppressWarnings(RNGkind("Wichmann-Hill", "Box-Muller", "Rounding"))
+    if (exists(".Random.seed", envir = globalenv(), inherits = FALSE)) rm(".Random.seed", envir = globalenv())
+  }
+))
+loop_reach <- c(loop_reach, list(
+  s5_workers_sizing = function(t) s5_staged(2L) && s5_done(t$sweep, 2L) && s5_cost_paid(t$sweep),
+  s5_workers_missing = function(t) s5_staged(2L) && s5_done(t$sweep, 2L) &&
+    all(as.character(t$sweep$sweep$valuation_state) == "frozen"),
+  # D joins the universe on day 4 and is bought on day 5: its 2 shares add 0.5
+  # to the daily equity step from day 7 (B 0.6 and A 0.4 before).
+  s5_workers_facts = function(t) s5_staged(2L) && s5_done(t$sweep, 2L) && s5_equity_step(t$sweep, 7L, 6L, 1.5),
+  # the day-3 entitlement credits 10 x 0.5 beside the 2.1 price step
+  s5_workers_dividend = function(t) s5_staged(2L) && s5_done(t$sweep, 2L) && s5_equity_step(t$sweep, 3L, 2L, 7.1),
+  s5_workers_consecutive = function(t) s5_staged(4L) && s5_done(t$sweep, 2L) && s5_done(t$sweep2, 2L),
+  s5_workers_failing = function(t) {
+    s5_staged(4L) && identical(as.character(t$sweep$sweep$status), c("DONE", "FAILED")) &&
+      grepl("s5 worker failure", t$escaped_escape$condition$message, fixed = TRUE)
+  },
+  s5_workers_backstop = function(t) {
+    s5_staged(3L) && identical(as.character(t$sweep$sweep$status), c("DONE", "DONE", "FAILED")) &&
+      !is.null(t$sweep$rng_entry)
+  },
+  s5_workers_backstop_escape = function(t) s5_staged(2L) && s5_done(t$sweep, 2L) &&
+    identical(t$sweep$rng_entry$seed, "<absent>"),
+  s5_walk_forward_workers = function(t) {
+    le <- t$walk_forward$ledger_events
+    s5_staged(4L) && identical(as.character(t$walk_forward$wf_status$status), "DONE") &&
+      any(le$event_type == "FILL" & as.numeric(le$fee) > 0)
+  }
+))

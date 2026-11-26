@@ -1,0 +1,2 @@
+witness_sweep_workers        CAUGHT    identical  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=14  pinned 1.4 s  lean 3.1 s  workers pin 2/2 lean 2/2 records 2 entries 2 faults [worker 1|b loaded C:/Users/maxth/AppData/Local/Temp/RtmpYtSKEY/lean_wrong_build/ledgr, not C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr | worker 1|a loaded C:/Users/maxth/AppData/Local/Temp/RtmpYtSKEY/lean_wrong_build/ledgr, not C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr]
+10 tables, 0 different; verdicts: CAUGHT 1
