@@ -4005,7 +4005,8 @@ cuts:
   - id: 25
     name: "WS12 chores: schema-test DuckDB pin, ledgr_utc() vectorisation, post-warmup NA"
     cut: "2026-11-26"
-    status: "draft"
+    status: "accepted"
+    accepted: "2026-11-26 under the maintainer's request for one chore cut with the first three routed WS12 chores, run as usual (measure, cut, Codex cut review iterated to PASS, implement, Codex close review iterated to PASS), after the cut review passed at re-review 1 (cut_review_25_rereview_1.md, at abfd3f9c, no new finding)."
     opening: >-
       Written by Claude on 2026-11-26 at the maintainer's request (one
       chore cut with the first three routed WS12 chores before lean-loop
@@ -4295,7 +4296,7 @@ cuts:
       wrong answer; a third correction round stops for maintainer
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
-    cut_review: "CHANGES_REQUIRED in cut_review_25.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at fc66c0f8): R1-R5 required, R6 advisory, each applied in revision 2 with the reviewer's replacement text: R1 the na_late_def expectation in test-features.R named with its reason; R2 faults.R on the final library with the declared file; R3 declared-case semantics verified independently before recording, single-case mutation and malformed-declaration controls; R4 the gap-parity refusal and NA-cell evidence and carry behaviour declared and witnessed; R5 both clocks and the precompute, reuse, inspection and worker paths; R6 five mutant checks. TTR inclusion judged within the decision; identity design, the utc rewrite, the schema change and the not-run claims confirmed."
+    cut_review: "CHANGES_REQUIRED in cut_review_25.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at fc66c0f8): R1-R5 required, R6 advisory, each applied in revision 2 with the reviewer's replacement text: R1 the na_late_def expectation in test-features.R named with its reason; R2 faults.R on the final library with the declared file; R3 declared-case semantics verified independently before recording, single-case mutation and malformed-declaration controls; R4 the gap-parity refusal and NA-cell evidence and carry behaviour declared and witnessed; R5 both clocks and the precompute, reuse, inspection and worker paths; R6 five mutant checks. TTR inclusion judged within the decision; identity design, the utc rewrite, the schema change and the not-run claims confirmed. Re-review 1 (cut_review_25_rereview_1.md, at abfd3f9c): PASS, R1-R6 applied faithfully, no new finding."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
