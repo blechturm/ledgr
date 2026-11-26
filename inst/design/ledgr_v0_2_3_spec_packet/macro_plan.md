@@ -123,7 +123,9 @@ a cut is accepted, `tickets.yml` alone sequences it. Inventory IDs (C1, X3,
    after certification rejects the candidate.
 9. **CRAN is not assumed.** Work that only matters for the CRAN release
    (NEWS collapse, export-tiering timing) is conditional on v0.2.3 becoming
-   that release (maintainer, 2026-10-28).
+   that release (maintainer, 2026-10-28). Whether ledgr goes to CRAN at all
+   is undecided (maintainer, 2026-11-26); CRAN-only work waits for that
+   decision, and "after CRAN" below marks a sequence, not a commitment.
 10. **Measure what is unknown, once.** Probes and spikes measure effects
     nobody knows yet. A cut cites an effect a spike already measured instead
     of measuring it again (maintainer, 2026-10-29, after cut 4).
@@ -795,7 +797,7 @@ public behavior except the explicit pulse-plumbing ledger differences.
   amendments at acceptance before coding those interfaces. Its written
   guard and fifth scenario apply at every family close through the existing
   affected-owner procedure. No hold remains until the External Data RFC;
-  that RFC owns the later data design after CRAN. FIFO and the stage
+  that RFC owns the later data design after CRAN (undecided: rule 9). FIFO and the stage
   recorder were not held. Other WS16 prerequisites remain in force.
 - **One family per cut (maintainer, 2026-11-04).** Each family after the
   first checkpoint is its own cut (measure, cut, Codex cut review,
@@ -1533,7 +1535,7 @@ semantic premium; it may not describe an uninvestigated miss as unavoidable.
 
 Shorting and leverage; orders and the OMS (after PIT fundamentals); trained
 model lifecycle; derivatives and FX; compiled-default changes; PIT
-fundamentals (after CRAN); public `ledgr.crypto2` (separate packet); a cash
+fundamentals (after CRAN, which is undecided: rule 9); public `ledgr.crypto2` (separate packet); a cash
 default (demand-driven); a decision-graph recorder; state-storage redesign
 without a measured case; telemetry redesign (H7); vectorbt or LEAN rows.
 
