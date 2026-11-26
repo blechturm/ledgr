@@ -198,6 +198,13 @@ fx_defs <- function() {
                       fx_def(ind("custom_range_ohlc", fn = function(bars) 0, requires_bars = 2L,
                                  series_fn = function(bars) as.numeric(bars$high - bars$low + bars$open * 0),
                                  required_fields = c("open", "high", "low", "close"))))
+  # Cut 24 stage 3 (LDG-3264): an admitted cell that refuses (runSD with n = 1
+  # returns NA after warmup; admitted on the complete instruments of the
+  # short and empty substrates), alone and competing with a custom refusal
+  # in both definition orders.
+  runsd_one <- list(fx_ttr("runSD", input = "close", n = 1L))
+  custom_na <- fx_def(ind("custom_na", fn = function(bars) 0, requires_bars = 1L,
+    series_fn = function(bars) rep(NA_real_, nrow(bars)), required_fields = "close"))
   name <- function(x) stats::setNames(x, vapply(x, function(d) d$id, ""))
   # Resolved parameterised forms (close review round 1, F4): ledgr_param()
   # arguments resolved through a feature map, single-output and bundled.
@@ -222,7 +229,10 @@ fx_defs <- function() {
     custom_ohlc = custom_ohlc,
     parameterized_single = resolved[!is_bundle],
     parameterized_bundle = resolved[is_bundle],
-    parameterized_mixed = c(resolved, list(custom_volume))), name)
+    parameterized_mixed = c(resolved, list(custom_volume)),
+    runsd_one = runsd_one,
+    competing_first = c(runsd_one, list(custom_na)),
+    competing_second = c(list(custom_na), runsd_one)), name)
 }
 
 # The single-definition read entry (ledgr_history_feature_planes): the

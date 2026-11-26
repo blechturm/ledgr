@@ -7,6 +7,21 @@
 #
 #   Rscript check.R --pin=<runner out dir> --candidate=<runner out dir> [--expected=<csv>]
 #   Rscript check.R --pin=<runner out dir> --write-expected=<csv>   (records the corpus from a pin run)
+#   Rscript check.R --pin=<runner out dir> --write-gate-expected=<csv>   (records the gate expectation)
+#
+# Stage 3 (Cut 24 LDG-3264, synthesis rule 11): the direct path removes
+# treatment hand-offs and adds debug shadow work, so three mechanism
+# observations are no longer compared as text with the pin. handoffs:
+# reach and causality fields equal the pin's and inputs observed plus
+# untreated ranges equal the pin's inputs observed. gate: the cells the
+# direct path computed and the ranges it left untreated, per preparation,
+# equal the committed gate_expected.csv (the harness predicate on the pin)
+# for an arm with the direct path (untreated ranges only with debug off),
+# and are empty otherwise; a refusing case may stop early, so its
+# observations are a prefix of the expectation. shadow: none with debug
+# off; with debug on, exactly one shadow cell per direct cell. Every other
+# component, the production route and calculated_count included, still
+# equals the pin.
 #
 # Exit 0 and "CHECK PASS": every case identical and matching the corpus.
 # Exit 1: a difference; one "SIGNAL <component> <n cases>" line per differing
@@ -36,7 +51,8 @@ local({
     x$case_key <- paste(x$family, x$case, sep = " | ")
     x
   }
-  always <- c("rng", "route", "callback", "causality", "treated_fields", "handoffs", "refusal", "refusal_class")
+  always <- c("rng", "route", "callback", "causality", "treated_fields", "handoffs", "refusal", "refusal_class",
+              "gate_expected", "gate", "shadow", "calculated_count")
   per_family <- list(
     compute = list(always = c("certification", "field_union"), data = c("values", "na", "planes", "proj", "reads")),
     read_entry = list(always = "certification", data = "values"),
@@ -75,6 +91,13 @@ local({
   complete(pin, "pin")
   structural <- c("certification", "field_union", "route", "refusal_class", "routes_equal")
 
+  if (!is.null(arg("write-gate-expected"))) {
+    out <- pin[pin$component == "gate_expected", c("family", "case", "value")]
+    out <- out[order(out$family, out$case, method = "radix"), ]
+    utils::write.csv(out, arg("write-gate-expected"), row.names = FALSE)
+    cat("wrote", nrow(out), "gate expectations to", arg("write-gate-expected"), "\n")
+    quit(save = "no", status = 0L)
+  }
   if (!is.null(arg("write-expected"))) {
     out <- pin[pin$component %in% structural, c("family", "case", "component", "value")]
     cases <- unique(pin[c("family", "case")])
@@ -126,7 +149,7 @@ local({
   b <- cand$value[match(keys, cand$key)]
   component <- c(pin$component, cand$component)[match(keys, c(pin$key, cand$key))]
   case_key <- c(pin$case_key, cand$case_key)[match(keys, c(pin$key, cand$key))]
-  off <- (is.na(a) | is.na(b) | a != b) & component != "treated_fields"
+  off <- (is.na(a) | is.na(b) | a != b) & !component %in% c("treated_fields", "handoffs", "gate", "shadow")
   for (cmp in sort(unique(component[off]), method = "radix")) {
     signal(cmp, unique(case_key[off & component == cmp]), "candidate differs from pin")
   }
@@ -176,14 +199,17 @@ local({
     for (i in seq_len(nrow(tf))) {
       h <- strsplit(strsplit(ho[[i]], ";", fixed = TRUE)[[1L]], "=", fixed = TRUE)
       h <- stats::setNames(as.integer(vapply(h, `[`, "", 2L)), vapply(h, `[`, "", 1L))
+      # Ranges the direct path left untreated (stage 3) are reached and
+      # handed off without a treated-fields observation.
+      direct <- if ("prep_direct" %in% names(h)) h[["prep_direct"]] else 0L
       entries <- if (nzchar(tf$value[[i]])) strsplit(tf$value[[i]], ";", fixed = TRUE)[[1L]] else character()
       tag <- sub(":.*$", "", entries)
       fields <- sub("^[^:]*:", "", entries)
       ok <- all(tag %in% c("prep", "causality")) &&
         (h[["prep_seen"]] > 0L) == any(tag == "prep") &&
         (h[["causality_seen"]] > 0L) == any(tag == "causality") &&
-        (h[["prep_reached"]] == 0L || h[["prep_seen"]] >= 1L) &&
-        (if (refused[[i]]) h[["prep_seen"]] <= h[["prep_reached"]] else h[["prep_seen"]] == h[["prep_reached"]]) &&
+        (h[["prep_reached"]] == 0L || h[["prep_seen"]] + direct >= 1L) &&
+        (if (refused[[i]]) h[["prep_seen"]] + direct <= h[["prep_reached"]] else h[["prep_seen"]] + direct == h[["prep_reached"]]) &&
         h[["causality_seen"]] == h[["causality_reached"]] &&
         (h[["causality_checks"]] > 0L) == (h[["causality_reached"]] > 0L)
       if (!ok) missing <- c(missing, tf$case_key[[i]])
@@ -200,6 +226,85 @@ local({
       signal("treated_fields", unique(wrong),
              paste(arm[[1L]], if (has_selector) "treats fields other than the certified union" else "does not treat all five fields"))
     }
+  }
+  # 5. stage-3 mechanism (LDG-3264): hand-offs, gate choices, debug shadow.
+  parse_kv <- function(v) {
+    kv <- strsplit(strsplit(v, ";", fixed = TRUE)[[1L]], "=", fixed = TRUE)
+    stats::setNames(as.integer(vapply(kv, `[`, "", 2L)), vapply(kv, `[`, "", 1L))
+  }
+  ho_pin <- pin[pin$component == "handoffs", ]
+  ho_cand <- cand$value[match(ho_pin$key, cand$key)]
+  ho_bad <- character()
+  for (i in seq_len(nrow(ho_pin))) {
+    a <- parse_kv(ho_pin$value[[i]])
+    b <- parse_kv(ho_cand[[i]])
+    direct_a <- if ("prep_direct" %in% names(a)) a[["prep_direct"]] else 0L
+    direct_b <- if ("prep_direct" %in% names(b)) b[["prep_direct"]] else 0L
+    same <- c("prep_reached", "causality_checks", "causality_reached", "causality_seen")
+    if (!all(same %in% names(b)) || !identical(a[same], b[same]) ||
+        a[["prep_seen"]] + direct_a != b[["prep_seen"]] + direct_b) {
+      ho_bad <- c(ho_bad, ho_pin$case_key[[i]])
+    }
+  }
+  if (length(ho_bad)) signal("handoffs", ho_bad, "candidate hand-offs differ from the pin's")
+  gate_file <- arg("gate-expected", file.path(here, "gate_expected.csv"))
+  if (!file.exists(gate_file)) refuse("missing gate expectation file ", gate_file)
+  gate_want <- utils::read.csv(gate_file, stringsAsFactors = FALSE, na.strings = character(), colClasses = "character")
+  gate_want <- stats::setNames(gate_want$value, paste(gate_want$family, gate_want$case, sep = " | "))
+  if (!setequal(names(gate_want), corpus_cases)) refuse("gate expectation cases differ from the corpus in ", gate_file)
+  prov <- function(dir, field) {
+    p <- utils::read.csv(file.path(dir, "provenance.csv"), stringsAsFactors = FALSE, colClasses = "character")
+    v <- p$value[p$field == field]
+    if (length(v) == 1L) v else ""
+  }
+  # One expectation per preparation: "#<n> cells=<a,b> untreated=<c,d>".
+  expected_steps <- function(value, debug_on) {
+    if (!nzchar(value)) return(character())
+    steps <- character()
+    for (prep in strsplit(value, ";", fixed = TRUE)[[1L]]) {
+      n <- sub("^(#[0-9]+) .*$", "\\1", prep)
+      cells <- sub("^.* cells=([^ ]*) untreated=.*$", "\\1", prep)
+      untreated <- sub("^.* untreated=(.*)$", "\\1", prep)
+      split <- function(s) if (nzchar(s)) strsplit(s, ",", fixed = TRUE)[[1L]] else character()
+      cells <- split(cells)
+      untreated <- if (debug_on) character() else split(untreated)
+      # The direct path reads an instrument's untreated inputs before its
+      # cells, in instrument order.
+      inst <- sub("^.*@", "", cells)
+      order_keys <- unique(c(inst, untreated))
+      for (id in order_keys) {
+        if (id %in% untreated) steps <- c(steps, paste0(n, " untreated=", id))
+        steps <- c(steps, paste0(n, " cell=", cells[inst == id]))
+      }
+    }
+    steps
+  }
+  for (arm in list(list("pin", pin, arg("pin")), list("candidate", cand, arg("candidate")))) {
+    x <- arm[[2L]]
+    direct_path <- identical(prov(arm[[3L]], "direct_path"), "TRUE")
+    debug_on <- identical(prov(arm[[3L]], "debug"), "1")
+    ge <- x[x$component == "gate_expected", ]
+    off <- ge$value != unname(gate_want[ge$case_key])
+    if (any(off)) signal("gate_expected", ge$case_key[off], paste(arm[[1L]], "harness predicate differs from", basename(gate_file)))
+    g <- x[x$component == "gate", ]
+    refused <- x$value[match(paste(g$case_key, "refusal", sep = " | "), x$key)] != "none"
+    gate_bad <- character()
+    shadow_bad <- character()
+    for (i in seq_len(nrow(g))) {
+      seen <- if (nzchar(g$value[[i]])) strsplit(g$value[[i]], ";", fixed = TRUE)[[1L]] else character()
+      want <- if (direct_path) expected_steps(gate_want[[g$case_key[[i]]]], debug_on) else character()
+      ok <- if (refused[[i]]) identical(seen, utils::head(want, length(seen))) else identical(seen, want)
+      if (!ok) gate_bad <- c(gate_bad, g$case_key[[i]])
+      sh <- parse_kv(x$value[match(paste(g$case_key[[i]], "shadow", sep = " | "), x$key)])
+      cells <- sum(grepl(" cell=", seen, fixed = TRUE))
+      want_shadow <- if (debug_on) cells else 0L
+      quiet <- sum(sh[setdiff(names(sh), "cells")]) == 0L
+      if (sh[["cells"]] != want_shadow || (!debug_on && !quiet) || (debug_on && cells == 0L && !quiet)) {
+        shadow_bad <- c(shadow_bad, g$case_key[[i]])
+      }
+    }
+    if (length(gate_bad)) signal("gate", gate_bad, paste(arm[[1L]], "gate choices differ from", basename(gate_file)))
+    if (length(shadow_bad)) signal("shadow", shadow_bad, paste(arm[[1L]], "debug shadow work differs from one shadow cell per direct cell"))
   }
   n_cases <- length(corpus_cases)
   n_refusing <- sum(pin$component == "refusal_class" & pin$value != "none")
