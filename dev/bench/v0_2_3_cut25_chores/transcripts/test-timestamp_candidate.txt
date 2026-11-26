@@ -2,4 +2,4 @@ ledgr from source C:/Users/maxth/ledgr-wt/cut25
 ok | ledgr_iso_utc normalizes supported inputs | expectations 5 failed 0 skipped 0
 ok | ledgr_iso_utc rejects unsupported formats | expectations 4 failed 0 skipped 0
 ok | ledgr_utc returns UTC POSIXct vectors | expectations 6 failed 0 skipped 0
-ok | [LTB-0566] ledgr_utc parses character vectors exactly as one value at a time | expectations 188 failed 0 skipped 0
+ok | [LTB-0566] ledgr_utc parses character vectors exactly as one value at a time | expectations 195 failed 0 skipped 0

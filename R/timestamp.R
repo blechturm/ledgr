@@ -118,7 +118,9 @@ ledgr_utc <- function(x) {
     )
   }
 
-  ledgr_utc_parse_character(unname(x))
+  # A plain character vector: names, class (such as AsIs) and other attributes
+  # dropped, as the per-element parse did (Cut 25 close review F1).
+  ledgr_utc_parse_character(as.character(unclass(x)))
 }
 
 # The character branch of ledgr_utc() in whole-vector passes: the forms and

@@ -1,0 +1,6 @@
+ledgr from library C:/Users/maxth/ledgr-wt/cut25-scratch/libs/cand-4abdb348 version 0.2.2 
+ok | ledgr_iso_utc normalizes supported inputs | expectations 5 failed 0 skipped 0
+ok | ledgr_iso_utc rejects unsupported formats | expectations 4 failed 0 skipped 0
+ok | ledgr_utc returns UTC POSIXct vectors | expectations 6 failed 0 skipped 0
+FAIL | [LTB-0566] ledgr_utc parses character vectors exactly as one value at a time | expectations 188 failed 1 skipped 0
+   NOT OK: Error in `as.Date.default(x[date_only], format = "%Y-%m-%d")`: do not know how to convert 'x[date_only]' to class "Date" 

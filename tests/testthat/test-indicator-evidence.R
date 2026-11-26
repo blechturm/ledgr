@@ -439,8 +439,12 @@ testthat::test_that("[LTB-0567] post-warmup NA is accepted on the fn and series_
   testthat::expect_identical(as.numeric(values[[1L]]), c(10, 11, 12, NA, 12, 16, 17))
   frame <- ws43_frame_evidence(gap, carry, NULL)
   seam <- ledgr:::ledgr_history_feature_planes(gap, "AAA", carry)
-  fields <- c("value", "calculated", "ready", "calculation_valid", "output_carried", "carry_age_sessions", "missing_reason")
+  fields <- c("value", "calculated", "ready", "calculation_valid", "output_carried", "source_ts_utc",
+              "carry_age_sessions", "missing_reason")
   for (f in fields) testthat::expect_identical(as.vector(frame[[f]]), as.vector(seam[[f]]), info = f)
+  # The NA cell has no output source; the carried cell's source is session 3.
+  testthat::expect_identical(as.numeric(frame$source_ts_utc),
+                             as.numeric(gap$axis)[c(1L, 2L, 3L, NA, 3L, 6L, 7L)])
   testthat::expect_identical(as.vector(frame$calculated), c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE))
   testthat::expect_identical(as.vector(frame$ready), c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE))
   testthat::expect_identical(as.vector(frame$calculation_valid), c(TRUE, TRUE, TRUE, FALSE, FALSE, TRUE, TRUE))
@@ -487,7 +491,28 @@ testthat::test_that("[LTB-0567] post-warmup NA is accepted on the fn and series_
     close(pulse)
   }
 
-  acting <- function(ctx, params) c(AAA = if (is.na(ctx[["gap"]][["AAA"]])) 1 else 0)
+  # The sweep strategy checks the literal value and the history evidence at
+  # every pulse and stops on any difference, so serial, reused and worker
+  # execution each prove what they read (close review F2). It is
+  # self-contained for worker processes.
+  acting <- function(ctx, params) {
+    expected <- c(101, 102, 103, NA, 105, 106, 107, 108)
+    k <- match(ctx$ts_utc, sprintf("2020-01-%02dT16:00:00Z", 1:8))
+    if (is.na(k)) stop("unexpected pulse ", ctx$ts_utc)
+    value <- unname(ctx[["gap"]][["AAA"]])
+    if (!identical(value, expected[[k]])) {
+      stop(sprintf("gap at pulse %d reads %s, expected %s", k, format(value), format(expected[[k]])))
+    }
+    long <- ledgr::ledgr_history_frame(ctx, feature = "gap", lookback = Inf,
+      instruments = "decision_axis", min_observations = 0L, layout = "long")
+    want <- expected[seq_len(k)]
+    if (!identical(as.numeric(long$value), want) ||
+        !identical(long$calculation_valid, !is.na(want)) ||
+        !identical(long$missing_reason, ifelse(is.na(want), "calculation_non_finite", ""))) {
+      stop(sprintf("gap history evidence differs at pulse %d", k))
+    }
+    c(AAA = if (is.na(value)) 1 else 0)
+  }
   exp <- ledgr_experiment(opening = ledgr_opening(cash = 100000), snapshot, acting,
     features = list(recover), valuation_policy = ledgr_valuation_stale(1L), cost_model = ledgr_cost_zero())
   grid <- ledgr_grid_named(one = list(strategy = list()), two = list(strategy = list()))

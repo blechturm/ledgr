@@ -73,6 +73,15 @@ testthat::test_that("[LTB-0566] ledgr_utc parses character vectors exactly as on
   testthat::expect_error(ledgr_utc("\u0662\u0660\u0662\u0660-01-01"), class = "ledgr_invalid_timestamp")
   named <- ledgr_utc(c(a = "2020-01-01", b = "2020-01-02T00:00:00Z"))
   testthat::expect_null(names(named))
+  # Classed character input (AsIs) parses as plain character, in every form
+  # (close review F1).
+  for (x in list(c("2020-01-01", "2020-01-02"),
+                 c("2020-01-01T00:00:00", "2020-01-02T00:00:00Z"),
+                 c("2020-01-01", "2020-01-02 09:30:00", "2020-01-03T10:30:00Z"))) {
+    testthat::expect_identical(ledgr_utc(I(x)), ledgr_utc(x))
+    testthat::expect_identical(ledgr_utc(I(stats::setNames(x, seq_along(x)))), ledgr_utc(x))
+  }
+  testthat::expect_error(ledgr_utc(I(c("2020-01-01", "2020-02-30"))), class = "ledgr_invalid_timestamp")
   testthat::expect_identical(
     ledgr_utc(character()),
     structure(numeric(0), class = c("POSIXct", "POSIXt"), tzone = "UTC")
