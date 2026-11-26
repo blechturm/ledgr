@@ -14,6 +14,8 @@ it lands.
 | `install_arm.R` | installs a commit as an arm (git archive, `R CMD INSTALL`) with its commit marker and R/ source hashes |
 | `corpus_expected.csv` | the corpus: every case, and each case's certification, field union, route, refusal class and TTR-route agreement as the pin produced them |
 | `gate_expected.csv` | per case and preparation, the cells the conservative gate admits and the instruments it leaves untreated, from the harness's own predicate on the pin (Cut 24 LDG-3264) |
+| `declared_cases.csv`, `declared_expected.csv` | Cut 25's declared difference from the pin (below): the 52 frozen case keys, and those cases' observations under the decided behaviour |
+| `declared_semantics.R`, `declared_controls.R` | Cut 25: the declared cases' values checked against the pin's fn path, and the controls on the declared comparison |
 | `memory.R` | candidate 5's memory rule (LDG-3252): object bytes and peak R heap of sweep feature preparation in fresh children |
 | `census.R`, `census.csv` | the engine-version census (LDG-3253): the walk from the preparation roots and the replacement proof of every row |
 | `timing_launch.R` | starts the shared timing runner with its temporary directory outside AppData/Local/Temp |
@@ -90,7 +92,7 @@ ID is compared only as agreement with its fixture.
     Rscript dev/feature_parity/runner.R --arm=<label> --lib=<library> --out=<dir> --debug=<0|1>
     Rscript dev/feature_parity/runner.R --arm=<label> --source=<tree> --out=<dir> --debug=<0|1>
     Rscript dev/feature_parity/check.R --pin=<pin out> --candidate=<candidate out>
-    Rscript dev/feature_parity/faults.R --lib=<pin library> --pin=<pin out> --scratch=<dir> --evidence=<dir>
+    Rscript dev/feature_parity/faults.R --lib=<pin library> --pin=<pin out> --declared=none --scratch=<dir> --evidence=<dir>
 
 Identities (Cut 22 decision 6; Cut 23 decision 5b adds the unchanged-engine
 mode, in which an old precompute must be reused with the same result as fresh
@@ -168,6 +170,50 @@ Stage-3 faults (`faults.R`, run only on a library with the direct path):
 `count_only` (calculated_count).
 
     Rscript dev/feature_parity/check.R --pin=<pin out> --write-gate-expected=<csv>
-    Rscript dev/feature_parity/faults.R --lib=<candidate library> --pin=<pin out> --scratch=<dir> --evidence=<dir>
+    Rscript dev/feature_parity/faults.R --lib=<candidate library> --pin=<pin out> --declared=<csv> --scratch=<dir> --evidence=<dir>
+
+## Declared differences (Cut 25)
+
+Post-warmup `NA` from a series path (a custom `series_fn` or the TTR
+adapter) is accepted since Cut 25 (maintainer decision 2026-11-04; rules
+ledger LR-24). The pin `d5b3a151` refuses it, so 52 compute cases differ
+from the pin by decision: the definition sets `runsd_one` (TTR runSD with
+n = 1), `competing_first` and `competing_second` (runSD n = 1 with an
+all-NA custom series), 14 each, and `custom_volume_strict` (a volume series
+with missing volume), 10. They refused with `ledgr_invalid_feature_output`
+on the pin and now complete.
+
+- `declared_cases.csv` holds their keys, frozen from the measuring step's
+  `dev/bench/v0_2_3_cut25_chores/results/oracle_flips.csv`, not from a
+  candidate.
+- `declared_expected.csv` holds every component but `treated_fields` of
+  those cases as the decided behaviour produces them, written once by
+  `check.R --write-declared=` from the final Cut 25 candidate, after
+  `declared_semantics.R` showed the candidate's values identical to the
+  pin's fn path on fn-only twins of the same definitions (the decision is
+  that series output follows the fn path). Never regenerate it for a
+  control.
+- `check.R` reads both by default: a declared case's candidate is compared
+  with the declared file instead of the pin, the corpus and the pin's
+  hand-offs; the pin is still compared with the corpus, so it must still
+  refuse; the declared file must hold exactly the declared cases, each
+  complete, unique and not refusing, or the check refuses (exit 2).
+  `--declared=none` compares every case with the pin: use it for the pin
+  repeat and for controls made only from pin observations.
+- `faults.R` takes `--declared=<csv|none>`: its product faults run on
+  `--lib` with that comparison after an unfaulted run passes it.
+- `declared_controls.R` changes one declared case's values, na, planes or
+  hand-offs (each must fail with its signal), one undeclared case (fails
+  against the pin), uses the pin as the candidate (the old refusal
+  restored; fails), and feeds a declared file with a case missing, a row
+  duplicated or an undeclared case added (each refuses).
+
+    Rscript dev/feature_parity/check.R --pin=<pin out> --candidate=<out> [--declared=<csv> | --declared=none]
+    Rscript dev/feature_parity/check.R --pin=<pin out> --candidate=<out> --write-declared=<csv>
+    Rscript dev/feature_parity/declared_semantics.R --arm=pin_fn_twin --lib=<pin library> --out=<dir>
+    Rscript dev/feature_parity/declared_semantics.R --arm=candidate --lib=<candidate library> --out=<dir>
+    Rscript dev/feature_parity/declared_semantics.R --compare --out=<dir>
+    Rscript dev/feature_parity/declared_controls.R --pin=<pin out> --candidate=<out> --scratch=<dir> --evidence=<dir>
+    Rscript dev/feature_parity/faults.R --lib=<library> --pin=<pin out> --declared=<csv|none> --scratch=<dir> --evidence=<dir>
 
 Each ticket's exact commands and results are in `evidence/<ticket>/COMMANDS.md`.

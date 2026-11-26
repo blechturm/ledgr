@@ -1,0 +1,8 @@
+fault no_nan_refusal 
+ledgr auto-checkpointed durable run 'bar_native-series_fn-nan'. Prefer close(bt) for deterministic cleanup.
+FAIL | test-indicator-evidence.R | [LTB-0567] post-warmup NA is accepted on the fn and series_fn paths on both clocks | failed 8
+   NOT OK: Expected `ledgr_run(exp, run_id = run_id)` to throw a error with class <ledgr_invalid_feature_output>. bar_native series_fn nan 
+   NOT OK: Expected `ledgr_run_info(snapshot, run_id)$status` to be identical to "FAILED". Differences: `actual`: "DONE" `expected`: "FAILED" bar_native series_fn nan 
+FAIL | test-features.R | feature series uses and validates vectorized series functions | failed 1
+   NOT OK: Expected `live_feature_series(bars, nan_late_def)` to throw a error. 
+WITNESS FAIL 

@@ -23,6 +23,17 @@
 # component, the production route and calculated_count included, still
 # equals the pin.
 #
+# Declared differences (Cut 25, LDG-3269): --declared=<csv> (default
+# declared_expected.csv beside this script) names, for each case in the
+# frozen declared_cases.csv, every component but treated_fields as the
+# decided behaviour produces it. A declared case's candidate is compared with
+# that file instead of the pin, the corpus and the pin's hand-offs; the pin is
+# still compared with the corpus, so it must still refuse; treated_fields
+# keeps its per-arm rule. The file must hold exactly the declared cases, each
+# complete, unique and not refusing, or the check refuses. --declared=none
+# compares every case with the pin (the pin repeat, pin-only controls).
+#   Rscript check.R --pin=<pin out> --candidate=<out> --write-declared=<csv>   (records it once)
+#
 # Exit 0 and "CHECK PASS": every case identical and matching the corpus.
 # Exit 1: a difference; one "SIGNAL <component> <n cases>" line per differing
 #   component, then "CHECK FAIL".
@@ -110,6 +121,68 @@ local({
 
   cand <- read_arm(arg("candidate"), "candidate")
   complete(cand, "candidate")
+
+  # Declared differences (Cut 25): the frozen case list, then the expectation.
+  read_csv_commented <- function(file, what) {
+    if (!file.exists(file)) refuse("missing ", what, " file ", file)
+    utils::read.csv(file, stringsAsFactors = FALSE, na.strings = character(), colClasses = "character",
+                    comment.char = "#")
+  }
+  declared_keys <- read_csv_commented(arg("declared-cases", file.path(here, "declared_cases.csv")), "declared cases")
+  if (!identical(names(declared_keys), c("family", "case"))) refuse("unexpected columns in the declared cases file")
+  declared_cases <- paste(declared_keys$family, declared_keys$case, sep = " | ")
+  if (anyDuplicated(declared_cases)) refuse("duplicated declared case ", declared_cases[anyDuplicated(declared_cases)])
+  declared_need <- function(case_key) {
+    family <- sub(" [|] .*$", "", case_key)
+    if (family == "e2e" || is.null(per_family[[family]])) refuse("a declared case must be a compute, read_entry, ttr_route or axis case: ", case_key)
+    setdiff(c(always, per_family[[family]]$always, per_family[[family]]$data), "treated_fields")
+  }
+  if (!is.null(arg("write-declared"))) {
+    missing <- setdiff(declared_cases, cand$case_key)
+    if (length(missing)) refuse("candidate lacks declared case ", missing[[1L]])
+    out <- cand[cand$case_key %in% declared_cases & cand$component != "treated_fields",
+                c("family", "case", "component", "value")]
+    refusing <- out$component == "refusal" & out$value != "none"
+    if (any(refusing)) refuse("a declared case refuses on the candidate: ", out$case[refusing][[1L]])
+    out <- out[order(out$family, out$case, out$component, method = "radix"), ]
+    con <- file(arg("write-declared"), "wb")
+    writeLines(c(
+      "# Cut 25 (LDG-3269): the declared cases' observations under the decided behaviour.",
+      "# Post-warmup NA from a series path is accepted (maintainer decision 2026-11-04; rules ledger LR-24).",
+      "# The pin d5b3a151 cannot produce these; their values were verified against the pin's fn path",
+      "# (dev/feature_parity/declared_semantics.R) before this file was written. Never regenerate it for a control."),
+      con, sep = "\n")
+    close(con)
+    suppressWarnings(utils::write.table(out, arg("write-declared"), sep = ",", row.names = FALSE, append = TRUE,
+                                        qmethod = "double"))
+    cat("wrote", length(unique(paste(out$family, out$case))), "declared cases to", arg("write-declared"), "\n")
+    quit(save = "no", status = 0L)
+  }
+  declared_arg <- arg("declared", file.path(here, "declared_expected.csv"))
+  declared <- NULL
+  if (!identical(declared_arg, "none")) {
+    declared <- read_csv_commented(declared_arg, "declared expectation")
+    if (!identical(names(declared), c("family", "case", "component", "value"))) {
+      refuse("unexpected columns in ", declared_arg)
+    }
+    declared$case_key <- paste(declared$family, declared$case, sep = " | ")
+    declared$key <- paste(declared$case_key, declared$component, sep = " | ")
+    if (anyDuplicated(declared$key)) refuse("duplicated declared component ", declared$key[anyDuplicated(declared$key)])
+    extra <- setdiff(declared$case_key, declared_cases)
+    missing <- setdiff(declared_cases, declared$case_key)
+    if (length(extra)) refuse("declared expectation holds an undeclared case: ", extra[[1L]])
+    if (length(missing)) refuse("declared expectation lacks declared case: ", missing[[1L]])
+    for (ck in declared_cases) {
+      have <- declared$component[declared$case_key == ck]
+      if (!setequal(have, declared_need(ck))) refuse("declared case ", ck, " is not complete")
+      for (cmp in c("refusal", "refusal_class")) {
+        if (!identical(declared$value[declared$case_key == ck & declared$component == cmp], "none")) {
+          refuse("declared case ", ck, " refuses in ", declared_arg)
+        }
+      }
+    }
+  }
+  is_declared <- function(case_key) !is.null(declared) & case_key %in% declared_cases
   expected_file <- arg("expected", file.path(here, "corpus_expected.csv"))
   if (!file.exists(expected_file)) refuse("missing corpus file ", expected_file)
   expected <- utils::read.csv(expected_file, stringsAsFactors = FALSE, na.strings = character(),
@@ -131,8 +204,14 @@ local({
   }
   # 1. the corpus: both arms take the recorded route, certification, field
   #    union and refusal class on every case.
-  want <- expected[expected$component != "case", ]
+  want_all <- expected[expected$component != "case", ]
   for (arm in list(list("pin", pin), list("candidate", cand))) {
+    # A declared case's candidate is compared with the declared file below.
+    want <- if (arm[[1L]] == "candidate") {
+      want_all[!is_declared(paste(want_all$family, want_all$case, sep = " | ")), ]
+    } else {
+      want_all
+    }
     got <- arm[[2L]][match(want$key, arm[[2L]]$key), ]
     off <- is.na(got$value) | got$value != want$value
     for (component in unique(want$component[off])) {
@@ -149,9 +228,20 @@ local({
   b <- cand$value[match(keys, cand$key)]
   component <- c(pin$component, cand$component)[match(keys, c(pin$key, cand$key))]
   case_key <- c(pin$case_key, cand$case_key)[match(keys, c(pin$key, cand$key))]
-  off <- (is.na(a) | is.na(b) | a != b) & !component %in% c("treated_fields", "handoffs", "gate", "shadow")
+  off <- (is.na(a) | is.na(b) | a != b) & !component %in% c("treated_fields", "handoffs", "gate", "shadow") &
+    !is_declared(case_key)
   for (cmp in sort(unique(component[off]), method = "radix")) {
     signal(cmp, unique(case_key[off & component == cmp]), "candidate differs from pin")
+  }
+  # 2b. declared cases (Cut 25): the candidate against the declared file,
+  #     every component but treated_fields, hand-offs included.
+  if (!is.null(declared)) {
+    got <- cand$value[match(declared$key, cand$key)]
+    off_d <- is.na(got) | got != declared$value
+    for (cmp in sort(unique(declared$component[off_d]), method = "radix")) {
+      signal(cmp, unique(declared$case_key[off_d & declared$component == cmp]),
+             "candidate differs from the declared expectation")
+    }
   }
   # 3. invariants inside each arm.
   for (arm in list(list("pin", pin), list("candidate", cand))) {
@@ -232,7 +322,7 @@ local({
     kv <- strsplit(strsplit(v, ";", fixed = TRUE)[[1L]], "=", fixed = TRUE)
     stats::setNames(as.integer(vapply(kv, `[`, "", 2L)), vapply(kv, `[`, "", 1L))
   }
-  ho_pin <- pin[pin$component == "handoffs", ]
+  ho_pin <- pin[pin$component == "handoffs" & !is_declared(pin$case_key), ]
   ho_cand <- cand$value[match(ho_pin$key, cand$key)]
   ho_bad <- character()
   for (i in seq_len(nrow(ho_pin))) {
@@ -310,6 +400,8 @@ local({
   n_refusing <- sum(pin$component == "refusal_class" & pin$value != "none")
   cat(sprintf("cases %d (refusing on the pin %d), observations pin %d candidate %d\n",
               n_cases, n_refusing, nrow(pin), nrow(cand)))
+  cat(if (is.null(declared)) "declared: none\n" else
+    sprintf("declared: %d cases compared with %s\n", length(declared_cases), basename(declared_arg)))
   if (bad > 0L) {
     cat("CHECK FAIL:", bad, "signal(s)\n")
     quit(save = "no", status = 1L)

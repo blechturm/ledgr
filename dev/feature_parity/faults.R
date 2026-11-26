@@ -11,9 +11,15 @@
 # with both outputs of the preparation observer lost on every refusing case
 # in both arms (re-review 2, H1) must fail with treated_fields (exit 1); the
 # pin against itself must pass.
+# Declared differences (Cut 25, cut review 25 R2): --declared=<csv|none> is
+# required. The product faults run on --lib against the pin with that
+# comparison, after an unfaulted run of --lib must pass it; the controls made
+# only from pin observations (missing arm, case or component, the
+# treated-fields edits, the pin against itself) use --declared=none. faults.csv
+# records the library and the declared option of every control.
 # Writes one checker transcript per control and faults.csv into --evidence.
 #
-#   Rscript faults.R --lib=<arm library> --pin=<pin runner out dir> --scratch=<dir> --evidence=<dir>
+#   Rscript faults.R --lib=<arm library> --pin=<pin runner out dir> --declared=<csv|none> --scratch=<dir> --evidence=<dir>
 local({
   argv <- commandArgs(TRUE)
   arg <- function(name) sub(paste0("^--", name, "="), "", grep(paste0("^--", name, "="), argv, value = TRUE)[[1L]])
@@ -25,9 +31,12 @@ local({
   evidence <- arg("evidence")
   dir.create(scratch, recursive = TRUE, showWarnings = FALSE)
   dir.create(evidence, recursive = TRUE, showWarnings = FALSE)
-  check <- function(name, candidate, pin_dir = pin) {
+  declared <- arg("declared")
+  lib_label <- normalizePath(arg("lib"), winslash = "/")
+  check <- function(name, candidate, pin_dir = pin, declared_option = "none") {
     out <- suppressWarnings(system2(rscript, c(file.path(here, "check.R"), paste0("--pin=", pin_dir),
-                                               paste0("--candidate=", candidate)), stdout = TRUE, stderr = TRUE))
+                                               paste0("--candidate=", candidate),
+                                               paste0("--declared=", declared_option)), stdout = TRUE, stderr = TRUE))
     status <- attr(out, "status") %||% 0L
     writeLines(c(sprintf("check.R --pin=<pin> --candidate=<%s>: exit %d", name, status), out),
                file.path(evidence, paste0(name, ".txt")))
@@ -49,17 +58,26 @@ local({
   has_direct <- exists("ledgr_history_feature_direct", envir = ns_lib, inherits = FALSE)
   rows <- list()
   sets <- list()
+  # The unfaulted library must pass the comparison the faults are judged by.
+  unfaulted <- file.path(scratch, "unfaulted")
+  status <- system2(rscript, c(file.path(here, "runner.R"), "--arm=unfaulted", paste0("--lib=", arg("lib")),
+                               paste0("--out=", unfaulted), "--debug=0"))
+  r <- if (identical(as.integer(status), 0L)) check("unfaulted", unfaulted, declared_option = declared) else
+    list(status = NA_integer_, signals = paste("runner.R failed with exit", status))
+  rows$unfaulted <- data.frame(control = "unfaulted", expected_exit = 0L, exit = r$status, expected_signal = "",
+                               signals = paste(sort(r$signals), collapse = ","), ok = identical(r$status, 0L),
+                               library = lib_label, declared = declared)
   for (f in names(faults)) {
     if (f %in% stage3 && !has_direct) {
       rows[[f]] <- data.frame(control = f, expected_exit = NA_integer_, exit = NA_integer_,
                               expected_signal = faults[[f]],
-                              signals = "not run: the library has no direct path (checked before running)", ok = TRUE)
+                              signals = "not run: the library has no direct path (checked before running)", ok = TRUE, library = lib_label, declared = declared)
       next
     }
     if (identical(f, "all_fields") && !has_selector) {
       rows[[f]] <- data.frame(control = f, expected_exit = NA_integer_, exit = NA_integer_,
                               expected_signal = faults[[f]],
-                              signals = "not run: the library has no field selector (checked before running)", ok = TRUE)
+                              signals = "not run: the library has no field selector (checked before running)", ok = TRUE, library = lib_label, declared = declared)
       next
     }
     out <- file.path(scratch, f)
@@ -67,13 +85,15 @@ local({
                                  paste0("--out=", out), paste0("--fault=", f), "--debug=0"))
     if (!identical(as.integer(status), 0L)) {
       rows[[f]] <- data.frame(control = f, expected_exit = 1L, exit = NA_integer_, expected_signal = faults[[f]],
-                              signals = paste("runner.R failed with exit", status), ok = FALSE)
+                              signals = paste("runner.R failed with exit", status), ok = FALSE,
+                              library = lib_label, declared = declared)
       next
     }
-    r <- check(f, out)
+    r <- check(f, out, declared_option = declared)
     sets[[f]] <- paste(sort(r$signals), collapse = ",")
     rows[[f]] <- data.frame(control = f, expected_exit = 1L, exit = r$status, expected_signal = faults[[f]],
-                            signals = sets[[f]], ok = r$status == 1L && faults[[f]] %in% r$signals)
+                            signals = sets[[f]], ok = r$status == 1L && faults[[f]] %in% r$signals,
+                            library = lib_label, declared = declared)
   }
   distinct <- !anyDuplicated(unlist(sets))
   # Refusals: a missing arm, a dropped case, a dropped component.
@@ -94,7 +114,7 @@ local({
   for (name in names(controls)) {
     r <- check(name, controls[[name]])
     rows[[name]] <- data.frame(control = name, expected_exit = 2L, exit = r$status, expected_signal = "",
-                               signals = "", ok = r$status == 2L)
+                               signals = "", ok = r$status == 2L, library = "pin observations", declared = "none")
   }
   # Absent treated-fields evidence (re-review 1, G1): the pin's observations
   # with one reached observation cleared, or with only the causality phase
@@ -118,7 +138,8 @@ local({
     r <- check(name, absent[[name]])
     rows[[name]] <- data.frame(control = name, expected_exit = 1L, exit = r$status, expected_signal = "treated_fields",
                                signals = paste(sort(r$signals), collapse = ","),
-                               ok = r$status == 1L && identical(unique(r$signals), "treated_fields"))
+                               ok = r$status == 1L && identical(unique(r$signals), "treated_fields"),
+                               library = "pin observations", declared = "none")
   }
   # Shared observer loss (re-review 2, H1): both outputs of the treated-fields
   # observer (the prep entries and prep_seen) removed on every refusing case,
@@ -134,10 +155,12 @@ local({
   r <- check("shared_observer_loss", shared, pin_dir = shared)
   rows$shared_observer_loss <- data.frame(control = "shared_observer_loss", expected_exit = 1L, exit = r$status,
                                           expected_signal = "treated_fields", signals = paste(sort(r$signals), collapse = ","),
-                                          ok = r$status == 1L && identical(unique(r$signals), "treated_fields"))
+                                          ok = r$status == 1L && identical(unique(r$signals), "treated_fields"),
+                                          library = "pin observations", declared = "none")
   r <- check("pin_against_pin", pin)
   rows$pin_against_pin <- data.frame(control = "pin_against_pin", expected_exit = 0L, exit = r$status,
-                                     expected_signal = "", signals = "", ok = r$status == 0L)
+                                     expected_signal = "", signals = "", ok = r$status == 0L,
+                                     library = "pin observations", declared = "none")
   table <- do.call(rbind, rows)
   utils::write.csv(table, file.path(evidence, "faults.csv"), row.names = FALSE)
   print(table, row.names = FALSE)
