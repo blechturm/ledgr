@@ -4005,7 +4005,8 @@ cuts:
   - id: 25
     name: "WS12 chores: schema-test DuckDB pin, ledgr_utc() vectorisation, post-warmup NA"
     cut: "2026-11-26"
-    status: "accepted"
+    status: "closed"
+    closed: "2026-11-26, after workstream 45 closed: its Type 1 close review passed at re-review 1 (two rounds; round 1 F1 corrected a ledgr_utc() regression on classed character input, F2 strengthened LTB-0567's sweep checks, F3 completed the records). The schema golden test no longer pins duckdb; ledgr_utc() parses character vectors in whole-vector passes with the same values and refusals; post-warmup NA from series paths, TTR included, is accepted as on the fn path, NaN and Inf still refuse; the feature oracle declares 52 changed cases; engine version 88b4237e to 100eff97, every other identity unchanged. Full suite in the default library (duckdb 2.0.1) and R CMD check pass."
     accepted: "2026-11-26 under the maintainer's request for one chore cut with the first three routed WS12 chores, run as usual (measure, cut, Codex cut review iterated to PASS, implement, Codex close review iterated to PASS), after the cut review passed at re-review 1 (cut_review_25_rereview_1.md, at abfd3f9c, no new finding)."
     opening: >-
       Written by Claude on 2026-11-26 at the maintainer's request (one
@@ -4706,11 +4707,12 @@ workstreams:
   - id: 45
     name: "WS12 chores: schema-test DuckDB pin, ledgr_utc() vectorisation, post-warmup NA"
     cut: 25
-    status: "open"
+    status: "complete"
+    accepted: "2026-11-26 under the maintainer's instruction to implement Cut 25 and iterate its Codex close review to green, after the close review passed at re-review 1."
     depends_on_workstream: 44
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 45, after LDG-3270", reason: "The schema test drops only its two environment checks; ledgr_utc() returns bit-identical values and the same refusals in whole-vector passes; series paths accept post-warmup NA exactly as the fn path does, NaN and Inf still refuse, the contract, vignette, NEWS and rules ledger say so; the oracle's only differences from the pin are the 52 declared cases; identities equal except the engine version."}
-    close_review: "Independent clean-context Codex CLI (gpt-6.1-sol/high), Type 1; reports in this packet. Round 1 (ws45_close_review_round1.md, at 7f278de6): CHANGES_REQUIRED, F1-F3 required: F1 ledgr_utc() refused AsIs and other classed character input that the per-element parse accepted (corrected in 812ed1e2: the branch parses as.character(unclass(x)); LTB-0566 covers AsIs forms; the uncorrected rewrite fails it); F2 LTB-0567 compared only sweep summary columns, so a corrupted recovery value passed (corrected in 812ed1e2: the sweep strategy checks the literal value and history evidence at every pulse on serial, reused and worker execution, source_ts_utc joins the carry witness, sweep_witness.R shows a corrupted value and corrupted NA-cell evidence each fail); F3 LDG-3270 had no evidence and the governance equality no saved record (evidence written, governance_compare.R committed and run). Every final-code proof rerun on cand-812ed1e2. Re-review pending."
+    close_review: "Independent clean-context Codex CLI (gpt-6.1-sol/high), Type 1; reports in this packet. Round 1 (ws45_close_review_round1.md, at 7f278de6): CHANGES_REQUIRED, F1-F3 required: F1 ledgr_utc() refused AsIs and other classed character input that the per-element parse accepted (corrected in 812ed1e2: the branch parses as.character(unclass(x)); LTB-0566 covers AsIs forms; the uncorrected rewrite fails it); F2 LTB-0567 compared only sweep summary columns, so a corrupted recovery value passed (corrected in 812ed1e2: the sweep strategy checks the literal value and history evidence at every pulse on serial, reused and worker execution, source_ts_utc joins the carry witness, sweep_witness.R shows a corrupted value and corrupted NA-cell evidence each fail); F3 LDG-3270 had no evidence and the governance equality no saved record (evidence written, governance_compare.R committed and run). Every final-code proof rerun on cand-812ed1e2. Re-review 1 (ws45_close_rereview_1.md, at 254e94af): PASS, F1-F3 resolved, no new finding; the reviewer reproduced the AsIs fix over 90 attribute, form and time-zone combinations, both sweep corruption controls and the governance comparison."
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -8746,7 +8748,7 @@ tickets:
   - id: "LDG-3270"
     title: "Close Cut 25: final-code proofs"
     workstream: 45
-    status: "review_pending"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3267", "LDG-3268", "LDG-3269"]
@@ -8768,4 +8770,4 @@ tickets:
       - "dev/feature_parity/evidence/ldg3270/census_check.txt reports CENSUS CHECK PASS with names, roots and bindings unchanged; emitted_pin_final.txt reports EMITTED PIN PASS (134 of 134); counts_final.txt reports COUNTS CHECK PASS (385 of 385)."
       - "dev/feature_parity/evidence/ldg3270/full_tests_final.log (812ed1e2, cand-812ed1e2 first on the library path, default library duckdb 2.0.1) passes 1,366 tests with 0 failed, 0 errors and 1 skip; full_tests_run1_4abdb348.log records the first run's 3 failures, exactly the engine-version literals of the cut's amendment_engine_literals; r_cmd_check.log (e99afc33) reports Status OK with no WARNING or NOTE; governance/ (governance_compare.R) shows the final finding set equals the cut base ca635540's, no finding added."
       - "dev/feature_parity/evidence/ldg3270/lines.csv records R/ production lines 54,966 to 54,986 (features-engine.R -3, timestamp.R +23, bind list unchanged at 59); shapes.md walks the seven shapes over the parser and the normaliser and finds the per-element parse removed and no new loop over a growing collection."
-      - "Type 1 close review of workstream 45: round 1 (ws45_close_review_round1.md in this packet, at 7f278de6) returned CHANGES_REQUIRED with F1 (classed character input in ledgr_utc()), F2 (sweep execution, reuse and worker checks of literal values and evidence) and F3 (this evidence and a reproducible governance comparison), each corrected in 812ed1e2 and e99afc33 and the proofs above rerun on the corrected library; re-review pending."
+      - "Type 1 close review of workstream 45: round 1 (ws45_close_review_round1.md in this packet, at 7f278de6) returned CHANGES_REQUIRED with F1 (classed character input in ledgr_utc()), F2 (sweep execution, reuse and worker checks of literal values and evidence) and F3 (this evidence and a reproducible governance comparison), each corrected in 812ed1e2 and e99afc33 and the proofs above rerun on the corrected library; re-review 1 (ws45_close_rereview_1.md, at 254e94af) PASS, F1-F3 resolved, no new finding."

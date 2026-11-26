@@ -656,6 +656,7 @@ CRAN release.
   before the editorial pass. This is not hot-path work: per-pulse, per-fill
   and per-event code still never calls `ledgr_utc()` or any other POSIXct
   conversion (optimization manual, "No POSIXct in the hot loop").
+  **Done in Cut 25 (LDG-3268, closed 2026-11-26).**
 - **Post-warmup `NA` in indicator output (maintainer, 2026-11-04).** A
   custom indicator that returns `NA` after warmup behaves differently by
   path. Through `fn` alone the run continues, the strategy reads `NA` and
@@ -674,6 +675,10 @@ CRAN release.
   that refused now complete. One NEWS line. If it lands after the WS16
   reference pin, the lean core records it as a deliberate oracle
   difference in the rules ledger.
+  **Done in Cut 25 (LDG-3269, closed 2026-11-26)**, TTR rows included; the
+  engine version changes because the normaliser is bound (census row 89),
+  so the identity note above is corrected: old precompute payloads refuse.
+  Rules ledger LR-24; the feature oracle declares the 52 changed cases.
 - **DuckDB version pin in the schema golden test (maintainer,
   2026-11-26).** LTB-0258 (`tests/testthat/test-schema-current.R`) requires
   the installed duckdb to equal the version stamped in
@@ -691,6 +696,7 @@ CRAN release.
   test passes under duckdb 2.0.0 and 2.0.1, and still fails when one
   catalogue row is altered. The `DESCRIPTION` floor stays
   `duckdb (>= 2.0.0)`; no other minimum version changes. Identity: none.
+  **Done in Cut 25 (LDG-3267, closed 2026-11-26).**
 - **Per-instrument mask construction in feature preparation (maintainer,
   2026-11-26; Cut 24, LDG-3265 evidence).** `ledgr_history_feature_inputs()`
   builds the expected-session mask and the terminal planes one instrument
