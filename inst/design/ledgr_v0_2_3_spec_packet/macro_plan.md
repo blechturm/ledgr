@@ -672,6 +672,23 @@ CRAN release.
   that refused now complete. One NEWS line. If it lands after the WS16
   reference pin, the lean core records it as a deliberate oracle
   difference in the rules ledger.
+- **DuckDB version pin in the schema golden test (maintainer,
+  2026-11-26).** LTB-0258 (`tests/testthat/test-schema-current.R`) requires
+  the installed duckdb to equal the version stamped in
+  `schema-current-golden.csv` and `schema-current-golden-rows.csv` (2.0.0).
+  The test's real guard is the catalogue-row comparison that follows: under
+  duckdb 2.0.1, on CRAN and on the maintainer's host since 2026-11-24, the
+  rows are identical and only the two version checks fail (Cut 24, LDG-3261
+  evidence). CRAN and the CI checks install the newest duckdb, so every
+  duckdb patch release would fail ledgr's check until the fixtures are
+  regenerated. A small chore cut removes the two exact-version expectations;
+  the fixtures keep their `duckdb_version` column as a record of the
+  version that generated them, and the schema-version checks and the row
+  comparison stay unchanged. Reason for the registered-test change: the two
+  checks assert the test environment, not product behavior. Witnesses: the
+  test passes under duckdb 2.0.0 and 2.0.1, and still fails when one
+  catalogue row is altered. The `DESCRIPTION` floor stays
+  `duckdb (>= 2.0.0)`; no other minimum version changes. Identity: none.
 - **WS4b close note, 2026-11-01:** refresh the `ledgr_pulse_snapshot()` help
   so its experiment form teaches both bar-native fixed baskets and declared
   sessions; only the snapshot-and-universe form lacks causal history.
