@@ -1,0 +1,5 @@
+"event_id","run_id","ts_utc","event_type","instrument_id","side","qty","price","fee","event_seq","cash_delta","position_delta","source","source_fact_id","entitled_quantity","gross_cash_per_parent_unit","amount_policy_id","posting_policy_id","late_arrival","affected_marked_exposure","terminal_event","matched_label","disposition_policy_id","disposition_choice","disposition_basis","mark_source","mark_source_ts_utc","mark_age","haircut_fraction","position_before","realized_model_pnl"
+"s5-reopen_00000001","s5-reopen","2020-01-01T16:00:00Z","CASHFLOW","A",NA,"3","28","0","1","0","3","opening_position",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"s5-reopen_00000002","s5-reopen","2020-01-03T09:30:00Z","FILL","A","BUY","2","30.75","0","2","-61.5","2",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"s5-reopen_00000003","s5-reopen","2020-01-04T09:30:00Z","FILL","C","BUY","2","13","0","3","-26","2",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+"s5-reopen_00000004","s5-reopen","2020-01-05T09:30:00Z","FILL","B","BUY","2","44","0","4","-88","2",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA

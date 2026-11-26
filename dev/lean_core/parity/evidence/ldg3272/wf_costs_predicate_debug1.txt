@@ -1,0 +1,2 @@
+s5_walk_forward_costs        PASS      identical  lean 6  refused []  backstop []  store []  sink []  holds 0  append<=18  range<=6  pinned 2.7 s  lean 5.4 s
+15 tables, 0 different; verdicts: PASS 1

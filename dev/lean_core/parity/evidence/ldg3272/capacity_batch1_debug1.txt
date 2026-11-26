@@ -1,0 +1,3 @@
+s5_compiled_capacity_at      PASS      identical  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=1  pinned 1.1 s  lean 3.3 s
+s5_compiled_capacity_over    PASS      identical  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.7 s  lean 2.1 s
+15 tables, 0 different; verdicts: PASS 2

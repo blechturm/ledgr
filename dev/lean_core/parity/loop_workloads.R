@@ -675,7 +675,6 @@ loop_witnesses <- list(
 # Workloads whose lean arm must name this refusal before the first pulse;
 # a missing refusal fails the workload even when the outputs match.
 loop_expect_refused <- list(
-  witness_walk_forward = "walk-forward",
   witness_checkpoint_control = "a checkpoint_every control",
   witness_checkpoint_null = "a checkpoint_every control",
   witness_sweep_workers = "sweep workers"

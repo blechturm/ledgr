@@ -8,7 +8,8 @@
 # What the harness adds around a lean fold:
 # - the entry record (`lean_entry`): folds run lean, refusals, attempt marks;
 # - entry refusals the fold cannot see: a control$checkpoint_every key (D3
-#   Section 2), walk-forward and a sweep with workers (slice 5);
+#   Section 2) and a sweep with workers (slice 5); walk-forward runs lean
+#   since Cut 26;
 # - the attempt mark and whole-workload retry (19.2 point 1): a coverage
 #   condition raised mid-run (lean_abort_attempt()) marks the attempt, and
 #   the complete workload reruns on the pin with the entry RNG restored.
@@ -21,7 +22,6 @@
 #   memory measurement around the terminal transfer.
 
 lean_pin_run_fold <- get("ledgr_run_fold", envir = asNamespace("ledgr"))
-lean_pin_walk_forward <- get("ledgr_walk_forward", envir = asNamespace("ledgr"))
 
 # The last fold's pulse-loop and transfer seconds and record statistics.
 lean_loop_last_times <- new.env(parent = emptyenv())
@@ -33,7 +33,6 @@ lean_entry_reset <- function() {
   lean_entry$backstop <- character()          # attempt marks: features that force a rerun on the pin
   lean_entry$uncovered <- character()         # stubs reached during the current fold
   lean_entry$control_checkpoint <- FALSE      # the run carries a control$checkpoint_every key
-  lean_entry$walk_forward <- FALSE            # inside ledgr_walk_forward()
   lean_entry$store_access <- character()      # backend or package-writer calls while pulses run
   lean_entry$sink_calls <- character()        # output-handler calls while pulses run
   lean_entry$terminal_appends <- character()  # tables of completed nonempty appends after the loop
@@ -53,7 +52,6 @@ lean_mark <- function(feature) lean_entry$backstop <- c(lean_entry$backstop, fea
 
 lean_harness_hooks <- function() list(
   entry_refusal = function() {
-    if (isTRUE(lean_entry$walk_forward)) return("walk-forward")
     if (isTRUE(lean_entry$control_checkpoint)) return("a checkpoint_every control")
     NULL
   },
@@ -141,8 +139,8 @@ lean_watch_handler <- function(h, live) {
   h
 }
 
-# Entry recorders: the run's control list and walk-forward, which the fold
-# cannot see, become entry refusals (D3 Section 2; slice 5).
+# Entry recorder: the run's control list, which the fold cannot see, becomes
+# an entry refusal (D3 Section 2). Walk-forward runs lean (Cut 26).
 lean_run_fold <- function(config, run_id = NULL, control = list(), metric_context = NULL, history_substrate = NULL) {
   lean_entry$control_checkpoint <- "checkpoint_every" %in% names(control)
   on.exit(lean_entry$control_checkpoint <- FALSE)
@@ -161,16 +159,6 @@ lean_sweep_impl <- local({
     B
   }, list(B = body(lean_pin_sweep_impl)))
   environment(w) <- list2env(list(lean_entry = lean_entry), parent = environment(lean_pin_sweep_impl))
-  w
-})
-lean_walk_forward <- local({
-  w <- lean_pin_walk_forward
-  body(w) <- substitute({
-    lean_entry$walk_forward <- TRUE
-    on.exit(lean_entry$walk_forward <- FALSE, add = TRUE)
-    B
-  }, list(B = body(lean_pin_walk_forward)))
-  environment(w) <- list2env(list(lean_entry = lean_entry), parent = environment(lean_pin_walk_forward))
   w
 })
 
@@ -205,7 +193,7 @@ lean_loop_install <- function(hooks = TRUE) {
   ns <- asNamespace("ledgr")
   lean <- list(ledgr_fold_envelope = lean_fold_envelope,
                "$.ledgr_pulse_context" = lean_ctx_dollar,
-               ledgr_run_fold = lean_run_fold, ledgr_walk_forward = lean_walk_forward,
+               ledgr_run_fold = lean_run_fold,
                ledgr_sweep_impl = lean_sweep_impl)
   if (!hooks) lean <- lean[1:2]
   pinned <- lapply(stats::setNames(names(lean), names(lean)), get, envir = ns)
@@ -217,12 +205,6 @@ lean_loop_install <- function(hooks = TRUE) {
       unlockBinding(name, ns)
       assign(name, values[[name]], envir = ns)
       lockBinding(name, ns)
-    }
-    if (!is.null(values$ledgr_walk_forward) && "package:ledgr" %in% search()) {
-      pkg <- as.environment("package:ledgr")
-      unlockBinding("ledgr_walk_forward", pkg)
-      assign("ledgr_walk_forward", values$ledgr_walk_forward, envir = pkg)
-      lockBinding("ledgr_walk_forward", pkg)
     }
     registerS3method("$", "ledgr_pulse_context", values[[2L]], envir = ns)
   }

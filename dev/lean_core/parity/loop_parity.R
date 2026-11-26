@@ -497,6 +497,7 @@ source(file.path(here, "loop_workloads.R"))
 source(file.path(here, "loop_workloads_slice2.R"))
 source(file.path(here, "loop_workloads_slice3.R"))
 source(file.path(here, "loop_workloads_slice4.R"))
+source(file.path(here, "loop_workloads_slice5.R"))
 extra <- c(list(
   crossover_3x40 = crossover(3L, 40L),
   crossover_10x300 = crossover(10L, 300L),
@@ -521,7 +522,7 @@ extra <- c(list(
     collect_open(fx$snapshot, db, "lp-prep-fixture", fx$exp, seed = 1L,
                  params = utils::modifyList(lc_prep_fixture_params, list(trade = TRUE, lookback = 10L, n = 3L)))
   }
-), loop_constructed, loop_witnesses, loop_slice2, loop_slice3, loop_slice4)
+), loop_constructed, loop_witnesses, loop_slice2, loop_slice3, loop_slice4, loop_slice5)
 all_ids <- c(names(a0_workloads), names(extra))
 ids <- strsplit(arg("workloads", paste(all_ids, collapse = ",")), ",")[[1L]]
 if (length(bad <- setdiff(ids, all_ids))) stop("unknown workload(s): ", paste(bad, collapse = ", "), call. = FALSE)
