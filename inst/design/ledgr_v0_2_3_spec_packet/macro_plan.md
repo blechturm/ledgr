@@ -691,6 +691,19 @@ CRAN release.
   test passes under duckdb 2.0.0 and 2.0.1, and still fails when one
   catalogue row is altered. The `DESCRIPTION` floor stays
   `duckdb (>= 2.0.0)`; no other minimum version changes. Identity: none.
+- **Per-instrument mask construction in feature preparation (maintainer,
+  2026-11-26; Cut 24, LDG-3265 evidence).** `ledgr_history_feature_masks()`
+  builds the expected-session mask and the terminal planes one instrument
+  and knowledge range at a time inside the preparation loop of
+  `ledgr_history_compute_feature_series()`. On the 500 x 1,260 admission
+  fixture it costs about 80 ms of a 570 ms preparation. The cost dates from
+  before stage 3 (the same work sat inside `ledgr_history_feature_inputs()`)
+  and is not stage 3's retention question. It is an R-level loop over
+  instruments on a preparation path (optimization coding style); the
+  candidate is one panel-wide computation of the expected and terminal
+  planes, read per instrument by index. Measure first, then a later
+  feature-engine or optimization cut. Identity: the engine version changes
+  (the function is hashed); prepared values do not.
 - **WS4b close note, 2026-11-01:** refresh the `ledgr_pulse_snapshot()` help
   so its experiment form teaches both bar-native fixed baskets and declared
   sessions; only the snapshot-and-universe form lacks causal history.

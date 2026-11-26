@@ -1,0 +1,17 @@
+cell,bound
+run_10x7200,1.013983
+sweep_10x7200,1.014596
+run_500x1260,1.012559
+sweep_500x1260,1.006777
+run_1166x252,1.006836
+sweep_1166x252,1.007056
+certify_run,1.009680
+certify_sweep,1.009840
+adm_custom_run,1.004165
+adm_custom_sweep,1.007850
+adm_zero_run,1.007827
+adm_zero_sweep,1.009767
+adm_low_run,1.008845
+adm_low_sweep,1.026042
+adm_pit_run,1.004957
+adm_pit_sweep,1.014036

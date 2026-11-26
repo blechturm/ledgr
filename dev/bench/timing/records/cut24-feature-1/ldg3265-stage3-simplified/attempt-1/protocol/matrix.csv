@@ -1,0 +1,17 @@
+cell,workload,clock,args,pairs
+run_10x7200,cut24_feature,feature,shape=10x7200;path=run;debug=0;reps=21,8
+sweep_10x7200,cut24_feature,feature,shape=10x7200;path=sweep;debug=0;reps=12,8
+run_500x1260,cut24_feature,feature,shape=500x1260;path=run;debug=0;reps=10,8
+sweep_500x1260,cut24_feature,feature,shape=500x1260;path=sweep;debug=0;reps=5,8
+run_1166x252,cut24_feature,feature,shape=1166x252;path=run;debug=0;reps=7,8
+sweep_1166x252,cut24_feature,feature,shape=1166x252;path=sweep;debug=0;reps=3,8
+certify_run,cut24_certify,certify,path=run;debug=0;reps=100,8
+certify_sweep,cut24_certify,certify,path=sweep;debug=0;reps=37,8
+adm_custom_run,cut24_admission,feature,case=custom;path=run;debug=0;reps=13,8
+adm_custom_sweep,cut24_admission,feature,case=custom;path=sweep;debug=0;reps=13,8
+adm_zero_run,cut24_admission,feature,case=zero;path=run;debug=0;reps=10,8
+adm_zero_sweep,cut24_admission,feature,case=zero;path=sweep;debug=0;reps=5,8
+adm_low_run,cut24_admission,feature,case=low;path=run;debug=0;reps=10,8
+adm_low_sweep,cut24_admission,feature,case=low;path=sweep;debug=0;reps=5,8
+adm_pit_run,cut24_admission,feature,case=pit;path=run;debug=0;reps=17,8
+adm_pit_sweep,cut24_admission,feature,case=pit;path=sweep;debug=0;reps=8,8
