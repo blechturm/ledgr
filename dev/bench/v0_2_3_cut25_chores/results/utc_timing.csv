@@ -1,0 +1,5 @@
+"commit","case","seconds_per_call"
+"ca63554005829cef463bc5da129e7fa66fce3a3f","n1",0.000255
+"ca63554005829cef463bc5da129e7fa66fce3a3f","n500",0.067
+"ca63554005829cef463bc5da129e7fa66fce3a3f","n5000",0.66
+"ca63554005829cef463bc5da129e7fa66fce3a3f","as_posixct_n5000",0.018

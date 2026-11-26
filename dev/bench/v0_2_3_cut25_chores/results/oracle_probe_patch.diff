@@ -1,0 +1,14 @@
+diff --git a/R/features-engine.R b/R/features-engine.R
+index 424eb709..8bbde0a2 100644
+--- a/R/features-engine.R
++++ b/R/features-engine.R
+@@ -246,9 +246,6 @@ ledgr_normalize_feature_series_output <- function(value, expected_n, stable_afte
+   if (any(is.nan(value) & non_warmup)) {
+     rlang::abort(sprintf("Feature %s returned NaN outside the warmup period.", feature_id), class = "ledgr_invalid_feature_output")
+   }
+-  if (any(is.na(value) & !is.nan(value) & non_warmup)) {
+-    rlang::abort(sprintf("Feature %s returned NA outside the warmup period.", feature_id), class = "ledgr_invalid_feature_output")
+-  }
+   value[is.nan(value)] <- NA_real_
+   if (stable_after > 1L && length(value) > 0L) {
+     value[seq_len(min(stable_after - 1L, length(value)))] <- NA_real_

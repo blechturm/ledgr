@@ -1,0 +1,7 @@
+"commit","r_dirty","path","bad","run","run_status","strategy_read","sweep","evidence"
+"ca63554005829cef463bc5da129e7fa66fce3a3f",TRUE,"fn","na","completed","DONE","101 102 103  NA  NA  NA  NA  NA","completed","- - - - calculation_non_finite calculation_non_finite"
+"ca63554005829cef463bc5da129e7fa66fce3a3f",TRUE,"fn","nan","ledgr_invalid_feature_output","FAILED","","ledgr_invalid_feature_output","refused: ledgr_invalid_feature_output"
+"ca63554005829cef463bc5da129e7fa66fce3a3f",TRUE,"fn","inf","ledgr_invalid_feature_output","FAILED","","ledgr_invalid_feature_output","refused: ledgr_invalid_feature_output"
+"ca63554005829cef463bc5da129e7fa66fce3a3f",TRUE,"series_fn","na","completed","DONE","101 102 103  NA  NA  NA  NA  NA","completed","- - - - calculation_non_finite calculation_non_finite"
+"ca63554005829cef463bc5da129e7fa66fce3a3f",TRUE,"series_fn","nan","ledgr_invalid_feature_output","FAILED","","ledgr_invalid_feature_output","refused: ledgr_invalid_feature_output"
+"ca63554005829cef463bc5da129e7fa66fce3a3f",TRUE,"series_fn","inf","ledgr_invalid_feature_output","FAILED","","ledgr_invalid_feature_output","refused: ledgr_invalid_feature_output"

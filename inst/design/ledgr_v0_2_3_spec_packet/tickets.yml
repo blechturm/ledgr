@@ -4002,6 +4002,229 @@ cuts:
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
     cut_review: "Round 1: CHANGES_REQUIRED in cut_review_24.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at fd9dd630): the rule-to-ticket map is faithful and all six final-review patches are carried; R1-R6 required, all applied with the review's text: the decision statistics and a peak-heap collector frozen as calculations, not names (R1); custom-only, certified zero, low (5/500) and PIT admission workloads at 500 x 1,260 with independently committed expected counts, the tiny corpus kept as a control (R2); the three feature-engine test literals and the LTB-0143 and LTB-0276 mechanism counts authorized as named test changes (R3); a completeness guard and committed name sets for the changed-engine identity mode, whose missing-both and renamed-both controls passed falsely on the Cut 22 records (R4); the calculated_count matrix observed and frozen, with count-only and segment-ready comparator negatives (R5); valid negative records and a dropped-stage close branch (R6). Focused re-review 1 (cut_review_24_rereview_1.md, same setup, at 556acef7): PASS, R1-R6 applied faithfully and completely, no new finding."
+  - id: 25
+    name: "WS12 chores: schema-test DuckDB pin, ledgr_utc() vectorisation, post-warmup NA"
+    cut: "2026-11-26"
+    status: "draft"
+    opening: >-
+      Written by Claude on 2026-11-26 at the maintainer's request (one
+      chore cut with the first three routed WS12 chores before lean-loop
+      slice 5, after Cut 24 closed). This entry, workstream 45 and
+      LDG-3267 through LDG-3270 become the operative implementation brief
+      once the cut review passes and the maintainer accepts. tickets.yml
+      is the sole ticket and sequencing authority. Implementation starts
+      with LDG-3267.
+    authority: >-
+      macro_plan.md WS12, the three chore bullets "DuckDB version pin in
+      the schema golden test (maintainer, 2026-11-26)", "ledgr_utc()
+      vectorisation chore (maintainer, 2026-11-03)" and "Post-warmup NA in
+      indicator output (maintainer, 2026-11-04)", and Section 6's decision
+      "Post-warmup NA in indicator output, 2026-11-04" (an indicator that
+      is undefined at a cell says so with NA; ledgr discloses it with
+      calculation_non_finite rather than refusing; NaN and infinite values
+      still refuse; series_fn output follows the fn path); decisions.md
+      row post-warmup-na-indicator-output; inst/design/contracts.md,
+      Indicator Computation And Identity (the sentence on invalid output
+      and its accepted-change-pending notice) and Feature Path And Intent
+      Constructors (the causality checks, unchanged); AGENTS.md's rule on
+      registered tests; the lean core rules ledger's entry rule;
+      inst/design/manual/optimization_coding_style.qmd as review criteria
+      for the parser rewrite (not a hot path).
+    measured_input: >-
+      dev/bench/v0_2_3_cut25_chores/ (README.md, four scripts, results/),
+      on ca635540, R/ equal to the workstream-43 close 2dee0f98.
+      (a) Schema golden test: under duckdb 2.0.1 (the maintainer's default
+      library) LTB-0258 fails exactly its two version expectations, the
+      fixtures being stamped 2.0.0; the catalogue-row comparison, the
+      per-dimension digest and the two mutant checks pass; under 2.0.0
+      (the verification library) everything passes. (b) ledgr_utc():
+      one string 0.26 ms, 500 strings 67 ms, 5,000 strings 0.66 s,
+      against 18 ms for one as.POSIXct(format = ) over 5,000. The base's
+      per-element results for 500 accepted strings (four forms) and 32
+      edge values (11 accepted, 21 refused) are frozen in
+      tests/testthat/fixtures/ledgr-utc-oracle.csv; every refusal is
+      ledgr_invalid_timestamp with one message; Arabic-Indic digits also
+      refuse. (c) Post-warmup NA, one instrument, eight sessions: fn with
+      NA completes run and sweep, the strategy reads NA, evidence reads
+      calculation_non_finite; series_fn with NA refuses run (FAILED) and
+      sweep with ledgr_invalid_feature_output; NaN and Inf refuse on both
+      paths. With the three-line check removed from
+      ledgr_normalize_feature_series_output(), series_fn behaves exactly
+      as fn. (d) The feature oracle (dev/feature_parity/, 694 cases) on
+      that patched tree against the pin d5b3a151 changes 52 cases, every
+      one a compute case that refused with ledgr_invalid_feature_output on
+      the pin and now completes: definition sets runsd_one (TTR runSD,
+      n = 1), competing_first and competing_second (runSD n = 1 with an
+      all-NA custom series), 14 each, and custom_volume_strict (NA volume),
+      10. A further 270 cases differ only in treated_fields, which check.R
+      compares per arm, not between arms. No other case differs.
+      (e) Reach: the normaliser is called by the general series path
+      (R/history-features.R:251) and by the TTR adapter's segment
+      calculation (R/indicator-ttr.R:1171), so TTR catalogue rows follow
+      the decision too; it is in the engine-version census
+      (dev/feature_parity/census.csv row 89, binding "engine version").
+      The causality probe samples only calculated cells
+      (ready & is.finite(value), R/history-features.R:323), so a matching
+      pair of NA cells is never compared by the fn/series_fn refutation.
+      ledgr_utc() and ledgr_iso_utc() are not in the census. The lean-core
+      gate workloads (dev/lean_core/parity/loop_workloads*.R) declare only
+      TTR SMA over finite closes.
+    decisions: >-
+      (1) Schema test. LTB-0258 (tests/testthat/test-schema-current.R)
+      drops its two expectations that the fixtures' duckdb_version equals
+      the installed duckdb. The fixtures keep their duckdb_version column
+      as a record of the version that generated them; the schema-version
+      checks, the catalogue-row comparison, the per-dimension digest and
+      the mutant checks stay unchanged. Stated reason for the registered
+      test change: the two expectations assert the test environment, not
+      product behaviour, and fail every duckdb patch release on CRAN and
+      CI until the fixtures are regenerated (macro plan, 2026-11-26). The
+      DESCRIPTION floor stays duckdb (>= 2.0.0). Witnesses
+      (dev/bench/v0_2_3_cut25_chores/schema_witness.R, transcript
+      committed): the test passes under duckdb 2.0.0 and 2.0.1; on a
+      scratch copy of tests/testthat with one golden catalogue row altered
+      it fails, and with that row's dimension digest altered it fails.
+      (2) ledgr_utc() character branch. One pass over the whole vector
+      replaces the vapply() over a closure: rewrite the space form to the
+      T form, classify every element by the same three remaining anchored
+      regexes (date, T-time, T-time with Z), refuse if any element matches
+      none; parse the date subset with one as.Date(format = ); validate
+      the timed subset's hour, minute and second ranges with vectorised
+      substr()/as.integer() and parse it with one as.POSIXct(format = );
+      refuse if any parse is NA; then build each element's canonical ISO
+      string exactly as ledgr_iso_utc() does (format() of the parsed date
+      or time) and parse the whole vector once, so every value is
+      bit-identical to the base. Any invalid element refuses with
+      ledgr_invalid_timestamp and the current message, which is the same
+      for every invalid element, so whole-vector and first-element
+      refusal agree. The result is unnamed with tzone UTC, and an empty
+      character vector gives an empty UTC POSIXct, as now. The POSIXt and
+      Date branches, the leading NA/empty check, and the scalar
+      ledgr_iso_utc() do not change. Tests (registered block LTB-0566 in
+      tests/testthat/test-timestamp.R, claim LCL-0548 in
+      tests/claims.yml): the 500-string vector equals the
+      fixture in one call; each fixture edge value alone equals its row
+      (value, or class and message); each refused edge value placed
+      first, in the middle and last of a valid vector refuses with that
+      class and message; the Arabic-Indic string refuses; names are
+      dropped; empty input. The fixture is the frozen base, so these tests
+      pass on the base too; a witness (dev/bench/v0_2_3_cut25_chores/
+      utc_witness.R, transcript committed) shows that two faulted
+      rewrites, one without the hour/minute/second range check and one
+      parsing date-only strings in local time, fail them.
+      (3) Post-warmup NA. ledgr_normalize_feature_series_output() drops its
+      post-warmup NA refusal; post-warmup NaN and infinite values still
+      refuse with ledgr_invalid_feature_output, warmup NA and NaN still
+      normalise to NA_real_, and the scalar path does not change. Every
+      series path that calls the normaliser follows: custom series_fn and
+      the TTR adapter's segment calculation, so a TTR row that returns NA
+      after warmup (runSD with n = 1) now completes with those cells not
+      calculated. Declared consequence: a series_fn whose prefix
+      recomputation in the causality probe is NA at a sampled (finite)
+      cell now refuses with ledgr_feature_lookahead_detected, a subclass
+      of ledgr_invalid_feature_output, where the normaliser refused first
+      with ledgr_invalid_feature_output. Contract: the Indicator
+      Computation sentence "Infinite values, post-warmup NA, and
+      post-warmup NaN values are invalid." becomes "Post-warmup NA_real_
+      is accepted on both the scalar fn and the series_fn path: the cell
+      is not calculated and history evidence reports
+      calculation_non_finite. Infinite values and post-warmup NaN values
+      are invalid on both paths.", and its accepted-change-pending notice
+      is removed; decisions.md's row stays until release closeout, its
+      owner column naming Cut 25. vignettes/custom-indicators.qmd: the
+      three passages (the scalar contract's "must be one finite numeric
+      value", the series_fn contract list's last bullet, and the Warmup
+      section's closing sentence) say the same. One NEWS line. Rules
+      ledger LR-24, disposition change: the pin d5b3a151 refuses
+      post-warmup NA from a series path; the change is the maintainer's
+      2026-11-04 decision. Registered block LTB-0567
+      (tests/testthat/test-indicator-evidence.R, claim LCL-0549) for fn
+      and series_fn, through ledgr_run() and ledgr_sweep(): NA
+      completes, the run is DONE, the strategy reads NA from the fourth
+      session, evidence reads calculation_non_finite; NaN and Inf refuse
+      on both paths, the run FAILED; a TTR runSD n = 1 row completes with
+      no calculated cell. No registered test changes.
+      (4) The oracle's declared difference. dev/feature_parity/check.R
+      gains --declared=<csv>, default dev/feature_parity/declared_expected.csv,
+      and --declared=none. The file holds, for each declared case, every
+      component except treated_fields as the post-change candidate observes
+      it, and its header comment names the reason (decision 3 and LR-24).
+      For a declared case the candidate is compared with that file instead
+      of the pin and the corpus (sections 1, 2 and the handoffs check);
+      the pin is still compared with the corpus, so it must still refuse;
+      treated_fields keeps its per-arm rule. A declared case absent from
+      the candidate refuses (exit 2). The file is written once from the
+      final candidate run (check.R --write-declared=<csv>
+      --declared-sets=runsd_one,competing_first,competing_second,custom_volume_strict)
+      and reviewed: exactly the 52 measured cases, each with refusal none.
+      Stated reason for a candidate-produced expectation: the pin cannot
+      produce the decided behaviour; the registered tests of decision 3
+      check it independently, and the file pins it against later drift.
+      faults.R and the pin-against-pin repeat pass --declared=none. Controls
+      (transcripts committed): final against pin with the declared file
+      passes; with --declared=none it fails, and oracle_flips.R shows the
+      non-treated-fields differences are exactly the 52 declared cases;
+      the pin as candidate with the declared file fails (the declared
+      difference is absent); pin against pin with --declared=none passes;
+      faults.R passes.
+      (5) Proofs on the final code. The oracle and its controls (4);
+      identities in changed-engine mode (identity_check.R) against the
+      workstream-43 close record (C:/Users/maxth/ledgr-wt/cut24-scratch/
+      ldg3266/identity_ws43, engine 88b4237e): every logical identity
+      equal, the engine version changed, the old precompute refused before
+      any candidate runs, stored runs and sweeps readable; census.R CENSUS
+      CHECK PASS with helper names, roots and bindings unchanged (locations
+      only); emitted_pin.R and counts.R pass unchanged; the full test suite
+      in the maintainer's default library (duckdb 2.0.1) and R CMD check
+      --no-manual --no-build-vignettes pass; the governance report
+      (tools/governance-report.R) reports the same finding set as on the cut base ca635540 (no finding added); R/
+      production lines before
+      and after (dev/feature_parity/lines.R); utc_probe.R's timing on the
+      final code, descriptive.
+      (6) Not run, with reasons. The lean loop gate: no lean code, fold or
+      projection interface changes, and its workloads declare only TTR SMA
+      over finite closes, which never yields a post-warmup NA; the feature
+      oracle is the differential for this preparation change. A timing
+      gate: ledgr_utc() is never called per pulse, fill or event
+      (optimization manual, "No POSIXct in the hot loop"), the NA change
+      removes one vector test, and v0.2.3 measures performance at
+      milestones (macro plan rule 16).
+    identity_and_release_impact: >-
+      The feature-engine version changes, because the normaliser is bound
+      (census row 89): a precompute made before this cut refuses with
+      ledgr_precomputed_engine_mismatch. Config identity, the stored
+      config, run identity, indicator and feature fingerprints, the
+      feature-set hash and the store format are unchanged. Runs and sweeps
+      whose indicator returned NA after warmup from a series path, custom
+      or TTR, now complete where they refused. ledgr_utc() returns the
+      same values and refusals, faster. NEWS: one line for post-warmup NA
+      (with the engine-version consequence) and one for ledgr_utc(). No
+      exported function, schema or stored format changes; the schema test
+      change touches no product code.
+    sequencing: >-
+      One workstream (45). LDG-3267, LDG-3268 and LDG-3269 are independent;
+      LDG-3267 goes first so the default library's full suite is green for
+      the rest. LDG-3270 depends on all three. Follows Cut 24; precedes
+      lean-loop slice 5 (macro plan, order after Cut 20, item d).
+    out_of_scope: >-
+      The per-instrument mask construction in feature preparation (routed
+      separately, measure first); vectorising ledgr_iso_utc() (scalar by
+      contract); any change to NaN or infinite-value handling or to the
+      scalar fn path; the causality probe and the fn/series_fn
+      refutation; other vignette text, including the custom-indicators
+      sentence on dense experiments; lean-core code; other WS12 items;
+      regenerating the schema fixtures; compiled code.
+    workstreams: [45]
+    review_lifecycle: >-
+      An independent clean-context Codex CLI cut review, iterated to PASS.
+      Workstream 45 receives one independent clean-context Type 1 close
+      review of its whole diff and every acceptance item; it verifies
+      faithful implementation and contained scope and independently asks
+      whether the inputs are right; a design concern returns NEEDS_TYPE_2.
+      Findings receive one correction pass, with a further round only for a
+      wrong answer; a third correction round stops for maintainer
+      disposition. Findings, reviewed ranges and consequential rejection
+      reasons are kept under rfc_cycle.md's record rule.
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -4407,6 +4630,13 @@ workstreams:
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 44, after LDG-3266", reason: "One preparer chooses per cell by the four-clause conservative gate, computed once with an early exit; admitted cells reuse the adapter's segment calculation over the whole slice in the existing instrument, range and definition order, with today's raw-call key and cache lifetime, and write the same values, segment records, calculated counts and empty exception sets; production keeps output validation and the sampled causality refutation; with debug on every admitted cell is also computed generally and outcomes, including refusal class, message and identifying fields, are compared and fail closed; the oracle against the pin passes on both clocks and both debug settings, direct-backend TTR parity passes, the stage-3 mechanism expectations are replaced only as rule 11 allows with the new fault controls failing as they should; the retention test of decision 7 is met or its named disposition is recorded; the contract bullet and the representation-map row match the synthesis; the census, full suite with debug on and package check pass."}
     close_review: "Independent clean-context Codex CLI (gpt-6.1-sol/high), Type 1; reports in this packet. Round 1 (ws44_close_review_round1.md, at 8098c752): CHANGES_REQUIRED, F1 and F2 required, F3 advisory; the drop, its valid negative timing evidence and the exact product rollback confirmed; timing statistics and focused final-library proofs independently reproduced; full-suite/package-check and some candidate/fault evidence inspected from saved records; no restoration or further timing asked. F1: b56eaee9 hoisted only required-field finiteness; the range, expected-session and terminal checks stayed in the loop, so the exception's full admission matrix was neither implemented nor measured; corrected in LDG-3265's evidence with an explicit disposition, the original exception text kept. F2: the component and custom probe figures had no committed record; dev/bench/v0_2_3_cut24_feature/probes_ldg3265/ now holds the scripts, a fresh run and a README, the first session's unreproduced 570/590 ms reading is withdrawn, and the causal wording in tickets.yml, macro_plan.md and shapes.md is qualified. F3: gate_expected, calculated_count and the 63 corpus cases are described as active; only gate, shadow, prep_direct and the stage-3 faults as inactive. No product or test change. Re-review 1 (ws44_close_rereview_1.md, at 23ee4504): CHANGES_REQUIRED; F1 and F3 resolved; F2 remainder (first-session figures still used as measured input: the 80 ms mask figure and the swap corroboration) corrected by labelling them unverified and using only the fresh run (about 97 ms on ffe19415); N1 (this summary overstated round 1's reruns) corrected above; N2 (advisory: piece-probe version and projection timings are comparable, not equal) corrected in the probe README. No product or test change. Re-review 2 (ws44_close_rereview_2.md, at f726e5e9): PASS; the F2 remainder, N1 and N2 resolved, no new finding."
+  - id: 45
+    name: "WS12 chores: schema-test DuckDB pin, ledgr_utc() vectorisation, post-warmup NA"
+    cut: 25
+    status: "open"
+    depends_on_workstream: 44
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 45, after LDG-3270", reason: "The schema test drops only its two environment checks; ledgr_utc() returns bit-identical values and the same refusals in whole-vector passes; series paths accept post-warmup NA exactly as the fn path does, NaN and Inf still refuse, the contract, vignette, NEWS and rules ledger say so; the oracle's only differences from the pin are the 52 declared cases; identities equal except the engine version."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -8366,3 +8596,82 @@ tickets:
       - "Full suite in the verification library (verify/full_tests_summary.txt; duckdb 2.0.0, nanonext 1.10.4, mirai 2.7.4): 233 files, 1,364 tests, 0 failed, 0 errors, 1 skipped (quantmod path); no debug-on run exists without a flag. R CMD check --no-manual --no-build-vignettes: Status OK (verify/r_cmd_check.log). No registered-test change remains."
       - "Type 1 close review of workstream 44: PASS at re-review 2 (ws44_close_review_round1.md, ws44_close_rereview_1.md, ws44_close_rereview_2.md in this packet; workstream 44's close_review). Corrections were records only: LDG-3265's exception scope and diagnostic probes (dev/bench/v0_2_3_cut24_feature/probes_ldg3265/), the retained harness wording, the routed mask figure."
       - "lines.csv: R/ production lines 54,966 before and after (0). shapes.md: no preparation code changed. The measured per-instrument admission cost of the rejected implementations is in LDG-3265's evidence."
+  - id: "LDG-3267"
+    title: "Schema golden test: drop the DuckDB version expectations"
+    workstream: 45
+    status: "open"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    scope: >-
+      Cut 25 decision 1: remove LTB-0258's two expectations that the
+      fixtures' duckdb_version equals the installed duckdb; keep the
+      column, the schema-version checks, the row comparison, the digest
+      and the mutant checks. Witness script and transcript.
+    acceptance:
+      - "LTB-0258 no longer compares duckdb_version with the installed duckdb; nothing else in the test or its fixtures changes; the stated reason is recorded in this ticket's evidence"
+      - "schema_witness.R: the test passes under duckdb 2.0.0 (verification library) and 2.0.1 (default library), and fails on a scratch copy with one golden catalogue row altered and with one dimension digest altered"
+      - "LTB-0258's claim in tests/claims.yml still describes the test (its oracle_independence names the fixtures' recorded DuckDB version, which stays)"
+      - "DESCRIPTION's duckdb floor unchanged"
+    evidence: []
+  - id: "LDG-3268"
+    title: "ledgr_utc(): whole-vector character parsing"
+    workstream: 45
+    status: "open"
+    priority: "P2"
+    effort: "S"
+    dependencies: []
+    scope: >-
+      Cut 25 decision 2: rewrite ledgr_utc()'s character branch as
+      whole-vector passes with bit-identical values and the same
+      refusals, against the frozen fixture
+      tests/testthat/fixtures/ledgr-utc-oracle.csv; registered block
+      LTB-0566 with claim LCL-0548; fault witness.
+    acceptance:
+      - "The character branch has no per-element R iteration; the POSIXt and Date branches, the leading NA/empty check and ledgr_iso_utc() are unchanged"
+      - "LTB-0566 passes: the 500-string vector equals the fixture in one call; each edge value alone equals its fixture row; each refused value first, in the middle and last of a valid vector refuses with ledgr_invalid_timestamp and the fixture message; the Arabic-Indic string refuses; names are dropped; empty input gives an empty UTC POSIXct"
+      - "LTB-0566 passes on the base code too (the fixture freezes it), and utc_witness.R shows both faulted rewrites (no hour/minute/second range check; date-only parsed in local time) fail it"
+      - "The existing ledgr_utc and ledgr_iso_utc tests pass unchanged"
+      - "utc_probe.R timing on the final code recorded beside the base timing, descriptive"
+    evidence: []
+  - id: "LDG-3269"
+    title: "Accept post-warmup NA on series paths"
+    workstream: 45
+    status: "open"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    scope: >-
+      Cut 25 decisions 3 and 4: drop the post-warmup NA refusal from
+      ledgr_normalize_feature_series_output(); contract sentence and
+      notice, decisions.md owner column, the three vignette passages, one
+      NEWS line, rules ledger LR-24; registered block LTB-0567 with claim
+      LCL-0549; the oracle's declared difference in check.R with
+      declared_expected.csv, faults.R and the README.
+    acceptance:
+      - "Post-warmup NA from custom series_fn and from the TTR adapter completes; post-warmup NaN and infinite values refuse with ledgr_invalid_feature_output on both paths; warmup normalisation and the scalar path are unchanged"
+      - "LTB-0567 passes: for fn and series_fn through ledgr_run() and ledgr_sweep(), NA completes (run DONE), the strategy reads NA from the fourth session, evidence reads calculation_non_finite; NaN and Inf refuse on both paths with the run FAILED; TTR runSD n = 1 completes with no calculated cell. On the base, its series_fn NA and runSD expectations fail (transcript committed)"
+      - "contracts.md Indicator Computation carries decision 3's sentence and no accepted-change-pending notice for this decision; decisions.md's row names Cut 25 as owner; vignettes/custom-indicators.qmd's three passages say post-warmup NA is accepted on both paths and NaN and infinite values are errors; NEWS has one line naming the engine-version consequence; lean_core_rules_ledger.md has LR-24 with disposition change"
+      - "check.R --declared works as decision 4 states; declared_expected.csv holds exactly the 52 measured cases, each with refusal none, and its reason; faults.R and the pin repeat pass --declared=none; dev/feature_parity/README.md documents the option and the declared cases"
+      - "No registered test, fixture or oracle changes other than decision 1's, the added fixture and blocks, and decision 4's declared file, each with its stated reason"
+    evidence: []
+  - id: "LDG-3270"
+    title: "Close Cut 25: final-code proofs"
+    workstream: 45
+    status: "open"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-3267", "LDG-3268", "LDG-3269"]
+    scope: >-
+      Cut 25 decisions 4 and 5 on the final code, then the Type 1 close
+      review of workstream 45 and the cut close. A proof driver under
+      dev/feature_parity/evidence/ldg3270/ runs each step in a fresh
+      Rscript and keeps its output.
+    acceptance:
+      - "Oracle: final against the pin d5b3a151 with the declared file CHECK PASS; the four controls of decision 4 behave as stated; faults.R FAULTS PASS"
+      - "identity_check.R --mode=changed-engine against the workstream-43 close record: logical identities equal, engine version changed from 88b4237e, old precompute refused before any candidate runs, stored runs and sweeps readable"
+      - "census.R CENSUS CHECK PASS, names, roots and bindings unchanged; emitted_pin.R and counts.R pass unchanged"
+      - "Full test suite in the default library (duckdb 2.0.1) and R CMD check --no-manual --no-build-vignettes pass; governance report: the same finding set as on the cut base ca635540, no finding added"
+      - "R/ production lines before and after; the seven optimization shapes walked over the changed parser and normaliser"
+      - "Type 1 close review of workstream 45 (review_lifecycle)"
+    evidence: []
