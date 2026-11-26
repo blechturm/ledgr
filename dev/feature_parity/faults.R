@@ -55,7 +55,7 @@ local({
     }
     out <- file.path(scratch, f)
     status <- system2(rscript, c(file.path(here, "runner.R"), paste0("--arm=pin_", f), paste0("--lib=", arg("lib")),
-                                 paste0("--out=", out), paste0("--fault=", f)))
+                                 paste0("--out=", out), paste0("--fault=", f), "--debug=0"))
     if (!identical(as.integer(status), 0L)) {
       rows[[f]] <- data.frame(control = f, expected_exit = 1L, exit = NA_integer_, expected_signal = faults[[f]],
                               signals = paste("runner.R failed with exit", status), ok = FALSE)

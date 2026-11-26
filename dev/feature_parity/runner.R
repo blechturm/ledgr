@@ -11,7 +11,11 @@
 #                     source tree's commit and status, R/ source hashes, R
 #                     and TTR versions, the fault (if any)
 #
-#   Rscript runner.R --arm=<label> (--lib=<library> | --source=<tree>) --out=<dir> [--fault=<name>]
+#   Rscript runner.R --arm=<label> (--lib=<library> | --source=<tree>) --out=<dir> --debug=<0|1> [--fault=<name>]
+#
+# --debug sets the arm's internal debug flag explicitly for the whole run
+# (Cut 24 decision 6) and is recorded in provenance.csv; an arm without the
+# flag (the pin, the cut base) accepts only --debug=0.
 #
 # Faults (decision 2) are deliberate changes applied to the loaded namespace
 # in this process only, for check.R's fault controls (faults.R).
@@ -27,8 +31,9 @@ local({
   lib <- arg("lib")
   src <- arg("source")
   fault <- arg("fault", "none")
-  if (is.null(out) || is.null(arg("arm")) || (is.null(lib) == is.null(src))) {
-    stop("usage: runner.R --arm=<label> (--lib=<dir> | --source=<dir>) --out=<dir> [--fault=<name>]")
+  debug <- arg("debug")
+  if (is.null(out) || is.null(arg("arm")) || (is.null(lib) == is.null(src)) || !identical(debug, "0") && !identical(debug, "1")) {
+    stop("usage: runner.R --arm=<label> (--lib=<dir> | --source=<dir>) --out=<dir> --debug=<0|1> [--fault=<name>]")
   }
   dir.create(out, recursive = TRUE, showWarnings = FALSE)
   if (!is.null(lib)) {
@@ -41,6 +46,11 @@ local({
   }
   ns <- asNamespace("ledgr")
   stopifnot(requireNamespace("TTR", quietly = TRUE), requireNamespace("digest", quietly = TRUE))
+  if (exists("local_ledgr_debug", envir = ns, inherits = FALSE)) {
+    ns$local_ledgr_debug(identical(debug, "1"))
+  } else if (identical(debug, "1")) {
+    stop("runner.R: this arm has no debug flag; only --debug=0 is valid")
+  }
 
   # ---- provenance ---------------------------------------------------------
   marker <- function(dir) {
@@ -61,13 +71,14 @@ local({
   }
   prov <- data.frame(
     field = c("arm", "library", "source", "namespace_path", "installed_marker", "source_commit",
-              "source_status_R", "r_source_hashes", "r_version", "ttr_version", "fault", "field_selector"),
+              "source_status_R", "r_source_hashes", "r_version", "ttr_version", "fault", "field_selector", "debug"),
     value = c(arg("arm"), lib %||% "", src %||% "", getNamespaceInfo(ns, "path"),
               if (is.null(lib)) "" else marker(lib),
               if (is.null(src)) "" else paste(git("rev-parse", "HEAD"), collapse = ""),
               if (is.null(src)) "" else paste(git("status", "--porcelain", "--", "R"), collapse = ";"),
               r_hashes, R.version.string, as.character(utils::packageVersion("TTR")), fault,
-              exists("ledgr_history_feature_fields", envir = ns, inherits = FALSE)),
+              exists("ledgr_history_feature_fields", envir = ns, inherits = FALSE),
+              if (exists("ledgr_debug", envir = ns, inherits = FALSE)) as.character(as.integer(ns$ledgr_debug())) else "0 (no flag)"),
     stringsAsFactors = FALSE)
   utils::write.csv(prov, file.path(out, "provenance.csv"), row.names = FALSE)
 

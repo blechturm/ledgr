@@ -83,8 +83,8 @@ ID is compared only as agreement with its fixture.
 ## Commands
 
     Rscript dev/feature_parity/install_arm.R --repo=<git tree> --commit=<sha> --lib=<new dir>
-    Rscript dev/feature_parity/runner.R --arm=<label> --lib=<library> --out=<dir>
-    Rscript dev/feature_parity/runner.R --arm=<label> --source=<tree> --out=<dir>
+    Rscript dev/feature_parity/runner.R --arm=<label> --lib=<library> --out=<dir> --debug=<0|1>
+    Rscript dev/feature_parity/runner.R --arm=<label> --source=<tree> --out=<dir> --debug=<0|1>
     Rscript dev/feature_parity/check.R --pin=<pin out> --candidate=<candidate out>
     Rscript dev/feature_parity/faults.R --lib=<pin library> --pin=<pin out> --scratch=<dir> --evidence=<dir>
 
