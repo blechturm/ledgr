@@ -411,17 +411,28 @@ ledgr_history_feature_bounds <- function(substrate, calculation_start, calculati
 # general path computes the adapter's segment calculation over the whole
 # slice and records one segment and no carry or reason exception, which is
 # what the direct path does without that machinery. Harmless second ranges
-# and early terminals are rejected on purpose. One flag per definition.
-ledgr_history_feature_gate <- function(substrate, certified, gated, gate_fields, masks, instrument_idx, calc) {
+# and early terminals are rejected on purpose. One flag per definition;
+# `finite` holds, per required field of the preparation's certified union,
+# one flag per instrument (ledgr_history_feature_finite()).
+ledgr_history_feature_gate <- function(substrate, certified, gated, finite, masks, instrument_idx, calc) {
   admitted <- gated & FALSE
   if (!all(masks$expected[calc]) || any(masks$terminal_asserted)) return(admitted)
-  finite <- vapply(gate_fields, function(field) {
-    all(is.finite(substrate$bars[[field]][instrument_idx, calc]))
-  }, logical(1))
+  ok <- vapply(finite, function(flags) flags[[instrument_idx]], logical(1))
   for (d in which(gated)) {
-    admitted[[d]] <- all(finite[certified[[d]]$declarations$required_fields])
+    admitted[[d]] <- all(ok[certified[[d]]$declarations$required_fields])
   }
   admitted
+}
+
+# Per required field, whether each instrument's raw values are finite over the
+# whole calculation slice: one vectorised pass per field and preparation,
+# reduced at once to instrument flags.
+ledgr_history_feature_finite <- function(substrate, fields, calc) {
+  stats::setNames(lapply(fields, function(field) {
+    values <- substrate$bars[[field]]
+    if (length(calc) != ncol(values)) values <- values[, calc, drop = FALSE]
+    .rowSums(is.finite(values), nrow(values), ncol(values)) == ncol(values)
+  }), fields)
 }
 
 # Untreated inputs for an instrument whose cells are all admitted: the raw
@@ -546,8 +557,13 @@ ledgr_history_compute_feature_series <- function(substrate,
   # Only built-in and catalogue definitions can take the direct path; a
   # custom-only preparation builds no gate.
   gated <- vapply(certified, function(cert) cert$certification %in% c("builtin", "catalogue"), logical(1))
-  gate_fields <- unique(unlist(lapply(certified[gated], function(cert) cert$declarations$required_fields),
-                               use.names = FALSE))
+  finite <- if (any(gated)) {
+    ledgr_history_feature_finite(
+      substrate,
+      unique(unlist(lapply(certified[gated], function(cert) cert$declarations$required_fields), use.names = FALSE)),
+      seq.int(bounds$from, bounds$to)
+    )
+  }
   debug <- ledgr_debug()
   # Instruments, knowledge ranges and definitions keep their order, direct and
   # general cells interleaved, so the first refusal and the adapter calls are
@@ -560,7 +576,7 @@ ledgr_history_compute_feature_series <- function(substrate,
       masks <- ledgr_history_feature_masks(substrate, i, range_end, cutoff)
       keep <- seq.int(ranges$start[[r]], range_end)
       admitted <- if (any(gated) && length(ranges$start) == 1L) {
-        ledgr_history_feature_gate(substrate, certified, gated, gate_fields, masks, i, keep)
+        ledgr_history_feature_gate(substrate, certified, gated, finite, masks, i, keep)
       } else {
         gated & FALSE
       }
