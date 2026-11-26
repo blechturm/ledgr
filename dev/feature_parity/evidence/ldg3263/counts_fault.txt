@@ -1,0 +1,13 @@
+calculated-count cells: expected 385, observed 385, positive 296
+  case   start outcome  definition instrument count_expected count_observed
+ dense default      ok custom_last        D01             59             60
+ dense default      ok custom_last        D02             59             60
+ dense default      ok custom_last        D03             59             60
+ dense default      ok custom_last        D04             59             60
+ dense default      ok       ema_3        D01             57             58
+ dense default      ok       ema_3        D02             57             58
+ dense default      ok       ema_3        D03             57             58
+ dense default      ok       ema_3        D04             57             58
+ dense default      ok    return_1        D01             59             60
+ dense default      ok    return_1        D02             59             60
+COUNTS CHECK FAIL

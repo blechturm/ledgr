@@ -1,0 +1,4 @@
+SIGNAL route 238  (candidate differs from the corpus; first: compute | empty|data_start|all_cert)
+SIGNAL route 238  (candidate differs from pin; first: compute | panel_carry5|data_start|close)
+cases 631 (refusing on the pin 57), observations pin 8280 candidate 8280
+CHECK FAIL: 2 signal(s)
