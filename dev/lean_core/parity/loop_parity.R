@@ -83,8 +83,16 @@ source(file.path(here, "loop_edits.R"))
 # detector variant is caught on its own path. Each variant names its
 # intended fault through these.
 edit <- lean_edit
-variant <- function(expect, edits, error = NULL, lost = NULL, tables = NULL, path = NULL) {
-  list(expect = expect, edits = edits, error = error, lost = lost, tables = tables, path = path)
+variant <- function(expect, edits, error = NULL, lost = NULL, tables = NULL, path = NULL, refusal = NULL) {
+  list(expect = expect, edits = edits, error = error, lost = lost, tables = tables, path = path, refusal = refusal)
+}
+# Cut 26 decision 8 (cut review 26, R5): a restored coverage refusal, its
+# marker inside the refusal branch. CAUGHT on the `restored` signal (the
+# execution path differs from the approved freeze, passed with --freeze)
+# when every refusal new against the frozen row matches `refusal` and no
+# table differs; eligible with zero lean folds.
+restored_variant <- function(file, fn, at, lines, refusal) {
+  variant("restored", list(edit(file, fn, at, lines, "after", mark = FALSE)), tables = "^$", refusal = refusal)
 }
 # One store path per variant, its scratch store prepared before the pulses
 # run (unmarked), the marker inside the branch that runs the fault, and the
@@ -490,6 +498,29 @@ loop_mutations <- list(
   compiled_event_kinds_skipped = variant("differ", list(edit("loop.R", "lean_fold_envelope_plain",
     "      ledgr_require_compiled_spot_fifo_event_kinds(execution$corporate_action_plan$event_kinds())")),
     lost = "CASHFLOW", tables = "^sweep"),
+  # Cut 26 decision 8: the lifted refusals restored (restored-refusal signal),
+  # and two negative controls: a restored edit refusing for another reason
+  # (UNRELATED) and one on a workload that never reaches it (UNREACHED).
+  compiled_selector_refused = restored_variant("loop.R", "lean_loop_coverage", "  pulses <- execution$pulses_posix",
+    c("  if (identical(ledgr_normalize_compiled_accounting_model(execution$compiled_accounting_model), \"spot_fifo\")) {",
+      "    lean_entry$variant_reached <- TRUE",
+      "    lean_not_covered(\"compiled FIFO\")",
+      "  }"), refusal = "^compiled FIFO$"),
+  walk_forward_refused = restored_variant("loop.R", "lean_loop_coverage", "  pulses <- execution$pulses_posix",
+    c("  if (any(vapply(seq_len(sys.nframe()), function(k) identical(sys.function(k), get(\"ledgr_walk_forward\", envir = asNamespace(\"ledgr\"))), logical(1L)))) {",
+      "    lean_entry$variant_reached <- TRUE",
+      "    lean_not_covered(\"walk-forward\")",
+      "  }"), refusal = "^walk-forward$"),
+  control_unrelated_refusal = restored_variant("loop.R", "lean_loop_coverage", "  pulses <- execution$pulses_posix",
+    c("  if (identical(ledgr_normalize_compiled_accounting_model(execution$compiled_accounting_model), \"spot_fifo\")) {",
+      "    lean_entry$variant_reached <- TRUE",
+      "    lean_not_covered(\"an unrelated feature\")",
+      "  }"), refusal = "^compiled FIFO$"),
+  control_unreached_refusal = restored_variant("loop.R", "lean_loop_coverage", "  pulses <- execution$pulses_posix",
+    c("  if (identical(ledgr_normalize_compiled_accounting_model(execution$compiled_accounting_model), \"spot_fifo\")) {",
+      "    lean_entry$variant_reached <- TRUE",
+      "    lean_not_covered(\"compiled FIFO\")",
+      "  }"), refusal = "^compiled FIFO$"),
   worker_hold_signal = variant("hold", list(edit("loop.R", "lean_p5_commit", "    hd_has_recon[[i]] <<- TRUE",
     "    if (i == 1L) hooks$hold_expansion(isTRUE(live$in_pulses), 1L)", "after")), tables = "^$")
 )
@@ -702,6 +733,7 @@ for (id in ids) {
   res <- do.call(rbind, path_rows)
   events_left <- sum(vapply(candidate, function(p) if (is.data.frame(p$ledger_events)) nrow(p$ledger_events) else 0L, 0L))
   expected_refusal <- loop_expect_refused[[id]]
+  fz_path <- if (is.null(frozen)) NULL else frozen[frozen$workload == id, ]
   seen <- list(
     differ = !all(res$identical),
     # Cut 26: a worker in either arm on another build than the pin, or a
@@ -716,7 +748,11 @@ for (id in ids) {
     # a terminal fault after a completed events append, rolled back
     rollback = !all(res$identical) && events_left == 0L && "ledger_events" %in% rec$terminal_appends,
     # a fault with no completed events append before it: not a rollback witness
-    fault_without_append = !all(res$identical) && !"ledger_events" %in% rec$terminal_appends)
+    fault_without_append = !all(res$identical) && !"ledger_events" %in% rec$terminal_appends,
+    # Cut 26 decision 8: a variant run's execution path against the approved
+    # freeze (separate from the store/sink path predicate)
+    restored = nzchar(mutation) && !is.null(fz_path) && nrow(fz_path) == 1L && !(fz_path$lean_folds[[1L]] == rec$lean_folds &&
+      fz_path$refused[[1L]] == show(rec$refused) && fz_path$backstop[[1L]] == show(rec$backstop)))
   # The execution path against the freeze (R1).
   # With --freeze, a workload without a frozen row for this mode and debug
   # setting fails the path check (Cut 16 R4).
@@ -734,7 +770,11 @@ for (id in ids) {
     else if (rec$lean_folds == 0L && !length(rec$refused)) "PASS*" else "PASS"
   } else {
     v <- loop_mutations[[mutation]]
-    needs_lean <- !identical(v$expect, "unrefused")
+    needs_lean <- !v$expect %in% c("unrefused", "restored")
+    # refusals new against the frozen row must be the variant's intended one
+    frozen_refused <- if (!is.null(fz_path) && nrow(fz_path) == 1L) strsplit(fz_path$refused[[1L]], "; ", fixed = TRUE)[[1L]] else character()
+    new_refusals <- setdiff(unique(rec$refused), frozen_refused)
+    refusal_ok <- is.null(v$refusal) || (length(new_refusals) > 0L && all(grepl(v$refusal, new_refusals)))
     unrelated <- if (is.null(v$error)) new_errors else new_errors[!grepl(v$error, new_errors)]
     differing <- res$table[!res$identical]
     tables_ok <- is.null(v$tables) || (identical(v$tables, "^$") && !length(differing)) ||
@@ -743,8 +783,8 @@ for (id in ids) {
     path_ok <- is.null(v$path) || any(grepl(v$path, c(rec$store_access, rec$sink_calls, rec$worker_store)))
     if (needs_lean && rec$lean_folds == 0L && !length(rec$backstop) && rec$worker_records == 0L) "NOT RUN"
     else if (!reached) "UNREACHED"
-    else if (length(unrelated)) "UNRELATED"
-    else if (isTRUE(seen[[v$expect]]) && tables_ok && lost_ok && path_ok) "CAUGHT" else "MISSED"
+    else if (length(unrelated) || (!is.null(v$refusal) && length(new_refusals) && !refusal_ok)) "UNRELATED"
+    else if (isTRUE(seen[[v$expect]]) && tables_ok && lost_ok && path_ok && refusal_ok) "CAUGHT" else "MISSED"
   }
   verdicts[[id]] <- verdict
   # The verdict and every signal that fired, so the CSV shows what caught a variant.

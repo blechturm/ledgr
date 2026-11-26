@@ -54,7 +54,10 @@ run_parity <- function(m, d, b, workloads, csv) {
   if (file.exists(csv)) file.remove(csv)
   log <- suppressWarnings(system2(rscript, c(file.path(here, "loop_parity.R"), paste0("--lib=", lib),
     paste0("--debug=", d), paste0("--batch-rows=", b), paste0("--mutation=", m),
-    paste0("--workloads=", paste(workloads, collapse = ",")), paste0("--out=", csv)), stdout = TRUE, stderr = TRUE))
+    paste0("--workloads=", paste(workloads, collapse = ",")), paste0("--out=", csv),
+    # Cut 26 decision 8: the approved freeze with its changes, for the
+    # restored-refusal signal
+    paste0("--freeze=", file.path(here, "loop_freeze.csv"))), stdout = TRUE, stderr = TRUE))
   status <- attr(log, "status") %||% 0L
   rows <- if (file.exists(csv)) utils::read.csv(csv, stringsAsFactors = FALSE, na.strings = character()) else NULL
   list(status = as.integer(status), last = utils::tail(log, 1L), rows = rows)
@@ -85,11 +88,16 @@ for (g in groups) {
 }
 # Negative controls: an unrelated error, an unreached patch and a store
 # variant that writes through a path other than the one it declares must not
-# be CAUGHT; each must exit 1 with its declared verdict.
-controls <- c(control_unrelated = "UNRELATED", control_unreached = "UNREACHED", control_wrong_store_path = "MISSED")
+# be CAUGHT; nor (Cut 26 decision 8) a restored refusal for another reason
+# than intended, or one its workload never reaches. Each must exit 1 with
+# its declared verdict.
+controls <- c(control_unrelated = "UNRELATED", control_unreached = "UNREACHED", control_wrong_store_path = "MISSED",
+              control_unrelated_refusal = "UNRELATED", control_unreached_refusal = "UNREACHED")
+control_workload <- c(control_unrelated_refusal = "s5_compiled_lots")
 if (!nzchar(only_debug) || identical(only_debug, "0")) for (m in names(controls)) {
   b <- if (identical(m, "control_wrong_store_path")) 8L else 65536L
-  r <- run_parity(m, 0L, b, "crossover_3x40", file.path(out, sprintf("control_%s.csv", m)))
+  w <- if (m %in% names(control_workload)) control_workload[[m]] else "crossover_3x40"
+  r <- run_parity(m, 0L, b, w, file.path(out, sprintf("control_%s.csv", m)))
   v <- if (is.null(r$rows)) "missing" else unique(r$rows$verdict)
   cat(sprintf("control %s: %s, status %d (expected %s, status 1)\n", m, paste(v, collapse = ","), r$status, controls[[m]]))
   if (!identical(v, controls[[m]]) || r$status != 1L) {
