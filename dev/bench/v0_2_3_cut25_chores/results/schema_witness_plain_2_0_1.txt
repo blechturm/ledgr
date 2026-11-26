@@ -1,0 +1,8 @@
+mode plain duckdb 2.0.1 
+                                                                   test nb
+1 [LTB-0258] current schema definition matches the schema-125 catalogue 12
+2      [LTB-0263] strict validation uses the complete current catalogue 28
+  failed error
+1      0 FALSE
+2      0 FALSE
+WITNESS PASS 

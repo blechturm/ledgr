@@ -8671,7 +8671,7 @@ tickets:
   - id: "LDG-3267"
     title: "Schema golden test: drop the DuckDB version expectations"
     workstream: 45
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -8685,7 +8685,10 @@ tickets:
       - "schema_witness.R: the test passes under duckdb 2.0.0 (verification library) and 2.0.1 (default library), and fails on a scratch copy with one golden catalogue row altered and with one dimension digest altered"
       - "LTB-0258's claim in tests/claims.yml still describes the test (its oracle_independence names the fixtures' recorded DuckDB version, which stays)"
       - "DESCRIPTION's duckdb floor unchanged"
-    evidence: []
+    evidence:
+      - "tests/testthat/test-schema-current.R: LTB-0258 drops its two expect_identical checks of the fixtures' duckdb_version against the installed duckdb (one short comment says why); the schema-version checks, the catalogue-row comparison, the per-dimension digest, the five definition-mutant checks and both fixtures are unchanged. Stated reason (cut decision 1): the two checks assert the test environment, not product behaviour, and fail every duckdb patch release until the fixtures are regenerated."
+      - "Witnesses (dev/bench/v0_2_3_cut25_chores/schema_witness.R, a scratch copy of the test, its two fixtures and R/; results/schema_witness_*.txt): plain under duckdb 2.0.1 (default library) WITNESS PASS; plain under duckdb 2.0.0 (C:/Users/maxth/ledgr-wt/cut24-scratch/verify-lib) WITNESS PASS; one golden catalogue row altered (row 34, bars.instrument_id) fails nrow(missing) and nrow(extra); the table dimension's digest altered fails the digest comparison. LTB-0263 passes in every run."
+      - "LTB-0258's claim in tests/claims.yml is unchanged and still accurate: its oracle_independence names the fixtures' recorded commit and DuckDB version, and the duckdb_version column stays. DESCRIPTION unchanged (duckdb >= 2.0.0)."
   - id: "LDG-3268"
     title: "ledgr_utc(): whole-vector character parsing"
     workstream: 45

@@ -1,0 +1,21 @@
+altered row 34 : bars.instrument_id table_name bars -> altered
+mode row duckdb 2.0.1 
+                                                                   test nb
+1 [LTB-0258] current schema definition matches the schema-125 catalogue 12
+2      [LTB-0263] strict validation uses the complete current catalogue 28
+  failed error
+1      2 FALSE
+2      0 FALSE
+NOT OK: Expected `nrow(missing)` to be identical to 0L.
+Differences:
+  `actual`: 1
+`expected`: 0
+
+missing schema-125 catalogue rows: column bars.instrument_id 
+NOT OK: Expected `nrow(extra)` to be identical to 0L.
+Differences:
+  `actual`: 1
+`expected`: 0
+
+extra current-definition rows: column bars.instrument_id 
+WITNESS FAIL 

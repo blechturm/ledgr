@@ -18,11 +18,10 @@ testthat::test_that("[LTB-0258] current schema definition matches the schema-125
     file.path(root, "tests", "testthat", "fixtures", "schema-current-golden.csv"),
     stringsAsFactors = FALSE
   )
+  # The fixtures record the duckdb version that generated them; the catalogue
+  # rows and digests below are the guard, so any duckdb at or above the
+  # DESCRIPTION floor may run this test (Cut 25, LDG-3267).
   testthat::expect_identical(unique(golden$schema_version), 125L)
-  testthat::expect_identical(
-    unique(golden$duckdb_version),
-    as.character(utils::packageVersion("duckdb"))
-  )
   golden_rows <- utils::read.csv(
     file.path(
       root, "tests", "testthat", "fixtures",
@@ -32,10 +31,6 @@ testthat::test_that("[LTB-0258] current schema definition matches the schema-125
     check.names = FALSE
   )
   testthat::expect_identical(unique(golden_rows$schema_version), 125L)
-  testthat::expect_identical(
-    unique(golden_rows$duckdb_version),
-    as.character(utils::packageVersion("duckdb"))
-  )
   golden_rows$schema_version <- NULL
   golden_rows$duckdb_version <- NULL
   expected_rows <- ledgr:::ledgr_schema_catalogue_rows(expected)
