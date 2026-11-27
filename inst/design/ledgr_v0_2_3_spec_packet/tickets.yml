@@ -9089,7 +9089,7 @@ tickets:
   - id: "LDG-3271"
     title: "Slice-5 harness: worker launch routes and origin checks"
     workstream: 46
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: []
@@ -9104,7 +9104,11 @@ tickets:
       - "Explicit source-pin captures are labelled and checked against that source pin, never reported as installed-library comparisons; no package worker-loading behaviour changes"
       - "The inventory names the earlier worker-table records affected and their demonstrated launch directories (unknown where unrecorded); no historical record is rewritten"
       - "The full gate and the variant driver on the unchanged lean core pass with debug off and on under the repaired launch (worker sweeps now compared with the pin's workers), any changed path explained"
-    evidence: []
+    evidence:
+      - "dev/lean_core/load.R (commit 68074ab7) adds lean_harness_workdir(), lean_worker_origin_install() and lean_declared_origin(); loop_parity.R, loop_variants.R (through its loop_parity.R children), plan_parity.R and recorder/run.R resolve their path arguments, move outside any source package and check every started worker's namespace origin in both arms against the declared pin; evidence/ldg3271/controls.txt: from the worktree root each runner passes on avail_incomplete with 2 of 2 workers on pin-lib-d5b3a151/ledgr, and with --workdir=<worktree> each fails with WORKER (exit 1; the workers report the worktree)."
+      - "evidence/ldg3271/src_capture.log: recorder/run.R with --src= prints the installed-pin capture build and labels its --src child 'source pin <archive>', checked against that archive, never as an installed-library comparison; no package worker-loading behaviour changes (no file in R/ changes)."
+      - "evidence/ldg3271/worker_records_inventory.csv (inventory.R): the 89 committed CSVs with sweep_w2 tables, 42 A0 harness records (source tree by design) and 47 lean-harness records, 37 demonstrably launched from the repository root and 10 with no recorded launch directory (unknown); no historical record is rewritten."
+      - "evidence/ldg3271/gate_debug0.csv and gate_debug1.csv (unchanged lean core, repaired launch, against loop_freeze.csv): 203 workloads, 3,136 tables, 0 different, PASS 202 and PASS* 1 (s3_sched_none, as before), every frozen path checked, the six worker-sweep workloads now comparing the pin's workers in both arms (2 of 2 per arm), no path changed; variants_driver.log: 205 manifest rows, 80 variants, 0 failures, the three negative controls failing closed (commit d747d88e)."
   - id: "LDG-3272"
     title: "Walk-forward, the restart routes and the compiled selector"
     workstream: 46

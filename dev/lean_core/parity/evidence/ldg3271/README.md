@@ -65,3 +65,7 @@ No package code changes.
 - `variants/` and `variants_driver.log`: `loop_variants.R` from outside the
   tree: 205 manifest rows, 80 variants, 0 failures; the three negative
   controls fail closed as expected.
+- `src_capture.log`: `recorder/run.R --src=<pinned source archive>` from outside
+  the tree: the installed-pin capture and the `--src` child each print their
+  build, the child labelled `source pin <archive>` (never an installed-library
+  comparison); both pass.
