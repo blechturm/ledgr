@@ -313,7 +313,14 @@ store-format binding.
   ordered scan of already computed effects, and replay adds each published
   effect exactly once. Replay applies consecutive conflict-free blocks
   without reordering. Compiled pack and unpack gather the typed lots and keep
-  the aggregate and Kahan state; the C++ is unchanged.
+  the aggregate and Kahan state; the C++ is unchanged. Each ordered scan (the
+  cash scan, the affordability scan and the kernel's event-order cost-basis
+  total) adds one already computed value at a time in double precision, in
+  its stated order; an extended-precision accumulation such as R's `cumsum()`
+  is not an equivalent booking and can differ in the last bits. This does not
+  replace the Kahan-compensated realized P&L step, and the reconciliation
+  row's `cash_before` is derived from the recorded cash rather than scanned
+  (LR-04).
 - Instruments are positions on the run axis. ID-to-position conversion
   happens only at named boundaries: the opening import
   (`ledgr_carrier_import_state()`, `ledgr_lot_book_from_opening()`), the
@@ -734,6 +741,13 @@ Accepted change pending: [lean core pulse plumbing](decisions.md#lean-core-pulse
 - The default fill model is `next_open` with zero spread and zero fixed
   commission. A target emitted at pulse `t` is filled at the next available bar;
   a target emitted on the final pulse has no next bar and is not filled.
+- A fill belongs to the first decision pulse at or after its execution time:
+  that pulse's holdings, cash and equity row include it, and the pulse that
+  decided it does not. A declared-session fill at session `t + 1`'s opening
+  belongs to the decision at session `t + 1`'s close; a bar-native fill
+  stamped at bar `t + 1` belongs to pulse `t + 1`. A continued carry
+  window's final fill has no later pulse in its run and reaches the next
+  window through that window's opening (LR-10).
 - FIFO lot accounting must pop machine-epsilon-scale fractional dust that
   remains after a close operation in both the canonical R replay path and the
   compiled spot-FIFO path. This tolerance is only a representation cleanup for
@@ -765,7 +779,10 @@ Accepted change pending: [lean core pulse plumbing](decisions.md#lean-core-pulse
   condition; a native input refusal keeps its own condition when its fill comes
   first or is the same fill. A non-finite result from a corrupt book stays
   `ledgr_lot_state_invariant`. Openings and dispositions are not covered by
-  this refusal (v0.2.3 cut 5 `amendment_overflow`).
+  this refusal (v0.2.3 cut 5 `amendment_overflow`). A non-finite applied
+  value that no earlier refusal caught (an opening's or a disposition's
+  overflow, or any overflow from a corrupt book) refuses with
+  `ledgr_lot_state_invariant`, message `Invalid applied lot rows.` (LR-22).
 - A valuation is not a fill. When finite admitted holdings value to a
   non-finite run-order `positions_value` (for example 1e308 units marked at
   10), the fold carries it, and the run fails or completes where the
@@ -967,6 +984,11 @@ Accepted change pending: [lean core pulse plumbing](decisions.md#lean-core-pulse
   `ohlc_non_positive` (refused, or quarantined under
   `invalid_observations = "quarantine"`), so no non-positive price becomes a
   mark. Zero volume with positive prices is valid (Cut 12 LDG-2999).
+- `ledgr_snapshot_from_df()`, and through it `ledgr_snapshot_from_csv()` and
+  `ledgr_snapshot_from_yahoo()`, store open, high, low, close and volume
+  rounded to eight decimal places, and execution reads the stored values.
+  Rows appended directly to `snapshot_bars` before `ledgr_snapshot_seal()`
+  are stored as given (LR-09).
 
 <a id="contract-snapshot-point-in-time-facts"></a>
 ### Point-In-Time Facts
@@ -1449,7 +1471,13 @@ Accepted change pending: [lean core pulse plumbing](decisions.md#lean-core-pulse
   then cash-consuming fills in C-locale stable-ID order against the fixed
   `1e-8` tolerance. Rejected sales fund nothing. Accepted fills remain emitted
   in decision-axis order, and recorded cash must reconcile with the virtual
-  ledger without implying an intrapulse cash floor.
+  ledger without implying an intrapulse cash floor. The reconciliation row's
+  detail records `virtual_final_cash`, the affordability scan's cash booked
+  fill by fill in that priority order, and `recorded_final_cash`, the cash
+  after the accepted fills booked fill by fill in event (decision-axis)
+  order; the two are compared at that tolerance and may differ in the last
+  bits. Its `cash_before` is the recorded cash less the pulse's summed fill
+  cash effects (LR-03).
 - The durable availability reason-code vocabulary is closed for this schema.
   The table binds each exact token to its stage and public interpretation:
 
@@ -1561,6 +1589,26 @@ Accepted change pending: [lean core pulse plumbing](decisions.md#lean-core-pulse
   Before rerunning, ledgr validates identity, snapshot trust and any terminal
   completion evidence, then atomically replaces all derived attempt output and
   restarts from pulse one. Evidence from two attempts is never mixed.
+- An instrument's decision row records the strategy's target in `target`
+  and `target_before_risk`, the risk-transformed target in
+  `target_after_risk` (missing when the pulse stopped before the risk chain
+  ran), and the pulse-start holding, not zero, in `quantity`,
+  `position_before` and `position_after`, also when the strategy requested
+  its current holding (LR-01, LR-23). Only an exact clean form may use the
+  implicit codec: a clean hold or clean decision/fill pair needs a
+  transformed target equal to the strategy target, a finite current-close
+  mark of age 0, the plain `decision_recorded` reason and no stale-mark risk
+  row for its instrument. A decision the risk chain changed, or one on a
+  stale, frozen, expired or missing mark, with a restriction reason or with
+  `sizing_unavailable`, stays an explicit physical row (LR-23).
+- Each actionable decision (post-risk target differing from the holding by
+  more than `sqrt(.Machine$double.eps)`) on a pulse without an execution
+  opportunity (the final pulse, unless a continued carry window executes it)
+  writes one `execution` row with outcome `no_fill` and reason
+  `final_pulse_no_execution`: the post-risk target in `target` and
+  `target_after_risk`, the strategy target in `target_before_risk`, the
+  holding in `quantity`, `position_before` and `position_after`, and no
+  price or execution time (LR-02).
 - Early exit (Cut 10, LDG-2975). Once a run row exists, an invocation that
   ends by an error or an interrupt condition without having written a terminal
   status records the row `FAILED`, with the condition's message or
@@ -2286,6 +2334,10 @@ and `AAA` a held nonmember, each holding 5:
   axis. `holding_value` is zero when unheld and signed quantity times the
   permissible mark when held; it is `NA_real_` for a held instrument without
   such a mark. Fixed-basket and declared-session contexts use the same shape.
+- The flat `open`, `high`, `low`, `close` and `volume` columns hold the
+  instrument's sealed bar at the pulse and are `NA` without one. The history
+  policy's price carry applies only to feature inputs and history reads,
+  and a stale or frozen mark never fills these columns (LR-08).
 - `entry_price` is remaining FIFO basis divided by held quantity;
   `entry_at` and `exit_at` are the shared-axis bars of the current opening and
   last closing fill. Additions and partial exits retain the entry anchor.
@@ -2407,6 +2459,11 @@ and `AAA` a held nonmember, each holding 5:
   lookback. The count is finite values in the returned treated plane, so a
   finite input-carried or output-carried value counts. Instruments below the
   requirement are excluded with `insufficient_observations`.
+  Under the default a finite-lookback read therefore admits an instrument
+  only with a complete window of `lookback` finite treated values, and
+  before `lookback` sessions exist on the history axis it admits no
+  instrument and returns no instrument columns; an explicit smaller
+  requirement admits earlier (LR-07).
   `min_instruments` does not filter columns. The read records
   `passed_warmup = included_count >= min_instruments` after admission, and
   `ledgr_passed_warmup()` returns that bit for an intact history frame or
@@ -2484,7 +2541,9 @@ and `AAA` a held nonmember, each holding 5:
 - `ctx$buyable` is the public target-admission column. A permissible stale
   mark may remain priced while still failing current-close sizing, so
   `buyable` guarantees neither a current sizing close nor execution at the
-  next open.
+  next open. The absence of a current bar does not by itself change
+  `buyable`: an unrestricted member without a bar at the pulse stays
+  buyable (LR-06).
 - A frozen holding stays on the decision axis with its position. Its
   `risk_mark` is its last close, `mark_source` is `frozen_close`, `priced` is
   `TRUE` and `mark_age` keeps increasing. It is `target_restricted` with
@@ -2987,7 +3046,17 @@ and `AAA` a held nonmember, each holding 5:
   quantities. The derived fees for that event must sum to its source fee in
   durable, reconstructed, memory-backed, and compiled spot-FIFO projections.
   This projection rule must not change cash, lot state, realized PnL, or closed
-  trade metrics.
+  trade metrics. The fold's leg group splits each fill row's fee once
+  (`ledgr_fill_leg_fees()`): the closing leg takes
+  `fee * close_qty / (close_qty + open_qty)` and the opening leg the fee less
+  that amount, and a row without a positive finite total leg quantity
+  assigns no leg fee. The lot kernel's realized P&L delta for a fill
+  subtracts the whole fee from its closing realization (LR-21).
+- In the fills reader and the fold's leg group, a `CLOSE` row's
+  `realized_pnl` is that leg's own FIFO realization (its closed quantity
+  against the consumed lots' prices, before any fee) and an `OPEN` row's is
+  0; it is neither the fill's fee-net realized delta nor the book's running
+  realized total (LR-11).
 - For classed sweep input, `ledgr_sweep_review()` restores `review$ranked` as a
   `ledgr_sweep_results` view with applicable source and risk lineage, including
   `risk_chain_hash` and `risk_plan_json`. Compatible plain input must not gain
