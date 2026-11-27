@@ -639,3 +639,7 @@
 "add","gate","ovf_delta_then_lot",1,3,"","","Cut 27 decision 3 overflow-refusal witness, declared path"
 "add","gate","ovf_lot_then_delta",0,3,"","","Cut 27 decision 3 overflow-refusal witness, declared path"
 "add","gate","ovf_lot_then_delta",1,3,"","","Cut 27 decision 3 overflow-refusal witness, declared path"
+"add","gate","fe_bar_native",0,8,"","","Cut 27 decision 2 feature-route witness, declared path"
+"add","gate","fe_bar_native",1,8,"","","Cut 27 decision 2 feature-route witness, declared path"
+"add","gate","fe_declared",0,8,"","","Cut 27 decision 2 feature-route witness, declared path"
+"add","gate","fe_declared",1,8,"","","Cut 27 decision 2 feature-route witness, declared path"

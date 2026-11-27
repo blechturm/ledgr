@@ -1,10 +1,8 @@
-# Lean P3 (macro WS16 family method; first family after the first
-# checkpoint, chosen by the per-stage profile, maintainer 2026-11-09).
+# Lean P3, the order planner (chosen by the per-stage profile).
 #
-# lean_stage_plan() replaces the pinned ledgr_fold_stage_plan
-# (R/fold-engine.R:1086, pin d5b3a151) inside an otherwise pinned run, through
-# lean_plan_install(), which only harnesses call. It reads and writes the
-# pin's fold state and stage groups unchanged: the plan (`batch`) it returns
+# lean_stage_plan() replaces the package's ledgr_fold_stage_plan() inside an
+# otherwise pinned run, through lean_plan_install(), which only harnesses
+# call. It reads and writes the pin's fold state and stage groups unchanged: the plan (`batch`) it returns
 # is the pin's, field for field, and it stages the same diagnostic rows and
 # implicit blocks in the same order.
 #
@@ -35,7 +33,7 @@ lean_plan_segment_rows <- function(segment, idx) {
 }
 
 # The provider's execution view of the candidates as the typed view
-# (pinned: ledgr_carrier_execution_view, R/fold-carrier.R:622).
+# (the package's ledgr_carrier_execution_view()).
 lean_plan_execution_view <- function(provider, exec_ts, ids) {
   view <- provider$execution_view(.POSIXct(exec_ts, tz = "UTC"), ids)
   if (.lean_debug && !(identical(names(view$member), ids) && identical(names(view$restricted), ids) &&
@@ -62,7 +60,7 @@ lean_plan_execution_view <- function(provider, exec_ts, ids) {
   if (.lean_debug) ledgr_carrier_new(x, "execution_view", NA_integer_) else x
 }
 
-# The fill and rejection groups (pinned: ledgr_plan_groups, R/fold-carrier.R:709).
+# The fill and rejection groups (the package's ledgr_plan_groups()).
 lean_plan_groups <- function(k, pos, side, qty, price, fee, exec_ts, before, segment,
                              fills, effects, rejected, emit, resolved_price) {
   info <- lean_plan_segment_rows(segment, fills)
@@ -88,14 +86,14 @@ lean_plan_groups <- function(k, pos, side, qty, price, fee, exec_ts, before, seg
   )
 }
 
-# The affordability scan (pinned: ledgr_plan_affordability,
-# R/availability-economics.R:332), a justified sequential loop. The pin
-# orders generators first, then stable ID; candidates are distinct
-# instruments, so the stable IDs have no ties: generators, then the rest,
-# each in the run's radix ID order (id_perm, walked by the candidates'
-# axis positions) is the pin's permutation. Zero or one candidate needs no
-# order. A missing generator flag (an undefined cash effect) keeps the pin's
-# formula, which leaves that row out of the scan.
+# The affordability scan (the package's ledgr_plan_affordability()), a
+# justified sequential loop. The package orders generators first, then
+# stable ID; candidates are distinct instruments, so the stable IDs have no
+# ties: generators, then the rest, each in the run's radix ID order (id_perm,
+# walked by the candidates' axis positions) is the package's permutation.
+# Zero or one candidate needs no order. A missing generator flag (an
+# undefined cash effect) keeps the package's formula, which leaves that row
+# out of the scan.
 lean_plan_affordability <- function(cash_delta, blocked, generator, stable_id, cash, id_perm, axis_pos,
                                     tolerance = ledgr_availability_cash_tolerance) {
   n <- length(cash_delta)
@@ -105,7 +103,7 @@ lean_plan_affordability <- function(cash_delta, blocked, generator, stable_id, c
   } else if (n <= 1L) {
     seq_len(n)
   } else {
-    # Cut 18 W4: generators first, then the rest, each in the radix order of
+    # Generators first, then the rest, each in the radix order of
     # the run's IDs (distinct IDs, so no ties): the run-long permutation
     # walked by the candidates' axis positions, without a sort per pulse.
     o <- match(id_perm, axis_pos, 0L)   # each ID-ordered axis position's candidate, or 0
@@ -139,9 +137,9 @@ lean_plan_id_perm <- function(ids) {
   lean_plan_rank_cache$perm
 }
 
-# The availability planner (pinned: ledgr_fold_build_availability_pulse_plan,
-# R/availability-economics.R:365), same order of checks and rows.
-# The plan from its groups (Cut 18 F1: one function, not a closure built on
+# The availability planner (the package's
+# ledgr_fold_build_availability_pulse_plan()), same order of checks and rows.
+# The plan from its groups (one function, not a closure built on
 # every lean_plan_pulse() call); with debug on the pin checks its carrier.
 lean_plan_result <- function(groups, kinds, final_cash, context_pos, actionable_k, n_ids) {
   x <- list(expected_final_cash = as.numeric(final_cash), economic_event_kinds = kinds, fill = groups$fill, rejection = groups$rejection)
@@ -171,7 +169,7 @@ lean_plan_pulse <- function(context_pos, target_qty, position, actionable_k, mem
   bad_open <- !is.finite(open) | open <= 0
   bad_delta <- !is.finite(delta)
   passed <- which(!bad_open & !bad_delta & epoch_valid)
-  # Cut 18 R2: the run's cost steps in lean (checks.R), or the pin's resolver.
+  # The run's cost steps in lean (checks.R), or the package's resolver.
   resolved <- if (is.null(cost_steps)) {
     ledgr_plan_resolve(cost_resolver, side[passed], qty[passed], open[passed])
   } else if (.lean_debug) {
@@ -238,9 +236,9 @@ lean_plan_pulse <- function(context_pos, target_qty, position, actionable_k, mem
   lean_plan_result(groups, if (length(fills) > 0L) 1L else none, scan$final_cash, context_pos, actionable_k, length(instrument_ids))
 }
 
-# The diagnostic codec's clean-pair certification in one pass (pinned:
-# ledgr_diagnostic_clean_fill and ledgr_diagnostic_clean_hold,
-# R/diagnostic-codec.R:33-82), which gather the same decision fields twice.
+# The diagnostic codec's clean-pair certification in one pass (the package's
+# ledgr_diagnostic_clean_fill() and ledgr_diagnostic_clean_hold(), which
+# gather the same decision fields twice).
 # Both are conjunctions whose missing values become FALSE, so each is the
 # conjunction of its terms with NA as FALSE; the terms they share form
 # `shared`. Returns both flags and the decision columns the implicit block
@@ -286,8 +284,8 @@ lean_plan_clean <- function(decision, risk, fill, fill_reason, excluded_k) {
 }
 
 # Stages rows `index` of a segment of `n` logical rows and reserves all n
-# logical positions (pinned: ledgr_fold_staging_add_residual,
-# R/fold-carrier.R:912). `segment` is a function so a segment none of whose
+# logical positions (the package's ledgr_fold_staging_add_residual()).
+# `segment` is a function so a segment none of whose
 # rows is staged is never built.
 lean_plan_stage <- function(fold_state, n, segment, index) {
   start <- fold_state$pending_segments$logical_n

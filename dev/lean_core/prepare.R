@@ -1,6 +1,5 @@
-# Lean preparation (LDG-3216, whole-planes amendment 2026-11-08): the pinned
-# substrate, fold reader and history reads over whole planes (interface table
-# Section 12.3).
+# Lean preparation: the pinned substrate, fold reader and history reads over
+# whole planes (interface table Section 12.3).
 #
 # Each bar field and `observed` is one instruments x sessions matrix,
 # allocated once at full size and filled in place from one bar query per
@@ -114,8 +113,8 @@ lean_prepare_bars <- function(snapshot, universe, start, end, clock_kind, declar
   list(axis = axis, bars = lean_hydrate(snapshot, universe, start, end, axis))
 }
 
-# The pinned ledgr_history_substrate_for_experiment (R/history-substrate.R:303)
-# with chunked hydration in place of the long bar frame.
+# The package's ledgr_history_substrate_for_experiment() with chunked
+# hydration in place of the long bar frame.
 lean_history_substrate_for_experiment <- function(exp, meta = NULL, end = NULL, coverage_start = NULL) {
   if (!inherits(exp, "ledgr_experiment")) {
     rlang::abort("Execution-substrate preparation requires one ledgr experiment.",

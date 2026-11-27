@@ -1,5 +1,5 @@
-# The harness side of the compact-state lean loop (LDG-3219; interface
-# Sections 19.1, 19.2 and 19.6). The fold (loop.R) reaches it only through
+# The harness side of the compact-state lean loop (interface Sections 19.1,
+# 19.2 and 19.6). The fold (loop.R) reaches it only through
 # `lean_hooks`; lean_loop_install() replaces the inert default with
 # lean_harness_hooks() and binds the lean envelope, the context read
 # method and the entry recorders over the pin. Only harnesses call these;
@@ -8,13 +8,13 @@
 # What the harness adds around a lean fold:
 # - the entry record (`lean_entry`): folds run lean, refusals, attempt marks;
 # - the entry refusal the fold cannot see: a control$checkpoint_every key
-#   (D3 Section 2); walk-forward and sweep workers run lean since Cut 26
-#   (sweep workers through loop_workers.R);
+#   (D3 Section 2); walk-forward and sweep workers run lean (sweep workers
+#   through loop_workers.R);
 # - the attempt mark and whole-workload retry (19.2 point 1): a coverage
 #   condition raised mid-run (lean_abort_attempt()) marks the attempt, and
 #   the complete workload reruns on the pin with the entry RNG restored.
 #   Slice 3 removed the history-name backstop stubs (Section 19.11): no
-#   strategy call is scanned any more. A test seam (Cut 26) marks the
+#   strategy call is scanned any more. A test seam marks the
 #   attempt after a set number of strategy calls (`backstop_after`);
 # - two detectors while pulses run: every call into the DuckDB backend
 #   bridges (any store statement, registration or relation) and every call
@@ -157,7 +157,7 @@ lean_watch_handler <- function(h, live) {
 }
 
 # Entry recorder: the run's control list, which the fold cannot see, becomes
-# an entry refusal (D3 Section 2). Walk-forward runs lean (Cut 26).
+# an entry refusal (D3 Section 2). Walk-forward runs lean.
 lean_run_fold <- function(config, run_id = NULL, control = list(), metric_context = NULL, history_substrate = NULL) {
   lean_entry$control_checkpoint <- "checkpoint_every" %in% names(control)
   on.exit(lean_entry$control_checkpoint <- FALSE)

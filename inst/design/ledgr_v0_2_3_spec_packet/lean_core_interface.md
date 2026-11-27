@@ -1680,6 +1680,14 @@ Switch obligations:
 4. **Integrated feature path.** Run the full integrated proof: the lean
    loop consuming the new package feature path, end to end. The bridge
    above covers only the consumer boundary.
+   Discharged by Cut 27 (LDG-3281): with the pin advanced to 7f65733f, the
+   gate runs the package feature engine in both arms, and the bridge's
+   routes (both clocks, parameterised aliases, two candidates, implicit,
+   precompute and reuse, each also on two workers) run end to end as the
+   workloads fe_bar_native and fe_declared (parity/loop_workloads_features.R),
+   with the value and alias faults as the variants feat_value_perturbed and
+   feat_alias_swapped. feature_bridge.R is retired; its evidence stays in
+   evidence/ldg3273/bridge/.
 5. **Backstop seam.** Retire the test seam with the harness entry.
 
 ### 19.15 The overflow refusal at P4 (Cut 27)

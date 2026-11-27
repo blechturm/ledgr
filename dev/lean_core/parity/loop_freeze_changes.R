@@ -337,6 +337,14 @@ for (w in c("ovf_sell_1.9", "ovf_hold_1.9", "ovf_sell_10", "ovf_delta_then_lot",
            reason = "Cut 27 decision 3 overflow-refusal witness, declared path"))
 }
 
+# Cut 27 decision 2 (LDG-3281): the feature routes end to end, eight lean
+# folds each (four routes, two candidates; the worker routes merged), from
+# final-code runs (evidence/ldg3281).
+for (w in c("fe_bar_native", "fe_declared")) {
+  add(both(action = "add", mode = "gate", workload = w, lean_folds = 8L, refused = "", backstop = "",
+           reason = "Cut 27 decision 2 feature-route witness, declared path"))
+}
+
 out <- do.call(rbind, rows)
 utils::write.csv(out, file.path(here, "loop_freeze_changes.csv"), row.names = FALSE)
 cat(nrow(out), "changes:", paste(names(table(out$action)), table(out$action), collapse = ", "), "\n")
