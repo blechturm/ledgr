@@ -23,6 +23,15 @@ afaceaba (LDG-3276 complete); the clarity commit is bba035de.
   the envelope state the stage reads and writes. `stage_state.R` computes
   the block from the code, using codetools for the free variables and the
   `<<-` targets (`stage_state.csv`).
+  The explicit-state spike (LDG-3278) showed the first version was
+  incomplete in two ways. codetools treats a name as local once a stage
+  assigns it, so it missed reads before or around a conditional local
+  assignment (`pos <- pos[ctx_pos]`). Field writes into the envelope's
+  environments (`live`, `marks_state`, `facts_state`, `pulse_notes`) were
+  missing because they are not `<<-` targets. `stage_state.R` now counts
+  both kinds, and each block lists the environments the stage writes by
+  reference. The regenerated headers change comments only
+  (`clarity_equiv_headers.txt`, against 11176226).
 - **Variants.** 24 variants whose anchor or injected lines changed were
   re-anchored (`reanchored_variants.txt`). That adds 65 `reanchor` rows in
   `loop_variant_changes.csv`, one per manifest key.

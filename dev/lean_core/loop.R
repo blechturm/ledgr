@@ -555,10 +555,12 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   # rows) and the equity row.
   # Shared envelope state (stage_state.R):
   #   reads: bars, book, cash, ctx_pos, eq, event_seq, execution, facts_state, hd_all_explicit,
-  #       ids, last_fully_valued, n, n_done, n_eq, pos, provider, pulse_cols, pulses_posix,
-  #       run_id, state_declaration, status, stop_reason, strategy_state, ts_num.
-  #   writes: ctx_pos, eq, event_seq, hd_all_explicit, last_fully_valued, n_done, n_eq, status,
-  #       stop_reason, strategy_state.
+  #       ids, last_fully_valued, live, marks_state, n, n_done, n_eq, pos, provider, pulse_cols,
+  #       pulses_posix, run_id, state_declaration, status, stop_reason, strategy_state, ts_num.
+  #   writes: ctx_pos, eq, event_seq, hd_all_explicit, last_fully_valued, live, marks_state,
+  #       n_done, n_eq, status, stop_reason, strategy_state.
+  #   environments (written by reference, here or in the helpers it calls): facts_state, live,
+  #       marks_state.
   lean_p1_value <- function(i) {
     ts <- ts_num[[i]]
     live$cur_ts <- ts
@@ -623,10 +625,14 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   # output, the pin's risk plan (slice 2) and the short-exposure refusal.
   # Shared envelope state (stage_state.R):
   #   reads: cash, counts, ctx_pos, facts_state, has_risk, hd_all_explicit, hd_intent, hd_pre,
-  #       hd_sizing, history_reader, marks_state, members0, processed, provider, pulses_posix,
-  #       risk_plan, risk_steps, status, stop_reason, strategy_fn, strategy_functional,
-  #       strategy_params, strategy_signature, substrate, ts_num, view0.
-  #   writes: hd_all_explicit, hd_intent, hd_pre, hd_sizing, processed, status, stop_reason.
+  #       hd_sizing, history_reader, ids, ids_attr, ids_ok, live, marks_state, members0, n, pos,
+  #       processed, provider, pulse_notes, pulses_posix, risk_plan, risk_steps, status,
+  #       stop_reason, strategy_fn, strategy_functional, strategy_params, strategy_signature,
+  #       substrate, ts_num, view0.
+  #   writes: hd_all_explicit, hd_intent, hd_pre, hd_sizing, live, processed, pulse_notes,
+  #       status, stop_reason.
+  #   environments (written by reference, here or in the helpers it calls): facts_state, live,
+  #       marks_state, pulse_notes.
   lean_p2_decide <- function(i, v1) {
     marks <- v1$m
     # P2 runs on the pulse's decision axis: the run axis, or on a marked run
@@ -788,9 +794,10 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   # decision segment is staged, then the stop row; no P4 or P5). Returns the plan's batch and whether the run stops here.
   # Shared envelope state (stage_state.R):
   #   reads: act_tol, bar_axis, bars, cash, cost_resolver, cost_steps, ctx_pos, epoch_valid,
-  #       epochs, hd_all_explicit, hd_stop_detail, ids, member_all, n, n_pulse, processed,
-  #       provider, pulse_cols, status, stop_reason.
-  #   writes: hd_all_explicit, hd_stop_detail, processed, status, stop_reason.
+  #       epochs, hd_all_explicit, hd_stop_detail, ids, live, member_all, n, n_pulse, pos,
+  #       processed, provider, pulse_cols, status, stop_reason.
+  #   writes: hd_all_explicit, hd_stop_detail, live, processed, status, stop_reason.
+  #   environments (written by reference, here or in the helpers it calls): live.
   lean_p3_plan <- function(i, v1, v2) {
     col <- v1$col
     sq <- v2$sq
@@ -843,10 +850,11 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   # from the position, clean fills taken out). Returns the fill count.
   # Shared envelope state (stage_state.R):
   #   reads: book, can_encode, cash, ctx_pos, event_seq, facts_state, fcap, fill_axis, fl,
-  #       hd_fill_start, hd_nfill, hd_nrej, ids, last_executed, n_pulse, nf, pos, position_facts,
-  #       rj.
+  #       hd_fill_start, hd_nfill, hd_nrej, ids, last_executed, live, n_pulse, nf, pos,
+  #       position_facts, rj.
   #   writes: book, cash, event_seq, fcap, fl, hd_fill_start, hd_nfill, hd_nrej, last_executed,
-  #       nf, pos, position_facts, rj.
+  #       live, nf, pos, position_facts, rj.
+  #   environments (written by reference, here or in the helpers it calls): facts_state, live.
   lean_p4_apply <- function(i, v1, v2, batch) {
     close <- v1$close
     sq <- v2$sq
@@ -946,10 +954,11 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   # P5: the capacity refusal, commitment, the reconciliation record and the
   # declared-state update.
   # Shared envelope state (stage_state.R):
-  #   reads: capacity, cash, ctx_pos, has_risk, hd_has_recon, hd_recon, n_committed, nf,
-  #       state_declaration, state_defaults, state_fields, state_names, state_names_ok,
-  #       strategy_state.
-  #   writes: hd_has_recon, hd_recon, n_committed, strategy_state.
+  #   reads: capacity, cash, ctx_pos, facts_state, has_risk, hd_has_recon, hd_recon, ids,
+  #       ids_attr, live, n_committed, nf, pos, state_declaration, state_defaults, state_fields,
+  #       state_names, state_names_ok, strategy_state.
+  #   writes: facts_state, hd_has_recon, hd_recon, live, n_committed, strategy_state.
+  #   environments (written by reference, here or in the helpers it calls): facts_state, live.
   lean_p5_commit <- function(i, v1, v2, batch, n_fill) {
     close <- v1$mk   # gross exposures at the decision marks
     sq <- v2$sq
@@ -1011,6 +1020,7 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
   # Shared envelope state (stage_state.R):
   #   reads: full_run, max_pulses, processed.
   #   writes: full_run, processed.
+  #   environments (written by reference, here or in the helpers it calls): none.
   lean_e_advance <- function() {
     processed <<- processed + 1L
     if (processed >= max_pulses) {
