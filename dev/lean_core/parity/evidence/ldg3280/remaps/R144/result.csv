@@ -1,0 +1,2 @@
+"row","file","candidate","candidate_smoke","witness","witness_smoke","verdict"
+"R144","test-ws4a-carrier.R","[WS4a D3 3165] P2, P3, P5 and the skip read the decision by position: pass","smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","[WS4a D3 3165] P2, P3, P5 and the skip read the decision by position: fail","smoke PASS (witness run): 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","DEMONSTRATED"

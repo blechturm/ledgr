@@ -1,0 +1,2 @@
+"file","old","new"
+"plan.R","  lean_plan_result(groups, if (length(fills) > 0L) 1L else none, scan$final_cash, context_pos, actionable_k, length(instrument_ids))","  lean_plan_result(groups, 1L, scan$final_cash, context_pos, actionable_k, length(instrument_ids))"

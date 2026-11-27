@@ -108,7 +108,79 @@ boot.
 of a candidate function, nested stage closures included, and Cut 28 adds
 it to tests/.
 
-RESULTS_PLACEHOLDER
+### Results
+
+The 54 b rows without a named Cut 28 gate (`remaps/batch_A.csv`,
+`batch_B.csv`) were worked by two agents and by Claude. `remaps/summary.csv`
+(`remaps/summarize.R`) gives each row's outcome:
+
+| Outcome | Rows |
+| --- | --- |
+| DEMONSTRATED: passes on the candidate, fails on the mutated candidate | 32 |
+| DEMONSTRATED (no witness run) | 6 |
+| CUT 28 GATE (`gate.md`) | 12 |
+| FINDING (`finding.md`) | 4 |
+
+- **Mutations.** Each mutation is a regression that still runs. None just
+  crashes the fold, and in every demonstrated run both the candidate and
+  the mutated candidate passed the driver's smoke guard.
+- **No witness run** (R004, R005, R006, R067, R125, R192). The code under
+  test is kept package code, which no lean mutation reaches. Each row's
+  remap rebuilds a fixture. Its `identity_probe.csv` shows the remapped
+  fixture is `identical()` to the pin's, and the block is otherwise
+  unchanged, so the original witness carries over. R192 is the shared
+  `ws4a_sources` helper; the static rows that use it are its witnesses.
+- **Cut 28 gates** (R092, R093, R094, R104, R106, R111, R117, R118, R149,
+  R153, R154, R175). Each needs a function the deletion-readiness merges
+  create (risk, strategy targets, state, cost resolve) or the rebuilt
+  fold-phase checker. R145, R158 and R159 are demonstrated, and each also
+  names a gated addition in its note.
+- **Findings** (R013, R147, R157, R173):
+  - R013's owner half is a new test, not a remap.
+  - R147 splits: its empty-plan half is R194, and its skip half needs a
+    Cut 28 seam into P5.
+  - R157 and R173 have no remap of their own. Both are covered by R189's
+    patch and listed in its pass titles.
+
+### Inventory corrections the remaps found
+
+The inventory rows stay as written; these corrections go to the
+maintainer's row approval:
+- **R180, R185:** their planner calls use `cost_steps = NULL`. That branch
+  resolves through `ledgr_plan_resolve()`, which deletion-readiness 4.4
+  deletes, so both patches hold only until the cost merge.
+  - If the merged resolve takes only package resolvers, R180's closure
+    resolver (unrounded prices) becomes a fixture finding.
+  - Every planner row notes that `cost_steps` changes again at the merge.
+- **R158, R159:** the lean terminal transfer still calls
+  `handler$flush_pulse_events`, so it stays in the scan unless Cut 28
+  removes it. `sink$write_fill_live` leaves with `db_live` (LR-12).
+- **R135:** D25's kernel scan covers the R/ kernel only. After the switch
+  the fold's kernel is fifo.R, which only R131's D3 scan covers. This
+  should be a deliberate decision.
+- **R131:** decision 10 keeps the compiled FIFO wrappers, so they stay in
+  D3's scanned set.
+- **Census allowances:** R131, R133, R144, R150, R158 and R159 add exact
+  allowances for sites the scans now meet in lean code. Each is listed with
+  its reason in the row's note; most are debug-only or per batch, none per
+  fill. They need the maintainer's approval.
+- **Test seams:** R112's witness had to be the stage scan, because the
+  block's runtime counter cannot see a NULL-declaration compile. With the
+  suite in debug, lean comparators can fail before a block's own oracle, so
+  mutations were chosen that only the block's oracle catches.
+
+### Harness fixes made during the remaps
+
+The agents found four harness bugs, and each was fixed before the runs
+that count:
+- `suite_driver.R` leaked a global `identity` into the tests;
+- the scratch root lacked the package source, so the driver now sets
+  `LEDGR_TEST_SOURCE_ROOT`, and remap_demo copies `DESCRIPTION`, `R/`,
+  `src/` and `tools/`;
+- remap_demo read an empty `witness` as NA;
+- loop_parity's worker-table dump name collided with workload names.
+
+Rows run before a fix were rerun after it.
 
 ## The Cut 28 design item
 

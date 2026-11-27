@@ -1,0 +1,2 @@
+"file","old","new"
+"plan.R","  bad_delta <- !is.finite(delta)","  bad_delta <- logical(n)"

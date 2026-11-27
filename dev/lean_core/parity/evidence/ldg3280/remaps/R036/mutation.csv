@@ -1,0 +1,2 @@
+"file","old","new"
+"loop.R","      feature_lookup = feature_lookup_state, feature_vector = fv, projection_idx = projection_idx[[i]],","      feature_lookup = {ledgr_projection_feature_lookup_state(projection, feature_ids = def_ids, universe = ids, active_alias_map = active_alias_map, feature_name_state = feature_name_state); feature_lookup_state}, feature_vector = fv, projection_idx = projection_idx[[i]],"

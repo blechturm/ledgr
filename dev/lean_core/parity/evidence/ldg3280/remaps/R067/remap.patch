@@ -1,0 +1,39 @@
+diff --git a/tests/testthat/test-ledger-writer.R b/tests/testthat/test-ledger-writer.R
+index 45f942b8..c89d0224 100644
+--- a/tests/testthat/test-ledger-writer.R
++++ b/tests/testthat/test-ledger-writer.R
+@@ -1201,15 +1201,17 @@ testthat::test_that("[LTB-0521] typed equity and diagnostic stores keep values,
+   value <- 50 + sqrt(seq_len(n))
+   realized <- seq_len(n) / 3
+   basis <- 40 + seq_len(n) / 11
+-  record <- ledgr:::ledgr_fold_equity_record(n + 12L)
+-  for (i in seq_len(n)) {
+-    record <- ledgr:::ledgr_fold_equity_append(record, ts[[i]], cash[[i]], value[[i]], realized[[i]], basis[[i]])
+-  }
++  # The valued rows as the lean fold hands them to the runner: one equity
++  # carrier of fresh columns (the fold's return in dev/lean_core/loop.R).
++  equity <- ledgr:::ledgr_carrier_new(list(
++    ts = as.numeric(ts), cash = as.numeric(cash), positions_value = as.numeric(value),
++    realized_pnl = as.numeric(realized), cost_basis = as.numeric(basis), n = n
++  ), "equity", NA_integer_)
+   kernel <- ledgr:::ledgr_metric_kernel(context = ledgr_metric_context(), pulses = ts)
+   summary <- memory$inline_summary(
+     run_id = "growth-memory",
+     metric_kernel = kernel,
+-    equity = ledgr:::ledgr_fold_equity_prefix(record)
++    equity = equity
+   )
+   expected <- data.frame(
+     run_id = rep("growth-memory", n),
+@@ -1228,7 +1230,10 @@ testthat::test_that("[LTB-0521] typed equity and diagnostic stores keep values,
+   empty_summary <- empty$inline_summary(
+     run_id = "growth-empty",
+     metric_kernel = kernel,
+-    equity = ledgr:::ledgr_fold_equity_prefix(ledgr:::ledgr_fold_equity_record(4L))
++    equity = ledgr:::ledgr_carrier_new(list(
++      ts = numeric(), cash = numeric(), positions_value = numeric(),
++      realized_pnl = numeric(), cost_basis = numeric(), n = 0L
++    ), "equity", NA_integer_)
+   )
+   testthat::expect_identical(empty_summary$equity, ledgr:::ledgr_empty_equity_curve())
+   testthat::expect_identical(empty_summary$final_equity, NA_real_)

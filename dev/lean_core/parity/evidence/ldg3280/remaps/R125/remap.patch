@@ -1,0 +1,56 @@
+diff --git a/tests/testthat/test-sweep.R b/tests/testthat/test-sweep.R
+index 1f7994b1..7ce8ed95 100644
+--- a/tests/testthat/test-sweep.R
++++ b/tests/testthat/test-sweep.R
+@@ -233,15 +233,10 @@ testthat::test_that("inline accounting summary matches reconstruction with openi
+   )
+   # LDG-3168 (category 1): the equity facts are rows of a typed equity
+   # record, handed to the inline summary as the fold's frozen prefix.
+-  equity <- ledgr:::ledgr_fold_equity_record(2L)
+-  equity <- ledgr:::ledgr_fold_equity_append(
+-    equity,
+-    ts = pulses[[1L]],
+-    cash = 1000,
+-    positions_value = 20,
+-    realized_pnl = lot_state$realized_pnl,
+-    cost_basis = lot_state$total_cost_basis
+-  )
++  # Pulse 1's valued row (cash 1000, positions value 20); the equity carrier
++  # is built after the fill, as the lean fold hands it to the runner.
++  opening_realized <- as.numeric(lot_state$realized_pnl)
++  opening_basis <- as.numeric(lot_state$total_cost_basis)
+ 
+   # LDG-3166 (design note Section 5, category 1): a one-row typed fill.
+   fill <- ledgr_test_next_open_fill(
+@@ -261,14 +256,14 @@ testthat::test_that("inline accounting summary matches reconstruction with openi
+   write_res <- handler$write_fill_events(fill$fill, fill$i, fill$instrument_id, 2L)
+   handler$record_accounting_fact(write_res, lot_res$applied)
+   handler$flush_pulse_events()
+-  equity <- ledgr:::ledgr_fold_equity_append(
+-    equity,
+-    ts = pulses[[2L]],
+-    cash = 1000 + write_res$cash_delta,
+-    positions_value = -12,
+-    realized_pnl = lot_state$realized_pnl,
+-    cost_basis = lot_state$total_cost_basis
+-  )
++  equity <- ledgr:::ledgr_carrier_new(list(
++    ts = as.numeric(pulses),
++    cash = c(1000, as.numeric(1000 + write_res$cash_delta)),
++    positions_value = c(20, -12),
++    realized_pnl = c(opening_realized, as.numeric(lot_state$realized_pnl)),
++    cost_basis = c(opening_basis, as.numeric(lot_state$total_cost_basis)),
++    n = 2L
++  ), "equity", NA_integer_)
+ 
+   events <- handler$typed_events()
+   close_mat <- matrix(c(10, 12), nrow = 1L, dimnames = list("AAA", NULL))
+@@ -282,7 +277,7 @@ testthat::test_that("inline accounting summary matches reconstruction with openi
+     run_id = run_id,
+     metric_kernel = metric_kernel
+   )
+-  inline <- handler$inline_summary(run_id, metric_kernel, ledgr:::ledgr_fold_equity_prefix(equity))
++  inline <- handler$inline_summary(run_id, metric_kernel, equity)
+ 
+   testthat::expect_equal(inline$equity, reconstructed$equity)
+   testthat::expect_equal(inline$fills, reconstructed$fills)

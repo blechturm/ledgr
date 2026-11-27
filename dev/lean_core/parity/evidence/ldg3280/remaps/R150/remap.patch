@@ -1,0 +1,71 @@
+diff --git a/tests/testthat/test-ws4a-carrier.R b/tests/testthat/test-ws4a-carrier.R
+index a4fdc2c0..a26666e3 100644
+--- a/tests/testthat/test-ws4a-carrier.R
++++ b/tests/testthat/test-ws4a-carrier.R
+@@ -87,7 +87,28 @@ ws4a_sources <- function() {
+   checker <- new.env(parent = baseenv())
+   sys.source(file.path(root, "tools", "check-fold-phase-contract.R"), envir = checker)
+   files <- list.files(file.path(root, "R"), "\\.R$", full.names = TRUE)
+-  checker$ledgr_fold_phase_function_sources(files)
++  out <- checker$ledgr_fold_phase_function_sources(files)
++  # The candidate fold's functions, defined at top level or nested (the lean
++  # stages are closures inside lean_fold_envelope_plain); a name defined more
++  # than once among them is ambiguous and left out.
++  lean <- list()
++  walk <- function(e) {
++    if (!is.call(e)) return(invisible(NULL))
++    if (identical(e[[1L]], as.name("<-")) && is.symbol(e[[2L]]) && is.call(e[[3L]]) &&
++        identical(e[[3L]][[1L]], as.name("function"))) {
++      nm <- as.character(e[[2L]])
++      lean[[nm]] <<- c(lean[[nm]], list(e[[3L]]))
++    }
++    args <- as.list(e)[-1L]
++    for (k in seq_along(args)) if (!identical(args[[k]], quote(expr = ))) walk(args[[k]])
++    invisible(NULL)
++  }
++  for (f in list.files(getOption("ledgr.candidate_lean"), "\\.R$", full.names = TRUE)) {
++    for (e in parse(f, keep.source = FALSE)) walk(e)
++  }
++  lean <- lean[lengths(lean) == 1L]
++  out[names(lean)] <- lapply(lean, `[[`, 1L)
++  out
+ }
+ ws4a_calls <- function(e) {
+   if (is.call(e)) c(list(e), unlist(lapply(as.list(e), ws4a_calls), recursive = FALSE))
+@@ -1868,14 +1889,19 @@ testthat::test_that("[WS4a D1 planners] no per-fill list, S3 object or timestamp
+ # execution-view adapter and the publication input boundaries, with the
+ # name-keyed predicate plus %in%. Census: the short-exposure refusal names its
+ # instrument; the rest test dictionary tokens, codes or field names.
+-ws4a_d3_3166_fns <- c("ledgr_fold_build_availability_pulse_plan", "ledgr_plan_affordability",
+-  "ledgr_plan_groups", "ledgr_carrier_segments", "ledgr_carrier_segment_rows", "ledgr_carrier_execution_view",
+-  "ledgr_cost_model_resolve", "ledgr_fill_publication_deltas", "ledgr_fold_plan_event_kinds", "ledgr_fold_scheduled_skip_plan",
++ws4a_d3_3166_fns <- c("lean_p3_plan", "lean_plan_pulse", "lean_plan_result", "lean_plan_affordability",
++  "lean_plan_groups", "lean_plan_segments", "lean_plan_segment_rows", "ledgr_carrier_segments", "ledgr_carrier_segment_rows",
++  "lean_plan_execution_view", "ledgr_cost_model_resolve", "ledgr_fill_publication_deltas", "ledgr_fold_plan_event_kinds",
+   "ledgr_fill_event_payload", "ledgr_write_fill_events", "ledgr_fill_input_check")
+ ws4a_d3_3166 <- c(
+-  ledgr_fold_build_availability_pulse_plan = "stats::setNames(resulting[[i]], id)",
+-  ledgr_fold_build_availability_pulse_plan = "stats::setNames(before[[i]], id)",
+-  ledgr_carrier_execution_view = "match(unlist(tokens, use.names = FALSE), .ledgr_plan_reason_levels)",
++  lean_plan_pulse = "stats::setNames(resulting[[i]], id)",
++  lean_plan_pulse = "stats::setNames(before[[i]], id)",
++  # The run-long radix ID permutation walked by the candidates' integer axis
++  # positions (positions matched to positions, not names).
++  lean_plan_affordability = "match(id_perm, axis_pos, 0L)",
++  lean_plan_execution_view = "match(unlist(tokens, use.names = FALSE), .ledgr_plan_reason_levels)",
++  # Debug only: the provider's execution view compared field by field.
++  lean_p3_plan = "unclass(pv_view)[names(view)]",
+   ledgr_fold_plan_event_kinds = "1L %in% kinds",
+   ledgr_write_fill_events = "side %in% c(1L, -1L)",
+   ledgr_fill_input_check = "columns %in% names(fill)"
+@@ -1902,8 +1928,8 @@ testthat::test_that("[WS4a D3 3166] the planners and publication inputs index by
+     bad[[nm]] <- ws4a_inject(bad[[nm]], stmt)
+     hits(bad)
+   }
+-  testthat::expect_gt(length(inject("ledgr_fold_build_availability_pulse_plan", "open <- execution$open[instrument_ids]")), 0L)
+-  testthat::expect_gt(length(inject("ledgr_fold_build_availability_pulse_plan", "pos <- match(ids, rownames(execution$open))")), 0L)
++  testthat::expect_gt(length(inject("lean_plan_pulse", "open <- execution$open[instrument_ids]")), 0L)
++  testthat::expect_gt(length(inject("lean_plan_pulse", "pos <- match(ids, rownames(execution$open))")), 0L)
+   testthat::expect_gt(length(inject("ledgr_fill_event_payload", "keep <- instrument_id %in% held")), 0L)
+ })
+ 

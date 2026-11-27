@@ -1,0 +1,5 @@
+"call","identical"
+"list(2L)",TRUE
+"list(10L)",TRUE
+"list(4099L)",TRUE
+"list(1L, first_seq = 3L, id_offset = 2L)",TRUE

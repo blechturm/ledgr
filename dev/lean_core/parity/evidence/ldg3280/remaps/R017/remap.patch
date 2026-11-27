@@ -1,0 +1,51 @@
+diff --git a/tests/testthat/test-context-frame-retirement.R b/tests/testthat/test-context-frame-retirement.R
+index 3d3ec012..c94ff50e 100644
+--- a/tests/testthat/test-context-frame-retirement.R
++++ b/tests/testthat/test-context-frame-retirement.R
+@@ -107,13 +107,20 @@ testthat::test_that("[LTB-0546] flat contexts retire frames across all entrances
+     cost_model = ledgr_cost_zero()
+   )
+   name_preparations <- 0L
++  lookup_preparations <- 0L
+   original_name_state <- ledgr:::ledgr_projection_feature_name_state
++  original_lookup_state <- ledgr:::ledgr_projection_feature_lookup_state
++  count_lookup_state <- function(...) {
++    lookup_preparations <<- lookup_preparations + 1L
++    original_lookup_state(...)
++  }
+   run <- testthat::with_mocked_bindings(
+     ledgr_run(experiment, run_id = "ws20-frame-retirement"),
+     ledgr_projection_feature_name_state = function(...) {
+       name_preparations <<- name_preparations + 1L
+       original_name_state(...)
+     },
++    ledgr_projection_feature_lookup_state = count_lookup_state,
+     .package = "ledgr"
+   )
+   on.exit(close(run), add = TRUE)
+@@ -199,13 +206,19 @@ testthat::test_that("[LTB-0546] flat contexts retire frames across all entrances
+   testthat::expect_match(printed, "Daxis:     2 instruments", fixed = TRUE)
+   testthat::expect_match(printed, "Features:  2 columns", fixed = TRUE)
+ 
+-  before <- ctx$.pulse_lookup$preparation_counts$feature_resolver
+-  invisible(names(ctx))
+-  invisible(names(ctx))
+-  invisible(ctx$z_ret)
+-  invisible(ctx$return_1)
++  before <- lookup_preparations
++  testthat::with_mocked_bindings(
++    {
++      invisible(names(ctx))
++      invisible(names(ctx))
++      invisible(ctx$z_ret)
++      invisible(ctx$return_1)
++    },
++    ledgr_projection_feature_lookup_state = count_lookup_state,
++    .package = "ledgr"
++  )
+   testthat::expect_identical(
+-    ctx$.pulse_lookup$preparation_counts$feature_resolver,
++    lookup_preparations,
+     before
+   )
+   testthat::expect_identical(before, 1L)

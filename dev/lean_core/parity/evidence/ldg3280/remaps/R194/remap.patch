@@ -1,0 +1,35 @@
+diff --git a/tests/testthat/test-ws4a-carrier.R b/tests/testthat/test-ws4a-carrier.R
+index a4fdc2c0..86c6f218 100644
+--- a/tests/testthat/test-ws4a-carrier.R
++++ b/tests/testthat/test-ws4a-carrier.R
+@@ -30,17 +30,14 @@ ws4b_test_build_pulse_plan <- function(context_pos,
+     rep(NA_real_, n_run)
+   }
+   n <- length(actionable_k)
+-  ns$ledgr_fold_build_availability_pulse_plan(
++  lean_plan_pulse(
+     context_pos = context_pos,
+     target_qty = target_qty,
+     position = position,
+     actionable_k = actionable_k,
+     member = rep(TRUE, length(context_pos)),
+-    execution = list(
+-      exec_ts = if (isTRUE(has_next)) exec_ts else NA_real_,
+-      has_next = isTRUE(has_next),
+-      open = open
+-    ),
++    exec_ts = if (isTRUE(has_next)) exec_ts else NA_real_,
++    next_open = open,
+     execution_view = list(
+       member = rep(TRUE, n),
+       restricted = rep(FALSE, n),
+@@ -51,7 +48,8 @@ ws4b_test_build_pulse_plan <- function(context_pos,
+     epoch_valid = epoch_valid,
+     cost_resolver = cost_resolver,
+     cash = 1e300,
+-    instrument_ids = paste0("I", seq_len(n_run))
++    instrument_ids = paste0("I", seq_len(n_run)),
++    cost_steps = lean_cost_steps(cost_resolver)
+   )
+ }
+ 

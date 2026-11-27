@@ -1,0 +1,22 @@
+diff --git a/tests/testthat/test-strategy-sizing-evidence.R b/tests/testthat/test-strategy-sizing-evidence.R
+index 02cd41a..89bc40b 100644
+--- a/tests/testthat/test-strategy-sizing-evidence.R
++++ b/tests/testthat/test-strategy-sizing-evidence.R
+@@ -459,7 +459,7 @@ testthat::test_that("[LTB-0542] risk and cash rejection do not relabel sizing in
+ # ledgr-test-profile: fast
+ testthat::test_that("[LTB-0541] sizing evidence is bound and stays out of the pulse JSON path", {
+   root <- testthat::test_path("..", "..")
+-  fold_source <- readLines(file.path(root, "R", "fold-engine.R"), warn = FALSE)
++  fold_source <- gsub("\\s*\n\\s*", " ", ledgr_test_candidate_source("lean_fold_envelope_plain"))
+   reader_source <- readLines(file.path(root, "R", "availability-results.R"), warn = FALSE)
+   binding <- ledgr:::ledgr_store_format_bindings()
+ 
+@@ -468,7 +468,7 @@ testthat::test_that("[LTB-0541] sizing evidence is bound and stays out of the pu
+     1L
+   )
+   testthat::expect_true(any(grepl("stage = \"sizing\"", fold_source, fixed = TRUE)))
+-  testthat::expect_true(any(grepl("reasons = intent_reason", fold_source, fixed = TRUE)))
++  testthat::expect_true(any(grepl("szr$reasons[rows] <<- if (is.null(intent)) \"\" else intent", fold_source, fixed = TRUE)))
+   testthat::expect_false(any(grepl("canonical_json(list(intent_reason", fold_source, fixed = TRUE)))
+   testthat::expect_false(any(grepl("ledgr_strategy_intent_reasons", reader_source, fixed = TRUE)))
+ })

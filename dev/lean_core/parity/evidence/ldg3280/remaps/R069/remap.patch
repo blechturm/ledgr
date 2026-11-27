@@ -1,0 +1,15 @@
+diff --git a/tests/testthat/test-one-execution-path.R b/tests/testthat/test-one-execution-path.R
+index 708260f0..b52a6faa 100644
+--- a/tests/testthat/test-one-execution-path.R
++++ b/tests/testthat/test-one-execution-path.R
+@@ -160,8 +160,8 @@ testthat::test_that("[LTB-0526] target-change tolerance keeps its relative and a
+ 
+ # ledgr-test-profile: fast
+ testthat::test_that("[LTB-0527] reconciliation formatting stays outside the pulse stage", {
+-  stage <- paste(deparse(body(ledgr:::ledgr_fold_stage_commit)), collapse = "\n")
+-  drain <- paste(deparse(body(ledgr:::ledgr_fold_diagnostic_block)), collapse = "\n")
++  stage <- ledgr_test_candidate_source("lean_p5_commit")
++  drain <- ledgr_test_candidate_source("lean_loop_expand")
+   target <- paste(deparse(body(ledgr:::ledgr_fold_target_changed)), collapse = "\n")
+ 
+   testthat::expect_no_match(stage, "ledgr_fold_reconciliation_detail", fixed = TRUE)

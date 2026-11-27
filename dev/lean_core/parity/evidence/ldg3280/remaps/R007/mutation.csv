@@ -1,0 +1,2 @@
+"file","old","new"
+"plan.R","  generator <- side[candidates] == -1L & before[candidates] > 0 & delta[candidates] < 0 &","  generator <- FALSE & side[candidates] == -1L & before[candidates] > 0 & delta[candidates] < 0 &"

@@ -44,6 +44,13 @@ dir.create(file.path(work, "root"), recursive = TRUE)
 
 # 1. the scratch tests, patched
 invisible(file.copy(file.path(rd$pin, "tests"), file.path(work, "root"), recursive = TRUE))   # tests/ whole: helpers source ../ files
+# The package source beside tests/, read-only copies of the pin's, for blocks
+# that read ../../R or ../../src relative to the tests (the build stays the
+# pin's archive; nothing here is loaded).
+invisible(file.copy(file.path(rd$pin, c("DESCRIPTION", "NAMESPACE")), file.path(work, "root")))
+invisible(file.copy(file.path(rd$pin, c("R", "tools")), file.path(work, "root"), recursive = TRUE))
+dir.create(file.path(work, "root", "src"))
+invisible(file.copy(list.files(file.path(rd$pin, "src"), pattern = "[.](cpp|h|c)$", full.names = TRUE), file.path(work, "root", "src")))
 # The shared remap helper (remaps/helper-candidate.R), a Cut 28 test helper.
 shared <- file.path(dirname(rd$row), "helper-candidate.R")
 if (file.exists(shared)) invisible(file.copy(shared, file.path(work, "root", "tests", "testthat", "helper-candidate.R")))

@@ -1,0 +1,2 @@
+"row","file","candidate","candidate_smoke","witness","witness_smoke","verdict"
+"R158","test-ws4a-carrier.R","[WS4a D1 publication] P4 and publication build no per-fill object, list or timestamp: pass","smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","[WS4a D1 publication] P4 and publication build no per-fill object, list or timestamp: fail","smoke PASS (witness run): 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","DEMONSTRATED"

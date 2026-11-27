@@ -1,0 +1,2 @@
+"row","file","candidate","candidate_smoke","witness","witness_smoke","verdict"
+"R194","test-ws4a-carrier.R","[WS4a F4.27 empty plan] skip plans plan nothing at the fold cash; empty plans declare no kind: pass","smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","[WS4a F4.27 empty plan] skip plans plan nothing at the fold cash; empty plans declare no kind: fail","smoke PASS (witness run): 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","DEMONSTRATED"

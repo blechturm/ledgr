@@ -1,0 +1,55 @@
+diff --git a/tests/testthat/test-ws4a-carrier.R b/tests/testthat/test-ws4a-carrier.R
+index a4fdc2c0..822da9a8 100644
+--- a/tests/testthat/test-ws4a-carrier.R
++++ b/tests/testthat/test-ws4a-carrier.R
+@@ -1651,15 +1651,16 @@ ws4a_3166_runs <- function() {
+ ws4a_3166_plan <- function(cash = 0) {
+   ns <- ws4a_ns()
+   view <- ns$ledgr_carrier_segments(4L, 4L, 5L)
+-  ns$ledgr_fold_build_availability_pulse_plan(
++  cost_resolver <- ns$ledgr_cost_resolver_from_model(ledgr_cost_fixed_fee(0.5))
++  lean_plan_pulse(
+     context_pos = c(4L, 1L, 3L, 2L), target_qty = c(0, 2, 1, 1), position = c(5, 0, 0, 0),
+     actionable_k = 1:4, member = rep(TRUE, 4L),
+-    execution = list(exec_ts = 1704292200, has_next = TRUE, open = c(10, 10, NA, 10)),
++    exec_ts = 1704292200, next_open = c(10, 10, NA, 10),
+     execution_view = list(member = c(TRUE, FALSE, TRUE, TRUE), restricted = c(FALSE, FALSE, FALSE, TRUE),
+       reason_offset = view$offset, reason_count = view$count, reason_code = view$code),
+     epoch_valid = TRUE,
+-    cost_resolver = ns$ledgr_cost_resolver_from_model(ledgr_cost_fixed_fee(0.5)),
+-    cash = cash, instrument_ids = c("A", "B", "C", "D")
++    cost_resolver = cost_resolver,
++    cash = cash, instrument_ids = c("A", "B", "C", "D"), cost_steps = lean_cost_steps(cost_resolver)
+   )
+ }
+ ws4a_refuses_plan <- function(x, axis = list(context_pos = c(4L, 1L, 3L, 2L), actionable_k = 1:4), n_run = 4L) {
+@@ -1719,11 +1720,12 @@ testthat::test_that("[WS4a V-execution-view V-plan V-fill V-rejection U-3166] th
+   for (name in names(controls)) testthat::expect_true(ws4a_refuses_plan(controls[[name]]), info = name)
+   # A final-pulse plan: every row rejected without an opportunity (primary
+   # final_pulse_no_execution, no price, no epoch); present values are refused.
+-  final <- ws4a_ns()$ledgr_fold_build_availability_pulse_plan(
++  final_resolver <- ledgr_test_cost_resolver()
++  final <- lean_plan_pulse(
+     context_pos = c(4L, 1L, 3L, 2L), target_qty = c(0, 2, 1, 1), position = c(5, 0, 0, 0), actionable_k = 1:4,
+-    member = rep(TRUE, 4L), execution = list(exec_ts = NA_real_, has_next = FALSE, open = rep(NA_real_, 4L)),
+-    execution_view = NULL, epoch_valid = TRUE, cost_resolver = ledgr_test_cost_resolver(), cash = 0,
+-    instrument_ids = c("A", "B", "C", "D"))
++    member = rep(TRUE, 4L), exec_ts = NA_real_, next_open = rep(NA_real_, 4L),
++    execution_view = NULL, epoch_valid = TRUE, cost_resolver = final_resolver, cash = 0,
++    instrument_ids = c("A", "B", "C", "D"), cost_steps = lean_cost_steps(final_resolver))
+   testthat::expect_identical(final$rejection$primary, rep(1L, 4L))
+   testthat::expect_false(ws4a_refuses_plan(final))
+   testthat::expect_true(ws4a_refuses_plan(edit(final, "rejection", exec_ts = c(1704292200, NA, NA, NA))))
+@@ -1756,10 +1758,10 @@ testthat::test_that("[WS4a V-execution-view V-plan V-fill V-rejection U-3166] th
+   # class; a repeated token keeps its first occurrence.
+   provider <- list(execution_view = function(cutoff, ids) list(member = stats::setNames(TRUE, ids),
+     restricted = stats::setNames(TRUE, ids), reasons = stats::setNames("trading_halted|valuation_frozen", ids)))
+-  testthat::expect_error(ns$ledgr_carrier_execution_view(provider, 1704292200, "A"), class = "ledgr_invalid_pulse_plan")
++  testthat::expect_error(lean_plan_execution_view(provider, 1704292200, "A"), class = "ledgr_invalid_pulse_plan")
+   provider$execution_view <- function(cutoff, ids) list(member = stats::setNames(TRUE, ids),
+     restricted = stats::setNames(TRUE, ids), reasons = stats::setNames("lifetime_inactive|trading_halted|lifetime_inactive", ids))
+-  testthat::expect_identical(ns$ledgr_carrier_execution_view(provider, 1704292200, "A")$reason_code, c(9L, 5L))
++  testthat::expect_identical(lean_plan_execution_view(provider, 1704292200, "A")$reason_code, c(9L, 5L))
+ })
+ 
+ testthat::test_that("[WS4a F4.27 empty plan] skip plans plan nothing at the fold cash; empty plans declare no kind", {

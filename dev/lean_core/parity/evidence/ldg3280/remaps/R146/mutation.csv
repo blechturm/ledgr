@@ -1,0 +1,2 @@
+"file","old","new"
+"plan.R","  informational <- which(member[k] != view_member)","  informational <- integer()"

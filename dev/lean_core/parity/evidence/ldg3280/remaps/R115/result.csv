@@ -1,0 +1,2 @@
+"row","file","candidate","candidate_smoke","witness","witness_smoke","verdict"
+"R115","test-strategy-sizing-evidence.R","[LTB-0541] sizing evidence is bound and stays out of the pulse JSON path: pass","smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","[LTB-0541] sizing evidence is bound and stays out of the pulse JSON path: fail","smoke PASS (witness run): 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","DEMONSTRATED"

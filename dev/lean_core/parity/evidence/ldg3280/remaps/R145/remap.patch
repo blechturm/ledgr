@@ -1,0 +1,67 @@
+diff --git a/tests/testthat/test-ws4a-carrier.R b/tests/testthat/test-ws4a-carrier.R
+index a4fdc2c0..5f42ddfa 100644
+--- a/tests/testthat/test-ws4a-carrier.R
++++ b/tests/testthat/test-ws4a-carrier.R
+@@ -87,7 +87,28 @@ ws4a_sources <- function() {
+   checker <- new.env(parent = baseenv())
+   sys.source(file.path(root, "tools", "check-fold-phase-contract.R"), envir = checker)
+   files <- list.files(file.path(root, "R"), "\\.R$", full.names = TRUE)
+-  checker$ledgr_fold_phase_function_sources(files)
++  out <- checker$ledgr_fold_phase_function_sources(files)
++  # The candidate fold's functions, defined at top level or nested (the lean
++  # stages are closures inside lean_fold_envelope_plain); a name defined more
++  # than once among them is ambiguous and left out.
++  lean <- list()
++  walk <- function(e) {
++    if (!is.call(e)) return(invisible(NULL))
++    if (identical(e[[1L]], as.name("<-")) && is.symbol(e[[2L]]) && is.call(e[[3L]]) &&
++        identical(e[[3L]][[1L]], as.name("function"))) {
++      nm <- as.character(e[[2L]])
++      lean[[nm]] <<- c(lean[[nm]], list(e[[3L]]))
++    }
++    args <- as.list(e)[-1L]
++    for (k in seq_along(args)) if (!identical(args[[k]], quote(expr = ))) walk(args[[k]])
++    invisible(NULL)
++  }
++  for (f in list.files(getOption("ledgr.candidate_lean"), "\\.R$", full.names = TRUE)) {
++    for (e in parse(f, keep.source = FALSE)) walk(e)
++  }
++  lean <- lean[lengths(lean) == 1L]
++  out[names(lean)] <- lapply(lean, `[[`, 1L)
++  out
+ }
+ ws4a_calls <- function(e) {
+   if (is.call(e)) c(list(e), unlist(lapply(as.list(e), ws4a_calls), recursive = FALSE))
+@@ -1575,15 +1596,17 @@ testthat::test_that("[WS4b D12d D13 successor] the fold has one substrate and on
+     "ledgr_update_fast_pulse_context_helpers"
+   )
+   testthat::expect_length(intersect(retired, names(fns)), 0L)
+-  testthat::expect_true("ledgr_fold_build_availability_pulse_plan" %in% names(fns))
++  testthat::expect_true("lean_plan_pulse" %in% names(fns))
+ 
+   hot <- c(
+     "ledgr_execute_fold",
+-    "ledgr_fold_stage_observe_settle",
+-    "ledgr_fold_stage_decide",
+-    "ledgr_fold_stage_plan",
+-    "ledgr_fold_stage_apply",
+-    "ledgr_fold_stage_commit",
++    "lean_fold_envelope_plain",
++    "lean_p1_value",
++    "lean_p2_decide",
++    "lean_p3_plan",
++    "lean_p4_apply",
++    "lean_p5_commit",
++    "lean_e_advance",
+     "ledgr_pulse_context"
+   )
+   mode_hits <- function(x) {
+@@ -1594,7 +1617,7 @@ testthat::test_that("[WS4b D12d D13 successor] the fold has one substrate and on
+     )
+   }
+   testthat::expect_length(mode_hits(fns[hot]), 0L)
+-  changed <- fns["ledgr_fold_stage_commit"]
++  changed <- fns["lean_p5_commit"]
+   changed[[1L]] <- ws4a_inject(
+     changed[[1L]],
+     "if (services$availability_active) NULL"

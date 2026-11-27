@@ -1,0 +1,2 @@
+"file","old","new"
+"loop.R","    szr$reasons[rows] <<- if (is.null(intent)) """" else intent","    szr$reasons[rows] <<- if (is.null(intent)) """" else as.character(canonical_json(list(intent_reason = intent)))"

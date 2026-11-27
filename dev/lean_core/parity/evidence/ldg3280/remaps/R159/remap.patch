@@ -1,0 +1,66 @@
+diff --git a/tests/testthat/test-ws4a-carrier.R b/tests/testthat/test-ws4a-carrier.R
+index a4fdc2c0..2f400459 100644
+--- a/tests/testthat/test-ws4a-carrier.R
++++ b/tests/testthat/test-ws4a-carrier.R
+@@ -87,7 +87,28 @@ ws4a_sources <- function() {
+   checker <- new.env(parent = baseenv())
+   sys.source(file.path(root, "tools", "check-fold-phase-contract.R"), envir = checker)
+   files <- list.files(file.path(root, "R"), "\\.R$", full.names = TRUE)
+-  checker$ledgr_fold_phase_function_sources(files)
++  out <- checker$ledgr_fold_phase_function_sources(files)
++  # The candidate fold's functions, defined at top level or nested (the lean
++  # stages are closures inside lean_fold_envelope_plain); a name defined more
++  # than once among them is ambiguous and left out.
++  lean <- list()
++  walk <- function(e) {
++    if (!is.call(e)) return(invisible(NULL))
++    if (identical(e[[1L]], as.name("<-")) && is.symbol(e[[2L]]) && is.call(e[[3L]]) &&
++        identical(e[[3L]][[1L]], as.name("function"))) {
++      nm <- as.character(e[[2L]])
++      lean[[nm]] <<- c(lean[[nm]], list(e[[3L]]))
++    }
++    args <- as.list(e)[-1L]
++    for (k in seq_along(args)) if (!identical(args[[k]], quote(expr = ))) walk(args[[k]])
++    invisible(NULL)
++  }
++  for (f in list.files(getOption("ledgr.candidate_lean"), "\\.R$", full.names = TRUE)) {
++    for (e in parse(f, keep.source = FALSE)) walk(e)
++  }
++  lean <- lean[lengths(lean) == 1L]
++  out[names(lean)] <- lapply(lean, `[[`, 1L)
++  out
+ }
+ ws4a_calls <- function(e) {
+   if (is.call(e)) c(list(e), unlist(lapply(as.list(e), ws4a_calls), recursive = FALSE))
+@@ -2235,8 +2256,8 @@ testthat::test_that("[WS4b F1 arithmetic NaN] typed plan validation keeps accoun
+ # metadata builders, the leg-fee split, the result-buffer writer, and the
+ # handler and sink closures that publish fills, keyed "<function>/<assigned
+ # name>" for a closure (two definitions of one name are joined).
+-ws4a_pub_fns <- c("ledgr_fold_stage_apply", "ledgr_fold_fill_candidate", "ledgr_fill_event_payload",
+-  "ledgr_fill_leg_block", "ledgr_fill_leg_fees", "ledgr_fill_row_buffer_add_many",
++ws4a_pub_fns <- c("lean_p4_apply", "lean_lot_first_failure", "lean_loop_publish", "lean_facts_emit", "lean_facts_emit_ca",
++  "ledgr_fill_event_payload", "ledgr_fill_leg_block", "ledgr_fill_leg_fees", "ledgr_fill_row_buffer_add_many",
+   "ledgr_write_fill_publication_row")
+ ws4a_pub_closures <- c(
+   ledgr_output_handler = "stage_fill_block", ledgr_output_handler = "handler$write_fill_events",
+@@ -2423,7 +2444,10 @@ ws4a_d3_3167 <- c(
+   "ledgr_output_handler/handler$flush_pulse_events" = "block[[name]]",
+   "ledgr_output_handler/handler$append_event_rows" = "rows[[name]]",
+   "ledgr_output_sink_memory/sink$stage_legs" = "pending_legs[[name]]",
+-  "ledgr_output_sink_memory/sink$stage_legs" = "legs[[name]]"
++  "ledgr_output_sink_memory/sink$stage_legs" = "legs[[name]]",
++  # Lean P4: the explicit decision rows less the clean fills (integer
++  # ordinals matched to ordinals, not names).
++  "lean_p4_apply" = "match(differs, clean_k, 0L)"
+ )
+ 
+ testthat::test_that("[WS4a D3 3167] P4 and publication index instruments by position", {
+@@ -2442,7 +2466,7 @@ testthat::test_that("[WS4a D3 3167] P4 and publication index instruments by posi
+   census <- unlist(lapply(unique(names(ws4a_d3_3167)), function(nm) paste(nm, unique(found(pub[[nm]])))))
+   testthat::expect_setequal(census, paste(names(ws4a_d3_3167), ws4a_d3_3167))
+   inject <- function(nm, stmt) hits(ws4a_inject_into(pub, nm, stmt))
+-  testthat::expect_gt(length(inject("ledgr_fold_stage_apply", "net <- candidate$book$net_by_inst[instrument_id]")), 0L)
++  testthat::expect_gt(length(inject("lean_p4_apply", "net <- candidate$book$net_by_inst[instrument_id]")), 0L)
+   testthat::expect_gt(length(inject("ledgr_fill_leg_block", "row <- match(block$instrument_id, names(applied$close_qty))")), 0L)
+   testthat::expect_gt(length(inject("ledgr_output_handler/handler$record_accounting_fact", "keep <- block$instrument_id %in% held_ids")), 0L)
+ })

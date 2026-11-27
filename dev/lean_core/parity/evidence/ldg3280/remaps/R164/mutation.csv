@@ -1,0 +1,2 @@
+"file","old","new"
+"fifo.R","      if (fail[[k]] == 4L) lean_invalid_input()","      if (FALSE) lean_invalid_input()"

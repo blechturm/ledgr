@@ -1,0 +1,2 @@
+"file","old","new"
+"loop.R","      clean_k <- k[clean]","      clean_k <- k[clean]; encoded <- canonical_json(list(fee = fill$fee))"

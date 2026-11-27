@@ -1,0 +1,17 @@
+diff --git a/tests/testthat/test-ws4a-carrier.R b/tests/testthat/test-ws4a-carrier.R
+index a4fdc2c0..4aea22ea 100644
+--- a/tests/testthat/test-ws4a-carrier.R
++++ b/tests/testthat/test-ws4a-carrier.R
+@@ -2797,8 +2797,10 @@ testthat::test_that("[WS4a overflow refusal] a fill whose lot accounting overflo
+   testthat::expect_identical(condition(ns$ledgr_lot_fill(zero, 1:2, c(1L, 1L), c(1, 1e308), c(10, 10))), through)
+   testthat::expect_identical(condition(ns$ledgr_lot_fill(zero, 2:1, c(1L, 1L), c(1e308, 1), c(10, 10))), input)
+   batch <- function(pos, qty, fee = c(0, 0)) {
+-    out <- ns$ledgr_fold_fill_candidate(zero, list(k = 1:2, pos = pos, side = c(1L, 1L), qty = qty, price = c(10, 10), fee = fee))
+-    c(out$failed, condition(stop(out$error)))
++    f <- list(k = 1:2, pos = pos, side = c(1L, 1L), qty = qty, price = c(10, 10), fee = fee)
++    out <- tryCatch(lean_lot_fill(zero, f$pos, f$side, f$qty, f$price, f$fee), error = identity)
++    out <- lean_lot_first_failure(zero, f, out)
++    c(out$row, condition(stop(out$error)))
+   }
+   testthat::expect_identical(batch(1:2, c(1, 1e308)), c("1", through))
+   testthat::expect_identical(batch(2:1, c(1e308, 1)), c("1", input))

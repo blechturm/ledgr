@@ -1,0 +1,18 @@
+diff --git a/tests/testthat/test-ws4a-carrier.R b/tests/testthat/test-ws4a-carrier.R
+index a4fdc2c0..b5b0c223 100644
+--- a/tests/testthat/test-ws4a-carrier.R
++++ b/tests/testthat/test-ws4a-carrier.R
+@@ -2187,10 +2187,10 @@ testthat::test_that("[WS4b F1 canonical refusals] the planner refuses with the c
+   overflow <- ns$ledgr_cost_resolver_from_model(ledgr_cost_chain(ledgr_cost_fixed_fee(1e308), ledgr_cost_notional_bps_fee(1e308)))
+   avail <- function(position, target, open = c(10, 10), sub = FALSE, cost = ledgr_test_cost_resolver()) {
+     ts <- t1 + if (sub) 0.25 else 0
+-    ns$ledgr_fold_build_availability_pulse_plan(1:2, target, position, 1:2, c(TRUE, TRUE),
+-      list(exec_ts = ts, has_next = TRUE, open = open),
++    lean_plan_pulse(1:2, target, position, 1:2, c(TRUE, TRUE),
++      ts, open,
+       list(member = c(TRUE, TRUE), restricted = c(FALSE, FALSE), reason_offset = c(0L, 0L), reason_count = c(0L, 0L),
+-        reason_code = integer()), ns$ledgr_plan_epoch_valid(ts), cost, 1000, c("A", "B"))
++        reason_code = integer()), ns$ledgr_plan_epoch_valid(ts), cost, 1000, c("A", "B"), lean_cost_steps(cost))
+   }
+   refusal <- function(expr) {
+     warnings <- 0L

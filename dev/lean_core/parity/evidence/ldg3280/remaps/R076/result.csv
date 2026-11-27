@@ -1,0 +1,2 @@
+"row","file","candidate","candidate_smoke","witness","witness_smoke","verdict"
+"R076","test-pulse-seed-v2.R","rule v2 edge cases: seeds, pulse indices and refusals: pass || a straight run reads the v2 vector over its own calendar: pass","smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","a straight run reads the v2 vector over its own calendar: fail","smoke PASS (witness run): 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","DEMONSTRATED"

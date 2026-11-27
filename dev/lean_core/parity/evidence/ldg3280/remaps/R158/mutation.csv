@@ -1,0 +1,2 @@
+"file","old","new"
+"loop.R","      clean_k <- k[clean]","      clean_k <- k[clean]; for (j in seq_along(k)) row <- list(qty = fill$qty[[j]])"

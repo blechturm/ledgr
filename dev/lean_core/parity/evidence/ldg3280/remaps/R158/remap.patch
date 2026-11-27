@@ -1,0 +1,88 @@
+diff --git a/tests/testthat/test-ws4a-carrier.R b/tests/testthat/test-ws4a-carrier.R
+index a4fdc2c0..9a269ac0 100644
+--- a/tests/testthat/test-ws4a-carrier.R
++++ b/tests/testthat/test-ws4a-carrier.R
+@@ -87,7 +87,28 @@ ws4a_sources <- function() {
+   checker <- new.env(parent = baseenv())
+   sys.source(file.path(root, "tools", "check-fold-phase-contract.R"), envir = checker)
+   files <- list.files(file.path(root, "R"), "\\.R$", full.names = TRUE)
+-  checker$ledgr_fold_phase_function_sources(files)
++  out <- checker$ledgr_fold_phase_function_sources(files)
++  # The candidate fold's functions, defined at top level or nested (the lean
++  # stages are closures inside lean_fold_envelope_plain); a name defined more
++  # than once among them is ambiguous and left out.
++  lean <- list()
++  walk <- function(e) {
++    if (!is.call(e)) return(invisible(NULL))
++    if (identical(e[[1L]], as.name("<-")) && is.symbol(e[[2L]]) && is.call(e[[3L]]) &&
++        identical(e[[3L]][[1L]], as.name("function"))) {
++      nm <- as.character(e[[2L]])
++      lean[[nm]] <<- c(lean[[nm]], list(e[[3L]]))
++    }
++    args <- as.list(e)[-1L]
++    for (k in seq_along(args)) if (!identical(args[[k]], quote(expr = ))) walk(args[[k]])
++    invisible(NULL)
++  }
++  for (f in list.files(getOption("ledgr.candidate_lean"), "\\.R$", full.names = TRUE)) {
++    for (e in parse(f, keep.source = FALSE)) walk(e)
++  }
++  lean <- lean[lengths(lean) == 1L]
++  out[names(lean)] <- lapply(lean, `[[`, 1L)
++  out
+ }
+ ws4a_calls <- function(e) {
+   if (is.call(e)) c(list(e), unlist(lapply(as.list(e), ws4a_calls), recursive = FALSE))
+@@ -2235,8 +2256,8 @@ testthat::test_that("[WS4b F1 arithmetic NaN] typed plan validation keeps accoun
+ # metadata builders, the leg-fee split, the result-buffer writer, and the
+ # handler and sink closures that publish fills, keyed "<function>/<assigned
+ # name>" for a closure (two definitions of one name are joined).
+-ws4a_pub_fns <- c("ledgr_fold_stage_apply", "ledgr_fold_fill_candidate", "ledgr_fill_event_payload",
+-  "ledgr_fill_leg_block", "ledgr_fill_leg_fees", "ledgr_fill_row_buffer_add_many",
++ws4a_pub_fns <- c("lean_p4_apply", "lean_lot_first_failure", "lean_loop_publish", "lean_facts_emit", "lean_facts_emit_ca",
++  "ledgr_fill_event_payload", "ledgr_fill_leg_block", "ledgr_fill_leg_fees", "ledgr_fill_row_buffer_add_many",
+   "ledgr_write_fill_publication_row")
+ ws4a_pub_closures <- c(
+   ledgr_output_handler = "stage_fill_block", ledgr_output_handler = "handler$write_fill_events",
+@@ -2279,15 +2300,30 @@ ws4a_d1_pub_allowed <- c(
+   ledgr_fill_row_buffer_add_many = "as.POSIXct", ledgr_fill_meta_rows = "Map", ledgr_fill_meta_rows = "list",
+   ledgr_fill_event_payload = "vapply", "ledgr_output_handler/handler$append_event_rows" = "lapply",
+   "ledgr_output_handler/handler$append_event_rows" = "vapply",
+-  "ledgr_output_sink_duckdb/sink$write_fill_live" = "structure"
++  "ledgr_output_sink_duckdb/sink$write_fill_live" = "structure",
++  # The terminal transfer works per batch of at most `bound` rows, never per
++  # fill: the batch ranges (pieces()), the explicit and implicit blocks cut
++  # column by column with lapply(), each implicit batch's row count, the
++  # completion row's two epochs, and one applied-columns list per fill batch.
++  lean_loop_publish = "lapply", lean_loop_publish = "list", lean_loop_publish = ".POSIXct",
++  lean_facts_emit = "list"
+ )
+ ws4a_d1_pub_loops <- c(
+-  ledgr_fold_fill_candidate = "while (failed - ok > 1L)",
++  lean_lot_first_failure = "while (failed - ok > 1L)",
+   "ledgr_output_handler/stage_fill_block" = "for (name in setdiff(names(block), c(\"status\", \"next_event_seq\")))",
+   "ledgr_output_handler/handler$flush_pulse_events" = "for (name in setdiff(ledgr_output_event_columns, \"ts_utc\"))",
+   "ledgr_output_sink_memory/sink$stage_legs" = "for (name in names(legs))",
+   "ledgr_output_handler/handler$append_event_rows" = "for (name in ledgr_output_event_columns)",
+-  "ledgr_output_sink_duckdb/sink$write_fill_live" = "for (k in seq_along(publication$event_seq))"
++  "ledgr_output_sink_duckdb/sink$write_fill_live" = "for (k in seq_along(publication$event_seq))",
++  # Lean P4 grows its fill records by doubling; the terminal transfer loops
++  # over pulse ranges, batches and contiguous event-sequence runs.
++  lean_p4_apply = "while (nf + n_fill > fcap)",
++  lean_loop_publish = "while (a <= lay$np)",
++  lean_loop_publish = "for (r in pieces(length(ex$explicit$diagnostic_seq)))",
++  lean_loop_publish = "for (r in pieces(if (is.null(imp)) 0L else imp$n))",
++  lean_facts_emit = "for (r in split(seq_along(fr), cumsum(c(TRUE, diff(ev) != 1L))))",
++  lean_facts_emit = "for (s in seq.int(1L, length(r), by = bound))",
++  lean_facts_emit_ca = "while (cur <= last)"
+ )
+ ws4a_d1_pub_hits <- function(fns) {
+   banned <- c("structure", "class<-", "oldClass<-", "as.POSIXct", ".POSIXct", "as.POSIXlt", "strptime",
+@@ -2323,7 +2359,7 @@ testthat::test_that("[WS4a D1 publication] P4 and publication build no per-fill
+   testthat::expect_true(hit("ledgr_fill_event_payload", "res <- structure(list(), class = \"ledgr_ledger_write_result\")"))
+   testthat::expect_true(hit("ledgr_output_handler/handler$flush_pulse_events", "cash <- vapply(staged, `[[`, numeric(1), \"cash_delta\")"))
+   testthat::expect_true(hit("ledgr_output_handler/handler$record_accounting_fact", "ts <- as.POSIXct(block$ts_utc, tz = \"UTC\")"))
+-  testthat::expect_true(hit("ledgr_fold_stage_apply", paste("for (i in seq_along(fill$k)) lot_res <- ledgr_lot_fill(",
++  testthat::expect_true(hit("lean_p4_apply", paste("for (i in seq_along(fill$k)) lot_res <- ledgr_lot_fill(",
+     "fold_state$lot_state, fill$pos[[i]], fill$side[[i]], fill$qty[[i]], fill$price[[i]], fill$fee[[i]])")))
+ })
+ 

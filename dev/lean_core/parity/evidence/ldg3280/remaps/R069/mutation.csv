@@ -1,0 +1,2 @@
+"file","old","new"
+"loop.R","    ledgr_fold_reconciliation_check(recon[[2L]], recon[[6L]], recon[[5L]], recon[[3L]], recon[[4L]], recon[[1L]])","    ledgr_fold_reconciliation_check(recon[[2L]], recon[[6L]], recon[[5L]], recon[[3L]], recon[[4L]], recon[[1L]]); invisible(ledgr_fold_reconciliation_detail(cash_before = recon[[2L]], virtual_final_cash = recon[[6L]], recorded_final_cash = recon[[5L]], intended_gross_exposure = recon[[3L]], post_risk_gross_exposure = recon[[4L]], actual_gross_exposure = recon[[1L]]))"

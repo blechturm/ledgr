@@ -1,0 +1,2 @@
+"file","old","new"
+"loop.R","      clean_k <- k[clean]","      clean_k <- k[clean]; for (j in seq_along(k)) lean_lot_input(1L, fill$pos[[j]], fill$side[[j]], fill$qty[[j]], fill$price[[j]], fill$fee[[j]])"

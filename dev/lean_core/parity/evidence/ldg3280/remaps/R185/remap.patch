@@ -1,0 +1,25 @@
+diff --git a/tests/testthat/test-fill-model.R b/tests/testthat/test-fill-model.R
+index b1080fa7..858b36fa 100644
+--- a/tests/testthat/test-fill-model.R
++++ b/tests/testthat/test-fill-model.R
+@@ -18,17 +18,14 @@ ledgr_test_dense_plan <- function(open,
+     rep(NA_real_, nrow(open))
+   }
+   n <- length(delta)
+-  ledgr:::ledgr_fold_build_availability_pulse_plan(
++  lean_plan_pulse(
+     context_pos = as.integer(context_pos),
+     target_qty = as.numeric(delta),
+     position = numeric(length(delta)),
+     actionable_k = seq_along(delta),
+     member = rep(TRUE, length(delta)),
+-    execution = list(
+-      exec_ts = if (has_next) exec_ts else NA_real_,
+-      has_next = isTRUE(has_next),
+-      open = next_open
+-    ),
++    exec_ts = if (has_next) exec_ts else NA_real_,
++    next_open = next_open,
+     execution_view = list(
+       member = rep(TRUE, n), restricted = rep(FALSE, n),
+       reason_offset = rep(0L, n), reason_count = rep(0L, n),

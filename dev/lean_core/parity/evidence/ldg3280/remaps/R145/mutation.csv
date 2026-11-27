@@ -1,0 +1,2 @@
+"file","old","new"
+"loop.R","    live$cur_stage <- ""accounting""","    live$cur_stage <- if (isTRUE(execution$availability_active)) ""accounting"" else ""accounting"""

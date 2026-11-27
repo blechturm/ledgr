@@ -1,0 +1,2 @@
+"file","old","new"
+"plan.R","  if (any(bad_delta) || (!epoch_valid && n > 0L) || any(short)) {","  if (any(bad_delta) || any(short)) {"

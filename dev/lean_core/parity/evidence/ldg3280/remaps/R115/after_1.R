@@ -1,0 +1,1 @@
+  fold_source <- gsub("\\s*\n\\s*", " ", ledgr_test_candidate_source("lean_fold_envelope_plain"))

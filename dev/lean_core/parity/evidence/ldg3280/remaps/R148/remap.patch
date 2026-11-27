@@ -1,0 +1,22 @@
+diff --git a/tests/testthat/test-ws4a-carrier.R b/tests/testthat/test-ws4a-carrier.R
+index a4fdc2c0..ce0119db 100644
+--- a/tests/testthat/test-ws4a-carrier.R
++++ b/tests/testthat/test-ws4a-carrier.R
+@@ -1786,12 +1786,14 @@ testthat::test_that("[WS4a 3166 precedence] batched planning refuses in the base
+   ns <- ws4a_ns()
+   # An invalid epoch is a sub-second one, as E flags it.
+   short <- function(order, epoch_valid = TRUE, open = c(10, 10)) {
+-    ns$ledgr_fold_build_availability_pulse_plan(
++    cost <- ledgr_test_cost_resolver()
++    lean_plan_pulse(
+       context_pos = order, target_qty = c(-1, -2), position = c(0, 0), actionable_k = 1:2, member = c(TRUE, TRUE),
+-      execution = list(exec_ts = if (epoch_valid) 1704292200 else 1704292200.25, has_next = TRUE, open = open),
++      exec_ts = if (epoch_valid) 1704292200 else 1704292200.25, next_open = open,
+       execution_view = list(member = c(TRUE, TRUE), restricted = c(FALSE, FALSE), reason_offset = c(0L, 0L),
+         reason_count = c(0L, 0L), reason_code = integer()),
+-      epoch_valid = epoch_valid, cost_resolver = ledgr_test_cost_resolver(), cash = 100, instrument_ids = c("A", "B"))
++      epoch_valid = epoch_valid, cost_resolver = cost, cash = 100, instrument_ids = c("A", "B"),
++      cost_steps = lean_cost_steps(cost))
+   }
+   # Two short-exposure violations: the first in decision order refuses alone.
+   first <- tryCatch(short(1:2), error = identity)
