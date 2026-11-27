@@ -141,6 +141,20 @@ lean_lot_first_failure <- function(book, fill, error) {
   list(row = failed, error = error)
 }
 
+# A pulse's fill batch through the lot kernel with the fill-delta refusal
+# (LR-26): a refused batch checks the rows before its first failing row,
+# then raises that row's lot refusal; a successful one checks all its rows.
+lean_lot_fill_checked <- function(book, fill) {
+  applied <- tryCatch(lean_lot_fill(book, fill$pos, fill$side, fill$qty, fill$price, fill$fee), error = identity)
+  if (inherits(applied, "error")) {
+    failed <- lean_lot_first_failure(book, fill, applied)
+    lean_fill_deltas_finite(fill, seq_len(failed$row - 1L))
+    stop(failed$error)
+  }
+  lean_fill_deltas_finite(fill, seq_along(fill$k))
+  applied
+}
+
 # The fill-delta finiteness refusal the package's accounting-event check
 # makes on publication (LR-26): every published fill row needs a finite cash
 # and position delta. One vectorised test over the rows.

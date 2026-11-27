@@ -457,15 +457,15 @@ loop_mutations <- list(
   # left unchecked after a later lot failure, the multi-fill accounting
   # refusal is lost.
   ovf_delta_check_omitted = variant("differ", list(
-    edit("loop.R", "lean_p4_apply", "        lean_fill_deltas_finite(fill, seq_len(failed$row - 1L))"),
-    edit("loop.R", "lean_p4_apply", "      lean_fill_deltas_finite(fill, seq_len(n_fill))")),
+    edit("fifo.R", "lean_lot_fill_checked", "    lean_fill_deltas_finite(fill, seq_len(failed$row - 1L))"),
+    edit("fifo.R", "lean_lot_fill_checked", "  lean_fill_deltas_finite(fill, seq_along(fill$k))")),
     lost = "finite cash_delta and position_delta", error = "canonical_json[(][)] does not allow non-finite|Invalid fill input for lot accounting"),
   ovf_check_too_early = variant("differ", list(
-    edit("loop.R", "lean_p4_apply", "      live$cur_stage <- \"accounting\"",
-      "      lean_fill_deltas_finite(fill, seq_len(n_fill))", "after")),
+    edit("fifo.R", "lean_lot_fill_checked", "  applied <- tryCatch(lean_lot_fill(book, fill$pos, fill$side, fill$qty, fill$price, fill$fee), error = identity)",
+      "  lean_fill_deltas_finite(fill, seq_along(fill$k))", "before")),
     lost = "Invalid fill input for lot accounting", error = "finite cash_delta and position_delta"),
   ovf_earlier_rows_skipped = variant("differ", list(
-    edit("loop.R", "lean_p4_apply", "        lean_fill_deltas_finite(fill, seq_len(failed$row - 1L))")),
+    edit("fifo.R", "lean_lot_fill_checked", "    lean_fill_deltas_finite(fill, seq_len(failed$row - 1L))")),
     lost = "finite cash_delta and position_delta", error = "Invalid fill input for lot accounting"),
   # Cut 26 (LDG-3273): the sweep-worker channel (loop_workers.R). A worker
   # without the lean loop, a dropped or duplicated record and a worker on
