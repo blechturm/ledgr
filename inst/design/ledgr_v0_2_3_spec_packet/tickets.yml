@@ -9674,7 +9674,7 @@ tickets:
   - id: "LDG-3282"
     title: "The recorded oracle"
     workstream: 47
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "L"
     dependencies: ["LDG-3276", "LDG-3277", "LDG-3279", "LDG-3280", "LDG-3281"]
@@ -9686,7 +9686,14 @@ tickets:
       - "Keep records outside the tree if desired, with a committed manifest defining build/toolchain, corpus inputs, canonicalization and clock exclusions, schemas/types/order, row counts, digests and an exact retrieval location."
       - "Supply a checker that reads these records without loading the pin and compares candidate outputs, demonstrated before retirement on the full available corpus with missing/extra/corrupt-record and changed-output controls. Preserve original pin records; enumerate only accepted ledger/format/identity differences in comparisons and fail on unlisted differences. The live pin remains available until every deferred recording and proof is complete."
       - "The matrix identifies the final LDG-3279 audit, LDG-3280 inventory and LDG-3281 coverage mapping used for its population and accepted differences. Any subsequent change to those inputs before Cut 27 closes updates the matrix and affected records and reruns the checker and its controls. LDG-3283 verifies that this evidence matches the final inputs. Named Cut 28 obligations retain their existing completion and live-pin-retention gates."
-    evidence: []
+    evidence:
+      - "Records: C:/Users/maxth/ledgr-wt/pin-outcomes-7f65733f (read-only, 236 files, 71,164,890 bytes). They are all 235 gate workloads' pin tables in A0 canonical form (3,585 tables, 4,440,523 rows) and the 145 cut18 direct cases with values and normalized complete conditions, recorded on the pin 7f65733f with the final lean code (unchanged since 268bcd90). The recording run is also LDG-3283's debug-0 gate: 3,585 tables, 0 different, every frozen path checked."
+      - "Manifest (dev/lean_core/parity/evidence/ldg3282): oracle_records.csv (per file: bytes, sha256) and oracle_tables.csv (3,730 tables or cases: rows, columns in order, types, sha256). README.md records the build and toolchain, the corpus inputs, the canonicalization, the clock and environment exclusions and the retrieval location."
+      - "Checker oracle_check.R loads no ledgr (asserted). On the full corpus with the candidate's outputs: IDENTICAL 3,875, ORACLE CHECK PASS (check_full.csv). Only differences listed with their authority and exact digest are accepted; unlisted or unused ones fail."
+      - "Controls (oracle_controls.R, controls.csv): full PASS; missing, extra and corrupt record FAIL; missing output FAIL; changed gate cell and changed cut18 value FAIL; an accepted difference PASS; a wrong digest and an unused acceptance FAIL; a real lean mutation (fill_price_ulp on crossover_3x40) FAIL. 11 of 11 as expected."
+      - "Coverage matrix (coverage_matrix.md) maps every Section 5 family and every merge witness (cut18 R1-R5, W4, DBG) to its recording and checker, or to named obligations O1-O8. It covers the FIFO corpus, the independent checks, the four open D3 rows and the private reference. matrix_check.R: 0 unknown workloads, every recorded workload cited."
+      - "Inputs used: the LDG-3279 audit (final 11b84d08), the LDG-3280 inventory (complete 4ac3de10; LR-27 and LR-28 change no recorded table) and the LDG-3281 routes. LDG-3283 checks they still match at close."
+      - "The live pin stays until obligations O1-O8 are complete. LDG-3283 carries out O3's FIFO recapture."
   - id: "LDG-3283"
     title: "Close: the proof matrix on the new pin, review briefs, plan amendments"
     workstream: 47
