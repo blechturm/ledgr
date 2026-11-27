@@ -9575,7 +9575,7 @@ tickets:
   - id: "LDG-3278"
     title: "Explicit-state spike"
     workstream: 47
-    status: "open"
+    status: "complete"
     priority: "P2"
     effort: "M"
     dependencies: ["LDG-3275"]
@@ -9595,7 +9595,16 @@ tickets:
       - "dev/spikes/explicit_state holds a runner, a diff-based checker and a gut demonstration (spike protocol); the prerequisite (one stage, one small workload) is reported first, green, red or inconclusive"
       - "If the prerequisite is green, attempt the mechanical extension and report a terminal green, red or inconclusive result under decision 6. Green requires bit-identical outputs on 10x7200, 20x23400 and 500x1260, with paired timing on the High performance plan and P-core affinity, alternating arms, at least five pairs per shape. A red or inconclusive stop under decision 6 is also a completed spike result: record the failing comparison or stop signal, completed and unrun shapes, and what remains open; do not repair expected tables or retry merely to obtain green. The README reports available pulse-loop and whole-run ratios, the line and readability effect on loop.R, and the decision the result informs."
       - "No dev/lean_core production file changes"
-    evidence: []
+    evidence:
+      - "Verdict red (dev/spikes/explicit_state/README.md). The prerequisite was green: one concern (P5's commit record), 92 tables identical at debug 0 and 1, 2 forked workers. The extension was also identical: all five concerns, 108 tables at debug 0 and 1, plus 48 tables on 10x7200, 20x23400 and 500x1260."
+      - "Cost fails decision 6. On the pulse loop the fork / as-is median is 1.77 on 10x7200, 4.62 on 20x23400 and 3.01 on 500x1260; on the whole run it is 1.49, 3.55 and 1.42. Timing used 5 alternating pairs per shape, High performance plan, pcore.ps1 0xFFFF, fills and equity identical; the plan was restored to Balanced."
+      - "Cause (copy_probe.csv): an indexed write through an environment field copies the whole object. A list passed in and returned copies too."
+      - "Gut demonstration: with P5's hd_recon write left unrewritten, 26 of 32 tables differ and both workloads FAIL. check.R reruns a phase and diffs every CSV."
+      - "Readability: loop.R gains 8% in characters, and lines over 120 characters go from 23 to 64. Coupling is unchanged: P1 and P5 each touch 4 of 5 concerns."
+      - "Deviation: the fork groups state into shared environments, not stage take-and-return. The README records that form as unforked and gives the copy-probe reason."
+      - "Finding: the LDG-3277 stage headers missed conditional reads and environment field writes; fixed in 268bcd90."
+      - "No dev/lean_core production file changes; the harness is 768 lines."
+      - "Adoption stays the maintainer's decision. The result supports keeping the <<- writes with the generated stage headers."
   - id: "LDG-3279"
     title: "The rules ledger into contracts.md"
     workstream: 47

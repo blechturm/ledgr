@@ -1,0 +1,3 @@
+"phase","witness","debug","workloads","tables","different","verdicts","exit_status","fork_installed","fork_line","forked_workers"
+"prereq","install_commit.R",0,"crossover_3x40 s2_cost_chain s3_freeze_held s4_dividend s5_workers_sizing ovf_delta_then_lot",92,0,"PASS 6",0,TRUE,"set commit; 21 reads, 7 writes, 5 envelope assignments rewritten; findings: none",2
+"prereq","install_commit.R",1,"crossover_3x40 s2_cost_chain s3_freeze_held s4_dividend s5_workers_sizing ovf_delta_then_lot",92,0,"PASS 6",0,TRUE,"set commit; 21 reads, 7 writes, 5 envelope assignments rewritten; findings: none",2

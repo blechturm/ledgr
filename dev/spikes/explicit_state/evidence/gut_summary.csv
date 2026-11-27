@@ -1,0 +1,2 @@
+"phase","witness","debug","workloads","tables","different","verdicts","exit_status","fork_installed","fork_line","forked_workers"
+"gut","install_gut.R",0,"crossover_3x40 s2_cost_chain",32,26,"FAIL 2",1,TRUE,"set commit (GUT: lean_p5_commit hd_recon left as <<-); 21 reads, 6 writes, 5 envelope assignments rewritten; findings: none",0

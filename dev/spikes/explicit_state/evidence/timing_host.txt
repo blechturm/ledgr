@@ -1,0 +1,3 @@
+power plan: Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (High performance)
+started: 2026-11-27 17:44:51
+affinity: pcore.ps1 0xFFFF; finished: 2026-11-27 18:01:27
