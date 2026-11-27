@@ -9697,7 +9697,7 @@ tickets:
   - id: "LDG-3283"
     title: "Close: the proof matrix on the new pin, review briefs, plan amendments"
     workstream: 47
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3276", "LDG-3277", "LDG-3278", "LDG-3279", "LDG-3280", "LDG-3281", "LDG-3282"]
@@ -9712,4 +9712,15 @@ tickets:
       - "Two holistic review briefs (decision 9) are drafted under inst/design/ledgr_v0_2_3_spec_packet/ for the maintainer's approval"
       - "macro_plan.md records decision 10's amendments; lean_core_interface.md Section 19.14 is updated"
       - "Type 1 close review of workstream 47 (review_lifecycle)"
-    evidence: []
+    evidence:
+      - "Proof matrix on the final code (lean files unchanged since 268bcd90) and the pin 7f65733f, run from outside any source package (dev/lean_core/parity/evidence/ldg3283, run_close.R, run_close_status.txt, README.md)."
+      - "Gate at debug 0 and 1: 3,585 tables, 0 different, PASS 229 and PASS* 6, frozen paths 235 of 235. Batch one at both settings: 925 tables, 0 different, 68 of 68 frozen paths. Inert at both settings: 496 tables, 0 different, 37 of 37 frozen paths."
+      - "Variant driver at debug 0: 159 rows, 93 variants, 0 failures; at debug 1: 113 rows, 58 variants, 0 failures. Also passing: the hashed-frame witness, loop_dispatch (26 cases), plan_parity at both settings (427 tables, 0 different, and its three mutations fail), cut18_witness (145 cases, 0 differ) and the slice 2, 3 and 4 reach cross-checks (26, 41 and 92 ok). The inert mutation shows the committed 13 differences."
+      - "Preparation on the new pin: the captures were regenerated. The fixture (widths 8 and 12), portable and intraday checks give the committed outcomes, every mutation caught. prep_edges PASS. The pin digest manifest is identical to the committed one, and lean preparation's streams match the pin's."
+      - "Integrated preparation plus feature plus fold (loop_parity.R --prepare=1, the whole gate): the only difference is the sweep_attrs feature_engine_version digest. It covers the rebound ledgr_history_substrate_for_experiment by design, and integrated_diff.R confirms it is the only differing cell. This is Cut 28's identity impact, listed in coverage-matrix O1."
+      - "FIFO census on the pin source archive (DLL unwind table clean): two captures with identical populations (145,679 calls), and every call and stream step identical at both debug settings. fifo_check fails only on evidence diffs: one new test file with 10 calls, and fifo.R line numbers. The Cut 22 files are kept; the new outputs are in fifo/, and the captures are read-only at pin-outcomes-7f65733f-fifo with sha256."
+      - "Each historical proof family is recorded as reran, unchanged with a source reason, or a named blocker (README, Historical proofs). The private H1 check and the Sharadar reference stay with the maintainer. The resource gates are not claimed (WS9b, first-checkpoint residuals, D3 peaks: Cut 28)."
+      - "LDG-3282's evidence matches the final inputs: the LDG-3279 audit 11b84d08, the LDG-3280 inventory 4ac3de10 and the LDG-3281 routes."
+      - "Two Type 2 holistic review briefs are drafted for the maintainer's approval: holistic_review_brief_codex.md and holistic_review_brief_claude.md (the latter cold-reads loop.R)."
+      - "macro_plan.md records decision 10's amendments and the fee-split fix (Cut 28). lean_core_interface.md Section 19.14 confirms the inert compiled FIFO wrappers and adds the Cut 28 test-seam item."
+      - "Type 1 close review of workstream 47: see the workstream's close_review."
