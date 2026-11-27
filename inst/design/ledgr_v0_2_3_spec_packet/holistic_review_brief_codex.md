@@ -1,6 +1,6 @@
 # Holistic review brief A (Codex): the integrated path before the switch
 
-- Status: draft for the maintainer's approval (Cut 27 decision 9, LDG-3283).
+- Status: approved by the maintainer on 2026-11-27 (Cut 27 decision 9, LDG-3283).
   The review runs after Cut 27 closes. The maintainer dispositions its
   findings before Cut 28.
 - Mode: **Type 2**. Challenge the design; do not verify a ticket.

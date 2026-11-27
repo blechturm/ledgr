@@ -169,6 +169,12 @@ maintainer's row approval:
   suite in debug, lean comparators can fail before a block's own oracle, so
   mutations were chosen that only the block's oracle catches.
 
+### Approval
+
+On 2026-11-27 the maintainer approved every inventory row ("accepted all"),
+including the corrections and census allowances above, and LR-27 and LR-28.
+The independent Type 1 review of the rows is still due before the switch.
+
 ### Harness fixes made during the remaps
 
 The agents found four harness bugs, and each was fixed before the runs

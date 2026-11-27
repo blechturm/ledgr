@@ -4611,7 +4611,8 @@ cuts:
   - id: 27
     name: "Lean-core switch preparation: the pin advanced, the overflow refusal, clarity, contracts, the test inventory and the recorded oracle (macro WS14a, WS16)"
     cut: "2026-11-27"
-    status: "accepted"
+    status: "closed"
+    closed: "2026-11-27, accepted by the maintainer (\"accepted all\") after workstream 47 closed: its Type 1 close review passed at re-review 1 (round 1 F1: the oracle controls failed against the read-only records; F2: the explicit-state spike tested the wrong representation; both fixed). The maintainer also approved LR-27 and LR-28, the two holistic review briefs and every LDG-3280 inventory row. Still due before the switch: the independent Type 1 review of the inventory rows, the holistic reviews and the Cut 28 obligations (O1-O8, the remap gates, the test-seam item)."
     accepted: "2026-11-27 by the maintainer, after the cut review passed at re-review 2 (cut_review_27_rereview_2.md, at abfdc491, no new finding); the maintainer's standing instruction applies: implement the workstream in one go, then iterate the Codex close review to green."
     opening: >-
       Written by Claude on 2026-11-27 at the maintainer's request ("probe
@@ -5351,7 +5352,8 @@ workstreams:
   - id: 47
     name: "Lean-core switch preparation"
     cut: 27
-    status: "open"
+    status: "complete"
+    accepted: "2026-11-27 by the maintainer (\"accepted all\"), after the close review passed at re-review 1."
     close_review: "CHANGES_REQUIRED in ws47_close_review.md (independent clean-context Codex Type 1, 2026-11-27, on c047db44): F1 blocking, the oracle controls failed against the read-only records (scratch copies inherited the attribute), fixed in a183e868 (writable scratch copies, each control checks it took effect; all 11 controls pass); F2 blocking, the explicit-state spike tested a shared-environment representation instead of the specified stage take-and-return, fixed in 66cc9a4b (P5 takes and returns its state: exact outputs, gut caught, one-stage pulse-loop cost 1.05-1.40x, red before extension, stated as a judgment). Focused re-review 1 PASS in ws47_close_review_rereview_1.md (66cc9a4b), no new findings. Recorded ratio: 2 close-review verdicts, 1 correction round."
     depends_on_workstream: 46
     requires_review_acceptance: true
