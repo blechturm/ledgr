@@ -1,0 +1,16 @@
+[WS4a V-book] the typed book group refuses the construction controls -- direct test of the kept package kernel (ledgr_lot_book_problem/validate); no fold involvement.
+[WS4a V-lot-input] lot input rows are typed, distinct and bounded per operation -- direct test of kept ledgr_lot_input (lean fifo.R calls it in debug); no fold involvement.
+[WS4a V-applied-row] applied rows carry actual lot facts and refuse the controls -- direct test of kept ledgr_lot_apply/ledgr_lot_applied (lean fifo.R:566 calls ledgr_lot_applied).
+[WS4a import] E import maps openings onto the run axis and refuses corrupt books -- direct test of kept ledgr_carrier_import_state, which the lean E calls (loop.R:203); the imported-state refusal stays in production.
+[WS4a D15] the lot kernel never writes a book column by reference -- scans and runs only the kept package kernel; affected only if fifo.R replaces it (see D7 question) and through helper ws4a_sources.
+[WS4a D17 F4.35] the lot kernel computes no cash and openings move no cash -- kept kernel and replay only; same condition as D15.
+[WS4a D18] a kernel call refuses duplicate instruments -- direct kept-kernel test; same condition as D15.
+[WS4a D19] no named-list FIFO implementation is defined -- source-name check over R/ for retired FIFO names; unaffected unless ws4a_sources breaks.
+[WS4a D23] replay adds each published cash effect exactly once -- replay (kept) only.
+[WS4a replay blocks] block replay equals one operation per event -- replay and kept kernel only.
+[WS4a U-3164] book totals are typed scalars; empty operations keep the book and type their rows -- direct kept-kernel test.
+[WS4a V-applied-row] the close/open split is checked against the lots before and after -- kept kernel with a mock of kept ledgr_lot_applied, called directly, not through a run.
+[WS4a F1] replay refuses the earliest failing event with the base precedence -- replay (kept) only.
+[WS4a F4.19] the provider adapter keeps unpriced provenance field by field -- kept ledgr_carrier_provider_view; the lean marked path calls it (marks.R:99), so the production mock still observes > 5 calls (probe pass).
+[WS4a D16] the provider adapter converts each produced view once -- mocks kept ledgr_carrier_provider_view, ledgr_availability_valuation_state and ledgr_availability_restrict_frozen, all called by lean marks.R:82/:99 and loop.R:106; probe pass. Re-check under suite debug-on, where lean_loop_debug_packet (loop.R:100) builds a second valuation state on fixed baskets only.
+[WS4a D9] publication stages no per-fill or per-leg list; the routed metadata is retained -- scans kept handler/sink/payload/leg functions only; it must still pass after the switch edits the handler (LR-12/LR-20 deletions), but no mapping is needed.

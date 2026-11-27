@@ -1,0 +1,34 @@
+LDG-3280 strategy/context slice: census hit blocks judged unaffected by the switch (title | reason)
+
+test-strategy-context-surface.R | [LTB-0084] retired context names stay absent and rule hashes stay stable | reads man/ Rd text only; no old-fold function or helper capture.
+test-feature-accessor-scaling.R | [LTB-0140] prepared feature state stays inside one sweep candidate | mocks ledgr_projection_feature_lookup_state, which lean E calls once per candidate (loop.R:259); passes on the lean core; no old-fold dependency.
+test-feature-accessor-scaling.R | [LTB-0141] explicit map memo is exact and forgets failures | direct test of kept projection accessors.
+test-feature-accessor-scaling.R | [LTB-0191] availability feature reads enforce the current decision axis | public callback reads through the switched `$` method; passes on the lean core; no old internals.
+test-position-facts-context.R | restart rebuilds position facts from pulse one | uses ledgr_run_fold (kept; only its restart check goes) and public context reads; restart semantics unchanged.
+test-position-facts-context.R | durable restart preserves carried opening anchors | same as above.
+test-pulse-seed-v2.R | rule v2 reproduces the independent golden table | ledgr_pulse_seeds is kept (lean calls it, loop.R:225).
+test-pulse-seed-v2.R | rule v2 meets the frozen bounds B1-B6 and every control fails | kept rule function only.
+test-pulse-seed-v2.R | a straight run reads the v2 vector over its own calendar | public ctx$pulse_seed values; the lean context reads the same vector (loop.R:442). Needed as the value witness for the remapped "one vector per fold" row.
+test-pulse-seed-v2.R | a run window reads the same pulse seeds ... / scheduled skips keep their index ... / sweep ... and promotion read ... | public values only; the restart and draws blocks that pass checkpoint_every are rows of the controls slice.
+test-pulse-seed-v2.R | sweep candidates / walk-forward candidates markers, old-store refusal, one constant names the rule | store/marker rules, not the fold; identity rows (seeded configuration identity) belong to the controls slice.
+test-rng.R | derived run and pulse seeds are stable and ambient-RNG independent | kept ledgr_derive_seed / ledgr_pulse_seeds.
+test-rng-isolation.R | rng wrapper source check passes on the package source and rejects broken shapes | checks the 17 exported wrapper shapes over R/; the fold is not a wrapper; lean code moved into R/ adds no wrapper-shape body (the mutation fixture text mentioning compiled_accounting_model is a literal, unchanged).
+test-rng-isolation.R | rng-relevant sites run only under a wrapped export or a returned helper | traces the binding name ledgr_fold_envelope, which the switch replaces in place (task brief); lean calls ledgr_rng_seed_pinned inside it (loop.R:224). Unaffected while the name is kept; becomes a (b) site-name remap only if Cut 28 renames the envelope.
+helper-rng-isolation.R | ledgr_rng_tracer_sites / ledgr_rng_src_parse_dir | same condition as the block above (site name kept); the R/ parse is the wrapper check.
+test-experiment-run.R | pulse_seed is exposed as a stable per-pulse strategy input | public ctx$pulse_seed values.
+test-experiment-run.R | pulse_seed strategies reproduce across continuous and resumed runs | ledgr_run_fold (kept) + public results; ledgr_config without a mode argument.
+test-experiment-run.R | seeded ambient RNG strategies restart from pulse one | same.
+test-strategy-schedule.R | [LTB-0512], [LTB-0503], [LTB-0506], [LTB-0508], [LTB-0511] | reach the fold only through ws42_with_schedule / ledgr_test_run (controls slice helper rows) or kept sweep/store functions.
+test-availability-state.R | retired valuation entry points remain unavailable | asserts names absent and a formal absent; the switch deletes more, never re-adds these.
+test-feature-inspection.R | [LTB-0549] pulse inspection manifests prepared primitives directly | mocks kept inspection helpers (ledgr_pulse_context_fixture_cutoff, ledgr_pulse_features) and deparses kept readers; no old-fold function.
+test-history-substrate.R | [LTB-0294] staged history identity is exact and tasks are lean | worker staging and the package's ledgr_parallel_worker_setup / ledgr_sweep_eval_candidate_tasks_parallel; after the switch those are the package's own bindings (the probe's worker channel exists only in the harness).
+test-history-substrate.R | [LTB-0295] availability sweeps stage history without semantic drift | mocks sweep staging and provider preparation (kept), not the fold.
+test-durable-run-preparation-memory.R | [LTB-0155] durable preparation releases each dead copy at its boundary | wraps ledgr_execute_fold (kept) to inspect the preparation frame; deparses ledgr_run_fold_impl (kept).
+test-precompute-features.R | precomputed features refuse after a direct capture changes / precomputed candidates stay bound when captured windows are permuted | wrap ledgr_execute_fold (kept) to prove refusal happens before the fold.
+test-walk-forward-folds.R | walk-forward routes every candidate and test through the fold core | counts ledgr_execute_fold (kept; still the shared entry to the replaced envelope).
+test-availability-production-retirement.R | production provider consumers bypass public inspection helpers | the mocked public membership resolvers are not called by the lean core either; run passes; helper availability_v201_run_case traces ledgr_fold_diagnostic_writer, which is kept and which the lean core calls (loop.R:274, terminal transfer).
+test-availability-fold-witnesses.R | ported fold witnesses preserve every persisted surface | public persisted outcomes against frozen fixtures; the chunk_rows tracer acts on the kept ledgr_fold_diagnostic_writer. Passes on the lean core.
+test-availability-fold-witnesses.R | ported failures roll back and nonterminal attempts restart fresh | public failure and restart outcomes; passes on the lean core. (The "direct persisted rows" block is a controls-slice row.)
+helper-availability-v0-2-0-1-witnesses.R | availability_v201_run_case (trace of ledgr_fold_diagnostic_writer) | the traced function is kept and on the lean path; no change needed.
+test-cost-model.R | (grep) | no call of ledgr_cost_model_resolve or another merged/deleted function.
+helper-fixtures.R | ledgr_test_next_open_fill (ledgr_plan_resolve, ledgr_plan_groups) | not in this slice: the parent owns helper-fixtures.R rows.
