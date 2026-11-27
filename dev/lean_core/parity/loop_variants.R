@@ -21,6 +21,9 @@ arg <- function(name, default = NULL) {
 lib <- arg("lib")
 out <- arg("out")
 only_debug <- arg("debug", "")
+# --workloads=a,b: only the manifest rows on these workloads (WS46 close
+# review round 1); the negative controls still run.
+only_workloads <- strsplit(arg("workloads", ""), ",", fixed = TRUE)[[1L]]
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
 # Cut 26 (LDG-3271): absolute paths for the child runs, which work outside the
 # source tree (loop_parity.R moves its working directory before running).
@@ -42,6 +45,11 @@ unknown <- setdiff(key(reanchor), c(key(manifest), key(add)))
 if (length(unknown)) stop("re-anchors not in the manifest: ", paste(unknown, collapse = ", "), call. = FALSE)
 if (length(bad <- setdiff(changes$action, c("add", "retire", "reanchor")))) stop("unknown change action: ", bad[[1L]], call. = FALSE)
 manifest <- rbind(manifest, add)
+if (length(only_workloads)) {
+  # checked before the debug filter: a workload may carry rows at one debug setting only
+  if (length(none <- setdiff(only_workloads, manifest$workload))) stop("no variant rows on: ", paste(none, collapse = ", "), call. = FALSE)
+  manifest <- manifest[manifest$workload %in% only_workloads, ]
+}
 if (nzchar(only_debug)) manifest <- manifest[manifest$debug == as.integer(only_debug), ]
 
 rscript <- file.path(R.home("bin"), "Rscript.exe")

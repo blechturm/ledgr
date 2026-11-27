@@ -395,11 +395,11 @@ s5_count_parallel <- function() {
     inner(tasks, workers, ...)
   })
 }
-s5_worker_sweep <- function(db, id, exp, grid, seed = 17L, stop_on_error = FALSE) {
+s5_worker_sweep <- function(db, id, exp, grid, seed = 17L, stop_on_error = FALSE, ...) {
   snapshot <- ledgr::ledgr_snapshot_open(db, id, verify = TRUE)
   on.exit(ledgr::ledgr_snapshot_close(snapshot))
   obs <- a0_observe_memory(ledgr::ledgr_sweep(exp(snapshot), grid, seed = seed, workers = 2L,
-                                              stop_on_error = stop_on_error, retain = a0_retain()))
+                                              stop_on_error = stop_on_error, retain = a0_retain(), ...))
   list(sweep = c(a0_sweep_tables(obs$value), a0_memory_tables(obs$observed, obs$value)))
 }
 s5_staged <- function(n) identical(s5_seen$parallel, as.integer(n))
@@ -496,6 +496,22 @@ s5_workers_failing <- function() {
                      error = function(e) list(escaped = list(condition = s5_cond(e))))
   stats::setNames(c(row, escape), c("sweep", paste0(names(escape), "_escape")))
 }
+# A selected sweep on workers that the E stage refuses (WS46 close review
+# round 1, F1): a corporate CASHFLOW fails the pin's second admission check
+# in every worker before any fold starts, as rows (stop_on_error FALSE) and
+# escaping (TRUE).
+s5_workers_compiled_refused <- function() {
+  name <- "s5_workers_compiled_refused"
+  db <- s4_snapshot(name, s4_closes(), s4_ca_facts(s4_div("s5-div", "A", 3L, 6L)))
+  exp <- s4_exp(s5_hold_buy, positions = c(A = 3), cost_basis = c(A = 28))
+  restore <- s5_count_parallel()
+  on.exit(restore())
+  row <- s5_worker_sweep(db, name, exp, s5_grid2("k", 1, 2), compiled_accounting_model = "spot_fifo")
+  escape <- tryCatch(s5_worker_sweep(db, name, exp, s5_grid2("k", 1, 2), stop_on_error = TRUE,
+                                     compiled_accounting_model = "spot_fifo"),
+                     error = function(e) list(escaped = list(condition = s5_cond(e))))
+  stats::setNames(c(row, escape), c("sweep", paste0(names(escape), "_escape")))
+}
 # A late worker backstop: the lean arm's harness seam marks every worker
 # candidate at its sixth strategy call (after the day-2 and day-4 fills).
 # The workload changes the caller's RNG state first and reports the entry
@@ -557,6 +573,7 @@ loop_slice5 <- c(loop_slice5, list(
   s5_workers_dividend = s5_workers_dividend,
   s5_workers_consecutive = s5_workers_consecutive,
   s5_workers_failing = s5_workers_failing,
+  s5_workers_compiled_refused = s5_workers_compiled_refused,
   s5_workers_backstop = s5_workers_backstop("s5_workers_backstop", FALSE),
   s5_workers_backstop_escape = s5_workers_backstop("s5_workers_backstop_escape", TRUE),
   s5_walk_forward_workers = s5_walk_forward_workers
@@ -582,6 +599,11 @@ loop_reach <- c(loop_reach, list(
   s5_workers_failing = function(t) {
     s5_staged(4L) && identical(as.character(t$sweep$sweep$status), c("DONE", "FAILED")) &&
       grepl("s5 worker failure", t$escaped_escape$condition$message, fixed = TRUE)
+  },
+  s5_workers_compiled_refused = function(t) {
+    s5_staged(4L) && identical(as.character(t$sweep$sweep$status), c("FAILED", "FAILED")) &&
+      all(grepl("CASHFLOW", t$sweep$sweep$error_msg, fixed = TRUE)) &&
+      grepl("CASHFLOW", t$escaped_escape$condition$message, fixed = TRUE)
   },
   s5_workers_backstop = function(t) {
     s5_staged(3L) && identical(as.character(t$sweep$sweep$status), c("DONE", "DONE", "FAILED")) &&

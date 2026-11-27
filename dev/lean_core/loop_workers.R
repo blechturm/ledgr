@@ -9,7 +9,8 @@
 # setting and any variant's registered edits, and installs the lean loop with
 # the parent's hook mode. Each worker then wraps two bindings of its own:
 # - the fold envelope, counting entries and whether each entered the lean
-#   envelope (outside the fold hooks, so inert workers are witnessed too);
+#   envelope (outside the fold hooks, so inert workers are witnessed too),
+#   and recording the class of an error that ends an entry before its fold;
 # - the candidate task, which resets the worker's entry record, watches
 #   every store call over the whole candidate (a worker writes nothing
 #   durable), and writes one record file per task, on every exit path.
@@ -18,7 +19,9 @@
 # (counters by sum, bounds by maximum) after checking them: one record per
 # dispatched task, none missing, duplicated, undispatched or from another
 # attempt; every worker booted; every record from the pinned build, the lean
-# envelope, the parent's debug setting and hook mode. A failed check is a
+# envelope, the parent's debug setting and hook mode; with the harness hooks,
+# every entry a lean fold, a coverage refusal or an error before the fold
+# (an early exit without an error faults). A failed check is a
 # worker fault (`lean_entry$worker_faults`), which loop_parity.R reports.
 
 lean_workers <- new.env(parent = emptyenv())
@@ -94,7 +97,21 @@ lean_worker_start <- function(spec) {
   lean_wrap_binding(ns, "ledgr_fold_envelope", function(f) function(execution, output_handler) {
     lean_workers$entries <- lean_workers$entries + 1L
     lean_workers$lean <- c(lean_workers$lean, identical(f, lean_fold_envelope))
-    f(execution, output_handler)
+    # An entry that an error ends before its fold starts, with no coverage
+    # refusal (the pin's E-stage admission refusals, say), has that error as
+    # its outcome: its class is recorded, and the condition passes on
+    # unchanged (WS46 close review round 1, F1). An entry that leaves early
+    # without an error records NA, which the parent faults.
+    folds <- lean_entry$lean_folds
+    refused <- length(lean_entry$refused)
+    last <- NA_character_
+    done <- FALSE
+    on.exit(if (!done && lean_entry$lean_folds == folds && length(lean_entry$refused) == refused) {
+      lean_workers$prefold <- c(lean_workers$prefold, last)
+    })
+    value <- withCallingHandlers(f(execution, output_handler), error = function(e) last <<- class(e)[[1L]])
+    done <- TRUE
+    value
   })
   lean_wrap_binding(ns, "ledgr_sweep_worker_eval_candidate_task", function(f) function(task) lean_worker_task(f, task))
   invisible(TRUE)
@@ -117,6 +134,7 @@ lean_worker_task <- function(inner, task) {
   lean_entry$mutation <- spec$mutation
   lean_workers$entries <- 0L
   lean_workers$lean <- logical()
+  lean_workers$prefold <- character()
   lean_workers$store_any <- character()
   lean_workers$tasks <- lean_workers$tasks + 1L
   unwatch <- lean_watch_durable()
@@ -124,7 +142,8 @@ lean_worker_task <- function(inner, task) {
     unwatch()
     rec <- c(list(attempt = spec$attempt, sweep_seq = spec$sweep_seq, run_id = as.character(task$run_id),
                   pid = Sys.getpid(), origin = normalizePath(getNamespaceInfo("ledgr", "path"), winslash = "/"),
-                  entries = lean_workers$entries, envelope_lean = lean_workers$lean, debug = .lean_debug,
+                  entries = lean_workers$entries, envelope_lean = lean_workers$lean, prefold = lean_workers$prefold,
+                  debug = .lean_debug,
                   hooks = lean_hooks_mode(), store_any = lean_workers$store_any),
              mget(c("lean_folds", "refused", "backstop", "store_access", "sink_calls", "terminal_appends",
                     "max_append_rows", "hold_calls", "hold_rows", "max_range_pulses", "variant_reached"),
@@ -180,9 +199,11 @@ lean_workers_merge <- function() {
     if (!all(r$envelope_lean)) fault("worker %s entered the pinned envelope", id)
     if (!identical(r$debug, .lean_debug)) fault("worker %s ran with debug %s", id, r$debug)
     if (!identical(r$hooks, lean_workers$hooks)) fault("worker %s ran with %s hooks", id, r$hooks)
-    if (identical(r$hooks, "harness") && r$lean_folds + length(r$refused) != r$entries) {
-      fault("worker %s: %d lean folds and %d refusals for %d envelope entries", id, r$lean_folds, length(r$refused), r$entries)
+    if (identical(r$hooks, "harness") && r$lean_folds + length(r$refused) + length(r$prefold) != r$entries) {
+      fault("worker %s: %d lean folds, %d refusals and %d errors before the fold for %d envelope entries",
+            id, r$lean_folds, length(r$refused), length(r$prefold), r$entries)
     }
+    if (anyNA(r$prefold)) fault("worker %s: an envelope entry left before its fold without an error", id)
   }
   for (f in c("lean_folds", "hold_calls", "hold_rows")) {
     lean_entry[[f]] <- lean_entry[[f]] + sum(vapply(recs, function(r) as.numeric(r[[f]]), 0))
@@ -200,7 +221,8 @@ lean_workers_merge <- function() {
   lean_entry$worker_entries <- lean_entry$worker_entries + sum(vapply(recs, function(r) as.numeric(r$entries), 0))
   lean_entry$worker_table <- rbind(lean_entry$worker_table, do.call(rbind, lapply(recs, function(r) data.frame(
     attempt = r$attempt, sweep_seq = r$sweep_seq, run_id = r$run_id, pid = r$pid, origin = r$origin,
-    entries = r$entries, lean = all(r$envelope_lean), debug = r$debug, hooks = r$hooks, lean_folds = r$lean_folds,
+    entries = r$entries, lean = all(r$envelope_lean), prefold = paste(r$prefold, collapse = "; "),
+    debug = r$debug, hooks = r$hooks, lean_folds = r$lean_folds,
     backstop = paste(r$backstop, collapse = "; "), store_any = length(r$store_any), stringsAsFactors = FALSE))))
   invisible(faults)
 }

@@ -321,6 +321,14 @@ for (w in grep("^s5_workers_|^s5_walk_forward_workers$", names(s5_gate), value =
            reason = "Cut 26 slice-5 worker witness under inert hooks, inert-mode count"))
 }
 
+# Workstream 46 close review round 1 (F1): a selected sweep on workers that
+# the pin's E-stage admission refuses before any fold starts, in every mode
+# (no fold: each worker entry's outcome is the refusal).
+for (m in c("gate", "batch1", "inert")) {
+  add(both(action = "add", mode = m, workload = "s5_workers_compiled_refused", lean_folds = 0L, refused = "", backstop = "",
+           reason = "Workstream 46 close review round 1 (F1) witness: worker entries refused at E before the fold, declared path"))
+}
+
 out <- do.call(rbind, rows)
 utils::write.csv(out, file.path(here, "loop_freeze_changes.csv"), row.names = FALSE)
 cat(nrow(out), "changes:", paste(names(table(out$action)), table(out$action), collapse = ", "), "\n")

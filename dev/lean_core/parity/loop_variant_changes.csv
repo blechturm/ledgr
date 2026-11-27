@@ -247,3 +247,5 @@
 "add","capacity_late","s5_compiled_capacity_over",1,65536,"differ","Cut 26 decision 3: a late capacity check on the selected-sweep capacity witness"
 "add","capacity_late","s5_compiled_capacity_over",0,1,"differ","Cut 26 decision 3: a late capacity check on the selected-sweep capacity witness at batch one"
 "add","capacity_late","s5_compiled_capacity_over",1,1,"differ","Cut 26 decision 3: a late capacity check on the selected-sweep capacity witness at batch one"
+"add","worker_prefold_unrecorded","s5_workers_compiled_refused",0,65536,"worker","Workstream 46 close review round 1 (F1): an entry the E stage refuses before its fold, its outcome not recorded; the channel check names the unexplained entries"
+"add","worker_prefold_unrecorded","s5_workers_compiled_refused",1,65536,"worker","Workstream 46 close review round 1 (F1): an entry the E stage refuses before its fold, its outcome not recorded; the channel check names the unexplained entries"

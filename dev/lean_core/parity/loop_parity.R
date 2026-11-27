@@ -451,6 +451,11 @@ loop_mutations <- list(
     c("    rec$variant_reached <- TRUE",
       "    if (!identical(rec$run_id, \"b\")) saveRDS(rec, file.path(spec$channel, sprintf(\"rec_%d_%d_%d.rds\", spec$sweep_seq, Sys.getpid(), lean_workers$tasks)))"),
     mark = FALSE)), tables = "^$"),
+  # WS46 close review round 1, F1: an entry an E-stage refusal ends before
+  # its fold, its outcome not recorded, fails the channel's entry count.
+  worker_prefold_unrecorded = variant("worker", list(edit("loop_workers.R", "lean_worker_start",
+    "      lean_workers$prefold <- c(lean_workers$prefold, last)", "      lean_entry$variant_reached <- TRUE", mark = FALSE)),
+    tables = "^$"),
   worker_record_duplicated = variant("worker", list(edit("loop_workers.R", "lean_worker_task",
     "    saveRDS(rec, file.path(spec$channel, sprintf(\"rec_%d_%d_%d.rds\", spec$sweep_seq, Sys.getpid(), lean_workers$tasks)))",
     c("    rec$variant_reached <- TRUE",

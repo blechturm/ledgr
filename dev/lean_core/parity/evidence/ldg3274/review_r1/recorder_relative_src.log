@@ -1,0 +1,6 @@
+capture build: installed pin C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr 
+avail_incomplete: 112 records, 0 fail; capture 5s, replay 3s, 3 MB
+capture build: source pin C:/Users/maxth/ledgr-wt/slice5-scratch/pin-archive 
+history_fixture: 180 records, 0 fail; capture 4s, replay 7s, 8 MB
+replay evidence written to C:/Users/maxth/ledgr-wt/slice5-scratch/r1/recorder/captures/history_part 
+replay evidence written to C:/Users/maxth/ledgr-wt/slice5-scratch/r1/recorder/out 

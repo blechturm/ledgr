@@ -1,7 +1,9 @@
 # LDG-3274: close slice 5
 
 Cut 26 decisions 7 to 10 on the final code. The lean sources are final at
-`bc628409` (nothing under `dev/lean_core/*.R` changes after it). Pin: the
+`bc628409`. Nothing under `dev/lean_core/*.R` changes after it, except the
+harness worker channel `loop_workers.R` in close review round 1, which
+`review_r1/` documents and proves. Pin: the
 installed library d5b3a151 (`C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151`).
 `run_close.R` runs every parity step as a fresh Rscript from a directory
 outside any ledgr source package. It follows Cut 21's recipe

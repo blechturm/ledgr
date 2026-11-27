@@ -45,6 +45,10 @@ lib <- normalizePath(lib, winslash = "/", mustWork = TRUE)
 captures <- normalizePath(captures, winslash = "/", mustWork = TRUE)
 out <- normalizePath(out, winslash = "/", mustWork = TRUE)
 manifests <- normalizePath(manifests, winslash = "/", mustWork = TRUE)
+# The source pin for the history fixture's child run, resolved here too (WS46
+# close review round 1, F2).
+src <- lc_arg("src")
+if (!is.null(src)) src <- normalizePath(src, winslash = "/", mustWork = TRUE)
 
 source(file.path(lc_here, "..", "load.R"))
 lean <- lean_core_load(lib)
@@ -247,9 +251,7 @@ if (sys.nframe() == 0L) {
   summary <- summary[order(match(summary$workload, ids), summary$boundary, method = "radix"), ]
   # The history fixture needs the pinned source archive, which cannot load
   # beside the installed build: a child run appends its rows.
-  src <- lc_arg("src")
   if (!is.null(src)) {
-    src <- normalizePath(src, winslash = "/", mustWork = TRUE)
     part <- file.path(captures, "history_part")
     lc_rscript(c(paste0("--lib=", src), paste0("--captures=", captures), paste0("--out=", part),
                  paste0("--manifests=", manifests), "--workloads=history_fixture"))
