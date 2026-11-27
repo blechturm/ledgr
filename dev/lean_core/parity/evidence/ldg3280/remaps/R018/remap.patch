@@ -1,0 +1,22 @@
+diff --git a/tests/testthat/test-context-frame-retirement.R b/tests/testthat/test-context-frame-retirement.R
+index 3d3ec012..60ed2b62 100644
+--- a/tests/testthat/test-context-frame-retirement.R
++++ b/tests/testthat/test-context-frame-retirement.R
+@@ -254,7 +254,7 @@ testthat::test_that("[LTB-0546] flat contexts retire frames across all entrances
+ 
+ # ledgr-test-profile: fast
+ testthat::test_that("[LTB-0547] P2 reuses prepared primitives and manifests no frame", {
+-  decide_source <- paste(deparse(ledgr:::ledgr_fold_stage_decide), collapse = "\n")
++  decide_source <- paste(c(ledgr_test_candidate_source("lean_p2_decide"), ledgr_test_candidate_source("lean_context")), collapse = "\n")
+   for (forbidden in c(
+     "ledgr_history_bar_packet_frame", "ledgr_projection_feature_table",
+     "ledgr_projection_features_wide", "feature_table =", "features_wide ="
+@@ -265,7 +265,7 @@ testthat::test_that("[LTB-0547] P2 reuses prepared primitives and manifests no f
+     testthat::expect_false(grepl(forbidden, decide_source, fixed = TRUE), info = forbidden)
+   }
+   testthat::expect_true(
+-    grepl("cutoff_num = packet$ts", decide_source, fixed = TRUE)
++    grepl("cutoff_num = ts_num[[i]]", decide_source, fixed = TRUE)
+   )
+   attach_source <- paste(deparse(ledgr:::ledgr_attach_feature_helpers), collapse = "\n")
+   testthat::expect_false(

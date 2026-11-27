@@ -1,0 +1,1 @@
+the smoke run fails on the candidate: simpleError: broken candidate

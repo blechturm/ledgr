@@ -1,0 +1,1 @@
+the smoke run fails on the candidate: ledgr_affordability_reconciliation_failed: Recorded cash does not reconcile with the availability affordability ledger.

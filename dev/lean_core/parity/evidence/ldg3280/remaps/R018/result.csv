@@ -1,0 +1,2 @@
+"row","file","candidate","candidate_smoke","witness","witness_smoke","verdict"
+"R018","test-context-frame-retirement.R","[LTB-0547] P2 reuses prepared primitives and manifests no frame: pass","smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","[LTB-0547] P2 reuses prepared primitives and manifests no frame: fail","smoke PASS (witness run): 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","DEMONSTRATED"

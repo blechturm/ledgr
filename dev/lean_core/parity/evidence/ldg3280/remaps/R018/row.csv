@@ -1,0 +1,2 @@
+"file","note","pass","witness"
+"test-context-frame-retirement.R","P2 source anchors read the candidate P2 stage and its context builder (lean_p2_decide, lean_context); the prepared cutoff anchor becomes ts_num[[i]]. Other halves unchanged.","[LTB-0547] P2 reuses prepared primitives and manifests no frame","[LTB-0547] P2 reuses prepared primitives and manifests no frame"

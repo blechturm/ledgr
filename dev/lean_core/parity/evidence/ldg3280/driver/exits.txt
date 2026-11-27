@@ -1,0 +1,8 @@
+smoke exit 0
+broken_crash exit 2
+broken_reconciled exit 2
+broken_silent exit 2
+witness_silent exit 0
+ltb0519_stock exit 0
+ltb0519_no_reload exit 0
+done

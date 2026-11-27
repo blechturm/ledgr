@@ -1,0 +1,91 @@
+pin 7f65733f from C:/Users/maxth/ledgr-wt/pin-src-7f65733f 
+candidate C:/Users/maxth/ledgr-wt/cut27-dev/dev/lean_core at 0bfa9f2c (files differ from the commit) 
+smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin 
+output-handler-sinks: .12.............3456789abc......de.fg..............................................................
+
+══ Failed ══════════════════════════════════════════════════════════════════════
+── 1. Failure ('test-output-handler-sinks.R:125:3'): [LTB-0519] a worker-execute
+Expected `names(worker)` to be identical to `names(local)`.
+Differences:
+`actual`:              
+`expected`: "one" "two"
+
+
+── 2. Failure ('test-output-handler-sinks.R:126:3'): [LTB-0519] a worker-execute
+Expected `names(bad)` to be identical to `names(local)`.
+Differences:
+`actual`:              
+`expected`: "one" "two"
+
+
+── 3. Failure ('test-output-handler-sinks.R:147:5'): [LTB-0519] a worker-execute
+Expected `worker[[id]]$events` to be identical to `local[[id]]$events`.
+Differences:
+`actual` is NULL
+`expected` is an S3 object of class <ledgr_memory_events/tbl_df/tbl/data.frame>, a list
+
+one
+
+── 4. Failure ('test-output-handler-sinks.R:148:5'): [LTB-0519] a worker-execute
+Expected `names(worker[[id]]$events)` to be identical to `ledgr:::ledgr_accounting_event_columns()`.
+Differences:
+`actual` is NULL
+`expected` is a character vector ('event_id', 'run_id', 'ts_utc', 'event_type', 'instrument_id', ...)
+
+one
+
+── 5. Failure ('test-output-handler-sinks.R:152:5'): [LTB-0519] a worker-execute
+Expected `worker[[id]]$diagnostics` to be identical to `local[[id]]$diagnostics`.
+Differences:
+`actual` is NULL
+`expected` is an S3 object of class <data.frame>, a list
+
+one
+
+── 6. Failure ('test-output-handler-sinks.R:153:5'): [LTB-0519] a worker-execute
+Expected `worker[[id]]$diagnostics$diagnostic_seq` to be identical to `local[[id]]$diagnostics$diagnostic_seq`.
+Differences:
+`actual` is NULL
+`expected` is an integer vector (7)
+
+one
+
+── 7. Failure ('test-output-handler-sinks.R:158:5'): [LTB-0519] a worker-execute
+Expected `worker[[id]]$completion` to be identical to `local[[id]]$completion`.
+Differences:
+`actual` is NULL
+`expected` is an S3 object of class <data.frame>, a list
+
+one
+
+── 8. Failure ('test-output-handler-sinks.R:147:5'): [LTB-0519] a worker-execute
+Expected `worker[[id]]$events` to be identical to `local[[id]]$events`.
+Differences:
+`actual` is NULL
+`expected` is an S3 object of class <ledgr_memory_events/tbl_df/tbl/data.frame>, a list
+
+two
+
+── 9. Failure ('test-output-handler-sinks.R:148:5'): [LTB-0519] a worker-execute
+Expected `names(worker[[id]]$events)` to be identical to `ledgr:::ledgr_accounting_event_columns()`.
+Differences:
+`actual` is NULL
+`expected` is a character vector ('event_id', 'run_id', 'ts_utc', 'event_type', 'instrument_id', ...)
+
+two
+
+── 10. Failure ('test-output-handler-sinks.R:152:5'): [LTB-0519] a worker-execut
+Expected `worker[[id]]$diagnostics` to be identical to `local[[id]]$diagnostics`.
+Differences:
+`actual` is NULL
+`expected` is an S3 object of class <data.frame>, a list
+
+two
+  ... and 6 more
+
+
+Maximum number of 10 failures reached, some test results may be missing.
+
+══ DONE ════════════════════════════════════════════════════════════════════════
+No one gets it right on their first try
+1 files, 2 tests, 1 failed, 0 errors, 0 skipped, 14 s (candidate 0bfa9f2c+changes, pin 7f65733f, debug TRUE) 
