@@ -237,7 +237,7 @@ Phase D   WS9b structural memory -> worker budgets -> H9 daemon reuse
                               |
 Phase E   WS11b C10 ADR, H1, C9   WS12 documentation and debt
           final format/data freeze -> one lake rebuild -> integrated record
-          -> editorial pass (after WS11b and WS14) -> rehearsal
+          -> teaching editorial pass (after WS11b and WS14) -> rehearsal
           -> final cut: certify, promote
 ```
 
@@ -728,6 +728,27 @@ CRAN release.
   first-time learner, gives each kept page one role and keeps all code
   executed. Cuts before it still teach what they change (rule 7); the pass
   reorganizes and prunes rather than re-teaching each cut.
+- **Dedicated teaching editorial pass (maintainer, 2026-11-27).** WS12 owns
+  a continuous first-reader pass through Quickstart, Strategy Basics,
+  Strategy Authoring Tools and their handoffs to Causal History, Minimum
+  Variance and Survivorship Bias. Apply the existing late editorial timing
+  above. Review each page for its teaching job, the order concepts appear,
+  and consistency with the final public API. Reconcile outdated API examples
+  in the [vignette styleguide](../vignette_styleguide.md) with the final
+  contracts before applying its rules. Give each key concept one teaching
+  home and link to it from later examples.
+  - In Strategy Authoring Tools, use one starting book with cash, a holding
+    to keep and holdings to resize or sell. Show the resulting share targets
+    for a full rebalance, a rebalance around a named holding and an adjustment
+    to selected positions. Hold the weights and `invest_fraction` fixed while
+    comparing `total_equity` and `remaining_equity`. Show that a name in both
+    `keep` and `weights` refuses, including a zero weight. Prefer a named
+    `weights` intermediate in the first example. Teach index-leaver policy
+    on the actual membership change in Survivorship Bias.
+  - Render the changed articles on the final core and run the documentation
+    contracts. In the maintainer's cold read, check that a reader can predict
+    which holdings are kept, resized or targeted to zero, and explain the
+    budget before seeing the output.
 
 ### WS13. Release-candidate certification (R1, M4)
 
@@ -1653,7 +1674,8 @@ per-pulse durable records routing was accepted on 2026-11-03.
   and a mutant record showing no unexplained loss; every
   registered claim still detected and the fast lane within its bound.
 - The R2 documentation decision accepted and the editorial pass closed; the
-  background articles moved to blechturm.com and linked.
+  strategy-authoring teaching examples render and pass the cold read, and
+  the background articles are moved to blechturm.com and linked.
 - Debt M1, M5, H5b closed; plots signed off.
 - Final format/data freeze, one lake rebuild, an integrated release record.
 - A certified candidate promoted under the WS13 process.
