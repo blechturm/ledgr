@@ -1675,6 +1675,14 @@ Switch obligations:
    lookup, `corporate_action_plan$event_kinds()`) in the deletion
    inventory as "retain". WS14 either installs one compiled FIFO or retires
    the selector with `spot_fifo.cpp`.
+   Confirmed by Cut 27 decision 10 (2026-11-27): the compiled FIFO's R
+   wrappers (`ledgr_run_compiled_spot_fifo_batch()`,
+   `ledgr_carrier_compiled_pack()`, `ledgr_carrier_compiled_unpack()`,
+   `ledgr_compiled_spot_fifo_suspect()`) and `spot_fifo.cpp` also stay,
+   inert, although only the old fold reaches them
+   (`dev/spikes/switch_probe/c_reachability.csv`). Their direct tests stay
+   unchanged until WS14 (LDG-3280 inventory rows R021, R136 and R137,
+   handling g).
 3. **Checkpoint control.** Remove the control and its entry refusal (LR-20,
    already listed). `db_live` is removed with the old fold.
 4. **Integrated feature path.** Run the full integrated proof: the lean
@@ -1689,6 +1697,12 @@ Switch obligations:
    feat_alias_swapped. feature_bridge.R is retired; its evidence stays in
    evidence/ldg3273/bridge/.
 5. **Backstop seam.** Retire the test seam with the harness entry.
+6. **Test seams into the lean stages (Cut 27, amendment_test_inventory
+   (10)).** The suite's injection and observation points into E and P1 to
+   P5 are designed in Cut 28 as an explicit item with its own review. The
+   harness hooks retire at the switch, so a seam a test keeps is designed,
+   not inherited. The rows and the open shapes are in
+   `dev/lean_core/parity/evidence/ldg3280/cut28_design_item.md`.
 
 ### 19.15 The overflow refusal at P4 (Cut 27)
 
