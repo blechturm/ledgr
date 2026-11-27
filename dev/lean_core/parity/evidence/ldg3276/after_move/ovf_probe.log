@@ -1,0 +1,31 @@
+== sell_at_1.9 (expected ledgr_invalid_accounting_event) 
+  pin  run           ledgr_invalid_accounting_event/ledgr_invalid_ledger_meta/rlang_error/error/condition | Accounting event metadata must provide finite cash_delta and position_delta values. 
+  pin  sweep_escape  ledgr_invalid_accounting_event/ledgr_invalid_ledger_meta/rlang_error/error/condition | Accounting event metadata must provide finite cash_delta and position_delta values. 
+  pin  sweep_row     ledgr_invalid_accounting_event | Accounting event metadata must provide finite cash_delta and position_delta values. 
+  lean debug FALSE: identical to the pin 
+  lean debug TRUE: identical to the pin 
+== hold_at_1.9 (expected ledgr_config_non_finite) 
+  pin  run           ledgr_config_non_finite/rlang_error/error/condition | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). 
+  pin  sweep_escape  ledgr_config_non_finite/rlang_error/error/condition | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). 
+  pin  sweep_row     ledgr_config_non_finite | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). 
+  lean debug FALSE: identical to the pin 
+  lean debug TRUE: identical to the pin 
+== sell_at_10 (expected ledgr_invalid_lot_fill) 
+  pin  run           ledgr_invalid_lot_fill/rlang_error/error/condition | Invalid fill input for lot accounting. 
+  pin  sweep_escape  ledgr_invalid_lot_fill/rlang_error/error/condition | Invalid fill input for lot accounting. 
+  pin  sweep_row     ledgr_invalid_lot_fill | Invalid fill input for lot accounting. 
+  lean debug FALSE: identical to the pin 
+  lean debug TRUE: identical to the pin 
+== early_delta_late_lot (expected ledgr_invalid_accounting_event) 
+  pin  run           ledgr_invalid_accounting_event/ledgr_invalid_ledger_meta/rlang_error/error/condition | Accounting event metadata must provide finite cash_delta and position_delta values. 
+  pin  sweep_escape  ledgr_invalid_accounting_event/ledgr_invalid_ledger_meta/rlang_error/error/condition | Accounting event metadata must provide finite cash_delta and position_delta values. 
+  pin  sweep_row     ledgr_invalid_accounting_event | Accounting event metadata must provide finite cash_delta and position_delta values. 
+  lean debug FALSE: identical to the pin 
+  lean debug TRUE: identical to the pin 
+== early_lot_late_delta (expected ledgr_invalid_lot_fill) 
+  pin  run           ledgr_invalid_lot_fill/rlang_error/error/condition | Invalid fill input for lot accounting. 
+  pin  sweep_escape  ledgr_invalid_lot_fill/rlang_error/error/condition | Invalid fill input for lot accounting. 
+  pin  sweep_row     ledgr_invalid_lot_fill | Invalid fill input for lot accounting. 
+  lean debug FALSE: identical to the pin 
+  lean debug TRUE: identical to the pin 
+OVERFLOW PROBE PASS: 0 failure(s) 

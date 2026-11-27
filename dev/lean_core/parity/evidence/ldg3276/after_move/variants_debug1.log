@@ -1,0 +1,4 @@
+debug 1 ovf_check_too_early (bound 65536): status 0, 36 tables, 10 different; verdicts: CAUGHT 2
+debug 1 ovf_delta_check_omitted (bound 65536): status 0, 36 tables, 10 different; verdicts: CAUGHT 2
+debug 1 ovf_earlier_rows_skipped (bound 65536): status 0, 18 tables, 5 different; verdicts: CAUGHT 1
+5 manifest rows, 3 variants, 0 failures

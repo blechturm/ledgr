@@ -83,3 +83,16 @@ debug off and on. The full proof matrix reruns at LDG-3283.
 - `lean_core_rules_ledger.md` has LR-26 (contract), and LR-15 is narrowed
   by it.
 - `lean_core_interface.md` has Section 19.15.
+
+## After the move into fifo.R (3e867f45)
+
+The check moved from `lean_p4_apply()` into `lean_lot_fill_checked()` in
+`fifo.R`, because `loop.R` had reached 1,003 production lines, over its
+1,000 cap. P4 now makes one call, and the three variants anchor on the
+helper. Everything reran on that code (`after_move/`), with debug off and
+on:
+- the five witnesses, run with `--freeze`: 90 tables, 0 different, PASS 5;
+- the fill-weighted subset: 265 tables, 0 different, PASS 16;
+- the variant driver on the four refusing witnesses: 5 rows, 3 variants,
+  0 failures, with the negative controls failing closed at debug 0;
+- `ovf_probe.R`: OVERFLOW PROBE PASS.

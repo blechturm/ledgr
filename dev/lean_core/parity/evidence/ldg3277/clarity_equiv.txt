@@ -1,0 +1,9 @@
+loop.R          code identical (19 top-level expressions)
+plan.R          code identical (14 top-level expressions)
+checks.R        code identical (14 top-level expressions)
+fifo.R          code identical (19 top-level expressions)
+prepare.R       code identical (11 top-level expressions)
+loop_harness.R  code identical (13 top-level expressions)
+marks.R         code identical (17 top-level expressions)
+facts.R         code identical (17 top-level expressions)
+CLARITY EQUIVALENCE PASS 

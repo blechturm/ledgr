@@ -1,0 +1,9 @@
+"workload","debug","mode","attempt","sweep_seq","run_id","pid","origin","entries","lean","prefold","debug","hooks","lean_folds","backstop","store_any"
+"fe_bar_native",0,"gate","66368-1-20261127171250.041517",1,"feature_128418ae19fa/strategy_041a774a1128",57616,"C:/Users/maxth/ledgr-wt/pin-lib-7f65733f/ledgr",1,TRUE,"",FALSE,"harness",1,"",0
+"fe_bar_native",0,"gate","66368-1-20261127171250.041517",1,"feature_a82ff44ebfb8/strategy_041a774a1128",70156,"C:/Users/maxth/ledgr-wt/pin-lib-7f65733f/ledgr",1,TRUE,"",FALSE,"harness",1,"",0
+"fe_bar_native",0,"gate","66368-1-20261127171250.041517",2,"feature_128418ae19fa/strategy_041a774a1128",34752,"C:/Users/maxth/ledgr-wt/pin-lib-7f65733f/ledgr",1,TRUE,"",FALSE,"harness",1,"",0
+"fe_bar_native",0,"gate","66368-1-20261127171250.041517",2,"feature_a82ff44ebfb8/strategy_041a774a1128",66212,"C:/Users/maxth/ledgr-wt/pin-lib-7f65733f/ledgr",1,TRUE,"",FALSE,"harness",1,"",0
+"fe_declared",0,"gate","66368-2-20261127171258.784503",1,"feature_128418ae19fa/strategy_041a774a1128",24732,"C:/Users/maxth/ledgr-wt/pin-lib-7f65733f/ledgr",1,TRUE,"",FALSE,"harness",1,"",0
+"fe_declared",0,"gate","66368-2-20261127171258.784503",1,"feature_a82ff44ebfb8/strategy_041a774a1128",29192,"C:/Users/maxth/ledgr-wt/pin-lib-7f65733f/ledgr",1,TRUE,"",FALSE,"harness",1,"",0
+"fe_declared",0,"gate","66368-2-20261127171258.784503",2,"feature_128418ae19fa/strategy_041a774a1128",31884,"C:/Users/maxth/ledgr-wt/pin-lib-7f65733f/ledgr",1,TRUE,"",FALSE,"harness",1,"",0
+"fe_declared",0,"gate","66368-2-20261127171258.784503",2,"feature_a82ff44ebfb8/strategy_041a774a1128",42324,"C:/Users/maxth/ledgr-wt/pin-lib-7f65733f/ledgr",1,TRUE,"",FALSE,"harness",1,"",0

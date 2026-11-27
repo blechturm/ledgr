@@ -1,0 +1,8 @@
+debug 0 feat_alias_swapped (bound 65536): status 0, 32 tables, 24 different; verdicts: CAUGHT 2
+debug 0 feat_value_perturbed (bound 65536): status 0, 32 tables, 24 different; verdicts: CAUGHT 2
+control control_unrelated: UNRELATED, status 1 (expected UNRELATED, status 1)
+control control_unreached: UNREACHED, status 1 (expected UNREACHED, status 1)
+control control_wrong_store_path: MISSED, status 1 (expected MISSED, status 1)
+control control_unrelated_refusal: UNRELATED, status 1 (expected UNRELATED, status 1)
+control control_unreached_refusal: UNREACHED, status 1 (expected UNREACHED, status 1)
+4 manifest rows, 2 variants, 0 failures
