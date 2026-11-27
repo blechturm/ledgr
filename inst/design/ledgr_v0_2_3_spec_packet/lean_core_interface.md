@@ -1626,12 +1626,14 @@ What changes:
   store call over the whole candidate. The parent merges them (counters by
   sum, bounds by maximum) and fails closed on a missing, duplicated,
   undispatched or foreign-attempt record, a failed boot, another build,
-  the pinned envelope, another debug setting or hook mode, or an envelope
-  entry without exactly one outcome. An entry's outcome is a lean fold, a
-  coverage refusal, or an error that ends it before its fold, such as the
-  pin's E-stage admission refusals. The worker records the error's class,
-  and the condition passes on unchanged (WS46 close review round 1, F1).
-  An entry that leaves early without an error faults. A worker's backstop mark reaches the
+  the pinned envelope, another debug setting or hook mode, or, with the
+  harness hooks, an envelope entry without exactly one outcome. An entry's
+  outcome is a lean fold, a coverage refusal, or an error that ends it
+  before its fold, such as the pin's E-stage admission refusals. The worker
+  records the error's class, and the condition passes on unchanged (WS46
+  close review round 1, F1). An entry that leaves early without an error
+  faults. Inert hooks mark no fold start, so an inert record's error class
+  says nothing about where the error arose (re-review 1, N1). A worker's backstop mark reaches the
   parent, which reruns the whole workload on pin-only workers with the
   entry RNG restored.
 - **Compiled selector (LDG-3272).** The lean E stage calls the pin's two

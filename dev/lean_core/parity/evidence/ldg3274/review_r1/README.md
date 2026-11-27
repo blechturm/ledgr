@@ -23,6 +23,11 @@ tables were identical to the pin's, yet each worker record faulted:
 - An entry that leaves before its fold without an error records NA, and
   the parent faults it.
 - The other channel checks are unchanged.
+- With inert hooks the record's `prefold` column is informational only.
+  Inert hooks mark no fold start, so an error raised inside the fold also
+  appears there, for example the failing candidate's strategy error in
+  `inert_debug*_workers.csv`. The equality is checked with harness hooks
+  only (re-review 1, N1, advisory; wording only, no code change).
 
 **Witness.** `s5_workers_compiled_refused` (`loop_workloads_slice5.R`) is a
 selected sweep with two candidates on two workers. Every worker entry is
