@@ -4896,7 +4896,13 @@ cuts:
       Then LDG-3276 (overflow) and LDG-3277 (clarity), with cheap proofs
       per change. LDG-3278 (spike), LDG-3279 (contracts) and LDG-3281
       (feature routes) are independent and run beside them. LDG-3280 (test
-      inventory) and LDG-3282 (recorded oracle) run on the final lean code.
+      inventory) runs on the final lean code. LDG-3282 (recorded oracle)
+      completes after LDG-3279, LDG-3280 and LDG-3281 have settled the
+      ledger dispositions, affected witness population, surviving checkers
+      and feature routes for this cut, including their named switch-entry
+      obligations. Immutable pin records may be collected earlier; the
+      coverage matrix and pin-free checker are demonstrated against those
+      final inputs before LDG-3282 is accepted.
       LDG-3283 closes with the full proof matrix once, on the final code,
       then the Type 1 close review.
     out_of_scope: >-
@@ -5344,7 +5350,7 @@ workstreams:
     status: "open"
     depends_on_workstream: 46
     requires_review_acceptance: true
-    review: {mode: "Type 1", point: "close of workstream 47, after LDG-3283", reason: "Every covered workload stays identical to the advanced pin 7f65733f with debug off and on, at batch one and with inert hooks, and every frozen path matches; the overflow refusal and its multi-fill precedence are the pin's on run and sweep; the clarity pass changes no table, refusal or path; each of the 14 pending ledger entries is a written contract describing shipped behaviour, with its address, source and witness, or an approved change; every affected test, helper and detector has a handling whose replacement detector is shown to pass and whose witness still fails; the feature routes run end to end; the recorded oracle covers every Section 5 family or names its switch-entry obligation, and its checker passes its controls; nothing in R/ or tests/ changes."}
+    review: {mode: "Type 1", point: "close of workstream 47, after LDG-3283", reason: "Every covered workload stays identical to the advanced pin 7f65733f with debug off and on, at batch one and with inert hooks, and every frozen path matches; the overflow refusal and its multi-fill precedence are the pin's on run and sweep; the clarity pass changes no table, refusal or path; each of the 14 pending ledger entries is a written contract describing shipped behaviour, with its address, source and witness, or an approved change; every affected test, helper and detector has an inventoried handling and execution status; each remap demonstrable in Cut 27 has a passing replacement detector and rejects its original registered witness; each proof requiring Cut 28's actual API or format removal remains an individually named gate before switch acceptance, with mapping approval and independent Type 1 verification required before the switch; semantic changes cite their accepted disposition; the feature routes run end to end; the recorded oracle covers every Section 5 family or names its switch-entry obligation, and its checker passes its controls; nothing in R/ or tests/ changes."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -9571,7 +9577,7 @@ tickets:
       required; adoption remains the maintainer's decision.
     acceptance:
       - "dev/spikes/explicit_state holds a runner, a diff-based checker and a gut demonstration (spike protocol); the prerequisite (one stage, one small workload) is reported first, green, red or inconclusive"
-      - "If the prerequisite is green: the explicit-state variant is bit-identical to the lean core on 10x7200, 20x23400 and 500x1260, with paired timing on the High performance plan and P-core affinity, alternating arms, at least five pairs per shape; the README reports the pulse-loop and whole-run ratio per shape and the line and readability effect on loop.R, and states the decision it informs"
+      - "If the prerequisite is green, attempt the mechanical extension and report a terminal green, red or inconclusive result under decision 6. Green requires bit-identical outputs on 10x7200, 20x23400 and 500x1260, with paired timing on the High performance plan and P-core affinity, alternating arms, at least five pairs per shape. A red or inconclusive stop under decision 6 is also a completed spike result: record the failing comparison or stop signal, completed and unrun shapes, and what remains open; do not repair expected tables or retry merely to obtain green. The README reports available pulse-loop and whole-run ratios, the line and readability effect on loop.R, and the decision the result informs."
       - "No dev/lean_core production file changes"
     evidence: []
   - id: "LDG-3279"
@@ -9629,7 +9635,7 @@ tickets:
     status: "open"
     priority: "P1"
     effort: "L"
-    dependencies: ["LDG-3276", "LDG-3277", "LDG-3281"]
+    dependencies: ["LDG-3276", "LDG-3277", "LDG-3279", "LDG-3280", "LDG-3281"]
     scope: >-
       Cut 27 decision 7: the new pin's oracle outcomes recorded while both
       cores exist, with a coverage matrix and a pin-free checker.
@@ -9637,6 +9643,7 @@ tickets:
       - "A coverage matrix maps every synthesis Section 5 family and every deletion-readiness merge witness to its live-pin recording and surviving checker, or to a named switch-entry obligation that must complete before its oracle is retired. Include cut18_witness_cases.csv values and normalized complete conditions, not only gate tables; preserve the FIFO/applied/refusal proof corpus and the independent future-perturbation, conservation, ownership and mutation checks. Explicitly map the remaining D3 census cases and the maintainer's private reference; a missing family is not discharged by the gate workload count."
       - "Keep records outside the tree if desired, with a committed manifest defining build/toolchain, corpus inputs, canonicalization and clock exclusions, schemas/types/order, row counts, digests and an exact retrieval location."
       - "Supply a checker that reads these records without loading the pin and compares candidate outputs, demonstrated before retirement on the full available corpus with missing/extra/corrupt-record and changed-output controls. Preserve original pin records; enumerate only accepted ledger/format/identity differences in comparisons and fail on unlisted differences. The live pin remains available until every deferred recording and proof is complete."
+      - "The matrix identifies the final LDG-3279 audit, LDG-3280 inventory and LDG-3281 coverage mapping used for its population and accepted differences. Any subsequent change to those inputs before Cut 27 closes updates the matrix and affected records and reruns the checker and its controls. LDG-3283 verifies that this evidence matches the final inputs. Named Cut 28 obligations retain their existing completion and live-pin-retention gates."
     evidence: []
   - id: "LDG-3283"
     title: "Close: the proof matrix on the new pin, review briefs, plan amendments"
