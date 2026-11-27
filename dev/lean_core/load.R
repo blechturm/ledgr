@@ -10,7 +10,10 @@
 # are sourced into one environment whose parent is the ledgr namespace; it
 # records `debug` as `.lean_debug` (not a public option).
 
-lean_core_pin <- "d5b3a151"
+# The reference build (lean fold core synthesis, Q2 pin record): the release
+# head at Cut 26's close since Cut 27 (maintainer, 2026-11-27); d5b3a151
+# before it.
+lean_core_pin <- "7f65733f"
 
 lean_core_dir <- function() {
   for (i in rev(seq_len(sys.nframe()))) {

@@ -266,6 +266,11 @@ These are ordered evidence claims, not a charter for one giant multi-stage spike
 adds the rules ledger and its pre-switch disposition requirement; the
 reference-pin and correctness-change rules below remain binding.
 
+**Amended 2026-11-27:** the pin advanced from `d5b3a151` to `7f65733f` by
+the maintainer's decision; see the
+[pin record](#amendment-maintainer-2026-11-27-the-pin-advances). The rules
+below are unchanged.
+
 **Q2: pin the accepted WS7/WS8/WS15 close**, including its complete evidence gates,
 as the initial normative reference build for this replacement. Record its exact
 commit/toolchain and reuse its canonical records. Today's `df7ad1ae`, the original
@@ -597,3 +602,38 @@ reported against the pinned arm); chunk-boundary parity on the portable
 fixture and a registered Sharadar-scale shape, the paired history resource
 gate and its 1.10 limits, and the stop for maintainer disposition remain.
 Shipped behavior is unchanged.
+
+## Amendment (maintainer, 2026-11-27): the pin advances
+
+The maintainer decided on 2026-11-27 (Cut 27 decision 2, LDG-3275) to
+advance the normative reference build, under Q2's rule. This is the pin
+record.
+
+- **Old pin:** `d5b3a151`, the WS7/WS8/WS15 close (Cut 11). Every lean
+  result up to and including Cut 26 was proven against it.
+- **New pin:** `7f65733f`, the release head at Cut 26's close.
+- **Range:** `d5b3a151..7f65733f`.
+  - The fold engine is unchanged: all 27 functions of `R/fold-engine.R`
+    are identical, by formals and bodies (Cut 27 cut review, round 1).
+  - `R/` changed in sixteen other files: the feature engine of Cuts 22
+    and 24, `ledgr_utc()` of Cut 25, the strategy helpers, and small
+    runner and projection edits.
+- **Reason:** the switch proves equality with the package as shipped, not
+  with a build three cuts older. The switch probe
+  (`dev/spikes/switch_probe`, 211e7577) ran the full gate with the
+  release head as the pin and found the lean core equal to it on every
+  workload: 228 workloads, 3,463 tables, 0 different, every frozen path
+  checked (debug 0).
+- **Builds:**
+  - library: `C:/Users/maxth/ledgr-wt/pin-lib-7f65733f`, installed with
+    `dev/feature_parity/install_arm.R`, with `LEDGR_INSTALLED_FROM_COMMIT`;
+  - source archive: `C:/Users/maxth/ledgr-wt/pin-src-7f65733f`, with
+    `LEDGR_SOURCE_COMMIT`, its DLL built by one process and its unwind
+    table checked.
+- **Toolchain:** R 4.6.1 (2026-06-24, ucrt), g++ 14.2.0 (Rtools 4.5),
+  duckdb 2.0.1, collapse 2.1.9, DBI 1.3.0, mirai 2.7.4, nanonext 1.10.4,
+  TTR 0.24.4, cpp11 0.5.5, digest 0.6.39.
+- **Proofs rerun:** every affected proof reruns on the new pin at Cut
+  27's close (LDG-3283's proof matrix), preparation included.
+- **Old evidence:** results recorded against `d5b3a151` stay valid for
+  that pin; their `file:line` citations keep referring to it.

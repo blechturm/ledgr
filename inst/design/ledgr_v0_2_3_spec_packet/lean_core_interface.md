@@ -5,8 +5,12 @@
   checkpoint's table. Part D holds one section per family; each binds by its
   own status line (macro WS16 family method, point 5). The title dropped
   "First Checkpoint" when the first family (P3) started.
-- Pin: `d5b3a151`, the Cut 11 close. Every `file:line` refers to that commit;
-  `R/` is unchanged since. `C:` means a line of `inst/design/contracts.md`.
+- Pin: `7f65733f`, the release head at Cut 26's close, since Cut 27 (the
+  maintainer, 2026-11-27; the lean fold core synthesis's
+  [pin record](../rfc/rfc_lean_fold_core_v0_2_3_synthesis.md#amendment-maintainer-2026-11-27-the-pin-advances)).
+  Before it, `d5b3a151`, the Cut 11 close: every `file:line` in sections
+  written before Cut 27 refers to that commit. `R/fold-engine.R` is
+  identical in both. `C:` means a line of `inst/design/contracts.md`.
 - Authority: the [skeleton synthesis](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md)
   Sections 2-5 with its accepted
   [pulse plumbing amendment](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md),

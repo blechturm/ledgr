@@ -1,0 +1,13 @@
+crossover_3x40               PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=120  range<=40  pinned 1.9 s  lean 1.7 s
+s2_cost_chain                PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=2998  range<=300  pinned 2.6 s  lean 2.0 s
+s2_sizing_rebalance          PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=87  range<=30  pinned 2.1 s  lean 1.6 s
+s3_freeze_held               PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=51  range<=20  pinned 1.7 s  lean 1.7 s
+s3_sched_sweep               PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=20  pinned 0.7 s  lean 0.8 s
+s4_dividend                  PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=30  range<=10  pinned 1.6 s  lean 1.6 s
+s4_acq_fills                 PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=50  range<=10  pinned 1.6 s  lean 1.8 s
+s5_workers_sizing            PASS      identical  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=30  pinned 1.4 s  lean 2.1 s  workers pin 2/2 lean 2/2 records 2 entries 2
+s5_walk_forward_workers      PASS      identical  lean 6  refused []  backstop []  store []  sink []  holds 0  append<=18  range<=6  pinned 3.9 s  lean 4.9 s  workers pin 4/4 lean 4/4 records 4 entries 4
+walk_forward                 PASS      identical  lean 10  refused []  backstop []  store []  sink []  holds 0  append<=18  range<=10  pinned 6.1 s  lean 6.3 s
+s5_compiled_lots             PASS      identical  lean 1  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=10  pinned 0.5 s  lean 0.5 s
+frozen paths (gate, debug 0): 11 of 11 workloads checked
+180 tables, 0 different; verdicts: PASS 11
