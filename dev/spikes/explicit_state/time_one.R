@@ -2,7 +2,7 @@
 # the explicit-state fork (set "all"), debug off, inert hooks with a clock on
 # fold_end, on one descriptor shape; one untimed warm-up run first, then the
 # timed run. Appends one row to --out.
-#   Rscript time_one.R --lib=<pinned library> --shape=10x7200 --arm=asis|fork --pair=<k> --out=<csv>
+#   Rscript time_one.R --lib=<pinned library> --shape=10x7200 --arm=asis|fork|p5 --pair=<k> --out=<csv>
 here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/"))
 arg <- function(name) {
   hit <- grep(paste0("^--", name, "="), commandArgs(TRUE), value = TRUE)
@@ -13,10 +13,11 @@ shape <- arg("shape"); arm <- arg("arm"); out <- arg("out")
 repo <- normalizePath(file.path(here, "..", "..", ".."), winslash = "/")
 source(file.path(repo, "dev", "lean_core", "load.R"))
 lean <- lean_core_load(arg("lib"), debug = FALSE)
-if (identical(arm, "fork")) {
+if (arm %in% c("fork", "p5")) {   # fork: every concern in shared environments; p5: P5 takes and returns its state
   sys.source(file.path(here, "transform.R"), envir = lean, keep.source = FALSE)
-  lean$es_install(lean, "all")
-} else if (!identical(arm, "asis")) stop("--arm must be asis or fork", call. = FALSE)
+  sys.source(file.path(here, "take_return.R"), envir = lean, keep.source = FALSE)
+  lean$es_install(lean, if (identical(arm, "fork")) "all" else "p5")
+} else if (!identical(arm, "asis")) stop("--arm must be asis, fork or p5", call. = FALSE)
 ns <- asNamespace("ledgr")
 source(file.path(repo, "dev/spikes/r_floor/fixture.R"))
 source(file.path(repo, "dev/bench/v0_2_3_lean_tuning_profile/descriptors.R"))

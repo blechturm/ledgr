@@ -1,13 +1,115 @@
 # Explicit-state spike (LDG-3278, Cut 27 decision 6)
 
-**Verdict: red.** The explicit-state fork is bit-identical on every shape
+**Question.** Can explicit stage state make the existing fold easier to
+explain at an acceptable measured cost?
+
+## The specified prerequisite: one stage takes and returns state
+
+**Verdict: red, stopped before the extension.** One stage (P5) takes and
+returns its state with exact outputs at debug 0 and 1, in sweep workers and
+on all three large shapes. But that one stage already costs 1.18x, 1.40x
+and 1.05x the lean core's pulse loop on 10x7200, 20x23400 and 500x1260, and
+the cost grows with run length. Decision 6's stop clause ("reaches the spike
+protocol's stop signals") applies, so the representation was not extended
+to the other stages. This is a judgment at the boundary: 1.40x from one of
+five stages is not small, and the mechanism below repeats in every stage
+that writes a run-long record.
+
+**Fork** (`take_return.R`, installed by `install_p5.R` through install.R and
+the worker channel, as before). P5 (`lean_p5_commit`) gets a `state`
+argument, the list `hd_recon, hd_has_recon, n_committed, strategy_state`.
+Inside the stage the 4 reads and 6 `<<-` writes of those names become
+`state$x` and `state$x <- v`, and the stage returns `state`. The call site
+in run_loop:
+
+    p5 <- lean_p5_commit(i, v1, v2, v3$batch, n_fill, list(hd_recon = hd_recon,
+        hd_has_recon = hd_has_recon, n_committed = n_committed, strategy_state = strategy_state))
+    hd_recon <<- p5$hd_recon
+    hd_has_recon <<- p5$hd_has_recon
+    n_committed <<- p5$n_committed
+    strategy_state <<- p5$strategy_state
+
+The stage is derived at load time from loop.R's own P5 by `es_transform`
+(transform.R), so no economic rule is copied: the capacity refusal, both
+reconciliation checks and the state update are the tracked code. The
+installer refuses if any `<<-` to the four names is left in the stage, if
+P5 has an early return, or if the call site is not found exactly once.
+Retained views: `strategy_state` is only ever replaced, never written in
+place, so a strategy's retained `ctx$state` stays frozen as before.
+
+| debug | workloads | tables | different | forked workers |
+| --- | --- | --- | --- | --- |
+| 0 | crossover_3x40 s2_cost_chain s3_freeze_held s4_dividend s5_workers_sizing ovf_delta_then_lot | 92 | 0 | 2 |
+| 1 | same | 92 | 0 | 2 |
+| 0 | crossover_10x7200 crossover_20x23400 crossover_500x1260 | 48 | 0 | 0 |
+
+All verdicts PASS; frozen paths match (`evidence/p5_*`, `evidence/p5large_*`).
+
+**Gutted path** (`install_p5_gut.R`): P5 writes `hd_recon[i, ] <- recon` to
+a local copy, so that one write is left out of the returned state. On
+crossover_3x40 and s2_cost_chain, 26 of 32 tables differ and both workloads
+FAIL. The fold itself does not notice: the pulses run, and the run fails at
+finalisation when the NA reconciliation row reaches the result writer
+(`ledgr_config_non_finite`, "canonical_json() does not allow non-finite
+numeric values"). `check.R --phase=p5gut` reruns and diffs it; `check.R
+--phase=p5` does the same for the prerequisite. Both pass.
+
+**Timing** (`time_pairs.R --arm=p5`): debug off, each run a fresh process
+with a warm-up run, P-cores (pcore.ps1 0xFFFF), High performance plan, 5
+alternating pairs per shape, Balanced restored and confirmed afterwards.
+Both arms produced the same fills and equity digests on every shape.
+
+| shape | pulse loop as is / fork (median s) | ratio (min-max) | extra per pulse | whole run as is / fork | ratio (min-max) |
+| --- | --- | --- | --- | --- | --- |
+| 10x7200 | 2.06 / 2.42 | 1.18 (1.16-1.20) | 50 us | 3.23 / 3.62 | 1.12 (1.11-1.12) |
+| 20x23400 | 8.06 / 11.28 | 1.40 (1.36-1.42) | 138 us | 11.36 / 14.57 | 1.28 (1.26-1.30) |
+| 500x1260 | 0.74 / 0.78 | 1.05 (1.03-1.08) | 32 us | 3.54 / 3.64 | 1.02 (0.99-1.04) |
+
+**Cause.** The extra cost per pulse grows with the number of pulses, not
+with universe width. The envelope keeps its own binding of `hd_recon` (an
+n_pulse x 6 matrix) and `hd_has_recon`, so the list passed in shares them,
+and the stage's indexed write `state$hd_recon[i, ] <- recon` copies the whole
+record on every pulse: quadratic in run length. `copy_probe.R`'s
+`stage_take_return` form, the same shape without ledgr, takes 0.23 s for
+5,000 pulses and 2.89 s for 20,000 (`evidence/copy_probe_p5.csv`), which
+matches the 3.2 s seen on 20x23400. P1 (`eq`), P4 (`fl`, `hd_nrej`)
+and the decision records write run-long buffers the same way, so the
+extension would multiply this term.
+
+**Readability.** P5 deparses to the same 61 lines (3,002 to 3,053
+characters) and loses its 6 `<<-`; run_loop grows from 28 to 33 lines and
+gains 4 `<<-` assign-backs. The stage's state covers only what it writes.
+It still reads `cash`, `pos`, `nf`, `ctx_pos`, `ids` and `ids_attr` free
+from the envelope (other stages write them) and writes `live` and
+`facts_state` by reference. So the signature names P5's outputs but not its
+inputs.
+
+**Open.**
+- A take-and-return form without the copy would return the pulse's row
+  (`recon`) and let the envelope write it by index. That is a different
+  state value (a per-pulse delta, not the record), so under decision 6 it
+  is a new representation and was not built.
+- Not measured: making P5's inputs from other stages explicit as well.
+  Reads do not copy, so that would cost little but lengthen every call.
+
+**What this informs.** The maintainer's decision on explicit stage state
+for the switch. The specified representation keeps exact outputs and
+retained-view behaviour, but passing run-long records by value costs a
+measurable, run-length-dependent share at one stage. Funding the extension
+would mean first choosing a representation that keeps run-long buffers
+out of the state value.
+
+## The shared-environment variant (earlier spike)
+
+This variant moved each concern into one environment shared by several
+stages. It is not the take-and-return form that decision 6 specified, and
+its conclusion holds only for that representation (close review F2).
+
+**Its verdict: red.** The shared-environment fork is bit-identical on every shape
 decision 6 names, but its measured cost (pulse loop 1.8x, 4.6x and 3.0x the
 lean core on 10x7200, 20x23400 and 500x1260) fails decision 6's "acceptable
 measured cost" clause. The readability gain is small: every stage still
 touches three or four of the five shared concerns.
-
-**Question.** Can explicit stage state make the existing fold easier to
-explain at an acceptable measured cost?
 
 **Fork.** `transform.R` rewrites `lean_fold_envelope_plain` (dev/lean_core/loop.R)
 by AST transform, not by a hand-edited copy. Each concern's shared variables
@@ -23,7 +125,7 @@ every sweep worker; each forked worker leaves a marker that the evidence
 counts. `render.R` renders loop.R as transformed, comments kept, and proves
 the rendering parses back to the transform's AST (`rendering_identical_to_ast`).
 
-## Prerequisite: one concern, P5's commit record
+### Its prerequisite: one concern, P5's commit record
 
 The concern is `hd_recon`, `hd_has_recon`, `n_committed` and `strategy_state`.
 P5 and P1 write them; P1, P5, the context builders, the committed-prefix
@@ -39,7 +141,7 @@ writes and 5 envelope assignments, with no finding.
 unrewritten. On crossover_3x40 and s2_cost_chain: 32 tables, 26 different,
 both FAIL (`object 'hd_recon' not found`). `check.R` reproduces both phases.
 
-## Extension: every concern
+### Extension: every concern
 
 There are five concerns, grouped by stage ownership:
 - `book_state`: cash, pos, book, position_facts, event_seq, last_executed, last_fully_valued
@@ -58,7 +160,7 @@ by its own `add`.
 | 1 | same | 108 | 0 (2 forked workers) |
 | 0 | crossover_10x7200 crossover_20x23400 crossover_500x1260 | 48 | 0 |
 
-## Timing (lean as is vs the full fork, debug off)
+### Timing (lean as is vs the full shared-environment fork, debug off)
 
 Each run is a fresh process with a warm-up run first, pinned to the P-cores
 (pcore.ps1), on the High performance plan (restored to Balanced afterwards).
@@ -80,7 +182,7 @@ for the `<<-` forms. That is why the cost grows with run length (the
 detach-modify-reattach form (`x <- s$x; s$x <- NULL; x[[i]] <- v; s$x <- x`)
 stays in place. A list state passed in and returned also copies.
 
-## Readability
+### Readability
 
 Before (loop.R, P5):
 
@@ -111,7 +213,7 @@ So the objects label the state but do not give any stage an owned state to
 take and return. The stage headers already listed that information, so the
 explanation gain over them is small.
 
-## What the transform could not handle, and a header finding
+### What the transform could not handle, and a header finding
 
 No concern name appears in `assign()`/`get()`/`environment()`/`quote()`, as
 a call head, or as an envelope-level `for` variable.
@@ -130,41 +232,45 @@ ldg3277 header for P2 omits `pos`, `ids`, `ids_attr`, `ids_ok` and `n`; P3's
 omits `pos`; and P5's omits `pos` and `ids`. All of these are read from the
 envelope on an unmarked run.
 
-## Open
+### Open (shared-environment variant)
 
 - Not measured: the detach-modify-reattach form inside the fork. Its writes
   would need a three-statement idiom at each of the 107 sites, which works
   against the readability goal.
 - The ticket's "a stage takes and returns explicit state" shape was not
-  forked. The copy probe shows a list passed in and returned copies too.
+  forked here; it is the section above.
 - The stage-header gap above was fixed under LDG-3277 (268bcd90):
   stage_state.R now counts these reads and the environment field writes.
 
-## Decision this informs
+### What this variant informs
 
-Cut 27 decision 6 leaves adoption to the maintainer. The result supports
-keeping the stages' `<<-` writes into the envelope frame, with the
-generated stage headers as the explanation of shared state.
+Its red verdict holds for the shared-environment representation only. It
+supports keeping the stages' `<<-` writes into the envelope frame over
+concern environments, with the generated stage headers as the explanation
+of shared state. It is not a measurement of the stage take-and-return form.
 
 ## Files
 
-- `transform.R`: the transform and installer.
-- `install.R` with `install_commit.R`, `install_all.R` and `install_gut.R`: the `--witness=` files.
+- `take_return.R`: the stage take-and-return fork (set `p5`; `es_install()` in transform.R dispatches to it).
+- `transform.R`: the shared-environment transform and installer.
+- `install.R` with `install_p5.R`, `install_p5_gut.R`, `install_commit.R`, `install_all.R` and `install_gut.R`: the `--witness=` files.
 - `worker_hook.R`: installs the fork in sweep workers.
-- `run.R`: the runner (`--phase=prereq|gut|extend|large`). It writes
+- `run.R`: the runner (`--phase=p5|p5gut|p5large|prereq|gut|extend|large`). It writes
   `evidence/<phase>_summary.csv` and `<phase>_d<debug>_tables.csv`.
 - `check.R`: reruns a phase into scratch, diffs every CSV, and checks R,
   src, tests, NAMESPACE, DESCRIPTION, man, inst/design and dev/lean_core
   against HEAD.
-- `render.R`: writes `render_<set>.csv` and `stage_concerns_<set>.csv`.
-- `time_one.R` and `time_pairs.R`: the paired timing (`timing_raw.csv`,
-  `timing_summary.csv`, `timing_host.txt`).
-- `copy_probe.R`: the write-form probe.
-- `probe.R`: prints the findings and one stage before and after.
+- `render.R`: writes `render_<set>.csv` and `stage_concerns_<set>.csv` (shared-environment variant).
+- `time_one.R` and `time_pairs.R`: the paired timing (`--arm=p5`: `timing_p5_raw.csv`,
+  `timing_p5_summary.csv`, `timing_p5_host.txt`; `--arm=fork`: `timing_*`).
+- `copy_probe.R`: the write-form probe (`copy_probe.csv`; with `stage_take_return`, `copy_probe_p5.csv`).
+- `probe.R`: prints the findings and one stage before and after (shared-environment variant).
 
-The harness is 768 lines of R.
+The harness is 925 lines of R (768 before the take-and-return fork).
 
-    Rscript run.R --lib=C:/Users/maxth/ledgr-wt/pin-lib-7f65733f --phase=prereq
-    Rscript check.R --lib=C:/Users/maxth/ledgr-wt/pin-lib-7f65733f --phase=prereq
-    Rscript render.R --set=all
-    Rscript time_pairs.R --lib=C:/Users/maxth/ledgr-wt/pin-lib-7f65733f --pairs=5
+    Rscript run.R --lib=C:/Users/maxth/ledgr-wt/pin-lib-7f65733f --phase=p5 --scratch=<dir>
+    Rscript check.R --lib=C:/Users/maxth/ledgr-wt/pin-lib-7f65733f --phase=p5 --scratch=<dir>
+    Rscript check.R --lib=C:/Users/maxth/ledgr-wt/pin-lib-7f65733f --phase=p5gut --scratch=<dir>
+    Rscript run.R --lib=C:/Users/maxth/ledgr-wt/pin-lib-7f65733f --phase=p5large --scratch=<dir>
+    Rscript time_pairs.R --lib=C:/Users/maxth/ledgr-wt/pin-lib-7f65733f --pairs=5 --arm=p5 --scratch=<dir>
+    Rscript copy_probe.R --out=evidence/copy_probe_p5.csv

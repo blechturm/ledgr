@@ -8,6 +8,9 @@
 #   gut     install_gut.R, debug 0, crossover_3x40 and s2_cost_chain (must differ)
 #   extend  install_all.R, debug 0 and 1, the prerequisite set + crossover_10x300
 #   large   install_all.R, debug 0, crossover_10x7200, crossover_20x23400, crossover_500x1260
+#   p5      install_p5.R (P5 takes and returns its state), debug 0 and 1, the prerequisite set
+#   p5gut   install_p5_gut.R, debug 0, crossover_3x40 and s2_cost_chain (must differ)
+#   p5large install_p5.R, debug 0, the three large shapes
 # Writes <evidence>/<phase>_summary.csv (one row per gate run: tables,
 # differences, verdicts, exit status, the fork's install line, forked
 # workers) and <evidence>/<phase>_d<debug>_tables.csv (workload, table,
@@ -34,6 +37,9 @@ plan <- switch(phase,
   gut = list(witness = "install_gut.R", debug = 0L, workloads = c("crossover_3x40", "s2_cost_chain")),
   extend = list(witness = "install_all.R", debug = c(0L, 1L), workloads = c(small, "crossover_10x300")),
   large = list(witness = "install_all.R", debug = 0L, workloads = c("crossover_10x7200", "crossover_20x23400", "crossover_500x1260")),
+  p5 = list(witness = "install_p5.R", debug = c(0L, 1L), workloads = small),
+  p5gut = list(witness = "install_p5_gut.R", debug = 0L, workloads = c("crossover_3x40", "s2_cost_chain")),
+  p5large = list(witness = "install_p5.R", debug = 0L, workloads = c("crossover_10x7200", "crossover_20x23400", "crossover_500x1260")),
   stop("unknown --phase: ", phase, call. = FALSE))
 
 old <- setwd(rundir)

@@ -4,8 +4,10 @@
 # Balanced on exit (also on failure). Writes <evidence>/timing_raw.csv and
 # <evidence>/timing_summary.csv (median fork/as-is ratios per shape).
 #   Rscript time_pairs.R --lib=<pinned library> [--pairs=5] [--shapes=10x7200,20x23400,500x1260]
-#     [--evidence=<dir>] [--scratch=<dir>]
-here <- dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/"))
+#     [--arm=fork|p5] [--evidence=<dir>] [--scratch=<dir>]
+# --arm names the forked arm (default fork, the shared-environment fork;
+# p5, the stage take-and-return fork, writes timing_p5_*).
+here <-dirname(normalizePath(sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]), winslash = "/"))
 arg <- function(name, default = NULL) {
   hit <- grep(paste0("^--", name, "="), commandArgs(TRUE), value = TRUE)
   if (!length(hit)) { if (is.null(default)) stop("--", name, "= is required", call. = FALSE); return(default) }
@@ -19,17 +21,19 @@ scratch <- normalizePath(arg("scratch", "C:/Users/maxth/ledgr-wt/cut27-scratch/s
 dir.create(file.path(scratch, "timing"), recursive = TRUE, showWarnings = FALSE)
 dir.create(evidence, recursive = TRUE, showWarnings = FALSE)
 pcore <- normalizePath(file.path(here, "..", "..", "bench", "v0_2_3_lean_tuning_profile", "pcore.ps1"), winslash = "\\")
-raw <- file.path(scratch, "timing", "timing_raw.csv")
+fork_arm <- arg("arm", "fork")
+tag <- if (identical(fork_arm, "fork")) "timing" else paste0("timing_", fork_arm)
+raw <- file.path(scratch, "timing", paste0(tag, "_raw.csv"))
 if (file.exists(raw)) file.rename(raw, paste0(raw, ".", format(Sys.time(), "%Y%m%d%H%M%S")))
 high <- "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"
 balanced <- "381b4222-f694-41f0-9685-ff5bb260df2e"
 system2("powercfg", c("/setactive", high))
 host <- c(paste("power plan:", paste(system2("powercfg", "/getactivescheme", stdout = TRUE), collapse = " ")),
           paste("started:", format(Sys.time(), "%Y-%m-%d %H:%M:%S")))
-writeLines(host, file.path(evidence, "timing_host.txt"))
+writeLines(host, file.path(evidence, paste0(tag, "_host.txt")))
 setwd(file.path(scratch, "timing"))
 tryCatch(for (p in seq_len(pairs)) for (s in shapes) {
-  order <- if (p %% 2L == 1L) c("asis", "fork") else c("fork", "asis")
+  order <- if (p %% 2L == 1L) c("asis", fork_arm) else c(fork_arm, "asis")
   for (a in order) {
     log <- file.path(scratch, "timing", sprintf("%s_%s_%d.log", s, a, p))
     st <- system2("powershell", c("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", pcore, log,
@@ -40,13 +44,13 @@ tryCatch(for (p in seq_len(pairs)) for (s in shapes) {
   }
 }, finally = system2("powercfg", c("/setactive", balanced)))   # Balanced restored, also on failure
 writeLines(c(host, paste("affinity: pcore.ps1 0xFFFF;", "finished:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"))),
-           file.path(evidence, "timing_host.txt"))
+           file.path(evidence, paste0(tag, "_host.txt")))
 x <- utils::read.csv(raw, stringsAsFactors = FALSE)
-utils::write.csv(x, file.path(evidence, "timing_raw.csv"), row.names = FALSE)
+utils::write.csv(x, file.path(evidence, paste0(tag, "_raw.csv")), row.names = FALSE)
 bad <- unlist(lapply(split(x, x$shape), function(d) length(unique(d$digest)) != 1L))
 summary <- do.call(rbind, lapply(shapes, function(s) {
   d <- x[x$shape == s, ]
-  m <- merge(d[d$arm == "asis", c("pair", "pulses_s", "whole_s")], d[d$arm == "fork", c("pair", "pulses_s", "whole_s")],
+  m <- merge(d[d$arm == "asis", c("pair", "pulses_s", "whole_s")], d[d$arm == fork_arm, c("pair", "pulses_s", "whole_s")],
              by = "pair", suffixes = c("_asis", "_fork"))
   data.frame(shape = s, pairs = nrow(m), asis_pulses_median = stats::median(m$pulses_s_asis),
              fork_pulses_median = stats::median(m$pulses_s_fork),
@@ -54,7 +58,8 @@ summary <- do.call(rbind, lapply(shapes, function(s) {
              pulses_ratio_min = min(m$pulses_s_fork / m$pulses_s_asis), pulses_ratio_max = max(m$pulses_s_fork / m$pulses_s_asis),
              asis_whole_median = stats::median(m$whole_s_asis), fork_whole_median = stats::median(m$whole_s_fork),
              whole_ratio_median = stats::median(m$whole_s_fork / m$whole_s_asis),
+             whole_ratio_min = min(m$whole_s_fork / m$whole_s_asis), whole_ratio_max = max(m$whole_s_fork / m$whole_s_asis),
              same_fills_equity = !isTRUE(bad[[s]]), stringsAsFactors = FALSE)
 }))
-utils::write.csv(summary, file.path(evidence, "timing_summary.csv"), row.names = FALSE)
+utils::write.csv(summary, file.path(evidence, paste0(tag, "_summary.csv")), row.names = FALSE)
 print(summary, row.names = FALSE)

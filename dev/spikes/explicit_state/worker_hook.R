@@ -4,6 +4,7 @@
 lean_load_edited <- function(env, home, edits, marker = NULL) {
   spec <- edits[[1L]]
   sys.source(file.path(spec$dir, "transform.R"), envir = env, keep.source = FALSE)
+  sys.source(file.path(spec$dir, "take_return.R"), envir = env, keep.source = FALSE)
   env$es_install(env, spec$set, spec$gut)
   if (nzchar(spec$marks)) {
     dir.create(spec$marks, recursive = TRUE, showWarnings = FALSE)

@@ -1,0 +1,2 @@
+"phase","witness","debug","workloads","tables","different","verdicts","exit_status","fork_installed","fork_line","forked_workers"
+"p5large","install_p5.R",0,"crossover_10x7200 crossover_20x23400 crossover_500x1260",48,0,"PASS 3",0,TRUE,"set p5 (P5 takes and returns its state); 4 reads and 6 writes in the stage now on `state`, 4 fields assigned back at the call site; findings: none",0

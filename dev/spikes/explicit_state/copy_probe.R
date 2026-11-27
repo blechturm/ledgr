@@ -20,7 +20,13 @@ forms <- list(
   env_detach = function(n) { s <- new.env(hash = TRUE, parent = emptyenv()); s$x <- numeric(n)
     f <- function(i) { x <- s$x; s$x <- NULL; x[[i]] <- i; s$x <- x }; for (i in seq_len(n)) f(i); s$x },
   list_in_out = function(n) { st <- list(x = numeric(n)); f <- function(st, i) { st$x[[i]] <- i; st }
-    for (i in seq_len(n)) st <- f(st, i); st }
+    for (i in seq_len(n)) st <- f(st, i); st },
+  # the take_return.R fork's shape: the envelope keeps its record, the call
+  # site builds the state list, the stage writes a row, the field is assigned back
+  stage_take_return = function(n) { m <- matrix(0, n, 6L); h <- logical(n)
+    stage <- function(i, state) { state$m[i, ] <- rep(i, 6L); state$h[[i]] <- TRUE; state }
+    loop <- function() for (i in seq_len(n)) { s <- stage(i, list(m = m, h = h)); m <<- s$m; h <<- s$h }
+    loop(); m }
 )
 time_form <- function(f, n) { f <- compiler::cmpfun(f); f(10L); t0 <- proc.time()[["elapsed"]]; f(n); proc.time()[["elapsed"]] - t0 }
 rows <- do.call(rbind, lapply(names(forms), function(nm) {

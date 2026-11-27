@@ -291,6 +291,7 @@ es_residual <- function(fn, map) {
 }
 
 es_install <- function(lean, set, gut = NULL) {
+  if (identical(set, "p5")) return(tr_install(lean, gut$name))   # take_return.R: P5 takes and returns its state
   concerns <- es_sets[[set]]
   if (is.null(concerns)) stop("unknown explicit-state set: ", set, call. = FALSE)
   plain <- lean$lean_fold_envelope_plain
