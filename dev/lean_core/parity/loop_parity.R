@@ -439,6 +439,22 @@ loop_mutations <- list(
     prepare = TRUE, dead = "DBI::dbBind(stmt, list(7L))"),
   control_unreached = variant("differ", list(edit("loop.R", "lean_loop_debug_packet",
     "  full <- stats::setNames(pos, ids)", "  stop(\"control: never reached with debug off\")", "before"))),
+  # Cut 27 decision 3 (LDG-3276): the fill-delta refusal at P4. Omitted, the
+  # pin's accounting refusal is lost; checked on the whole batch before the
+  # lot kernel, the lot refusal of a sale at 10 is lost; the earlier rows
+  # left unchecked after a later lot failure, the multi-fill accounting
+  # refusal is lost.
+  ovf_delta_check_omitted = variant("differ", list(
+    edit("loop.R", "lean_p4_apply", "        lean_fill_deltas_finite(fill, seq_len(failed$row - 1L))"),
+    edit("loop.R", "lean_p4_apply", "      lean_fill_deltas_finite(fill, seq_len(n_fill))")),
+    lost = "finite cash_delta and position_delta", error = "canonical_json[(][)] does not allow non-finite|Invalid fill input for lot accounting"),
+  ovf_check_too_early = variant("differ", list(
+    edit("loop.R", "lean_p4_apply", "      live$cur_stage <- \"accounting\"",
+      "      lean_fill_deltas_finite(fill, seq_len(n_fill))", "after")),
+    lost = "Invalid fill input for lot accounting", error = "finite cash_delta and position_delta"),
+  ovf_earlier_rows_skipped = variant("differ", list(
+    edit("loop.R", "lean_p4_apply", "        lean_fill_deltas_finite(fill, seq_len(failed$row - 1L))")),
+    lost = "finite cash_delta and position_delta", error = "Invalid fill input for lot accounting"),
   # Cut 26 (LDG-3273): the sweep-worker channel (loop_workers.R). A worker
   # without the lean loop, a dropped or duplicated record and a worker on
   # another build of the same commit each fail the channel check ("worker");
@@ -597,6 +613,7 @@ source(file.path(here, "loop_workloads_slice2.R"))
 source(file.path(here, "loop_workloads_slice3.R"))
 source(file.path(here, "loop_workloads_slice4.R"))
 source(file.path(here, "loop_workloads_slice5.R"))
+source(file.path(here, "loop_workloads_overflow.R"))   # Cut 27 decision 3
 extra <- c(list(
   crossover_3x40 = crossover(3L, 40L),
   crossover_10x300 = crossover(10L, 300L),
@@ -621,7 +638,7 @@ extra <- c(list(
     collect_open(fx$snapshot, db, "lp-prep-fixture", fx$exp, seed = 1L,
                  params = utils::modifyList(lc_prep_fixture_params, list(trade = TRUE, lookback = 10L, n = 3L)))
   }
-), loop_constructed, loop_witnesses, loop_slice2, loop_slice3, loop_slice4, loop_slice5)
+), loop_constructed, loop_witnesses, loop_slice2, loop_slice3, loop_slice4, loop_slice5, loop_overflow)
 all_ids <- c(names(a0_workloads), names(extra))
 ids <- strsplit(arg("workloads", paste(all_ids, collapse = ",")), ",")[[1L]]
 if (length(bad <- setdiff(ids, all_ids))) stop("unknown workload(s): ", paste(bad, collapse = ", "), call. = FALSE)

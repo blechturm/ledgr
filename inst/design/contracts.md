@@ -575,6 +575,16 @@ Accepted change pending: [lean core pulse plumbing](decisions.md#lean-core-pulse
   reads are `SELECT *` in event-sequence order. Resume deduplication uses the
   typed `(source, source_fact_id)` pair and never derives accounting state by
   parsing persisted payloads.
+- A fill row whose cash or position delta is not finite (an overflowing
+  sale's proceeds, for example) refuses at its pulse's P4 publication
+  boundary, on run and sweep alike, with `ledgr_invalid_accounting_event`
+  (secondary class `ledgr_invalid_ledger_meta`) and the message "Accounting
+  event metadata must provide finite cash_delta and position_delta values."
+  When the pulse's lot calculation fails at fill row j, the rows before j are
+  checked first, and a non-finite delta among them refuses before j's lot
+  refusal; j's own lot refusal comes before any publication check on row j.
+  This one refusal stays in production although the generic producer
+  accounting check does not (LR-26, narrowing LR-15).
 
 <a id="contract-execution-compiled-accounting"></a>
 ### Compiled Accounting Dispatch

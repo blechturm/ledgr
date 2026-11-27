@@ -129,6 +129,10 @@ including cross-fetch sequence/time state and replay reconciliation. Debug
 runs the write assertions without advancing publication state on failure.
 Do not build a prepared accounting object merely to obtain append metadata.
 
+> Amended 2026-11-27 ([the overflow refusal](#amendment-the-overflow-refusal-cut-27-2026-11-27)):
+> the fill cash and position-delta finiteness refusal stays in production at
+> its P4 publication boundary. The rest of R4 is unchanged.
+
 **R5. Restructure kept checks.** Use one comparison for in-order target names;
 otherwise one `collapse::fmatch()` aligns them, as M:943 already requires.
 Keep every strategy-return refusal and its order, including empty-axis rules;
@@ -248,7 +252,7 @@ They cover this census; a repository-wide exhaustive refusal inventory remains u
 | LR-12 | execution_mode, including db_live, its argument/control/config, store and reader fields, is removed; one chunked write path replaces immediate inserts. | Pulse plumbing D6, Section 5 | change: R8; config identity and store format change; physical I/O timing/visibility differences are enumerated, not called exact parity. |
 | LR-13 | Internal carrier packet/data/execution/decision/view/plan/fill/rejection/publication/leg schema, alignment, dictionary, partition, value and order assertions run only in debug; malformed ledgr output may no longer refuse in production. | Response finding 2; R/fold-carrier.R:207 | change: R1-R3 and Section 4; preserve external entry and contracted economic guards; debug retains original classes. |
 | LR-14 | The P3 affordability reconciliation stop, P5 cash equality and finite reconciliation values retain their production stop and refusals, with their distinct classes and original order; the reconciliation row remains. | R/fold-engine.R:110,1178,1555,1584; seed v2 misclassification | contract: Affordability And Reason Codes; Fill And Lot Validity; R3. No oracle difference authorized. |
-| LR-15 | Every ledgr producer omits the generic accounting validator on write; malformed internal rows may escape and an earlier append assertion need not beat a later lot failure in production; stored-ledger reads still validate. | D4; R/output-handler.R:466,666,699,734 | change: R4; debug keeps the nonpublishing earlier-prefix assertion path; no successful/failed-state rollback guarantee is added. |
+| LR-15 | Every ledgr producer omits the generic accounting validator on write; malformed internal rows may escape and an earlier append assertion need not beat a later lot failure in production; stored-ledger reads still validate. | D4; R/output-handler.R:466,666,699,734 | change: R4; debug keeps the nonpublishing earlier-prefix assertion path; no successful/failed-state rollback guarantee is added. Narrowed 2026-11-27 by LR-26: the fill-delta finiteness refusal stays ([amendment](#amendment-the-overflow-refusal-cut-27-2026-11-27)). ||
 | LR-16 | Post-risk numeric/length/finiteness rechecking is debug-only; post-risk admissibility, risk-mark/equity and short-exposure policy refusals stay. | D5; R/fold-engine.R:1016 | change: R2-R3; ledgr_invalid_post_risk_targets is no longer a production module-defect detector. |
 | LR-17 | Internally assembled state/stop, diagnostic segments/staging/writer blocks and equity schema/value/used-prefix assertions, including after stop installation, are debug-only; capacity and contracted P5 refusals stay. | R/fold-phase-contract.R:179,208; R/fold-carrier.R:821,970; R/availability-diagnostic-writer.R:132 | change: R1-R3; names include ledgr_internal_error and ledgr_invalid_fold_execution; debug preserves each original assertion's class. |
 | LR-18 | Duplicate fill-payload input/epoch and settlement-adapter shape checks are debug-only on ledgr-owned values; imported state and applicable execution/lot economic guards stay at their named boundary. | R/backtest-runner.R:98,114; R/fold-engine.R:229 | change: R2-R3; no broad deletion of ledgr_invalid_fill_intent, ledgr_invalid_args or ledgr_lot_state_invariant by class name. |
@@ -271,7 +275,7 @@ physical insert-failure timing. D6 deliberately changes those.
 
 | Boundary | Required behavior |
 | --- | --- |
-| Candidate calculation fails at fill j | No reservation, output/leg mutation, committed count, accepted append boundary or sequence advance. Evaluate only retained R3 earlier-row refusals in their old order; in debug also run earlier publication/append assertions without publishing. R4 intentionally removes those assertions from the production precedence chain (R/fold-engine.R:1454). |
+| Candidate calculation fails at fill j | No reservation, output/leg mutation, committed count, accepted append boundary or sequence advance. Evaluate only retained R3 earlier-row refusals in their old order; in debug also run earlier publication/append assertions without publishing. R4 intentionally removes those assertions from the production precedence chain (R/fold-engine.R:1454). |R4 intentionally removes those assertions from the production precedence chain (R/fold-engine.R:1454). Amended 2026-11-27: the fill-delta finiteness refusal on the rows before j stays in production and comes before j's lot refusal ([amendment](#amendment-the-overflow-refusal-cut-27-2026-11-27)). |
 | Successful candidate, P4 publication or leg failure | Retain book/position-fact installation before publication and subsequent sequence/leg/positions/cash order (R/fold-engine.R:1476). A failed range is not committed or flushed; discard a failed memory candidate, rollback the entire durable invocation. No promise to restore installed private state. |
 | P5 event capacity | Keep ledgr_event_buffer_capacity_exceeded at P5, after P4's sequence/leg/state work and before fill visibility (R/output-handler.R:571). Reserving physical scratch space at P4 must not enforce that logical limit early. Chunk recycling must not change which rows count toward the limit. Today durable counts buffered fills since its last flush (`R/output-handler.R:673-686`) and memory counts every row, refusing P1 and compiled appends before P5 (`:699-705`, `:734-737`); the one-path counted population is a spec-cut choice, and any refusal difference is a ledger row. |
 | P1/opening/non-fill publication | Publish accepted effects at their existing semantic boundary, not the next P5. Preserve append-before-state-install and terminal/corporate-action ordering. Mixed producers and compiled ranges cannot overlap outstanding fill reservations. A materializing handler read expands only committed compact ranges. |
@@ -711,3 +715,36 @@ Their dependencies (the output handler's compiled-batch capability and the
 native binding) are in the switch inventory (interface Section 19.14). R12
 and the lean fold core synthesis Section 3 remain authoritative; no compiled
 family or default is authorized here.
+
+## Amendment: the overflow refusal (Cut 27, 2026-11-27)
+
+The maintainer decided on 2026-11-27 (Cut 27 decision 3, LDG-3276) to keep
+one of the refusals that R4 removed. This amendment narrows R4, Section 4's
+LR-15 installation and the candidate-failure row of the boundary table. The
+superseded text stays where it is, with a local notice.
+
+- **What stays removed.** The generic trusted-producer accounting validator
+  stays out of the fold's production write path, as R4 says.
+- **What stays in production.** Every published fill row needs a finite
+  cash delta and a finite position delta. If one is not finite, the fold
+  refuses with the package's condition: class
+  `ledgr_invalid_accounting_event` with secondary class
+  `ledgr_invalid_ledger_meta`, message "Accounting event metadata must
+  provide finite cash_delta and position_delta values.", on run and sweep.
+- **Where.** At the P4 publication boundary:
+  - when the pulse's lot candidate succeeds, the check covers all of its
+    fill rows, vectorised;
+  - when the lot candidate fails at row j (found by prefix bisection, as
+    the package's fold finds it), the check covers rows 1 to j - 1 and
+    comes before j's lot refusal;
+  - j's own lot refusal comes before any publication check on row j.
+- **Why.** Without it, an overflowing sale (a 1e308 holding sold at 1.9)
+  would still refuse, but later and with an unrelated class, through the
+  config writer (`ledgr_config_non_finite`). In a multi-fill pulse it would
+  refuse with the later fill's lot error instead of the earlier fill's
+  accounting error. The maintainer chose the pin's clearer refusal at the
+  point where it arises.
+- **Nothing else.** No other removed internal assertion is restored.
+
+LR-15 is narrowed by LR-26 (`lean_core_rules_ledger.md`). LR-26's contract
+text is in `contracts.md` under contract-execution-accounting-events.

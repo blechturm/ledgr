@@ -858,7 +858,16 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
       clean[is.na(clean)] <- FALSE
       clean_k <- k[clean]
       live$cur_stage <- "accounting"
-      applied <- lean_lot_fill(book, fill$pos, fill$side, fill$qty, fill$price, fill$fee)
+      # The fill-delta finiteness refusal stays in production (LR-26, the
+      # pulse-plumbing amendment to R4): a refused lot batch first checks the
+      # rows before its failing row, a successful one all its rows.
+      applied <- tryCatch(lean_lot_fill(book, fill$pos, fill$side, fill$qty, fill$price, fill$fee), error = identity)
+      if (inherits(applied, "error")) {
+        failed <- lean_lot_first_failure(book, fill, applied)
+        lean_fill_deltas_finite(fill, seq_len(failed$row - 1L))
+        stop(failed$error)
+      }
+      lean_fill_deltas_finite(fill, seq_len(n_fill))
       book <<- applied$book
       fill_bar <- if (i <= length(fill_axis$bar) && !anyNA(fill$exec_ts) &&
                       all(fill$exec_ts == fill_axis$opportunity[[i]])) fill_axis$bar[[i]] else

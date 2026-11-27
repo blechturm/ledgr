@@ -1681,3 +1681,25 @@ Switch obligations:
    loop consuming the new package feature path, end to end. The bridge
    above covers only the consumer boundary.
 5. **Backstop seam.** Retire the test seam with the harness entry.
+
+### 19.15 The overflow refusal at P4 (Cut 27)
+
+- Status: accepted by the maintainer with Cut 27 on 2026-11-27 (decision
+  3, LDG-3276). It is the one exception to LR-15 (the pulse-plumbing
+  amendment "the overflow refusal"; LR-26).
+- Behaviour. P4 keeps the fill cash and position-delta finiteness refusal,
+  as `R/fold-engine.R`'s P4 publication raises it, with the same class,
+  message and precedence:
+  - a successful lot candidate checks all its fill rows, vectorised, with
+    `lean_fill_deltas_finite()` (`fifo.R`);
+  - a failed lot candidate finds its first failing row by prefix
+    bisection with `lean_lot_first_failure()` (`fifo.R`, as
+    `ledgr_fold_fill_candidate()` does), checks the rows before it, then
+    re-raises the lot refusal.
+- Witnesses (`parity/loop_workloads_overflow.R`): ovf_sell_1.9,
+  ovf_hold_1.9 and ovf_sell_10 (one fill), ovf_delta_then_lot and
+  ovf_lot_then_delta (two fills in one pulse, both orders). Each covers the
+  run, the failed sweep candidate and the stopping sweep. Each P4 refusal
+  is asserted at stage "accounting" on its pulse.
+- Variants: ovf_delta_check_omitted, ovf_check_too_early and
+  ovf_earlier_rows_skipped.

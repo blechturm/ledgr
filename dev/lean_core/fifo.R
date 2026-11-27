@@ -117,6 +117,41 @@ lean_lot_disposition <- function(book, pos, side, qty, price,
                                       realized_model_pnl = realized_model_pnl))
 }
 
+# The first failing row of a refused fill batch and its condition, found by
+# prefix bisection as the package's fold finds it (ledgr_fold_fill_candidate):
+# about log2(n) kernel calls, on the refusal path only.
+lean_lot_first_failure <- function(book, fill, error) {
+  prefix <- function(m) {
+    j <- seq_len(m)
+    tryCatch(lean_lot_fill(book, fill$pos[j], fill$side[j], fill$qty[j], fill$price[j], fill$fee[j]),
+             error = identity)
+  }
+  ok <- 0L
+  failed <- length(fill$k)
+  while (failed - ok > 1L) {
+    mid <- (ok + failed) %/% 2L
+    out <- prefix(mid)
+    if (inherits(out, "error")) {
+      failed <- mid
+      error <- out
+    } else {
+      ok <- mid
+    }
+  }
+  list(row = failed, error = error)
+}
+
+# The fill-delta finiteness refusal the package's accounting-event check
+# makes on publication (LR-26): every published fill row needs a finite cash
+# and position delta. One vectorised test over the rows.
+lean_fill_deltas_finite <- function(fill, rows) {
+  if (length(rows) && !all(is.finite(fill$cash_delta[rows]) & is.finite(fill$position_delta[rows]))) {
+    ledgr_accounting_event_error("Accounting event metadata must provide finite cash_delta and position_delta values.",
+                                 "ledgr_invalid_ledger_meta")
+  }
+  invisible(NULL)
+}
+
 # Close/open leg fees of fill rows: the closing leg takes the fee in
 # proportion to its quantity, the opening leg the rest (CLOSE before OPEN).
 # A row with no positive finite quantity splits nothing.
