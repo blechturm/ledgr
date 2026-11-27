@@ -9627,7 +9627,7 @@ tickets:
   - id: "LDG-3280"
     title: "The test inventory for the switch"
     workstream: 47
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "L"
     dependencies: ["LDG-3277"]
@@ -9642,7 +9642,17 @@ tickets:
       - "Every mechanical remap row is demonstrated against scratch candidate code as a before/after patch file under dev/ and shown to reject its original registered witness; tests/ remains unchanged in Cut 27. The suite driver identifies the immutable new-pin package/test source and the final candidate lean source separately, records both origins and the candidate source identity, and demonstrably loads that candidate; a deliberately broken candidate guard must be observed."
       - "The 26 rows needing a lean injection or observation point, and the test-seam convention, are listed as a named Cut 28 design item with their rows; rows whose proof needs Cut 28's actual API or format removal stay individually named Cut 28 gates. The maintainer approves each row and an independent Type 1 review verifies it before the switch; unresolved affected rows block it."
       - "LTB-0519's worker reload is shown to be the cause (the test passes when the harness worker boot does not reload ledgr), or the row says why not"
-    evidence: []
+    evidence:
+      - "Inventory: dev/lean_core/parity/evidence/ldg3280/census/inventory.csv, 196 rows with stable ids R001-R196 (173 test blocks, 21 helpers, 1 detector, 1 claims-registry row), built from the probe seed and a source and caller census (census/census.md); test-fold-phase-contract.R/LTB-0279 is R044 and the detector R196. No row is classified from its failure message alone."
+      - "amendment_test_inventory decisions (1)-(9) are written into the 12 referred rows (census/decision_rows.R), each keeping its question; no row is left with handling f."
+      - "Decision (1): staging_reach_probe.R on the full gate corpus (evidence/ldg3280/staging): 235 workloads, 214 staging rows, smallest margin 6, fullest pulse at half capacity, no refusal. No public input is known to reach the refusal, so it is drafted as rules-ledger LR-28 (pending, for the maintainer's approval), not restored."
+      - "Decision (2): rules-ledger LR-27 (pending) drafted for approval: sampled fold-loop telemetry and telemetry_stride retire; compact run_telemetry is unchanged."
+      - "Suite driver dev/lean_core/parity/suite_driver.R: it records the pin and the candidate origins and identities separately (identity.csv) and loads the candidate. A smoke guard requires the candidate's envelope and pin-identical ledger, equity and fills. Three broken candidates are refused with status 2 before any test runs: crash, reconciliation, and a silent equity error caught only by the pin comparison (evidence/ldg3280/driver)."
+      - "Mechanical remaps (remap_demo.R, evidence/ldg3280/remaps, summary.csv): 54 b rows. 32 demonstrated: before/after patch, pass on the candidate, fail on a running mutation. 6 demonstrated without a witness run, with fixture identity probes. 12 named Cut 28 gates. 4 findings. tests/ unchanged. Inventory corrections are recorded in the README for row approval."
+      - "Suite run of record (evidence/ldg3280/suite): 233 files, 1,366 tests, debug on, smoke PASS. 39 failing blocks, all with inventory rows; the two seed blocks that now pass do so through the debug comparator, as the census predicted."
+      - "Cut 28 design item: evidence/ldg3280/cut28_design_item.md lists the 29 rows that need a lean injection or observation point, and the open test-seam shapes."
+      - "LTB-0519: on the stock candidate it fails; on a copy whose worker boot keeps the loaded namespace (ltb0519/no_reload.R) it passes. The harness worker reload is the cause."
+      - "Open before the switch, by the ticket: the maintainer's approval of each row and of LR-27 and LR-28, and an independent Type 1 review of the rows."
   - id: "LDG-3281"
     title: "Feature routes end to end on the new pin"
     workstream: 47

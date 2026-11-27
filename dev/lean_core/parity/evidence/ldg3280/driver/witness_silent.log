@@ -1,5 +1,5 @@
 pin 7f65733f from C:/Users/maxth/ledgr-wt/pin-src-7f65733f 
-candidate C:/Users/maxth/ledgr-wt/cut27-scratch/driver/broken/silent/dev/lean_core at <no git>  
+candidate C:/Users/maxth/ledgr-wt/cut27-scratch/driver2/broken/silent/dev/lean_core at <no git>  
 WITNESS RUN, guard would refuse: the candidate's smoke run differs from the pin's in: equity 
 output-handler-sinks: .12.............3456789abc......de.fg..............................................................
 
@@ -88,4 +88,4 @@ Maximum number of 10 failures reached, some test results may be missing.
 
 ══ DONE ════════════════════════════════════════════════════════════════════════
 No one gets it right on their first try
-1 files, 2 tests, 1 failed, 0 errors, 0 skipped, 14 s (candidate <no git>, pin 7f65733f, debug TRUE) 
+1 files, 2 tests, 1 failed, 0 errors, 0 skipped, 16 s (candidate <no git>, pin 7f65733f, debug TRUE) 

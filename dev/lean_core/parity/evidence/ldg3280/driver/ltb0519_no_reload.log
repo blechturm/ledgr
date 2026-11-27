@@ -1,8 +1,8 @@
 pin 7f65733f from C:/Users/maxth/ledgr-wt/pin-src-7f65733f 
-candidate C:/Users/maxth/ledgr-wt/cut27-scratch/driver/no_reload/dev/lean_core at <no git>  
+candidate C:/Users/maxth/ledgr-wt/cut27-scratch/driver2/no_reload/dev/lean_core at <no git>  
 smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin 
 output-handler-sinks: ...................................................................................................
 
 ══ DONE ════════════════════════════════════════════════════════════════════════
 🥳
-1 files, 2 tests, 0 failed, 0 errors, 0 skipped, 12 s (candidate <no git>, pin 7f65733f, debug TRUE) 
+1 files, 2 tests, 0 failed, 0 errors, 0 skipped, 13 s (candidate <no git>, pin 7f65733f, debug TRUE) 

@@ -4,7 +4,7 @@
 "pin","R/ md5 (all files)","7374199fe6bf04674b2d073eb7301c72"
 "tests","origin","C:/Users/maxth/ledgr-wt/pin-src-7f65733f/tests/testthat"
 "tests","md5 (all *.R)","14056ecd1696864e269984392c5ec0cc"
-"candidate","origin","C:/Users/maxth/ledgr-wt/cut27-scratch/driver/broken/silent/dev/lean_core"
+"candidate","origin","C:/Users/maxth/ledgr-wt/cut27-scratch/driver2/broken/silent/dev/lean_core"
 "candidate","git commit","<no git>"
 "candidate","files differ from commit","none"
 "candidate","md5 checks.R","df8502175abdb63e62513c91c314bd4e"

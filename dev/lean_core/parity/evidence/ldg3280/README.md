@@ -190,4 +190,20 @@ Amendment (10) moves it to Cut 28 with its own review.
 
 ## The suite run of record
 
-SUITE_PLACEHOLDER
+`suite/`: the pin's whole suite through `suite_driver.R` on the final
+candidate, with lean debug on, as the ticket asks.
+- **Identity** (`identity.csv`): the pin 7f65733f from its source archive,
+  and the candidate dev/lean_core. The candidate's production files are
+  unchanged since 268bcd90, and their md5s are recorded. The files that
+  differed from its commit were harness and evidence files only.
+- **Smoke guard:** PASS.
+- **Result** (`summary.txt`): 233 files, 1,366 tests, 33 failed, 8 errors,
+  1 skipped, 6,140 s.
+
+`suite_reconcile.R` (`suite/reconcile.csv`) finds 39 failing or erroring
+blocks, every one with an inventory row. The switch probe's seed had 41.
+The two that now pass are LTB-0282 (R009, a) and "fixed baskets use the
+canonical valuation-state service" (R013, b,c). The census predicted both:
+with debug on they pass only through the lean debug comparator. No block
+fails that did not fail in the probe. 134 inventory rows' blocks pass
+today; their rows say what Cut 28 does to them.
