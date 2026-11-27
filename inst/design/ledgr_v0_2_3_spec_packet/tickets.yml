@@ -4608,6 +4608,214 @@ cuts:
       disposition. Findings, reviewed ranges and consequential rejection
       reasons are kept under rfc_cycle.md's record rule.
     cut_review: "CHANGES_REQUIRED in cut_review_26.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at e3f1fdf7): R1-R10 required, each applied in revision 2 with the reviewer's text: R1 the amendment targets D3-A R9 (and the skeleton's R9), not R10, and the admission helpers enter the switch inventory; R2 split, falsifiable compiled refusal witnesses and selected-sweep capacity; R3 fresh replacement distinguished from INCOMPLETE reopen and completion recovery; R4 a complete, attributed worker record channel, worker-local faults, inert loading and the rerun and RNG witnesses; R5 a restored-refusal mutation signal; R6 all four worker launch routes; R7 the checkpoint rows kept and db_live named; R8 the WS16 quick timing record; R9 unverified worker-log claims relabelled; R10 a bounded feature bridge on the final feature build. The selector decision needs no new maintainer choice. Re-review 1 (cut_review_26_rereview_1.md, at d5c0b629): CHANGES_REQUIRED, R1 and R3-R10 applied faithfully; S1 (required): LDG-3272's selector acceptance demanded a failed-candidate row from refusals raised before candidate evaluation; replaced in revision 3 with the reviewer's text. Re-review 2 (cut_review_26_rereview_2.md, at 4a9ac70f): PASS, S1 applied faithfully, no new finding."
+  - id: 27
+    name: "Lean-core switch preparation: the pin advanced, the overflow refusal, clarity, contracts and the test inventory (macro WS14a, WS16)"
+    cut: "2026-11-27"
+    status: "draft"
+    opening: >-
+      Written by Claude on 2026-11-27 at the maintainer's request ("probe
+      and draft the switch cut", then the switch readiness map and the
+      maintainer's decisions on it). The lean core covers every route since
+      Cut 26 (slice 5). Before the atomic switch (macro WS14a, "Lean core
+      switch"), this cut prepares what the switch needs, without touching
+      R/:
+      - it advances the reference build;
+      - it closes the one real difference the probe found;
+      - it makes the lean code readable before it enters R/;
+      - it writes the pending rules into contracts.md;
+      - it turns the probe's 41 failing tests into an approvable remap and
+        injection-point list.
+      The two holistic WS14a reviews follow this cut. The switch is Cut 28.
+      This entry, workstream 47 and LDG-3275 to LDG-3281 become the
+      operative brief once the cut review passes and the maintainer
+      accepts. tickets.yml is the sole ticket and sequencing authority.
+    authority: >-
+      macro_plan.md WS14a ("Lean core switch", the switch obligations from
+      lean-owned replacements 1-7, "Old-code citations", "A0 no longer runs
+      cleanly", "Fold-core tests are rebuilt", "Order") and WS16 (the order
+      after Cut 20, item e); the lean fold core synthesis Section 5
+      (reference pin, Q2: the pin advances only by explicit maintainer
+      decision with the old range and reason kept and the affected proofs
+      rerun; switch entry requires the two holistic reviews) and Section 6
+      (Q3 remaps); its amendment A3 (the rules ledger: every pending entry
+      blocks the switch); lean_core_rules_ledger.md; lean_core_interface.md
+      Section 19 (19.10 fast paths and fallbacks, 19.12 the hashed frame,
+      19.14 the switch obligations); the pulse-plumbing synthesis
+      (Sections 4 and 7, R4 behind LR-15); the deletion-readiness seed v2
+      (accepted 2026-11-15); the spike protocol (decision 6);
+      inst/design/manual/optimization_coding_style.qmd (fold path);
+      macro_plan.md planning rule 15 (clarity reviewed like performance).
+    measured_input: >-
+      Probe at 7f65733f (dev/spikes/switch_probe, 211e7577; README.md):
+      (a) the full gate with the release head as the pin: 228 workloads,
+      3,463 tables, 0 different, PASS 222 and PASS* 6, every frozen path
+      checked (debug 0); (b) the release suite with the lean fold installed
+      as the switch would install it (inert hooks, no harness fallback):
+      baseline 1,366 tests, 0 failed; lean 41 tests fail, all new:
+      30 structural (old-internals call counts, mocks or source text,
+      classified from their messages), 9 that inject a fault or observe
+      through a function the lean fold never calls (5 read one by one),
+      1 harness artifact (LTB-0519: the harness worker boot reloads ledgr
+      and wipes the test's worker observer), 1 real difference
+      (e_suite_classification.csv); (c) a static call graph of the
+      release build: 33 functions and 1,819 code lines reachable only
+      through the old fold, about 2,200 with the old envelope body,
+      against about 2,370 lean production lines; large parts of
+      fold-carrier.R stay reachable through carrier import state, terminal
+      recovery, pulse inspection and stop results; 205 functions (3,843
+      lines) are unreachable from the exported API even today
+      (c_reachability.csv, c_fold_files_kept.csv); (d) the real
+      difference: a 1e308 holding sold at 1.9 on declared sessions, which
+      the pin refuses at P4 with ledgr_invalid_accounting_event ("finite
+      cash_delta and position_delta") on run and sweep, and the lean core
+      only later with ledgr_config_non_finite (d_overflow.txt), because
+      LR-15 dropped the generic accounting validator on write. The probe
+      is input, not evidence: workstream 47 produces its own final-code
+      evidence.
+    decisions: >-
+      (1) No change to R/, tests/, vignettes, DESCRIPTION, NAMESPACE or the
+      store format. Code changes stay in dev/; document changes are
+      contracts.md (existing behaviour only, decision 5),
+      lean_core_rules_ledger.md, lean_core_interface.md, the lean fold core
+      synthesis's pin record and macro_plan.md (decision 10).
+      (2) The pin advances (maintainer, 2026-11-27). The normative
+      reference build moves from d5b3a151 to 7f65733f, the release head
+      at Cut 26's close: the same fold engine, with the feature engine of
+      Cuts 22 and 24 and ledgr_utc() of Cut 25. The synthesis's Q2 record
+      keeps the old pin, its range (d5b3a151 to 7f65733f) and the reason:
+      the switch proves equality with the package as shipped, and the
+      probe found the lean core equal to it on every gate workload. The
+      new pin is installed with dev/feature_parity/install_arm.R into
+      C:/Users/maxth/ledgr-wt/pin-lib-7f65733f, with the marker
+      LEDGR_INSTALLED_FROM_COMMIT; its source archive with
+      LEDGR_SOURCE_COMMIT is built by one process before any parallel use.
+      load.R's lean_core_pin names it. Every affected proof reruns on the
+      new pin (LDG-3281). With the final feature engine in both arms, the
+      gate executes the integrated feature path, which discharges Section
+      19.14's obligation 4 (the full integrated feature-path proof);
+      feature_bridge.R retires with a stated reason.
+      (3) The overflow refusal (maintainer, 2026-11-27). Lean P4 checks
+      that every fill's cash and position deltas are finite, once per
+      pulse batch and vectorised, and refuses as the pin does: the class
+      ledgr_invalid_accounting_event, its message, and the pin's
+      precedence on run and sweep. Earlier refusals stay earlier: the lot
+      input refusal on a sale at 10 still comes first. The rule enters the
+      rules ledger as LR-26 (contract, narrowing LR-15: the generic write
+      validator stays dropped; this one finiteness refusal stays in
+      production). The probe's three cases become gate witnesses (sold at
+      1.9 refused; held, and sold at 10, as controls). A variant without
+      the check is CAUGHT for the lost refusal.
+      (4) Clarity pass (maintainer, 2026-11-27; planning rule 15). No
+      behaviour change; every table, refusal and frozen path stays as it
+      is. In dev/lean_core production files:
+      - s3 and s4 are renamed to names of what they hold (marks state,
+        facts state);
+      - citations of pin line numbers, cuts, tickets and reviews leave
+        code comments; the provenance stays in lean_core_interface.md
+        Section 19 and, after the switch, the pre-lean-core tag;
+      - each stage (E, P1 to P5) gets a header naming the shared state it
+        reads and writes.
+      The harness hook seams stay until the switch, which removes them.
+      Variants anchored on changed lines are re-anchored
+      (loop_variant_changes.csv, action reanchor), each still CAUGHT for
+      its named fault. Production line counts are reported before and
+      after; loop.R stays at or below 1,000.
+      (5) The rules ledger's 14 pending entries (LR-01 to LR-11, LR-21
+      to LR-23) are proposed as contract. Each is written into
+      contracts.md as intended behaviour at its rule-group address. These
+      are behaviour the pin has and the lean core reproduces, so no
+      shipped behaviour changes. An entry whose wording would change
+      shipped behaviour is not written; it goes to the maintainer as
+      change. The maintainer accepts the contract text at the close
+      review.
+      (6) Explicit-state spike (maintainer, 2026-11-27; spike protocol).
+      dev/spikes/explicit_state measures stage functions that take and
+      return explicit state (one environment or typed list per concern)
+      against today's shared closure frame. It runs on 10x7200, 20x23400
+      and 500x1260, bit-identical on the same workloads, with a runner, a
+      diff-based checker and a gut demonstration. The result goes to the
+      maintainer as a decision input for the switch. Adopting it is the
+      maintainer's call and is not done in this cut.
+      (7) Recorded pin outcomes (macro WS14a obligation 4). From the live
+      new pin, the pin arm's tables for every gate workload (the
+      loop_parity.R --dump output, debug 0) are kept outside the tree in
+      C:/Users/maxth/ledgr-wt/pin-outcomes-7f65733f. A committed manifest
+      gives, per workload and table, the row count and a digest of the
+      table's canonical serialization. After the switch, these
+      outcomes replace the in-process pin comparison: the package's tables
+      are compared with them.
+      (8) The test inventory (synthesis Q3). For each of the probe's 41
+      failing tests, one row:
+      - the claim it guards;
+      - the old function or shape it depends on;
+      - the proposed handling, one of:
+        - a lean injection or observation point with the same witness
+          strength;
+        - a mechanical remap (retired helper name, internal call site or
+          shape-only detector);
+        - a semantic disposition authorized by pulse plumbing Sections 4
+          and 7 (for example the per-pulse flush LR-20 retires);
+        - resolved by the switch itself (the LTB-0519 worker reload);
+        - fixed by this cut (the valuation overflow, decision 3).
+      Each structural test is read one by one. For each proposed remap or
+      injection point, its before and after block is drafted as a patch
+      file under dev/, applied to a scratch copy of the suite with the
+      lean core installed, and shown to pass. The same registered
+      negative or mutation witness is shown to still fail. tests/ is not
+      edited in this cut. The maintainer approves each row at the close
+      review; Cut 28 applies the approved rows to the frozen suite.
+      (9) Holistic review briefs (maintainer, 2026-11-27). Claude drafts
+      two Type 2 briefs:
+      - one for an independent Codex session and one for a clean-context
+        Claude session;
+      - each covers the whole integrated path on the clarified code:
+        entry, preparation, the lean fold, publication, finalisation and
+        the readers;
+      - deletion first, then duplicated validation, then code a cold
+        reader cannot explain;
+      - one brief directs its reviewer to cold-read loop.R.
+      The maintainer approves the briefs. The reviews run after this cut
+      closes, and their findings are dispositioned by the maintainer
+      before Cut 28.
+      (10) Macro plan amendments (maintainer, 2026-11-27):
+      - A0 is retired as an anchor. The parity gate runs its eight
+        workloads live against the pin, and decision 7's recorded
+        outcomes replace its records. The test cut's external anchors
+        become those outcomes and the v0.2.2 real-data reference.
+      - Switch obligation 7 (the store-write levers, with the parked
+        stored-format question) moves out of the switch to its own cut
+        after it, with its RFC.
+      - The compiled FIFO stays inert until WS14 (unchanged): its R
+        wrappers and spot_fifo.cpp remain, and only the selector's two
+        admission checks run.
+      - The private Sharadar reference runs at Cut 28's gate, by the
+        maintainer.
+    identity_and_release_impact: >-
+      None for users. No R/, tests/, vignette, store-format, config or
+      engine-version change; every snapshot, run, sweep and
+      feature-definition identity is unchanged. contracts.md gains text
+      for behaviour already shipped (decision 5). The reference build
+      advances (decision 2), which affects dev evidence only.
+    sequencing: >-
+      LDG-3275 (pin) first, since everything after it runs on the new pin.
+      Then LDG-3276 (overflow) and LDG-3277 (clarity), with cheap proofs
+      per change. LDG-3278 (spike) and LDG-3279 (contracts) are
+      independent and run beside them. LDG-3280 (test inventory) runs on
+      the final lean code. LDG-3281 closes with the full proof set once,
+      on the final code, then the Type 1 close review.
+    out_of_scope: >-
+      Moving code into R/, deleting the old fold, any test-file edit, the
+      LR-12 and LR-20 removals and their schema bump (Cut 28); store-write
+      tuning and the stored-format RFC (decision 10); the WS14a holistic
+      reviews themselves (after this cut); adopting the explicit-state
+      design (the maintainer, on decision 6's result); the 205 functions
+      unreachable today and the carrier remnant (WS14a subtraction).
+    workstreams: [47]
+    review_lifecycle: >-
+      Codex Type 2 cut review before acceptance, iterated to PASS; a third
+      correction round goes to the maintainer. One Type 1 close review of
+      workstream 47 after LDG-3281, iterated to PASS. Findings follow
+      rfc_cycle.md's record rule.
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -5031,6 +5239,13 @@ workstreams:
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 46, after LDG-3274", reason: "Every workload stays identical to the pin with debug off and on, every worker on its arm's declared pin; walk-forward, the restart routes and worker sweeps run lean with a complete worker record channel, worker-local faults reaching the parent and a worker backstop rerunning on the pin; the compiled selector runs the lean R FIFO after the pin's admission checks, each refusal and the capacity boundary proven, with the R9 amendment and LR-25; the checkpoint control and db_live stay refused; the feature bridge holds; freeze, variant and timing records carry their reasons."}
     close_review: "Type 1 close review of workstream 46 (independent clean-context Codex CLI, gpt-6.1-sol/high; reports in this packet): round 1 (ws46_close_review_round1.md, at 400c6a14) CHANGES_REQUIRED with F1 (a selected worker sweep that the pin refuses at E read as a channel fault: the channel required a lean fold or a coverage refusal per envelope entry) and F2 (recorder/run.R resolved a relative --src after changing directory), both harness-only, no public table different; corrected in 9d60a0ee: the worker records an error that ends an entry before its fold as that entry's outcome (class recorded, condition passed on unchanged) and the parent requires folds + refusals + such errors = entries with harness hooks, an early exit without an error faulting; witness s5_workers_compiled_refused in gate, batch-one and inert modes; variant worker_prefold_unrecorded CAUGHT; --src resolved with the other paths; proofs in dev/lean_core/parity/evidence/ldg3274/review_r1/ (every worker workload plus the witness, every mode, debug 0 and 1, 0 different, every frozen path checked; every variant on those workloads CAUGHT; the five negative controls failing closed; the relative --src control). Re-review 1 (ws46_close_rereview_1.md, at 9d60a0ee) PASS: F1 and F2 resolved, the exactly-one-outcome rule confirmed by the reviewer's own probe, the totals reproduced; advisory N1 (inert hooks mark no fold start, so an inert record's error class is not stage evidence) dispositioned by wording in Section 19.14 and review_r1/README.md, no code change."
+  - id: 47
+    name: "Lean-core switch preparation"
+    cut: 27
+    status: "open"
+    depends_on_workstream: 46
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 47, after LDG-3281", reason: "Every covered workload stays identical to the advanced pin 7f65733f with debug off and on, at batch one and with inert hooks, and every frozen path matches; the overflow refusal is the pin's on run and sweep; the clarity pass changes no table, refusal or path; the 14 contract entries describe shipped behaviour at their rule-group addresses; each of the 41 test rows has a handling whose replacement detector is shown to pass and whose witness still fails; the recorded pin outcomes match their manifest; nothing in R/ or tests/ changes."}
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -9185,3 +9400,119 @@ tickets:
       - "Lines (lines.csv, cut19_lines.R --base=2bd1a33e --final=bc628409): loop.R 993 -> 997 production lines (at or below 1,000), loop_harness.R 177 -> 165, total production 2,665 -> 2,657 (-8), debug unchanged (206); lines_harness.csv reports harness, workload and witness lines beside it (loop_workers.R +163, load.R +60, loop_workloads_slice5.R +509, loop_parity.R +111, feature_bridge.R +199, loop_freeze_changes.R +35, loop_variants.R +6, loop_workloads.R -2)."
       - "lean_core_interface.md: Section 19.2 retitled for slices 1 to 5 with its coverage table, sweeps paragraph and backstop seam note updated; Section 19.14 records slice 5 and five switch obligations (the harness worker channel, the inert compiled selector with its two admission helpers and their dependencies, the checkpoint control's and db_live's removal, the full integrated feature-path proof, the backstop test seam)."
       - "Type 1 close review of workstream 46 (independent clean-context Codex CLI, gpt-6.1-sol/high; reports in this packet): round 1 (ws46_close_review_round1.md, at 400c6a14) CHANGES_REQUIRED with F1 (a selected worker sweep that the pin refuses at E read as a channel fault: the channel required a lean fold or a coverage refusal per envelope entry) and F2 (recorder/run.R resolved a relative --src after changing directory), both harness-only, no public table different; corrected in 9d60a0ee: the worker records an error that ends an entry before its fold as that entry's outcome (class recorded, condition passed on unchanged) and the parent requires folds + refusals + such errors = entries with harness hooks, an early exit without an error faulting; witness s5_workers_compiled_refused in gate, batch-one and inert modes; variant worker_prefold_unrecorded CAUGHT; --src resolved with the other paths; proofs in dev/lean_core/parity/evidence/ldg3274/review_r1/ (every worker workload plus the witness, every mode, debug 0 and 1, 0 different, every frozen path checked; every variant on those workloads CAUGHT; the five negative controls failing closed; the relative --src control). Re-review 1 (ws46_close_rereview_1.md, at 9d60a0ee) PASS: F1 and F2 resolved, the exactly-one-outcome rule confirmed by the reviewer's own probe, the totals reproduced; advisory N1 (inert hooks mark no fold start, so an inert record's error class is not stage evidence) dispositioned by wording in Section 19.14 and review_r1/README.md, no code change."
+  - id: "LDG-3275"
+    title: "Advance the pin to the release head"
+    workstream: 47
+    status: "open"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    scope: >-
+      Cut 27 decision 2: install 7f65733f as the pin library and source
+      archive, name it in load.R, and record the move in the lean fold core
+      synthesis's pin record (old pin, range, reason).
+    acceptance:
+      - "C:/Users/maxth/ledgr-wt/pin-lib-7f65733f holds the build of 7f65733f (install_arm.R) with LEDGR_INSTALLED_FROM_COMMIT; the pinned source archive with LEDGR_SOURCE_COMMIT is built by one process and its DLL's unwind table checked (capture_crash/pdata.R) before any parallel use"
+      - "dev/lean_core/load.R names 7f65733f; lean_core_load() refuses d5b3a151 and any other build"
+      - "The lean fold core synthesis's pin record states the old pin d5b3a151, the range to 7f65733f, the reason and the maintainer's decision; the interface (Section 19) names the new pin"
+      - "A gate subset (one workload per slice, a worker and a walk-forward workload) passes on the new pin with debug off and on from a non-package directory; the full proof set reruns at the close (LDG-3281)"
+    evidence: []
+  - id: "LDG-3276"
+    title: "The overflow refusal at P4"
+    workstream: 47
+    status: "open"
+    priority: "P1"
+    effort: "S"
+    dependencies: ["LDG-3275"]
+    scope: >-
+      Cut 27 decision 3: lean P4 refuses a fill with a non-finite cash or
+      position delta as the pin does, once per pulse batch, vectorised.
+    acceptance:
+      - "Lean P4 refuses a non-finite fill cash or position delta with the pin's class (ledgr_invalid_accounting_event) and message, at the pin's precedence on run and sweep; the check is vectorised over the pulse's fills, with no per-fill R loop"
+      - "Gate witnesses on declared sessions with a 1e308 opening: sold at 1.9 (refused as the pin), held at 1.9 (ledgr_config_non_finite, as the pin), sold at 10 (ledgr_invalid_lot_fill first, as the pin); each identical to the pin with debug off and on, with freeze rows added"
+      - "A variant without the check is CAUGHT for the lost refusal; the probe's ovf_probe.R reports identical conditions for all three cases"
+      - "lean_core_rules_ledger.md gains LR-26 (contract, narrowing LR-15) with its rule-group address"
+    evidence: []
+  - id: "LDG-3277"
+    title: "Clarity pass on the lean core"
+    workstream: 47
+    status: "open"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-3276"]
+    scope: >-
+      Cut 27 decision 4: concept names for s3 and s4, provenance citations
+      out of code comments, a read/write header per stage; no behaviour
+      change.
+    acceptance:
+      - "No dev/lean_core production file names s3 or s4; no production code comment cites a pin line number, cut, ticket or review (a scan, its pattern stated, finds none)"
+      - "Each stage (E, P1 to P5) has a header naming the shared state it reads and writes, checked against its code by the close review"
+      - "Variants anchored on changed lines are re-anchored (action reanchor) and each is still CAUGHT for its named fault, debug off and on"
+      - "A gate subset passes after each change; production and debug line counts are reported before and after (cut19_lines.R), loop.R at or below 1,000"
+    evidence: []
+  - id: "LDG-3278"
+    title: "Explicit-state spike"
+    workstream: 47
+    status: "open"
+    priority: "P2"
+    effort: "M"
+    dependencies: ["LDG-3275"]
+    scope: >-
+      Cut 27 decision 6: measure explicit stage state against the shared
+      closure frame, under the spike protocol; a decision input, not a
+      change.
+    acceptance:
+      - "dev/spikes/explicit_state holds a runner, a diff-based checker and a gut demonstration (spike protocol); the explicit-state variant is bit-identical to the lean core on 10x7200, 20x23400 and 500x1260"
+      - "Paired timing on the High performance plan with P-core affinity, alternating arms, at least five pairs per shape; the README reports the pulse-loop and whole-run ratio per shape and the line and readability effect on loop.R, and states the decision it informs"
+      - "No dev/lean_core production file changes"
+    evidence: []
+  - id: "LDG-3279"
+    title: "The rules ledger into contracts.md"
+    workstream: 47
+    status: "open"
+    priority: "P1"
+    effort: "S"
+    dependencies: []
+    scope: >-
+      Cut 27 decision 5: the 14 pending entries written into contracts.md
+      as contract at their rule-group addresses.
+    acceptance:
+      - "LR-01 to LR-11 and LR-21 to LR-23 each have contract text in contracts.md at a stated rule-group address, describing the behaviour the pin has and the lean core reproduces, and the ledger's disposition column cites it; an entry whose text would change shipped behaviour is listed for the maintainer as change instead"
+      - "Each contract sentence names the gate workload, witness or probe that shows the behaviour, or states that none reaches it"
+      - "No pending entry remains in lean_core_rules_ledger.md"
+    evidence: []
+  - id: "LDG-3280"
+    title: "The test inventory for the switch"
+    workstream: 47
+    status: "open"
+    priority: "P1"
+    effort: "L"
+    dependencies: ["LDG-3277"]
+    scope: >-
+      Cut 27 decision 8: one handling per failing test, its replacement
+      detector shown to pass and its witness shown to still fail; tests/
+      unchanged.
+    acceptance:
+      - "The suite probe (dev/spikes/switch_probe/suite_probe.R) reruns on the final lean code and the new pin: the baseline passes; the list of tests failing only with the lean fold is recorded"
+      - "An inventory (CSV plus README) gives each such test its claim, the old function or shape it depends on, and one handling: lean injection or observation point, mechanical remap, authorized semantic disposition (pulse plumbing Sections 4 and 7, citing the section), resolved by the switch, or fixed in this cut; each structural test read one by one"
+      - "Every proposed remap or injection point is a before/after patch file under dev/; applied to a scratch copy of tests/ with the lean core installed, the patched test passes, and the same registered negative or mutation witness still fails; tests/ is unchanged"
+      - "LTB-0519's worker reload is shown to be the cause (the test passes when the harness worker boot does not reload ledgr), or the row says why not"
+    evidence: []
+  - id: "LDG-3281"
+    title: "Close: proofs on the new pin, recorded outcomes, review briefs, plan amendments"
+    workstream: 47
+    status: "open"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-3276", "LDG-3277", "LDG-3278", "LDG-3279", "LDG-3280"]
+    scope: >-
+      Cut 27 decisions 2, 7, 9 and 10 on the final code, then the Type 1
+      close review of workstream 47.
+    acceptance:
+      - "On the final code and the new pin, from a non-package directory: the full gate, batch one with an explicit list and inert hooks pass with debug off and on, every frozen path checked; the variant driver passes with its negative controls; the hashed-frame witness, loop_dispatch.R, plan_parity.R, cut18_witness.R and the reach cross-checks pass; the FIFO census reruns on the new pin's source archive (two captures, population, fifo_check), its population replaced with the stated reason that the new pin's suite differs"
+      - "feature_bridge.R is retired with its reason (decision 2) and Section 19.14's obligation 4 is marked discharged by the gate on the new pin"
+      - "The recorded pin outcomes (decision 7) exist outside the tree for every gate workload, with a committed manifest of row counts and digests; a check script recomputes the manifest from the outcomes and from a fresh pin run of a workload subset"
+      - "Two holistic review briefs (decision 9) are drafted under inst/design/ledgr_v0_2_3_spec_packet/ for the maintainer's approval"
+      - "macro_plan.md records decision 10's amendments (A0 retired as an anchor, obligation 7 split, the compiled FIFO inert until WS14, the Sharadar reference at Cut 28's gate); lean_core_interface.md Section 19.14 is updated"
+      - "Type 1 close review of workstream 47 (review_lifecycle)"
+    evidence: []
