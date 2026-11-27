@@ -1,0 +1,7 @@
+dll before 2026-11-16 19:39:58 
+dll after  2026-11-16 19:39:58 
+native refusal 1 ... `cash` must be a numeric scalar. 
+native refusal 2 ... `cash` must be a numeric scalar. 
+native refusal 3 ... `cash` must be a numeric scalar. 
+SURVIVED
+11:53:05 exit code 0x00000000 (0)

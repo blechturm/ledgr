@@ -106,6 +106,33 @@ retired in LDG-3273.
 | `cut18_witness.csv` | 145 cases x 2 debug settings, 0 differ; manifest missing 0, unlisted 0 |
 | `fifo_check.log` | see below |
 
+## FIFO census on the final code
+
+The census is Cut 22's: two independent captures of the pinned suite's
+lot calls (`fifo_capture_tests.R`), their population comparison, then
+`fifo_check.R`. The pinned source archive was built once, in one process.
+Its unwind table was checked clean (`capture_crash/pdata.R`: 4,254
+entries, 0 out of order). Then:
+
+| file | result |
+| --- | --- |
+| `fifo_captureA.log`, `fifo_captureB.log`, `captureA_outcome.csv`, `captureB_outcome.csv` | 230 files and 1,327 tests each, every test run (none skipped by the capture), the same counts as Cut 22 |
+| `fifo_population.csv`, `.log` | A and B agree |
+| `fifo_population_vs_cut22.txt` | the population is identical to the committed Cut 22 population (`evidence/fifo_population.csv`) |
+| `fifo_check.log` | CHECK PASSED: every compared call and stream step identical with debug off and on, every mutation fails parity, only shared validators called, package scope clean |
+
+Each capture has two failed tests, both LTB-0258 (test-schema-current.R:22
+and :35). The pinned golden files record duckdb 2.0.0, and the host has
+2.0.1 since 2026-11-24. Cut 25 (LDG-3267) fixed this in the release. These
+tests make no lot call. Cut 22's captures ran under duckdb 2.0.0 and had
+none.
+
+The day's first captures died silently. `capture_crash/README.md` traces
+the crash to a DLL linked by three processes at once, not to duckdb or the
+compiled kernel. The skip that 48942f66 added on the earlier reading is
+withdrawn (ec40f6d7). The crashed captures' logs are
+`fifo_captureA_crashed.log` and `fifo_captureB_crashed.log`.
+
 ## Lines (decision 9)
 
 `lines.csv` (`cut19_lines.R --base=2bd1a33e --final=bc628409`) gives
@@ -128,3 +155,60 @@ workload and witness, reported beside the production count:
 | `loop_freeze_changes.R` | witness | 200 | 235 | +35 |
 | `loop_variants.R` | witness | 81 | 87 | +6 |
 | `loop_workloads.R` | workload | 559 | 557 | -2 |
+
+## Timing (decision 10)
+
+Protocol `dev/bench/timing/protocols/cut26-loop-1`; bounds stated in
+`protocol.md` before measurement. Host: High performance plan, P-core
+affinity 0xFFFF (`pcore.ps1`), Balanced restored after. The `timing/*.log` files are the
+pcore.ps1 output, which PowerShell writes as UTF-16, converted to ASCII
+with iconv.
+
+The quick paired record is
+`dev/bench/timing/records/cut26-loop-1/ws46-final/`:
+- Attempt-1 refused at slot 2 and measured nothing
+  (`timing/attempt1_record.log`): the candidate arm built the lean
+  environment without `.lean_lib`, which the worker channel reads at
+  restore. d4fe66a6 fixed the protocol's candidate set-up.
+- Attempt-2 ran under the maintainer's disposition (2026-11-27). It is
+  12 cells x 8 pairs, 192 slots, all ok, and passes
+  (`timing/record2_check.log`: CHECK PASS).
+
+Medians, pin and lean:
+
+| cell | pin | lean | ratio (bound 1.0) |
+| --- | ---: | ---: | ---: |
+| run 10x7200 | 21.21 s | 3.39 s | 0.160 |
+| fold 10x7200 | 20.47 s | 2.46 s | 0.120 |
+| run 20x23400 | 77.23 s | 10.93 s | 0.142 |
+| fold 20x23400 | 75.26 s | 8.87 s | 0.118 |
+| run 500x1260 | 8.37 s | 4.06 s | 0.485 |
+| fold 500x1260 | 6.83 s | 2.57 s | 0.376 |
+| run 1166x252 | 3.87 s | 2.89 s | 0.746 |
+| fold 1166x252 | 2.20 s | 1.16 s | 0.528 |
+| run slice2_10x7200 | 27.94 s | 5.71 s | 0.204 |
+| fold slice2_10x7200 | 27.34 s | 4.93 s | 0.180 |
+| run facts_10x7200 (descriptive) | 20.97 s | 6.60 s | 0.315 |
+| fold facts_10x7200 (descriptive) | 20.09 s | 5.67 s | 0.282 |
+
+`timing/compare/` compares against the slice-4 lean baseline
+(`loop_shortcuts.R --mode=compare --base=2bd1a33e --candidate=ec40f6d7
+--rounds=7`; command, host and source hashes are in the folder). Both arms
+give identical fills and equity. The table gives pulse-loop medians and the
+median paired change (positive: the candidate is faster). Every shape is
+inside Cut 15's 5 percent rule, so there is no miss:
+
+| shape | base | candidate | paired change |
+| --- | ---: | ---: | ---: |
+| 10x7200 | 1.81 s | 1.82 s | +0.6% |
+| 20x23400 | 6.99 s | 7.14 s | -0.7% |
+| 500x1260 | 0.71 s | 0.67 s | +4.3% |
+| slice2_10x7200 | 3.85 s | 3.81 s | +0.8% |
+
+Envelope and whole-run medians are in `compare_summary.csv`.
+
+`timing/descriptive.csv` (`timing_descriptive.R --reps=5`, alternating
+arms, not gated) gives medians with results identical across arms:
+- a sweep selecting `spot_fifo`: pin 28.12 s, lean 2.99 s;
+- a two-worker sweep: pin 13.37 s, lean 3.00 s, of which harness worker
+  loading is 0.39 s, timed inside the workers.

@@ -1,0 +1,71 @@
+pair 1 10x7200    base             candidate        pulses 1.860 s  envelope 2.410 s  whole 3.140 s
+pair 1 10x7200    base             base             pulses 1.810 s  envelope 2.380 s  whole 3.080 s
+pair 1 20x23400   base             candidate        pulses 7.190 s  envelope 9.300 s  whole 11.100 s
+pair 1 20x23400   base             base             pulses 7.140 s  envelope 9.220 s  whole 10.980 s
+pair 1 500x1260   base             candidate        pulses 0.670 s  envelope 2.420 s  whole 3.650 s
+pair 1 500x1260   base             base             pulses 0.720 s  envelope 2.560 s  whole 3.950 s
+pair 1 slice2_10x7200 base             candidate        pulses 3.850 s  envelope 4.810 s  whole 5.340 s
+pair 1 slice2_10x7200 base             base             pulses 3.920 s  envelope 4.930 s  whole 5.470 s
+pair 2 10x7200    base             base             pulses 1.860 s  envelope 2.430 s  whole 3.170 s
+pair 2 10x7200    base             candidate        pulses 1.830 s  envelope 2.470 s  whole 3.220 s
+pair 2 20x23400   base             base             pulses 7.160 s  envelope 9.220 s  whole 11.170 s
+pair 2 20x23400   base             candidate        pulses 7.140 s  envelope 9.140 s  whole 11.030 s
+pair 2 500x1260   base             base             pulses 0.690 s  envelope 2.530 s  whole 3.890 s
+pair 2 500x1260   base             candidate        pulses 0.660 s  envelope 2.440 s  whole 3.700 s
+pair 2 slice2_10x7200 base             base             pulses 3.890 s  envelope 4.810 s  whole 5.360 s
+pair 2 slice2_10x7200 base             candidate        pulses 3.940 s  envelope 4.970 s  whole 5.520 s
+pair 3 10x7200    base             candidate        pulses 1.890 s  envelope 2.550 s  whole 3.310 s
+pair 3 10x7200    base             base             pulses 1.800 s  envelope 2.340 s  whole 3.090 s
+pair 3 20x23400   base             candidate        pulses 7.030 s  envelope 9.060 s  whole 10.950 s
+pair 3 20x23400   base             base             pulses 6.850 s  envelope 8.880 s  whole 10.720 s
+pair 3 500x1260   base             candidate        pulses 0.670 s  envelope 2.470 s  whole 3.810 s
+pair 3 500x1260   base             base             pulses 0.710 s  envelope 2.460 s  whole 3.670 s
+pair 3 slice2_10x7200 base             candidate        pulses 3.740 s  envelope 4.690 s  whole 5.240 s
+pair 3 slice2_10x7200 base             base             pulses 3.850 s  envelope 4.780 s  whole 5.320 s
+pair 4 10x7200    base             base             pulses 1.800 s  envelope 2.310 s  whole 3.060 s
+pair 4 10x7200    base             candidate        pulses 1.750 s  envelope 2.340 s  whole 3.040 s
+pair 4 20x23400   base             base             pulses 6.920 s  envelope 8.960 s  whole 10.850 s
+pair 4 20x23400   base             candidate        pulses 6.970 s  envelope 8.990 s  whole 10.900 s
+pair 4 500x1260   base             base             pulses 0.730 s  envelope 2.450 s  whole 3.690 s
+pair 4 500x1260   base             candidate        pulses 0.670 s  envelope 2.510 s  whole 3.780 s
+pair 4 slice2_10x7200 base             base             pulses 3.770 s  envelope 4.670 s  whole 5.200 s
+pair 4 slice2_10x7200 base             candidate        pulses 3.740 s  envelope 4.740 s  whole 5.250 s
+pair 5 10x7200    base             candidate        pulses 1.760 s  envelope 2.370 s  whole 3.090 s
+pair 5 10x7200    base             base             pulses 1.770 s  envelope 2.360 s  whole 3.110 s
+pair 5 20x23400   base             candidate        pulses 6.950 s  envelope 9.050 s  whole 10.920 s
+pair 5 20x23400   base             base             pulses 6.980 s  envelope 9.030 s  whole 10.890 s
+pair 5 500x1260   base             candidate        pulses 0.660 s  envelope 2.500 s  whole 3.680 s
+pair 5 500x1260   base             base             pulses 0.650 s  envelope 2.330 s  whole 3.530 s
+pair 5 slice2_10x7200 base             candidate        pulses 3.760 s  envelope 4.660 s  whole 5.210 s
+pair 5 slice2_10x7200 base             base             pulses 3.750 s  envelope 4.660 s  whole 5.180 s
+pair 6 10x7200    base             base             pulses 1.810 s  envelope 2.370 s  whole 3.110 s
+pair 6 10x7200    base             candidate        pulses 1.760 s  envelope 2.360 s  whole 3.120 s
+pair 6 20x23400   base             base             pulses 6.990 s  envelope 9.010 s  whole 10.800 s
+pair 6 20x23400   base             candidate        pulses 8.110 s  envelope 10.320 s  whole 12.240 s
+pair 6 500x1260   base             base             pulses 0.710 s  envelope 2.570 s  whole 3.890 s
+pair 6 500x1260   base             candidate        pulses 0.680 s  envelope 2.480 s  whole 3.760 s
+pair 6 slice2_10x7200 base             base             pulses 3.870 s  envelope 4.730 s  whole 5.280 s
+pair 6 slice2_10x7200 base             candidate        pulses 3.890 s  envelope 4.860 s  whole 5.410 s
+pair 7 10x7200    base             candidate        pulses 1.820 s  envelope 2.350 s  whole 3.080 s
+pair 7 10x7200    base             base             pulses 1.810 s  envelope 2.400 s  whole 3.150 s
+pair 7 20x23400   base             candidate        pulses 7.190 s  envelope 9.330 s  whole 11.140 s
+pair 7 20x23400   base             base             pulses 7.170 s  envelope 9.250 s  whole 11.100 s
+pair 7 500x1260   base             candidate        pulses 0.660 s  envelope 2.410 s  whole 3.690 s
+pair 7 500x1260   base             base             pulses 0.650 s  envelope 2.470 s  whole 3.820 s
+pair 7 slice2_10x7200 base             candidate        pulses 3.810 s  envelope 4.730 s  whole 5.300 s
+pair 7 slice2_10x7200 base             base             pulses 3.840 s  envelope 4.840 s  whole 5.380 s
+  arm          shape rounds ref_pulses_median arm_pulses_median
+ base        10x7200      7              1.82              1.81
+ base       20x23400      7              7.14              6.99
+ base       500x1260      7              0.67              0.71
+ base slice2_10x7200      7              3.81              3.85
+ ref_envelope_median arm_envelope_median ref_whole_median arm_whole_median
+                2.37                2.37             3.12             3.11
+                9.14                9.03            11.03            10.89
+                2.47                2.47             3.70             3.82
+                4.74                4.78             5.30             5.32
+ saving_median saving_below_002  saving_min  saving_max
+   0.005649718                5 -0.05000000 0.027777778
+  -0.007002801                7 -0.16022890 0.004297994
+   0.043478261                2 -0.01538462 0.082191781
+   0.007812500                6 -0.01285347 0.028571429
