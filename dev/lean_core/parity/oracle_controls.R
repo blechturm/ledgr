@@ -30,14 +30,26 @@ local({
 rscript <- file.path(R.home("bin"), "Rscript.exe")
 sha <- function(x) digest::digest(x, algo = "sha256")
 dir.create(oc$scratch, recursive = TRUE, showWarnings = FALSE)
+# A fresh, writable scratch copy. The records are read-only and a copy keeps
+# that attribute on Windows, so every copied file is made writable; only the
+# copies are, never the records. (Close review round 1, F1.)
 copy_tree <- function(from, to) {
+  if (dir.exists(to)) {
+    old <- list.files(to, recursive = TRUE, full.names = TRUE)
+    if (length(old)) Sys.chmod(old, "0666")
+    unlink(to, recursive = TRUE)
+  }
   dir.create(to, recursive = TRUE, showWarnings = FALSE)
   for (d in list.dirs(from, recursive = FALSE, full.names = FALSE)) {
     dir.create(file.path(to, d), showWarnings = FALSE)
-    invisible(file.copy(list.files(file.path(from, d), full.names = TRUE), file.path(to, d)))
+    files <- list.files(file.path(from, d), full.names = TRUE)
+    if (!all(file.copy(files, file.path(to, d)))) stop("copy failed: ", from, "/", d)
+    Sys.chmod(file.path(to, d, basename(files)), "0666")
   }
   to
 }
+# A control must have changed what it says it changed.
+must <- function(ok, what) if (!isTRUE(ok)) stop("control setup failed: ", what, call. = FALSE)
 check <- function(name, records, candidate, accepted = "") {
   log <- file.path(oc$scratch, paste0(name, ".log"))
   args <- c(shQuote(file.path(oc$here, "oracle_check.R")), paste0("--records=", records), paste0("--manifest=", oc$manifest),
@@ -61,6 +73,7 @@ expect("full", check("full", oc$records, oc$candidate), 0L, "ORACLE CHECK PASS")
 
 r <- copy_tree(oc$records, file.path(oc$scratch, "rec_missing"))
 unlink(file.path(r, gate_rec))
+must(!file.exists(file.path(r, gate_rec)), "the record was not removed")
 expect("missing_record", check("missing_record", r, oc$candidate), 1L, "missing record file")
 
 r <- copy_tree(oc$records, file.path(oc$scratch, "rec_extra"))
@@ -71,10 +84,12 @@ r <- copy_tree(oc$records, file.path(oc$scratch, "rec_corrupt"))
 p <- file.path(r, gate_rec)
 b <- readBin(p, "raw", file.size(p)); k <- length(b) %/% 2L; b[[k]] <- as.raw(bitwXor(as.integer(b[[k]]), 1L))
 writeBin(b, p)
+must(!identical(digest::digest(file = p, algo = "sha256"), rec$sha256[rec$file == gate_rec]), "the record was not changed")
 expect("corrupt_record", check("corrupt_record", r, oc$candidate), 1L, "corrupt")
 
 c1 <- copy_tree(oc$candidate, file.path(oc$scratch, "cand_missing"))
 unlink(file.path(c1, "gate", paste0(gate_key, "_lean.rds")))
+must(!file.exists(file.path(c1, "gate", paste0(gate_key, "_lean.rds"))), "the output was not removed")
 expect("missing_output", check("missing_output", oc$records, c1), 1L, "candidate output missing")
 
 # One cell of the first non-empty table: its last digit moved by one.
@@ -95,6 +110,7 @@ for (pth in names(x)) for (t in names(x[[pth]])) {
 }
 if (is.null(hit)) stop("no numeric cell to change in ", gate_key)
 saveRDS(x, cf)
+must(!identical(readRDS(cf), readRDS(file.path(oc$candidate, "gate", paste0(gate_key, "_lean.rds")))), "the candidate table was not changed")
 expect("changed_gate", check("changed_gate", oc$records, c2), 1L, "not an accepted difference")
 
 c3 <- copy_tree(oc$candidate, file.path(oc$scratch, "cand_cut18"))
@@ -103,6 +119,7 @@ y <- readRDS(cf3)
 k1 <- names(y)[vapply(y, function(o) !is.null(o$value) && is.numeric(o$value) && length(o$value) > 0L, logical(1))][[1L]]
 y[[k1]]$value[[1L]] <- y[[k1]]$value[[1L]] + 1
 saveRDS(y, cf3)
+must(!identical(readRDS(cf3), readRDS(file.path(oc$candidate, "cut18", "cut18_lean_d0.rds"))), "the cut18 outcome was not changed")
 expect("changed_cut18", check("changed_cut18", oc$records, c3), 1L, "not an accepted difference")
 
 acc <- data.frame(kind = "gate", key = gate_key, path = hit$path, table = hit$table,
@@ -119,7 +136,7 @@ if (nzchar(oc$mutated)) {
   c4 <- copy_tree(oc$candidate, file.path(oc$scratch, "cand_mutated"))
   m <- list.files(file.path(oc$mutated, "gate"), pattern = "_lean[.]rds$", full.names = TRUE)
   if (!length(m)) stop("--mutated holds no gate/<workload>_lean.rds")
-  invisible(file.copy(m, file.path(c4, "gate"), overwrite = TRUE))
+  must(all(file.copy(m, file.path(c4, "gate"), overwrite = TRUE)), "the mutated outputs were not copied")
   expect("mutated", check("mutated", oc$records, c4), 1L, "not an accepted difference")
 }
 res <- do.call(rbind, rows)

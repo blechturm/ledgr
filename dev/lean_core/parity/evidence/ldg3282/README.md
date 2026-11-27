@@ -77,7 +77,15 @@ ORACLE CHECK PASS.
 ## Controls
 
 `../../oracle_controls.R` runs the checker on scratch copies
-(`controls.csv`, `.log`). Every scenario gives its expected result:
+(`controls.csv`, `.log`). Every scenario gives its expected result.
+
+The first run of the controls came before the records were made read-only.
+The close review (round 1, F1) found that against the read-only records the
+copies inherited the attribute. `missing_record` then passed silently,
+because the delete did nothing, and `corrupt_record` stopped on a
+permission error. The driver now makes its scratch copies writable, never
+the records, and checks that each control changed what it says it changed.
+The run below is against the read-only records:
 
 | Scenario | Expected and observed |
 | --- | --- |
