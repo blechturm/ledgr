@@ -9510,7 +9510,7 @@ tickets:
   - id: "LDG-3275"
     title: "Advance the pin to the release head"
     workstream: 47
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "S"
     dependencies: []
@@ -9523,7 +9523,11 @@ tickets:
       - "dev/lean_core/load.R names 7f65733f; lean_core_load() refuses d5b3a151 and any other build"
       - "The lean fold core synthesis's pin record states the old pin d5b3a151, the range to 7f65733f, the reason and the maintainer's decision; the interface (Section 19) names the new pin"
       - "A gate subset (one workload per slice, a worker and a walk-forward workload) passes on the new pin with debug off and on from a non-package directory; the full proof matrix reruns at the close (LDG-3283)"
-    evidence: []
+    evidence:
+      - "Pin library C:/Users/maxth/ledgr-wt/pin-lib-7f65733f from dev/feature_parity/install_arm.R --commit=7f65733f with LEDGR_INSTALLED_FROM_COMMIT (7f65733f); pinned source archive C:/Users/maxth/ledgr-wt/pin-src-7f65733f (git archive 7f65733f, LEDGR_SOURCE_COMMIT) with its DLL built by one process (pkgload::load_all) and its unwind table clean (capture_crash/pdata.R: 4,254 entries, 0 out of order) before any parallel use (evidence/ldg3275/README.md)."
+      - "dev/lean_core/load.R names 7f65733f with a comment pointing to the pin record; lean_core_load() refuses pin-lib-d5b3a151 ('is not the pinned build 7f65733f (marker: d5b3a151)', evidence/ldg3275/ldg3275_old_pin_refused.txt); every other build was already refused by the same marker check."
+      - "inst/design/rfc/rfc_lean_fold_core_v0_2_3_synthesis.md: amendment (maintainer, 2026-11-27) 'the pin advances' (old pin d5b3a151, range d5b3a151..7f65733f with R/fold-engine.R unchanged, the reason, the decision, both builds, the toolchain R 4.6.1, g++ 14.2.0, duckdb 2.0.1, collapse 2.1.9, DBI 1.3.0, mirai 2.7.4, nanonext 1.10.4, TTR 0.24.4, cpp11 0.5.5, digest 0.6.39, proofs rerun at LDG-3283, old evidence valid for its pin) and a local notice in Section 5; lean_core_interface.md's header names 7f65733f and keeps d5b3a151 for sections written before Cut 27."
+      - "Gate subset on the new pin from C:/Users/maxth/ledgr-wt/cut27-scratch/run (outside any source package), --freeze=loop_freeze.csv: crossover_3x40, s2_cost_chain, s2_sizing_rebalance, s3_freeze_held, s3_sched_sweep, s4_dividend, s4_acq_fills, s5_workers_sizing, s5_walk_forward_workers, walk_forward, s5_compiled_lots; debug 0 and 1 each 11 workloads, 180 tables, 0 different, PASS 11, 11 of 11 frozen paths checked (evidence/ldg3275/ldg3275_subset_debug0.csv, _debug1.csv and logs). The full proof matrix reruns at LDG-3283."
   - id: "LDG-3276"
     title: "The overflow refusal at P4"
     workstream: 47
