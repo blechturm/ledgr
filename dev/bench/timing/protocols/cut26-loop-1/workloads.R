@@ -94,6 +94,10 @@ cut26_loop <- function(args, work_dir) {
     }
     lean <- new.env(parent = ns)
     lean$.lean_debug <- FALSE
+    # As lean_core_load() records them: the worker channel (loop_workers.R)
+    # reads the pinned library and the lean home at restore, workers or not.
+    lean$.lean_lib <- normalizePath(dirname(getNamespaceInfo("ledgr", "path")), winslash = "/")
+    lean$.lean_home <- normalizePath(file.path(args$.overlay, "dev", "lean_core"), winslash = "/")
     for (f in cut26_lean_sources) {
       sys.source(file.path(args$.overlay, "dev", "lean_core", f), envir = lean, keep.source = FALSE)
     }
