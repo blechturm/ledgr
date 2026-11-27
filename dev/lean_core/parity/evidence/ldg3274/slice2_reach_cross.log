@@ -1,0 +1,29 @@
+<environment: namespace:ledgr>
+                           predicate  own fails_elsewhere holds_elsewhere   ok
+                       s2_cost_fixed TRUE              24               1 TRUE
+                    s2_cost_notional TRUE              18               7 TRUE
+                      s2_cost_spread TRUE              14              11 TRUE
+                       s2_cost_chain TRUE              25               0 TRUE
+                  s2_risk_nonbinding TRUE              11              14 TRUE
+                        s2_risk_bind TRUE              22               3 TRUE
+                   s2_risk_long_only TRUE              24               1 TRUE
+                       s2_risk_chain TRUE              25               0 TRUE
+              s2_risk_equity_refusal TRUE              25               0 TRUE
+               s2_risk_short_refusal TRUE              25               0 TRUE
+                s2_cost_insufficient TRUE              25               0 TRUE
+               s2_cost_sale_consumes TRUE              25               0 TRUE
+           s2_cost_nonpositive_price TRUE              25               0 TRUE
+                 s2_sizing_rebalance TRUE              17               8 TRUE
+                    s2_sizing_adjust TRUE              24               1 TRUE
+                      s2_sizing_risk TRUE              23               2 TRUE
+                     s2_sizing_combo TRUE              24               1 TRUE
+                   s2_sizing_reasons TRUE              25               0 TRUE
+                    s2_sizing_notice TRUE              25               0 TRUE
+                     s2_sizing_stale TRUE              14              11 TRUE
+                 s2_sizing_malformed TRUE              25               0 TRUE
+          s2_sizing_malformed_target TRUE               1              24 TRUE
+                     s2_sizing_batch TRUE              25               0 TRUE
+                    s2_sizing_growth TRUE              25               0 TRUE
+                    s2_sizing_prefix TRUE              17               8 TRUE
+ s2_cost_chain on rounded-price fees TRUE             312               0 TRUE
+26 checks over 26 workloads; 26 ok (a predicate holds on its own workload and fails on another; the basis control rejects rounded-price fees)

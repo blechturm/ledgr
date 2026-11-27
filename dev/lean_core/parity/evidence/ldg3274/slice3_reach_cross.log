@@ -1,0 +1,86 @@
+<environment: namespace:ledgr>
+                                predicate  own fails_elsewhere holds_elsewhere
+                         s3_sessions_full TRUE               8              28
+                       s3_hist_bar_native TRUE              36               0
+                         s3_hist_declared TRUE              36               0
+                       s3_hist_offset_bar TRUE              36               0
+                   s3_hist_offset_feature TRUE              36               0
+                              s3_gap_held TRUE              29               7
+                           s3_freeze_held TRUE              29               7
+                           s3_stop_refuse TRUE              34               2
+                           s3_freeze_exit TRUE              33               3
+                       s3_stale_reduction TRUE              36               0
+                      s3_exec_bar_missing TRUE              35               1
+                       s3_sizing_unpriced TRUE              36               0
+                     s3_risk_mark_expired TRUE              36               0
+                       s3_risk_mark_never TRUE              36               0
+                       s3_frozen_increase TRUE              36               0
+                      s3_frozen_liquidate TRUE              36               0
+                s3_sizing_liquidate_stale TRUE              36               0
+               s3_sizing_liquidate_frozen TRUE              36               0
+                        s3_no_bar_session TRUE              36               0
+                       s3_closed_sessions TRUE              33               3
+                       s3_prefix_declared TRUE              35               1
+                         s3_missing_sweep TRUE              36               0
+                           s3_offset_full TRUE              32               4
+                    s3_offset_first_stale TRUE              36               0
+                        s3_prescoring_gap TRUE              32               4
+                              s3_tail_gap TRUE              36               0
+                      s3_mixed_transition TRUE              36               0
+                            s3_multi_stop TRUE              36               0
+                             s3_many_gaps TRUE              36               0
+                            s3_sched_full TRUE              32               4
+                           s3_sched_stale TRUE              34               2
+                           s3_sched_query TRUE              36               0
+                            s3_sched_none TRUE              36               0
+                             s3_skip_stop TRUE              35               1
+                       s3_skip_stop_first TRUE              36               0
+                          s3_sched_prefix TRUE              36               0
+                           s3_sched_sweep TRUE              36               0
+     s3_hist_bar_native on constant reads TRUE              18               0
+       s3_hist_declared on constant reads TRUE              18               0
+     s3_hist_offset_bar on constant reads TRUE              13               0
+ s3_hist_offset_feature on constant reads TRUE              13               0
+   ok
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+ TRUE
+41 checks over 37 of 37 slice-3 workloads; 41 ok

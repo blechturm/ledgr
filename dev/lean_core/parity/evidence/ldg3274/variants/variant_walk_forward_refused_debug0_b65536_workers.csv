@@ -1,0 +1,5 @@
+"workload","debug","mode","attempt","sweep_seq","run_id","pid","origin","entries","lean","debug","hooks","lean_folds","backstop","store_any"
+"s5_walk_forward_workers",0,"gate","7108-4-20261126234438.036990",1,"small",19168,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_walk_forward_workers",0,"gate","7108-4-20261126234438.036990",1,"large",5992,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_walk_forward_workers",0,"gate","7108-4-20261126234438.036990",2,"small",64196,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_walk_forward_workers",0,"gate","7108-4-20261126234438.036990",2,"large",71264,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0

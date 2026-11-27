@@ -1,0 +1,18 @@
+NULL
+dense_cost             identical  lean P3 calls 72  pinned 6.2 s  lean 5.8 s
+dense_risk_features    identical  lean P3 calls 32  pinned 4.3 s  lean 4.1 s
+dense_dividend_state   identical  lean P3 calls 16  pinned 3.3 s  lean 3.2 s
+avail_terminal_resume  identical  lean P3 calls 20  pinned 5.1 s  lean 5.3 s
+avail_acquisition      identical  lean P3 calls 12  pinned 3.5 s  lean 3.2 s
+avail_incomplete       identical  lean P3 calls 8  pinned 4.4 s  lean 4.3 s
+walk_forward           identical  lean P3 calls 59  pinned 7.2 s  lean 7.4 s
+failures               identical  lean P3 calls 12  pinned 4.3 s  lean 4.3 s
+momentum_40x504        identical  lean P3 calls 23  pinned 3.8 s  lean 4.0 s
+fill_heavy_500x1260    identical  lean P3 calls 1260  pinned 91.3 s  lean 91.5 s
+prep_fixture           identical  lean P3 calls 47  pinned 3.2 s  lean 2.9 s
+crossover_10x7200      identical  lean P3 calls 7200  pinned 47.2 s  lean 45.1 s
+crossover_500x1260     identical  lean P3 calls 1260  pinned 89.8 s  lean 92.2 s
+portable_500x1260      identical  lean P3 calls 57  pinned 28.1 s  lean 28.1 s
+portable_500x2520      identical  lean P3 calls 115  pinned 49.0 s  lean 51.0 s
+portable_500x5040      identical  lean P3 calls 231  pinned 112.0 s  lean 102.1 s
+427 tables, 0 different

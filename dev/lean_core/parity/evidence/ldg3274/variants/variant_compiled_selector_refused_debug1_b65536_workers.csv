@@ -1,0 +1,4 @@
+"workload","debug","mode","attempt","sweep_seq","run_id","pid","origin","entries","lean","debug","hooks","lean_folds","backstop","store_any"
+"dense_cost",1,"gate","44128-3-20261126234846.057262",1,"flat",19480,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,TRUE,"harness",1,"",0
+"dense_cost",1,"gate","44128-3-20261126234846.057262",1,"open_end",19480,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,TRUE,"harness",1,"",0
+"dense_cost",1,"gate","44128-3-20261126234846.057262",1,"partial",32468,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,TRUE,"harness",1,"",0

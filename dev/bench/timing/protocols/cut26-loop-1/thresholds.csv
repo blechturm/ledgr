@@ -1,0 +1,13 @@
+cell,bound
+run_10x7200,1.0
+fold_10x7200,1.0
+run_20x23400,1.0
+fold_20x23400,1.0
+run_500x1260,1.0
+fold_500x1260,1.0
+run_1166x252,1.0
+fold_1166x252,1.0
+run_slice2_10x7200,1.0
+fold_slice2_10x7200,1.0
+run_facts_10x7200,1.0
+fold_facts_10x7200,1.0
