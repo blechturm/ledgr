@@ -29,6 +29,130 @@ an architecture note, or a spec packet.
 
 ## Open
 
+<a id="2026-11-27-research-learned-portfolio-transitions"></a>
+### 2026-11-27 [research] Learned portfolio transition policies
+
+The maintainer discussion of 2026-11-27 separates learning about the market
+from learning how to act given a forecast or reference allocation. A
+classical estimator (e.g. minimum variance on causal return history)
+produces reference weights; an ordinary strategy-side function maps current
+weights, reference weights and causal inputs to intended weights. A simple
+example is `w_intent = w_current + alpha * (w_ref - w_current)`, with
+`alpha` in [0, 1], on a consistent full portfolio axis including cash.
+At zero the intended action is to hold, not to reconstruct rounded holdings.
+A fitted policy might choose alpha from allocation drift, expected utility
+improvement, estimated costs, signal stability and risk. Joint allocation
+and transition optimization is an equally legitimate approach.
+
+The ordinary composition scenario belongs to the existing U2 portfolio
+construction and U3 helper-bundle RFCs (macro plan WS10/WS11a); no separate
+controller API is needed merely for a future learning method. What remains
+parked is the research: compare full rebalance, fixed partial adjustment,
+no-trade bands, turnover/cost-aware optimization and a small fitted
+state-dependent policy using identical execution assumptions. Direct
+optimization of policy parameters against complete runs and walk-forward
+evaluation may already suffice; establish its value before investigating
+policy gradients. The fitting method is external to the strategy contract.
+
+Prior art: [Moody and Saffell, Learning to Trade via Direct Reinforcement
+(2001)](https://pubmed.ncbi.nlm.nih.gov/18249919/);
+[Gârleanu and Pedersen, Dynamic Trading with Predictable Returns and
+Transaction Costs (2013)](https://www.nber.org/papers/w15205). The latter
+trades partially toward a forward-looking aim portfolio, not necessarily
+today's static optimizer. These are research inputs, not evidence that a
+learned policy improves ledgr's out-of-sample results.
+
+This entry authorizes no implementation.
+
+<a id="2026-11-27-execution-incremental-simulation-sessions"></a>
+### 2026-11-27 [execution] Incrementally controlled simulation sessions
+
+A possible future consumer of the common fold is a simulation session that
+prepares immutable causal market inputs once, owns isolated mutable portfolio
+state and advances to the next decision boundary when supplied an external
+target. Reset, observe, step and finalization are illustrative lifecycle
+operations, not accepted API names. This could support interactive strategy
+debugging, repeated learning episodes and counterfactual action evaluation.
+A conventional complete run with its strategy callback remains a valid
+rollout; external step control is not a mathematical prerequisite for RL.
+
+Any future design must use the same financial transition semantics, preserve
+the P1/P2 causal boundary (never expose the private execution packet),
+distinguish requested from executed actions, and account for scheduled skips,
+next-open timing, corporate actions, risk, costs, affordability, terminal
+outcomes and the final pulse. A decision-boundary observation must be frozen
+against later mutations. Resets and any future branch/checkpoint operation
+must isolate all mutable state, including RNG and output buffers; this is
+not the retired durable pulse-resume feature. Retention and provenance must
+remain consistent with the one-fold and exact-reconstruction contracts.
+No new execution mode, alternative accounting engine or arbitrary
+execution-policy callback is implied.
+
+Evidence: [Cut 26 timing protocol](../../dev/bench/timing/protocols/cut26-loop-1/protocol.md)
+and [WS46 timing record](../../dev/lean_core/parity/evidence/ldg3274/README.md)
+(2026-11-27), eight paired measurements per cell. The development overlay
+fold envelope runs 7,200 pulses on ten instruments in 2.46 s for crossover
+and 4.93 s for the cost/risk/sizing workload (about 2,926 and 1,461
+pulses/s); the separate pulse-loop medians are 1.82 and 3.81 s. This
+supports investigating feasibility, not a measured RL throughput claim.
+Observation materialization, frequent resets, dense rebalancing, model
+inference and communication have not been timed in an interactive session.
+
+The existing post-switch sweep-architecture seed can consider shared
+preparation, isolated state, batching, worker reuse and retention without
+implementing this lifecycle. A later evidence-led probe in ledgr-research
+could compare a complete-run callback rollout with an externally stepped
+session, exact economic parity, reset overhead and memory isolation.
+[Gymnasium's environment API](https://gymnasium.farama.org/main/api/env/)
+is interoperability prior art. No session API is authorized by this entry.
+
+<a id="2026-11-27-research-financial-rl-methodology"></a>
+### 2026-11-27 [research] Financial RL methodology and R-native training
+
+Repeated historical episodes generate new portfolio states and action
+outcomes, not new independent observations of the market. A small
+price-taking investor does not change the historical price path. The
+research question is whether a learned sequential controller adds value
+over direct policy optimization and classical stochastic control given the
+same predictive inputs, costs and constraints, rather than whether a large
+network can memorize OHLCV history.
+
+Possible investigations: first recover a known analytical trading policy
+in a controlled synthetic environment, then vary signal persistence,
+costs and nonlinear constraints; compare simple and learned transition
+policies on strictly chronological historical holdouts. Cross-sectional
+parameter sharing, synchronized multivariate block bootstrapping,
+econometric simulations and counterfactual actions can expand the
+experience available to a learner but do not erase dependence or model
+misspecification. Counterfactual rewards are training-only; branch state
+and next observations must reflect each action. Preserve untouched test
+periods, selection history and model complexity comparisons. Connect to
+the parked general ML-strategy preparedness and snapshot-scoped trial
+accounting ideas rather than inventing parallel provenance.
+
+Prior art: [Huang (2018), Financial Trading as a Game](https://arxiv.org/abs/1807.02787)
+(action augmentation); [Jiang et al. (2017)](https://arxiv.org/abs/1706.10059)
+(shared asset evaluator); [Giorgi, Herzel and Pigato (2024)](https://doi.org/10.1002/asmb.2825)
+(analytical comparison and nonlinear simulation);
+[Karzanov et al. (2025)](https://arxiv.org/abs/2502.02619)
+(block bootstrap); [FinRL-Meta](https://github.com/AI4Finance-Foundation/FinRL-Meta)
+and [TensorTrade](https://github.com/tensortrade-org/tensortrade) (environment
+prior art). Published results are not independently replicated.
+
+R-native training is a possibility using [torch for R](https://torch.mlverse.org/)
+and [CleanRL](https://github.com/vwxyzjn/cleanrl) as a reference for a small
+PPO implementation, validated first on a non-financial control problem.
+Python remains an alternative through a compatible environment adapter.
+Compare total training throughput and sample efficiency; avoiding
+cross-language calls does not guarantee faster learning. A fitted-policy
+adapter must identify the stored model, preprocessing, data cutoff and
+training recipe; deterministic financial replay is distinct from
+bit-identical stochastic model refitting. Training, reward and episode
+policy belong outside the financial core; a separate experimental adapter
+in ledgr-research is a possibility, not a package commitment.
+
+This entry authorizes no implementation or dependency.
+
 <a id="2026-11-17-ux-instrument-inspection-charts"></a>
 ### 2026-11-17 [ux] Instrument inspection: price, indicators and fills on one chart
 

@@ -65,6 +65,10 @@ Revision 16 corrects that entry (maintainer, 2026-11-14, after workstream
 36's close review round 1): the replaced package functions remain the
 lean checks' fallback and differential oracle; a deletion-readiness audit
 classifies each fallback dependency before the switch.
+Revision 17 records the maintainer's 2026-11-27 direction on portfolio
+transition policies: extend the existing U2 and U3 design scenarios and the
+post-switch sweep-architecture seed's design inputs, without adding a
+workstream or authorizing a learning framework or session API.
 Inputs: the roadmap and the [inventory reconciliation](https://github.com/blechturm/ledgr/blob/ea580bc6b1d345f7aae9e6836b4f12fe94e18afe/inst/design/ledgr_v0_2_3_spec_packet/inventory_reconciliation.md).
 
 **Release goal:** a coherent, readable path from declared features to
@@ -627,11 +631,41 @@ While WS16 is open, an execution-sensitive WS10 cut waits for the switch, or
 the lean core is rebased and reproved against it before WS16 continues
 (lean-fold-core synthesis Section 6).
 
+**Portfolio transition policies (maintainer, 2026-11-27; U2 design
+scenario).** In addition to the existing Momento and NMOF cases, the
+portfolio-construction RFC demonstrates full adjustment, partial adjustment,
+no-trade bands and a parameterized state-dependent adjustment of a reference
+allocation. A reference allocation is an estimator's or optimizer's desired
+weights; a transition may use current weights, the reference, declared
+parameters and causal market/portfolio inputs to produce intended weights.
+Turnover- and cost-aware allocation, including solving allocation and
+transition jointly, remain expressible. A learned policy is a future instance
+of the same operation, not a new execution mechanism.
+
+Use ordinary R composition, identified weight vectors and the existing
+`ledgr_target_rebalance()` / `ledgr_target_adjust()` boundary. The RFC must
+settle the current-weight denominator and cash treatment, instrument identity,
+held nonmembers and omitted holdings, stale/frozen or unavailable marks,
+reserved exposure and the interaction with sizing and rounding. An
+intentional hold must not become an accidental liquidation or a risk refusal.
+The decision schedule still owns when a strategy is called; an allocation
+policy decides its intended change at that call. Hard risk constraints and
+execution/affordability policy retain their existing owners. No mandatory
+controller class, extra weights class, registry, strategy grammar stage or
+execution path is authorized. The RFC settles the exact API and examples;
+this input changes neither implementation order nor the WS16 switch rule.
+
 ### WS11. Surface and CRAN preparation (H4, H1, C10, C9, U3)
 
 - **WS11a, now:** H4 real-data use audit (per-block decisions); C10 export
   census and coupling map; C9's mechanism as a small Type 2 decision; the
   helper-bundles RFC (U3, keeping R4's proof obligations).
+  **Design input (maintainer, 2026-11-27):** include a reusable ordinary-R
+  portfolio transition function with declared parameters alongside the
+  existing substantial-estimator case. Exercise source/dependency capture,
+  recursive preflight, strategy identity, recovery and parallel-worker
+  reconstruction. No opaque model handle, mutable environment escape hatch,
+  fitted-model lifecycle or new callback contract is implied.
 - **WS11b, after J:** C10 ADR on the surviving API; H1 export repairs; C9
   tiering, its timing conditional on the CRAN release (rule 9).
 
@@ -1150,6 +1184,16 @@ public behavior except the explicit pulse-plumbing ledger differences.
        axis, with their state stored as arrays across candidates.
      - **Order:** workers after single-core speed; compiled kernels only by
        the maintainer's named decision.
+     - **Future simulation use (maintainer, 2026-11-27; design input
+       only):** consider repeated episodes and learning environments when
+       evaluating reusable preparation, isolated mutable candidate state,
+       worker reuse, batching and result retention. A sweep is not an
+       interactive environment: independent resets, externally supplied
+       actions and online policy updates would need their own design.
+       Do not add these capabilities or change the registered load-test
+       protocol for this scenario. Preserve one fold and the existing
+       evidence/reconstruction guarantees; no new ephemeral public mode
+       is implied. See the [parked session idea](../horizon.md#2026-11-27-execution-incremental-simulation-sessions).
      Route: rfc/README.md row `sweep-architecture`.
 - **Optimization manual update (maintainer, 2026-11-15).** Right after the
   hashed-frame spike, one documentation pass brings
@@ -1615,6 +1659,10 @@ fundamentals (after CRAN, which is undecided: rule 9); public `ledgr.crypto2` (s
 default (demand-driven); a decision-graph recorder; state-storage redesign
 without a measured case; telemetry redesign (H7); vectorbt or LEAN rows.
 
+The 2026-11-27 transition-policy scenarios do not add RL algorithms, a torch
+dependency, fitted-policy artifact support, interactive simulation sessions,
+or an additional execution mode. These remain outside this release.
+
 The compiled-default non-goal remains binding unless WS14's post-consolidation
 profile triggers and the maintainer accepts the focused Type 2 escalation
 defined there.
@@ -1682,6 +1730,12 @@ defined there.
   `calculation_non_finite` rather than refusing the run, so authors are not
   pushed toward sentinel values. `NaN` and infinite values still refuse.
   `series_fn` output follows the `fn` path. Routed as a WS12 chore cut.
+- **Portfolio transition policies, 2026-11-27:** the maintainer directed
+  U2 to cover state-dependent adjustment through the existing strategy
+  grammar, U3 to exercise reusable transition functions, and the post-switch
+  sweep seed to consider future repeated simulation. No new workstream,
+  implementation ticket, model lifecycle or session API is authorized. The
+  remaining research ideas stay in the horizon.
 
 A, B and the scope answers were accepted with this plan on 2026-10-28. The
 typed-accounting and typed-fold-carrier amendments were accepted on
