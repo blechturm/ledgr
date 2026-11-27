@@ -1,0 +1,8 @@
+plan_parity mutation fill_price_ulp: exit 1 (16 tables, 13 different)
+plan_parity mutation hold_target_changed: exit 1 (16 tables, 13 different)
+plan_parity mutation reason_levels_swapped: exit 1 (16 tables, 1 different)
+inert mutation fill_price_ulp debug 1: exit 1 (16 tables, 13 different; verdicts: NOT RUN 1)
+prep_capture_intraday exit 0
+prep_check_intraday_1x100k exit 0
+prep_check_intraday_5x100k exit 0
+prep_check_intraday_20x50k exit 0

@@ -1,0 +1,5 @@
+capture build: installed pin C:/Users/maxth/ledgr-wt/pin-lib-7f65733f/ledgr 
+prep_intraday_1x100k: 4 records, 0 fail; capture 216s, replay 3s, 26 MB
+prep_intraday_5x100k: 4 records, 0 fail; capture 224s, replay 3s, 73 MB
+prep_intraday_20x50k: 4 records, 0 fail; capture 121s, replay 3s, 122 MB
+replay evidence written to C:/Users/maxth/ledgr-wt/cut27-scratch/close/prep_out_intraday 

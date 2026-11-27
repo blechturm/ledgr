@@ -1,0 +1,7 @@
+"capture","chunk","debug","mutation","exit","checks","calls","failing_checks","verdict"
+"prep_intraday_20x50k.rds","run","0","none",0,10,100627,"","pass"
+"prep_intraday_20x50k.rds","run","1","none",0,10,100627,"","pass"
+"prep_intraday_20x50k.rds","run","0","axis_last_session_dropped",1,1,1,"axis","caught"
+"prep_intraday_20x50k.rds","run","0","chunk_edge_bar_dropped",1,10,100627,"substrate;features;projection;reader_packets","caught"
+"prep_intraday_20x50k.rds","run","0","chunk_edge_bar_fetched_twice",1,10,100627,"hydrate_rows","caught"
+"prep_intraday_20x50k.rds","run","0","duplicate_within_chunk_not_refused",1,10,100627,"duplicate_refused","caught"

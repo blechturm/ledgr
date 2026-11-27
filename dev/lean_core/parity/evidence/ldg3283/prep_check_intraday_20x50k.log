@@ -1,0 +1,15 @@
+ capture                  chunk debug mutation                           exit
+ prep_intraday_20x50k.rds run   0     none                               0   
+ prep_intraday_20x50k.rds run   1     none                               0   
+ prep_intraday_20x50k.rds run   0     axis_last_session_dropped          1   
+ prep_intraday_20x50k.rds run   0     chunk_edge_bar_dropped             1   
+ prep_intraday_20x50k.rds run   0     chunk_edge_bar_fetched_twice       1   
+ prep_intraday_20x50k.rds run   0     duplicate_within_chunk_not_refused 1   
+ checks calls  failing_checks                               verdict
+ 10     100627                                              pass   
+ 10     100627                                              pass   
+  1          1 axis                                         caught 
+ 10     100627 substrate;features;projection;reader_packets caught 
+ 10     100627 hydrate_rows                                 caught 
+ 10     100627 duplicate_refused                            caught 
+6 runs in 31s

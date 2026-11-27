@@ -74,7 +74,7 @@ local({
                      "--workloads=prep_fixture,prep_500x1260,prep_500x2520,prep_500x5040",
                      "--boundaries=hydrate,substrate,features,reader,packet,history_read,history_frame,history_matrix"),
     prep_check_fixture = c(file.path(p, "prep_check.R"), paste0("--lib=", lib), paste0("--captures=", file.path(prep_caps, "prep_fixture.rds")),
-                           "--chunks=8,12,run", paste0("--scratch=", file.path(scratch, "prep_check_fixture")), "--mutations",
+                           "--chunks=8,12", paste0("--scratch=", file.path(scratch, "prep_check_fixture")), "--mutations",
                            paste0("--out=", file.path(here, "prep_check_fixture.csv"))),
     prep_check_portable = c(file.path(p, "prep_check.R"), paste0("--lib=", lib),
                             paste0("--captures=", paste(file.path(prep_caps, paste0("prep_500x", c(1260, 2520, 5040), ".rds")), collapse = ",")),

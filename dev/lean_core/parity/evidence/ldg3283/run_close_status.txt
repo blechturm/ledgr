@@ -1,0 +1,26 @@
+plan_parity_debug0: status 0, 829 s; 427 tables, 0 different 
+plan_parity_debug1: status 0, 755 s; 427 tables, 0 different 
+loop_dispatch: status 0, 7 s;           TRUE TRUE 
+prep_edges: status 0, 0 s; PASS: 19 events, all 11 listed kinds, each within one session of an edge at widths 8 and 12 
+fifo_recorder: status 0, 70 s; replay evidence written to C:/Users/maxth/ledgr-wt/cut27-scratch/close/fifo_rec_out  
+gate_debug1: status 0, 6000 s; 3585 tables, 0 different; verdicts: PASS 229, PASS* 6 
+batch1_debug0: status 0, 197 s; 925 tables, 0 different; verdicts: PASS 67, PASS* 1 
+batch1_debug1: status 0, 251 s; 925 tables, 0 different; verdicts: PASS 67, PASS* 1 
+inert_debug0: status 0, 108 s; 496 tables, 0 different; verdicts: PASS* 37 
+prep_capture: status 0, 5856 s; replay evidence written to C:/Users/maxth/ledgr-wt/cut27-scratch/close/prep_out  
+prep_check_fixture: status 1, 25 s; 15 runs in 25s 
+inert_debug1: status 0, 163 s; 496 tables, 0 different; verdicts: PASS* 37 
+fifo_captureA: status 0, 1684 s; captured test-suite lot calls in 8 chunks to C:/Users/maxth/ledgr-wt/cut27-scratch/close/testsA  
+prep_check_portable: status 0, 1108 s; 6 runs in 1107s 
+integrated_debug0: status 1, 1239 s; 3585 tables, 94 different; verdicts: FAIL 80, PASS 152, PASS* 3 
+witness: status 0, 106 s; hashed-frame witness: PASS 
+slice2_reach_cross: status 0, 2 s; 26 checks over 26 workloads; 26 ok (a predicate holds on its own workload and fails on another; the basis control rejects rounded-price fees) 
+slice3_reach_cross: status 0, 1 s; 41 checks over 37 of 37 slice-3 workloads; 41 ok 
+slice4_reach_cross: status 0, 1 s; 92 predicates over 92 of 92 required workloads (set slice4); 92 ok 
+prep_digests_pin: status 0, 568 s; prep_intraday_20x50k: 3870 reads in 125s 
+fifo_captureB: status 0, 1651 s; captured test-suite lot calls in 8 chunks to C:/Users/maxth/ledgr-wt/cut27-scratch/close/testsB  
+fifo_population: status 0, 10 s; POPULATIONS IDENTICAL: 145679 calls (145640 lot calls, 39 input refusals), 60470 distinct keys, 118 files 
+fifo_check: status 1, 147 s; - fifo_population.csv differs from the committed evidence 
+prep_digests_lean: status 0, 563 s; prep_intraday_20x50k: identical to C:/Users/maxth/ledgr-wt/cut27-scratch/close/digests_pin 
+variants_debug0: status 0, 858 s; 159 manifest rows, 93 variants, 0 failures 
+variants_debug1: status 0, 726 s; 113 manifest rows, 58 variants, 0 failures 

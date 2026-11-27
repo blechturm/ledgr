@@ -1,0 +1,4 @@
+prep_fixture: 768 reads in 2s
+prep_intraday_1x100k: 7740 reads in 215s
+prep_intraday_5x100k: 7740 reads in 225s
+prep_intraday_20x50k: 3870 reads in 125s

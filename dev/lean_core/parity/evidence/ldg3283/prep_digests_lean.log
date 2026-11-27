@@ -1,0 +1,8 @@
+prep_fixture: 768 reads in 2s
+prep_fixture: identical to C:/Users/maxth/ledgr-wt/cut27-scratch/close/digests_pin
+prep_intraday_1x100k: 7740 reads in 214s
+prep_intraday_1x100k: identical to C:/Users/maxth/ledgr-wt/cut27-scratch/close/digests_pin
+prep_intraday_5x100k: 7740 reads in 221s
+prep_intraday_5x100k: identical to C:/Users/maxth/ledgr-wt/cut27-scratch/close/digests_pin
+prep_intraday_20x50k: 3870 reads in 125s
+prep_intraday_20x50k: identical to C:/Users/maxth/ledgr-wt/cut27-scratch/close/digests_pin

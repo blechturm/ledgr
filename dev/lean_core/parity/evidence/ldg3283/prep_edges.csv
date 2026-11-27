@@ -1,0 +1,20 @@
+"event","instrument","session","detail","near_edge_w8","near_edge_w12"
+"exit","BBB",25,"leaves membership",TRUE,TRUE
+"changed column order","BBB",25,"held former member moves to the end of the decision axis",TRUE,TRUE
+"entry","FFF",25,"joins membership",TRUE,TRUE
+"re-entry","BBB",49,"rejoins membership",TRUE,TRUE
+"changed column order","BBB",49,"returns to its member position",TRUE,TRUE
+"carry expiry","CCC",49,"last bar s43, carry 5",TRUE,TRUE
+"relisting","CCC",73,"bars resume after the inactive interval",TRUE,TRUE
+"carry expiry","DDD",25,"last bar s19, carry 5",TRUE,TRUE
+"carry expiry","EEE",49,"last bar s43, carry 5",TRUE,TRUE
+"listing","FFF",24,"first bar",TRUE,TRUE
+"inactive","CCC",48,"known_inactive starts",TRUE,TRUE
+"off-axis request","CCC",48,"explicitly named while off the decision axis",TRUE,TRUE
+"late-known fact","EEE",49,"effective",TRUE,TRUE
+"late-known fact","EEE",50,"known",TRUE,TRUE
+"min_observations window","CCC",49,"lookback 10, min_observations 8: 5 carried, 1 missing",TRUE,TRUE
+"min_observations window","DDD",25,"lookback 10, min_observations 8: 5 carried, 1 missing",TRUE,TRUE
+"min_observations window","EEE",49,"lookback 10, min_observations 8: 5 carried, 1 missing",TRUE,TRUE
+"finite lookback across tiles","all",96,"lookback 30 at s96; 4 tiles at width 8; 3 tiles at width 12",TRUE,TRUE
+"lookback = Inf","all",96,"every session to s96; 12 tiles at width 8; 8 tiles at width 12",TRUE,TRUE

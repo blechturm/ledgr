@@ -1,0 +1,2 @@
+crossover_3x40               NOT RUN   DIFFERENT  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.9 s  lean 4.3 s  new errors [{"condition_class":["ledgr_invalid_accounting_event","ledgr_invalid_ledger_meta","rlang_error","error","condition"],"mes | FILL cash and position deltas do not reconcile to side, quantity, price and fee.]
+16 tables, 13 different; verdicts: NOT RUN 1

@@ -1,0 +1,65 @@
+ capture          chunk debug mutation                           exit checks
+ prep_fixture.rds 8     0     none                               0    13    
+ prep_fixture.rds 8     1     none                               0    13    
+ prep_fixture.rds 8     0     chunk_edge_bar_dropped             1    13    
+ prep_fixture.rds 8     0     chunk_edge_bar_fetched_twice       1    13    
+ prep_fixture.rds 8     0     duplicate_within_chunk_not_refused 1    13    
+ prep_fixture.rds 12    0     none                               0    13    
+ prep_fixture.rds 12    1     none                               0    13    
+ prep_fixture.rds 12    0     chunk_edge_bar_dropped             1    13    
+ prep_fixture.rds 12    0     chunk_edge_bar_fetched_twice       1    13    
+ prep_fixture.rds 12    0     duplicate_within_chunk_not_refused 1    13    
+ prep_fixture.rds run   0     none                               0    13    
+ prep_fixture.rds run   1     none                               0    13    
+ prep_fixture.rds run   0     chunk_edge_bar_dropped             0    13    
+ prep_fixture.rds run   0     chunk_edge_bar_fetched_twice       0    13    
+ prep_fixture.rds run   0     duplicate_within_chunk_not_refused 1    13    
+ calls
+ 1926 
+ 1926 
+ 1926 
+ 1926 
+ 1926 
+ 1926 
+ 1926 
+ 1926 
+ 1926 
+ 1926 
+ 1926 
+ 1926 
+ 1926 
+ 1926 
+ 1926 
+ failing_checks                                                                               
+                                                                                              
+                                                                                              
+ substrate;packet;features;projection;reader_packets;history_read;history_frame;history_matrix
+ hydrate_rows                                                                                 
+ duplicate_refused                                                                            
+                                                                                              
+                                                                                              
+ substrate;packet;features;projection;reader_packets;history_read;history_frame;history_matrix
+ hydrate_rows                                                                                 
+ duplicate_refused                                                                            
+                                                                                              
+                                                                                              
+                                                                                              
+                                                                                              
+ duplicate_refused                                                                            
+ verdict
+ pass   
+ pass   
+ caught 
+ caught 
+ caught 
+ pass   
+ pass   
+ caught 
+ caught 
+ caught 
+ pass   
+ pass   
+ MISSED 
+ MISSED 
+ caught 
+15 runs in 25s

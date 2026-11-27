@@ -1,0 +1,7 @@
+"refusal","n"
+"input ledgr_invalid_lot_fill: Invalid fill input for lot accounting.",39
+"kernel ledgr_invalid_accounting_event: DISPOSITION realized model PnL does not match canonical FIFO realization.",4
+"kernel ledgr_invalid_lot_fill: Invalid fill input for lot accounting.",22
+"kernel ledgr_lot_state_invariant: DISPOSITION must consume the position and every live lot exactly.",2
+"kernel ledgr_lot_state_invariant: Invalid applied lot rows.",3
+"kernel ledgr_lot_state_invariant: Lot accounting cannot open through an unconsumed opposing lot.",7
