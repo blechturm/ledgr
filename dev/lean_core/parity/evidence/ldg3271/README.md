@@ -53,5 +53,15 @@ No package code changes.
   repository root (their committed commands start the runner by a relative
   script path), 10 with no recorded launch directory (unknown). None is
   changed.
-- `gate_debug0.csv`, `gate_debug1.csv` and the variant driver output: the
-  unchanged lean core under the repaired launch.
+- `gate_debug0.csv`, `gate_debug1.csv` (`.log` beside): the full gate on the
+  unchanged lean core under the repaired launch, against `loop_freeze.csv`:
+  203 workloads, 3,136 tables, 0 different, PASS 202 and PASS* 1
+  (`s3_sched_none`, as before), every frozen path checked, with debug off
+  and on. The six workloads with worker sweeps (dense_cost,
+  dense_risk_features, avail_terminal_resume, avail_incomplete, failures,
+  witness_sweep_workers) now compare the pin's workers in both arms: every
+  run reports 2 of 2 workers on `pin-lib-d5b3a151/ledgr` per arm. No path
+  changed (the lean loop still refused worker sweeps).
+- `variants/` and `variants_driver.log`: `loop_variants.R` from outside the
+  tree: 205 manifest rows, 80 variants, 0 failures; the three negative
+  controls fail closed as expected.
