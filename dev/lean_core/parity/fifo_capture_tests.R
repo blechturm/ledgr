@@ -88,23 +88,6 @@ ws16_wrap("ledgr_lot_input", function(orig) {
   }
 })
 
-# Cut 26 (LDG-3274): one test is not run. "compiled spot FIFO validates
-# scalar state argument types" (test-execution-spec.R) calls the pin's
-# native spot-FIFO routine directly with wrong argument types; after the
-# earlier tests in the same process it crashes R (exit 127, no message),
-# with or without this capture, while the file alone passes. It makes no lot
-# call, and the lean loop never uses the compiled kernel (LR-25; WS14 owns
-# spot_fifo.cpp). During that test the routine refuses at once instead of
-# entering native code; the test then fails and is counted, not compared.
-skipped_tests <- "compiled spot FIFO validates scalar state argument types"
-ws16_wrap("ledgr_cpp_spot_fifo_batch", function(orig) {
-  force(orig)
-  function(...) {
-    if (rec$test %in% skipped_tests) stop("fifo capture: compiled kernel type checks not run (Cut 26)")
-    orig(...)
-  }
-})
-
 # The current file and test, from the reporter (as the Cut 21 F2 census did).
 Where <- R6::R6Class("Where", inherit = testthat::Reporter, public = list(
   start_file = function(filename) { rec$file <- basename(filename) },
@@ -120,7 +103,6 @@ df <- as.data.frame(res)
 if (any(basename(df$file) %in% excluded_files)) stop("an excluded file ran: ", paste(excluded_files, collapse = ", "))
 utils::write.csv(data.frame(files = length(unique(df$file)), tests = nrow(df), failed = sum(df$failed),
                             errors = sum(df$error), skipped = sum(df$skipped), excluded = paste(excluded_files, collapse = ";"),
-                            not_run = paste(skipped_tests, collapse = ";"),
                             chunks = rec$chunk,
                             seconds = round(proc.time()[["elapsed"]] - t0)),
                  file.path(out, "tests_outcome.csv"), row.names = FALSE)
