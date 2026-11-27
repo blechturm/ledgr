@@ -1,0 +1,2 @@
+s5_compiled_missing_native   CAUGHT    DIFFERENT  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=10  pinned 0.7 s  lean 2.9 s
+9 tables, 7 different; verdicts: CAUGHT 1

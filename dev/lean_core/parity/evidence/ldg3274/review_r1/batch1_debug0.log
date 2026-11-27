@@ -1,0 +1,12 @@
+s5_walk_forward_workers      PASS      identical  lean 6  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=1  pinned 4.0 s  lean 5.0 s  workers pin 4/4 lean 4/4 records 4 entries 4
+s5_workers_backstop          PASS      identical  lean 3  refused []  backstop [test seam: backstop]  store []  sink []  holds 0  append<=0  range<=0  pinned 1.3 s  lean 3.2 s  workers pin 2/2 lean 4/4 records 3 entries 3
+s5_workers_backstop_escape   PASS      identical  lean 2  refused []  backstop [test seam: backstop]  store []  sink []  holds 0  append<=0  range<=0  pinned 1.2 s  lean 2.9 s  workers pin 2/2 lean 4/4 records 2 entries 2
+s5_workers_consecutive       PASS      identical  lean 4  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=1  pinned 2.2 s  lean 3.4 s  workers pin 4/4 lean 4/4 records 4 entries 4
+s5_workers_dividend          PASS      identical  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=1  pinned 1.8 s  lean 1.8 s  workers pin 2/2 lean 2/2 records 2 entries 2
+s5_workers_facts             PASS      identical  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=1  pinned 1.4 s  lean 2.1 s  workers pin 2/2 lean 2/2 records 2 entries 2
+s5_workers_failing           PASS      identical  lean 4  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=1  pinned 2.2 s  lean 3.5 s  workers pin 4/4 lean 4/4 records 4 entries 4
+s5_workers_missing           PASS      identical  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=1  pinned 1.4 s  lean 1.9 s  workers pin 2/2 lean 2/2 records 2 entries 2
+s5_workers_sizing            PASS      identical  lean 2  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=1  pinned 1.3 s  lean 1.9 s  workers pin 2/2 lean 2/2 records 2 entries 2
+s5_workers_compiled_refused  PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.2 s  lean 3.0 s  workers pin 4/4 lean 4/4 records 4 entries 4
+frozen paths (batch1, debug 0): 10 of 10 workloads checked
+121 tables, 0 different; verdicts: PASS 9, PASS* 1

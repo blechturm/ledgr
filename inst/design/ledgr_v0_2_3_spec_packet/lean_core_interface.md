@@ -868,7 +868,7 @@ pin's stage samples are mostly zero (every stage median 0 in
 `ledgr_backtest_bench()` reports after the switch is a decision of the
 diagnostic-records amendment (seed D7).
 
-### 19.2 Coverage (slices 1 to 4)
+### 19.2 Coverage (slices 1 to 5)
 
 The loop runs a fold only when all of these hold, and otherwise refuses with
 one classed condition naming the first uncovered feature, before the first
@@ -881,8 +881,9 @@ pulse; the harness then runs the workload on the pin:
 | every cost model and chain; risk chains of `long_only` and `max_weight` on fresh marks; raw full targets, `ledgr_target_rebalance()` and `ledgr_target_adjust()` with their sizing evidence, or `ledgr_strategy_result()` with declared state (slice 2, Section 19.9) | - (slice 3 covers the stale-mark risk rows, the unavailable risk-mark stop and sizing at an unusable mark) |
 | cash and position openings, carried openings (frozen set, lots, pending entitlements, position facts) and unknown-basis positions; corporate actions (cash dividends, cash, stock and mixed acquisitions, spin-offs) with the plan's refusals (slice 4, Section 19.13) | - |
 | strategy reading `ctx` fields, `hold()`, state and the pulse seed; `ledgr_history_matrix()`, `ledgr_history_frame()` and `ledgr_history_info()` of bars and features (slice 3) | - |
-| committed run and a one-worker sweep candidate | workers, compiled FIFO, restart, walk-forward (5) |
+| committed runs, including a restart (fresh replacement, INCOMPLETE reopen, completion recovery); sweep candidates with one worker or on workers; a sweep selecting `compiled_accounting_model = "spot_fifo"`, after the pin's two admission checks; walk-forward with its training sweeps and test runs (slice 5, Section 19.14) | a `control$checkpoint_every` key, refused at entry until the switch removes the control (D3 Section 2) |
 | the in-memory event path | `db_live`, refused before the first pulse (retired by the pulse-plumbing synthesis R8) |
+| pulses on the prepared axis | a fold pulse outside the prepared axis (the prepared-axis guard) |
 
 Also covered, each with a small parity or refusal witness (cut review R4):
 strategy returns in the pin's numeric and `ledgr_target` forms, the
@@ -923,8 +924,16 @@ Decided by the maintainer (2026-11-09):
    cash rejections and the affordability order), a sell and a buy on the
    same pulse, and trades requested on the final pulse.
 3. **Sweeps.** One-worker sweep candidates are in slice 1, so the first
-   measurement includes the keep rule. Sweeps on workers stay on the pin
-   until slice 5, because worker processes load the installed package.
+   measurement includes the keep rule. Sweeps on workers stayed on the pin
+   until slice 5, because worker processes load the installed package;
+   since Cut 26 the harness loads the lean fold into each worker (Section
+   19.14).
+
+Since Cut 19 no coverage condition is raised mid-run, so nothing calls
+`lean_abort_attempt()`. Cut 26 adds a harness test seam (`backstop_after`,
+`dev/lean_core/loop_harness.R`) that marks an attempt after a set number of
+strategy calls, so the mark, the rerun and the RNG restore stay witnessed,
+including from sweep workers.
 
 ### 19.3 State (allocated once in E)
 
@@ -1573,3 +1582,98 @@ and the provider's views as their owners. Each is "retain" unless the
 switch cut's scripted old-fold caller list shows otherwise. No public
 constructor sets `position_fact_unknown_basis`; only the sweep payload
 reads it from the experiment. The switch cut's caller list records this.
+
+### 19.14 Slice 5: sweep workers, the compiled selector, restart and walk-forward (Cut 26)
+
+- Status: accepted by the maintainer with Cut 26 on 2026-11-26, after the
+  cut review passed at re-review 2. Slice 5 adds coverage with no behaviour
+  change against the pin and the contracts. The maintainer's decision on
+  the probe (2026-11-26): the lean loop ignores the compiled selector until
+  WS14 (the pulse-plumbing synthesis amendment "the compiled selector (Cut
+  26, 2026-11-26)"; rules ledger LR-25).
+- Probe (2026-11-26, at `2bd1a33e`; `dev/spikes/slice5_probe/`): with each
+  refusal lifted, the full gate of 205 workloads matched the pin with debug
+  off and on. It also found a pre-existing harness gap: run from a source
+  tree, sweep workers loaded that tree. These are inputs, not evidence.
+- Implementation (workstream 46, LDG-3271 to LDG-3274): the evidence is in
+  tickets.yml and `dev/lean_core/parity/evidence/ldg3271` to `ldg3274`.
+
+Coverage moves in Section 19.2's table to covered:
+
+| Covered in slice 5 | Still refused |
+| --- | --- |
+| sweep candidates on workers, in gate and inert modes | a `control$checkpoint_every` key (D3 Section 2; removed with the control at the switch) |
+| a sweep selecting `compiled_accounting_model = "spot_fifo"` | `db_live` (non-buffered) execution (retired at the switch) |
+| restart: fresh replacement, INCOMPLETE reopen, completion recovery | a fold pulse outside the prepared axis |
+| walk-forward, its training sweeps (on workers too) and test runs | - |
+
+What changes:
+
+- **Worker launch (LDG-3271).** Every runner that can start workers
+  resolves its paths, then moves to a directory outside any ledgr source
+  package (`lean_harness_workdir()`); otherwise the pin's
+  `ledgr_parallel_ledgr_source_path()` makes each worker load that source
+  tree. Each worker's namespace origin is checked against the arm's
+  declared pin (`lean_worker_origin_install()`); a mismatch is the WORKER
+  verdict.
+- **Sweep workers (LDG-3273, `dev/lean_core/loop_workers.R`).** After the
+  pin starts its workers, each loads the lean core from the same pinned
+  library with the parent's debug setting, hook mode and any variant's
+  edits, and installs the lean loop. Each worker writes one record per
+  candidate task on every exit path: attempt, sweep, candidate, process,
+  namespace origin, envelope entries and whether each was the lean
+  envelope, debug, hook mode, the detector counters and bounds, and every
+  store call over the whole candidate. The parent merges them (counters by
+  sum, bounds by maximum) and fails closed on a missing, duplicated,
+  undispatched or foreign-attempt record, a failed boot, another build,
+  the pinned envelope, another debug setting or hook mode, or, with the
+  harness hooks, an envelope entry without exactly one outcome. An entry's
+  outcome is a lean fold, a coverage refusal, or an error that ends it
+  before its fold, such as the pin's E-stage admission refusals. The worker
+  records the error's class, and the condition passes on unchanged (WS46
+  close review round 1, F1). An entry that leaves early without an error
+  faults. Inert hooks mark no fold start, so an inert record's error class
+  says nothing about where the error arose (re-review 1, N1). A worker's backstop mark reaches the
+  parent, which reruns the whole workload on pin-only workers with the
+  entry RNG restored.
+- **Compiled selector (LDG-3272).** The lean E stage calls the pin's two
+  admission checks where the pin's envelope does
+  (`ledgr_require_compiled_spot_fifo_dispatch()`,
+  `ledgr_require_compiled_spot_fifo_event_kinds()`), then runs the lean R
+  FIFO. LR-19 and D3-B's capacity and committed-prefix rules stay binding.
+- **Restart (LDG-3272).** The restart check is deleted: since pulse-level
+  resume was retired every fold starts at pulse one
+  (`R/run-resume.R:55`). A fresh replacement enters a fresh lean fold; an
+  INCOMPLETE reopen and a completion recovery enter no fold.
+- **Walk-forward (LDG-3272).** The entry refusal and its recorder are
+  deleted.
+- **Backstop seam.** See Section 19.2 (after the maintainer's decisions).
+
+The feature bridge (decision 5; `dev/lean_core/parity/feature_bridge.R`)
+is not the gate. The gate runs the lean loop over the pin only, so no gate
+run exercises the new package feature path. On the final feature build
+(`2bd1a33e`) and the pin, the bridge reads, at every fold-envelope entry
+in parent and worker processes, what the lean fold reads from the
+execution: values, NA masks, indexed planes, axes and the feature mapping.
+It covers implicit preparation, explicit precompute and reuse, and both
+with two workers; the accepted feature oracle passes on the same build.
+
+Switch obligations:
+
+1. **Worker channel.** Retire `loop_workers.R` and the worker binding in
+   `lean_loop_install()`: at the switch the lean loop is in the package
+   and workers load it with the package. Keep a worker-origin check in the
+   harness that remains.
+2. **Compiled selector.** It stays inert until WS14: the switch keeps the
+   two admission helpers (`ledgr_require_compiled_spot_fifo_dispatch()`,
+   `ledgr_require_compiled_spot_fifo_event_kinds()`) and their dependencies
+   (`ledgr_normalize_compiled_accounting_model()`, the native routine
+   lookup, `corporate_action_plan$event_kinds()`) in the deletion
+   inventory as "retain". WS14 either installs one compiled FIFO or retires
+   the selector with `spot_fifo.cpp`.
+3. **Checkpoint control.** Remove the control and its entry refusal (LR-20,
+   already listed). `db_live` is removed with the old fold.
+4. **Integrated feature path.** Run the full integrated proof: the lean
+   loop consuming the new package feature path, end to end. The bridge
+   above covers only the consumer boundary.
+5. **Backstop seam.** Retire the test seam with the harness entry.

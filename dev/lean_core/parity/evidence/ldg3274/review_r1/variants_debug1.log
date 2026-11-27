@@ -1,0 +1,17 @@
+debug 1 compiled_selector_refused (bound 65536): status 0, 40 tables, 0 different; verdicts: CAUGHT 1
+debug 1 cost_columns_short (bound 65536): status 0, 10 tables, 3 different; verdicts: CAUGHT 1
+debug 1 expand_whole (bound 1): status 0, 10 tables, 0 different; verdicts: CAUGHT 1
+debug 1 store_execute (bound 65536): status 0, 10 tables, 0 different; verdicts: CAUGHT 1
+debug 1 walk_forward_refused (bound 65536): status 0, 15 tables, 0 different; verdicts: CAUGHT 1
+debug 1 worker_backstop_rerun_skipped (bound 65536): status 0, 27 tables, 17 different; verdicts: CAUGHT 2
+debug 1 worker_capacity_lowered (bound 65536): status 0, 20 tables, 4 different; verdicts: CAUGHT 1
+debug 1 worker_hold_signal (bound 65536): status 0, 10 tables, 0 different; verdicts: CAUGHT 1
+debug 1 worker_lean_not_installed (bound 65536): status 0, 10 tables, 0 different; verdicts: CAUGHT 1
+debug 1 worker_prefold_unrecorded (bound 65536): status 0, 11 tables, 0 different; verdicts: CAUGHT 1
+debug 1 worker_record_dropped (bound 65536): status 0, 10 tables, 0 different; verdicts: CAUGHT 1
+debug 1 worker_record_duplicated (bound 65536): status 0, 10 tables, 0 different; verdicts: CAUGHT 1
+debug 1 worker_rng_restore_skipped (bound 65536): status 0, 24 tables, 3 different; verdicts: CAUGHT 2
+debug 1 worker_terminal_write (bound 65536): status 0, 10 tables, 0 different; verdicts: CAUGHT 1
+debug 1 worker_wrong_build (bound 65536): status 0, 10 tables, 0 different; verdicts: CAUGHT 1
+debug 1 write_in_loop (bound 65536): status 0, 10 tables, 2 different; verdicts: CAUGHT 1
+18 manifest rows, 16 variants, 0 failures

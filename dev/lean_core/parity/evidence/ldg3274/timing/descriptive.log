@@ -1,0 +1,26 @@
+selected rep 1 pin: 28.81 s (worker loading 0.00 s)
+selected rep 1 lean: 3.46 s (worker loading 0.00 s)
+selected rep 2 lean: 3.08 s (worker loading 0.00 s)
+selected rep 2 pin: 28.24 s (worker loading 0.00 s)
+selected rep 3 pin: 28.12 s (worker loading 0.00 s)
+selected rep 3 lean: 2.99 s (worker loading 0.00 s)
+selected rep 4 lean: 2.97 s (worker loading 0.00 s)
+selected rep 4 pin: 27.87 s (worker loading 0.00 s)
+selected rep 5 pin: 27.90 s (worker loading 0.00 s)
+selected rep 5 lean: 2.96 s (worker loading 0.00 s)
+workers rep 1 pin: 13.44 s (worker loading 0.00 s)
+workers rep 1 lean: 3.02 s (worker loading 0.39 s)
+workers rep 2 lean: 2.98 s (worker loading 0.40 s)
+workers rep 2 pin: 13.27 s (worker loading 0.00 s)
+workers rep 3 pin: 13.37 s (worker loading 0.00 s)
+workers rep 3 lean: 3.02 s (worker loading 0.39 s)
+workers rep 4 lean: 2.98 s (worker loading 0.39 s)
+workers rep 4 pin: 13.39 s (worker loading 0.00 s)
+workers rep 5 pin: 13.33 s (worker loading 0.00 s)
+workers rep 5 lean: 3.00 s (worker loading 0.43 s)
+     shape  arm seconds worker_loading_s
+1 selected lean    2.99             0.00
+2  workers lean    3.00             0.39
+3 selected  pin   28.12             0.00
+4  workers  pin   13.37             0.00
+results identical across arms: selected TRUE, workers TRUE 

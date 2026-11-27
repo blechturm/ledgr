@@ -1,0 +1,2 @@
+witness_sweep_workers        CAUGHT    identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.3 s  lean 1.7 s  workers pin 2/2 lean 2/2 records 2 entries 2 faults [worker 1|b entered the pinned envelope | worker 1|b ran with inert hooks | worker 1|a entered the pinned envelope | worker 1|a ran with inert hooks]
+10 tables, 0 different; verdicts: CAUGHT 1

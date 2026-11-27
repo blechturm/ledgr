@@ -1,0 +1,10 @@
+14:29:28 gate_debug0 status 0 
+14:30:17 batch1_debug0 status 0 
+14:31:03 inert_debug0 status 0 
+14:33:03 gate_debug1 status 0 
+14:34:06 batch1_debug1 status 0 
+14:35:05 inert_debug1 status 0 
+variant workloads: dense_cost,s5_walk_forward_workers,s5_workers_backstop,s5_workers_backstop_escape,s5_workers_consecutive,s5_workers_sizing,witness_sweep_workers,s5_workers_compiled_refused 
+14:35:06 variants_debug0 status 1 
+14:37:31 variants_debug1 status 0 
+14:37:53 recorder_relative_src status 0 

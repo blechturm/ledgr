@@ -1,0 +1,38 @@
+"workload","debug","mode","attempt","sweep_seq","run_id","pid","origin","entries","lean","debug","hooks","lean_folds","backstop","store_any"
+"dense_cost",0,"gate","25228-1-20261126232555.580396",1,"flat",61224,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"dense_cost",0,"gate","25228-1-20261126232555.580396",1,"open_end",61224,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"dense_cost",0,"gate","25228-1-20261126232555.580396",1,"partial",68156,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"dense_risk_features",0,"gate","25228-2-20261126232605.393625",1,"loose",21616,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"dense_risk_features",0,"gate","25228-2-20261126232605.393625",1,"tight",62944,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"avail_terminal_resume",0,"gate","25228-3-20261126232614.359208",1,"straight",73324,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"avail_incomplete",0,"gate","25228-4-20261126232623.438339",1,"two",34844,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"avail_incomplete",0,"gate","25228-4-20261126232623.438339",1,"one",48580,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"failures",0,"gate","25228-5-20261126232631.503060",1,"ok",26368,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"failures",0,"gate","25228-5-20261126232631.503060",1,"bad",55848,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"witness_sweep_workers",0,"gate","25228-6-20261126232637.100951",1,"a",10492,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"witness_sweep_workers",0,"gate","25228-6-20261126232637.100951",1,"b",65716,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_sizing",0,"gate","25228-9-20261126232658.893800",1,"b",20712,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_sizing",0,"gate","25228-9-20261126232658.893800",1,"a",55736,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_missing",0,"gate","25228-10-20261126232702.485445",1,"a",63300,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_missing",0,"gate","25228-10-20261126232702.485445",1,"b",71320,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_facts",0,"gate","25228-11-20261126232705.810833",1,"b",12348,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_facts",0,"gate","25228-11-20261126232705.810833",1,"a",61476,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_dividend",0,"gate","25228-12-20261126232709.214116",1,"a",69172,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_dividend",0,"gate","25228-12-20261126232709.214116",1,"b",74028,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_consecutive",0,"gate","25228-13-20261126232713.373095",1,"a",46664,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_consecutive",0,"gate","25228-13-20261126232713.373095",1,"b",67844,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_consecutive",0,"gate","25228-13-20261126232713.373095",2,"a",46196,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_consecutive",0,"gate","25228-13-20261126232713.373095",2,"b",63228,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_failing",0,"gate","25228-14-20261126232719.446937",1,"a",66812,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_failing",0,"gate","25228-14-20261126232719.446937",1,"c",73772,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_failing",0,"gate","25228-14-20261126232719.446937",2,"c",47888,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_failing",0,"gate","25228-14-20261126232719.446937",2,"a",68588,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_backstop",0,"gate","25228-15-20261126232724.453386",1,"b",49456,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"test seam: backstop",0
+"s5_workers_backstop",0,"gate","25228-15-20261126232724.453386",1,"a",57544,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"test seam: backstop",0
+"s5_workers_backstop",0,"gate","25228-15-20261126232724.453386",1,"c",57544,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_workers_backstop_escape",0,"gate","25228-16-20261126232729.185214",1,"b",17220,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"test seam: backstop",0
+"s5_workers_backstop_escape",0,"gate","25228-16-20261126232729.185214",1,"a",69124,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"test seam: backstop",0
+"s5_walk_forward_workers",0,"gate","25228-17-20261126232736.190248",1,"small",15976,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_walk_forward_workers",0,"gate","25228-17-20261126232736.190248",1,"large",2648,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_walk_forward_workers",0,"gate","25228-17-20261126232736.190248",2,"small",57856,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0
+"s5_walk_forward_workers",0,"gate","25228-17-20261126232736.190248",2,"large",69504,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",0

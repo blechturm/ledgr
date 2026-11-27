@@ -564,6 +564,10 @@ with:
 > order and the separately accepted LR-19 capacity disposition. Slice 1 still
 > refuses compiled FIFO.
 
+> Compiled-order sentences superseded in pending lean-core scope by [Amendment: the compiled selector (Cut 26, 2026-11-26)](#amendment-the-compiled-selector-cut-26-2026-11-26).
+
+> Compiled-order sentences superseded in pending lean-core scope by [Amendment: the compiled selector (Cut 26, 2026-11-26)](#amendment-the-compiled-selector-cut-26-2026-11-26).
+
 **R10, P:185:** replace "P5 or E-stop drains and resets staging; handed-out
 chunks are frozen." with:
 
@@ -675,3 +679,35 @@ SQL rollback cleans it. I:846-859's fresh-attempt/RNG fallback rule remains.
   write path" receives the same terminal meaning. In LR-20 replace "the
   bounded output chunk replaces it" with "bounded terminal output batches
   replace physical flush scheduling; logical commitment remains per pulse".
+
+## Amendment: the compiled selector (Cut 26, 2026-11-26)
+
+Accepted by the maintainer on 2026-11-26 on the slice-5 probe
+(`dev/spikes/slice5_probe`): the lean core ignores the compiled accounting
+selector until WS14. Recorded by Cut 26 (decision 3; tickets.yml) and rules
+ledger LR-25. In pending lean-core scope this amendment supersedes the
+compiled-order sentences of D3-A R9 above ("The existing compiled arm's
+state/sequence-before-append order stays until its separately authorized
+WS14 replacement; its terminal-write adapter must preserve that order and the
+separately accepted LR-19 capacity disposition. Slice 1 still refuses
+compiled FIFO.") and the corresponding sentence of the earlier R9 ("The
+existing compiled arm keeps its state/sequence-before-append order until its
+separately authorized WS14 replacement; R9 does not reorder that arm."),
+including the skeleton synthesis's appended R9. R10 is unchanged. The
+replacement is:
+
+> After the retained selector admission checks, the lean core uses its one R
+> FIFO for NULL and spot_fifo alike until the separately authorized WS14
+> decision. It does not reproduce the old compiled arm's state-before-append
+> order. LR-19 and D3-B's cumulative fill-only limit, P5 refusal boundary and
+> committed-prefix rules remain binding. WS14 either installs one compiled
+> FIFO and retires spot_fifo.cpp, or retires the selector and spot_fifo.cpp.
+
+The retained admission checks are the pin's
+`ledgr_require_compiled_spot_fifo_dispatch()` and
+`ledgr_require_compiled_spot_fifo_event_kinds()`, called in the lean E stage
+where the pin's envelope calls them (R/fold-engine.R:1741-1748 at d5b3a151).
+Their dependencies (the output handler's compiled-batch capability and the
+native binding) are in the switch inventory (interface Section 19.14). R12
+and the lean fold core synthesis Section 3 remain authoritative; no compiled
+family or default is authorized here.

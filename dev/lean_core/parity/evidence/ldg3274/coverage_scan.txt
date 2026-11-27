@@ -1,0 +1,12 @@
+bc628409:dev/lean_core/loop.R:65:  lean_not_covered(feature)
+bc628409:dev/lean_core/loop.R:73:  if (!is.null(entry)) lean_not_covered(entry)
+bc628409:dev/lean_core/loop.R:80:  if (!identical(execution$event_mode, "buffered")) lean_not_covered("db_live")
+bc628409:dev/lean_core/loop.R:84:    lean_not_covered("a checkpoint_every control")
+bc628409:dev/lean_core/loop.R:96:  if (anyNA(cols)) lean_not_covered("pulses outside the prepared axis")
+bc628409:dev/lean_core/loop.R:534:    if (length(u)) lean_not_covered(u[[1L]])
+bc628409:dev/lean_core/loop_harness.R:14:#   condition raised mid-run (lean_abort_attempt()) marks the attempt, and
+bc628409:dev/lean_core/parity/loop_parity.R:145:  entry_guard_off = variant("unrefused", list(edit("loop.R", "lean_loop_coverage", "  if (!is.null(entry)) lean_not_covered(entry)")),
+bc628409:dev/lean_core/parity/loop_parity.R:507:      "    lean_not_covered(\"compiled FIFO\")",
+bc628409:dev/lean_core/parity/loop_parity.R:512:      "    lean_not_covered(\"walk-forward\")",
+bc628409:dev/lean_core/parity/loop_parity.R:517:      "    lean_not_covered(\"an unrelated feature\")",
+bc628409:dev/lean_core/parity/loop_parity.R:522:      "    lean_not_covered(\"compiled FIFO\")",

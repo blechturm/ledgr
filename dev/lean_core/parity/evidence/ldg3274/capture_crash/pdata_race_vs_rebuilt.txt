@@ -1,0 +1,13 @@
+C:/Users/maxth/ledgr-wt/slice5-scratch/crash/race/src1/src/ledgr.dll : entries 4254 | out of order 1467 | same triples as sorted TRUE 
+  first out-of-order rows:
+     row  begin      next_begin
+[1,] "88" "00012E40" "00012E40"
+[2,] "89" "00012E40" "00012E40"
+[3,] "91" "00012E90" "00012E90"
+[4,] "92" "00012E90" "00012E90"
+[5,] "94" "00012F10" "00012F10"
+[6,] "95" "00012F10" "00012F10"
+[7,] "97" "00012F30" "00012F30"
+[8,] "98" "00012F30" "00012F30"
+C:/Users/maxth/ledgr-wt/slice5-scratch/pin-archive/src/ledgr.dll : entries 4254 | out of order 0 | same triples as sorted TRUE 
+same set of entries: FALSE 

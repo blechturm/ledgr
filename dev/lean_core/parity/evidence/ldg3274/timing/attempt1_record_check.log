@@ -1,0 +1,221 @@
+Cells (ratio = median candidate / median base; PASS when ratio <= bound):
+                cell clock bound n_candidate n_base median_candidate median_base ratio verdict
+         run_10x7200   run     1           0      1               NA    22.54538    NA NO_DATA
+        fold_10x7200  fold     1           0      0               NA          NA    NA NO_DATA
+        run_20x23400   run     1           0      0               NA          NA    NA NO_DATA
+       fold_20x23400  fold     1           0      0               NA          NA    NA NO_DATA
+        run_500x1260   run     1           0      0               NA          NA    NA NO_DATA
+       fold_500x1260  fold     1           0      0               NA          NA    NA NO_DATA
+        run_1166x252   run     1           0      0               NA          NA    NA NO_DATA
+       fold_1166x252  fold     1           0      0               NA          NA    NA NO_DATA
+  run_slice2_10x7200   run     1           0      0               NA          NA    NA NO_DATA
+ fold_slice2_10x7200  fold     1           0      0               NA          NA    NA NO_DATA
+   run_facts_10x7200   run     1           0      0               NA          NA    NA NO_DATA
+  fold_facts_10x7200  fold     1           0      0               NA          NA    NA NO_DATA
+
+CHECK FAIL (205): attempt status 1; failed execution 1; unrun slot 190; fewer pairs 1; missing cell 12
+  attempt status: invalid: slot 2 error: object '.lean_lib' not found
+  failed execution: 1|run_10x7200|candidate error object '.lean_lib' not found
+  unrun slot: 1|fold_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|fold_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|run_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|run_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|fold_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|fold_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|run_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|run_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|fold_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|fold_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|run_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|run_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|fold_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|fold_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|run_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|run_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|fold_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|fold_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|run_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|run_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|fold_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 1|fold_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|run_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|run_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|fold_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|fold_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|run_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|run_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|fold_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|fold_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|run_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|run_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|fold_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|fold_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|run_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|run_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|fold_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|fold_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|run_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|run_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|fold_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|fold_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|run_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|run_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|fold_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 2|fold_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|run_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|run_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|fold_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|fold_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|run_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|run_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|fold_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|fold_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|run_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|run_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|fold_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|fold_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|run_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|run_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|fold_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|fold_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|run_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|run_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|fold_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|fold_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|run_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|run_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|fold_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 3|fold_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|run_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|run_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|fold_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|fold_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|run_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|run_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|fold_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|fold_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|run_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|run_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|fold_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|fold_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|run_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|run_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|fold_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|fold_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|run_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|run_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|fold_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|fold_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|run_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|run_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|fold_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 4|fold_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|run_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|run_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|fold_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|fold_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|run_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|run_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|fold_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|fold_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|run_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|run_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|fold_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|fold_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|run_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|run_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|fold_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|fold_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|run_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|run_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|fold_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|fold_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|run_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|run_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|fold_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 5|fold_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|run_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|run_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|fold_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|fold_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|run_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|run_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|fold_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|fold_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|run_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|run_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|fold_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|fold_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|run_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|run_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|fold_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|fold_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|run_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|run_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|fold_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|fold_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|run_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|run_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|fold_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 6|fold_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|run_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|run_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|fold_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|fold_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|run_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|run_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|fold_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|fold_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|run_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|run_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|fold_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|fold_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|run_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|run_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|fold_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|fold_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|run_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|run_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|fold_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|fold_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|run_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|run_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|fold_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 7|fold_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|run_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|run_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|fold_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|fold_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|run_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|run_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|fold_20x23400|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|fold_20x23400|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|run_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|run_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|fold_500x1260|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|fold_500x1260|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|run_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|run_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|fold_1166x252|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|fold_1166x252|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|run_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|run_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|fold_slice2_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|fold_slice2_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|run_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|run_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|fold_facts_10x7200|candidate not_run slot 2 error: object '.lean_lib' not found
+  unrun slot: 8|fold_facts_10x7200|base not_run slot 2 error: object '.lean_lib' not found
+  fewer pairs: 0 complete pairs; the protocol states 8
+  missing cell: run_10x7200 has no valid base or candidate row
+  missing cell: fold_10x7200 has no valid base or candidate row
+  missing cell: run_20x23400 has no valid base or candidate row
+  missing cell: fold_20x23400 has no valid base or candidate row
+  missing cell: run_500x1260 has no valid base or candidate row
+  missing cell: fold_500x1260 has no valid base or candidate row
+  missing cell: run_1166x252 has no valid base or candidate row
+  missing cell: fold_1166x252 has no valid base or candidate row
+  missing cell: run_slice2_10x7200 has no valid base or candidate row
+  missing cell: fold_slice2_10x7200 has no valid base or candidate row
+  missing cell: run_facts_10x7200 has no valid base or candidate row
+  missing cell: fold_facts_10x7200 has no valid base or candidate row

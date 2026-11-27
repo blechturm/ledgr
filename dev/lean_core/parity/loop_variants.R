@@ -21,7 +21,14 @@ arg <- function(name, default = NULL) {
 lib <- arg("lib")
 out <- arg("out")
 only_debug <- arg("debug", "")
+# --workloads=a,b: only the manifest rows on these workloads (WS46 close
+# review round 1); the negative controls still run.
+only_workloads <- strsplit(arg("workloads", ""), ",", fixed = TRUE)[[1L]]
 dir.create(out, recursive = TRUE, showWarnings = FALSE)
+# Cut 26 (LDG-3271): absolute paths for the child runs, which work outside the
+# source tree (loop_parity.R moves its working directory before running).
+lib <- normalizePath(lib, winslash = "/", mustWork = TRUE)
+out <- normalizePath(out, winslash = "/", mustWork = TRUE)
 read <- function(f) utils::read.csv(file.path(here, f), stringsAsFactors = FALSE, na.strings = character())
 key <- function(x) paste(x$mutation, x$workload, x$debug, x$batch_rows, sep = "|")
 manifest <- read("loop_variants.csv")
@@ -38,6 +45,11 @@ unknown <- setdiff(key(reanchor), c(key(manifest), key(add)))
 if (length(unknown)) stop("re-anchors not in the manifest: ", paste(unknown, collapse = ", "), call. = FALSE)
 if (length(bad <- setdiff(changes$action, c("add", "retire", "reanchor")))) stop("unknown change action: ", bad[[1L]], call. = FALSE)
 manifest <- rbind(manifest, add)
+if (length(only_workloads)) {
+  # checked before the debug filter: a workload may carry rows at one debug setting only
+  if (length(none <- setdiff(only_workloads, manifest$workload))) stop("no variant rows on: ", paste(none, collapse = ", "), call. = FALSE)
+  manifest <- manifest[manifest$workload %in% only_workloads, ]
+}
 if (nzchar(only_debug)) manifest <- manifest[manifest$debug == as.integer(only_debug), ]
 
 rscript <- file.path(R.home("bin"), "Rscript.exe")
@@ -50,7 +62,10 @@ run_parity <- function(m, d, b, workloads, csv) {
   if (file.exists(csv)) file.remove(csv)
   log <- suppressWarnings(system2(rscript, c(file.path(here, "loop_parity.R"), paste0("--lib=", lib),
     paste0("--debug=", d), paste0("--batch-rows=", b), paste0("--mutation=", m),
-    paste0("--workloads=", paste(workloads, collapse = ",")), paste0("--out=", csv)), stdout = TRUE, stderr = TRUE))
+    paste0("--workloads=", paste(workloads, collapse = ",")), paste0("--out=", csv),
+    # Cut 26 decision 8: the approved freeze with its changes, for the
+    # restored-refusal signal
+    paste0("--freeze=", file.path(here, "loop_freeze.csv"))), stdout = TRUE, stderr = TRUE))
   status <- attr(log, "status") %||% 0L
   rows <- if (file.exists(csv)) utils::read.csv(csv, stringsAsFactors = FALSE, na.strings = character()) else NULL
   list(status = as.integer(status), last = utils::tail(log, 1L), rows = rows)
@@ -81,11 +96,16 @@ for (g in groups) {
 }
 # Negative controls: an unrelated error, an unreached patch and a store
 # variant that writes through a path other than the one it declares must not
-# be CAUGHT; each must exit 1 with its declared verdict.
-controls <- c(control_unrelated = "UNRELATED", control_unreached = "UNREACHED", control_wrong_store_path = "MISSED")
+# be CAUGHT; nor (Cut 26 decision 8) a restored refusal for another reason
+# than intended, or one its workload never reaches. Each must exit 1 with
+# its declared verdict.
+controls <- c(control_unrelated = "UNRELATED", control_unreached = "UNREACHED", control_wrong_store_path = "MISSED",
+              control_unrelated_refusal = "UNRELATED", control_unreached_refusal = "UNREACHED")
+control_workload <- c(control_unrelated_refusal = "s5_compiled_lots")
 if (!nzchar(only_debug) || identical(only_debug, "0")) for (m in names(controls)) {
   b <- if (identical(m, "control_wrong_store_path")) 8L else 65536L
-  r <- run_parity(m, 0L, b, "crossover_3x40", file.path(out, sprintf("control_%s.csv", m)))
+  w <- if (m %in% names(control_workload)) control_workload[[m]] else "crossover_3x40"
+  r <- run_parity(m, 0L, b, w, file.path(out, sprintf("control_%s.csv", m)))
   v <- if (is.null(r$rows)) "missing" else unique(r$rows$verdict)
   cat(sprintf("control %s: %s, status %d (expected %s, status 1)\n", m, paste(v, collapse = ","), r$status, controls[[m]]))
   if (!identical(v, controls[[m]]) || r$status != 1L) {

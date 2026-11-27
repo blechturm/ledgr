@@ -275,6 +275,60 @@ for (w in c(paste0(wrap_obs[1:4], "_run"), "s4_wrap_drain_run")) {
            reason = "Workstream 40 close review round 2 (F3) wrapped-append witness under inert hooks, inert-mode count"))
 }
 
+# Cut 26 decision 8 (LDG-3274): the eight existing workloads whose worker,
+# compiled-selector or walk-forward path changed, with their final-code
+# path counts (merged worker folds included; evidence/ldg3273 and
+# evidence/ldg3274 gate records); the checkpoint rows are untouched. The
+# refused column empties: those features run lean.
+for (w in list(list("dense_cost", 12L, "compiled selector and its sweep workers run lean (decisions 3, 5)"),
+               list("dense_risk_features", 6L, "its sweep workers run lean (decision 5)"),
+               list("avail_terminal_resume", 5L, "its sweep workers run lean (decision 5)"),
+               list("avail_incomplete", 6L, "its sweep workers run lean (decision 5)"),
+               list("failures", 6L, "its sweep workers run lean (decision 5)"),
+               list("witness_sweep_workers", 2L, "its sweep workers run lean (decision 5)"),
+               list("walk_forward", 10L, "walk-forward runs lean (decision 6)"),
+               list("witness_walk_forward", 6L, "walk-forward runs lean (decision 6)"))) {
+  add(both(action = "update", mode = "gate", workload = w[[1L]], lean_folds = w[[2L]], refused = "", backstop = "",
+           reason = paste("Cut 26:", w[[3L]])))
+}
+# The new slice-5 workloads (loop_workloads_slice5.R), gate.
+s5_gate <- c(s5_restart_plain = 2L, s5_restart_opening = 2L, s5_restart_running = 2L, s5_reopen_incomplete = 1L,
+             s5_recover_completion = 1L, s5_compiled_durable = 0L, s5_compiled_event_kinds = 0L,
+             s5_compiled_availability = 0L, s5_compiled_missing_native = 0L, s5_compiled_lots = 1L,
+             s5_compiled_costs = 1L, s5_compiled_overflow = 2L, s5_compiled_capacity_at = 2L,
+             s5_compiled_capacity_over = 2L, s5_walk_forward_costs = 6L,
+             s5_workers_sizing = 2L, s5_workers_missing = 2L, s5_workers_facts = 2L, s5_workers_dividend = 2L,
+             s5_workers_consecutive = 4L, s5_workers_failing = 4L, s5_workers_backstop = 3L,
+             s5_workers_backstop_escape = 2L, s5_walk_forward_workers = 6L)
+s5_backstop <- c("s5_workers_backstop", "s5_workers_backstop_escape")
+for (w in names(s5_gate)) {
+  add(both(action = "add", mode = "gate", workload = w, lean_folds = s5_gate[[w]], refused = "",
+           backstop = if (w %in% s5_backstop) "test seam: backstop" else "",
+           reason = if (w %in% s5_backstop) "Cut 26 slice-5 witness: the backstop test seam marks the attempt, which reruns on the pin" else
+             "Cut 26 slice-5 witness, declared path"))
+}
+# Batch one: the capacity witnesses and the worker workloads (the batch
+# bound reaches each worker).
+for (w in c("s5_compiled_capacity_at", "s5_compiled_capacity_over", grep("^s5_workers_|^s5_walk_forward_workers$", names(s5_gate), value = TRUE))) {
+  add(both(action = "add", mode = "batch1", workload = w, lean_folds = s5_gate[[w]], refused = "",
+           backstop = if (w %in% s5_backstop) "test seam: backstop" else "",
+           reason = "Cut 26 slice-5 witness across terminal batches, declared path"))
+}
+# Inert hooks: the worker workloads (inert workers load the lean fold; the
+# seam is a hook, so no mark).
+for (w in grep("^s5_workers_|^s5_walk_forward_workers$", names(s5_gate), value = TRUE)) {
+  add(both(action = "add", mode = "inert", workload = w, lean_folds = 0L, refused = "", backstop = "",
+           reason = "Cut 26 slice-5 worker witness under inert hooks, inert-mode count"))
+}
+
+# Workstream 46 close review round 1 (F1): a selected sweep on workers that
+# the pin's E-stage admission refuses before any fold starts, in every mode
+# (no fold: each worker entry's outcome is the refusal).
+for (m in c("gate", "batch1", "inert")) {
+  add(both(action = "add", mode = m, workload = "s5_workers_compiled_refused", lean_folds = 0L, refused = "", backstop = "",
+           reason = "Workstream 46 close review round 1 (F1) witness: worker entries refused at E before the fold, declared path"))
+}
+
 out <- do.call(rbind, rows)
 utils::write.csv(out, file.path(here, "loop_freeze_changes.csv"), row.names = FALSE)
 cat(nrow(out), "changes:", paste(names(table(out$action)), table(out$action), collapse = ", "), "\n")

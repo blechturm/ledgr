@@ -1,0 +1,3 @@
+s5_workers_backstop          CAUGHT    DIFFERENT  lean 3  refused []  backstop [test seam: backstop]  store []  sink []  holds 0  append<=0  range<=0  pinned 1.6 s  lean 2.0 s  workers pin 2/2 lean 2/2 records 3 entries 3  new errors [The lean loop does not cover test seam: backstop (slice 1).]
+s5_workers_backstop_escape   CAUGHT    DIFFERENT  lean 2  refused []  backstop [test seam: backstop]  store []  sink []  holds 0  append<=0  range<=0  pinned 1.2 s  lean 1.8 s  workers pin 2/2 lean 2/2 records 2 entries 2  new errors [The lean loop does not cover test seam: backstop (slice 1).]
+27 tables, 17 different; verdicts: CAUGHT 2

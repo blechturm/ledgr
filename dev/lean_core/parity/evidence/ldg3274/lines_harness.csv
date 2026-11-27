@@ -1,0 +1,10 @@
+"role","file","base_2bd1a33e","final","change"
+"harness","dev/lean_core/loop_harness.R",177,165,-12
+"harness","dev/lean_core/loop_workers.R",0,163,163
+"harness","dev/lean_core/load.R",43,103,60
+"workload","dev/lean_core/parity/loop_workloads.R",559,557,-2
+"workload","dev/lean_core/parity/loop_workloads_slice5.R",0,509,509
+"workload","dev/lean_core/parity/loop_parity.R",548,659,111
+"witness","dev/lean_core/parity/feature_bridge.R",0,199,199
+"witness","dev/lean_core/parity/loop_variants.R",81,87,6
+"witness","dev/lean_core/parity/loop_freeze_changes.R",200,235,35

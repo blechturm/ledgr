@@ -829,6 +829,8 @@ its separately authorized WS14 replacement; R9 does not reorder that arm.
 
 > Amended in pending lean-core scope by [Amendment: terminal physical writes (D3, 2026-11-10)](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md#amendment-terminal-physical-writes-d3-2026-11-10). Per-pulse logical commitment remains; persistent writes and bounded expansion occur after the loop. Run-long record storage replaces the chunk-sized working-storage bound; checkpoint_every follows LR-20 and the D3 adapter/switch disposition.
 
+> Its compiled-arm sentence is superseded in pending lean-core scope by [Amendment: the compiled selector (Cut 26, 2026-11-26)](rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md#amendment-the-compiled-selector-cut-26-2026-11-26): the lean core uses its R FIFO for NULL and spot_fifo alike until WS14.
+
 **R10. Write only diagnostic residuals.** P2's decision/risk segments stay
 unexpanded until P3 certifies clean forms. Reserve logical positions for all
 rows; write residuals directly into typed pulse staging. Preserve defaults,

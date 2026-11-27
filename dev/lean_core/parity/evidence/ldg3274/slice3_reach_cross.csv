@@ -1,0 +1,42 @@
+"predicate","own","fails_elsewhere","holds_elsewhere","holds_on","ok"
+"s3_sessions_full",TRUE,8,28,"s3_hist_declared s3_hist_offset_bar s3_hist_offset_feature s3_gap_held s3_freeze_held s3_stop_refuse s3_freeze_exit s3_stale_reduction s3_exec_bar_missing s3_sizing_unpriced s3_risk_mark_expired s3_risk_mark_never s3_frozen_liquidate s3_sizing_liquidate_stale s3_sizing_liquidate_frozen s3_no_bar_session s3_closed_sessions s3_offset_full s3_offset_first_stale s3_prescoring_gap s3_mixed_transition s3_multi_stop s3_many_gaps s3_sched_full s3_sched_stale s3_sched_query s3_skip_stop s3_skip_stop_first",TRUE
+"s3_hist_bar_native",TRUE,36,0,"",TRUE
+"s3_hist_declared",TRUE,36,0,"",TRUE
+"s3_hist_offset_bar",TRUE,36,0,"",TRUE
+"s3_hist_offset_feature",TRUE,36,0,"",TRUE
+"s3_gap_held",TRUE,29,7,"s3_freeze_exit s3_frozen_liquidate s3_sizing_liquidate_stale s3_sizing_liquidate_frozen s3_no_bar_session s3_closed_sessions s3_prefix_declared",TRUE
+"s3_freeze_held",TRUE,29,7,"s3_freeze_exit s3_frozen_liquidate s3_sizing_liquidate_frozen s3_closed_sessions s3_mixed_transition s3_many_gaps s3_sched_stale",TRUE
+"s3_stop_refuse",TRUE,34,2,"s3_skip_stop s3_skip_stop_first",TRUE
+"s3_freeze_exit",TRUE,33,3,"s3_sizing_liquidate_frozen s3_closed_sessions s3_sched_stale",TRUE
+"s3_stale_reduction",TRUE,36,0,"",TRUE
+"s3_exec_bar_missing",TRUE,35,1,"s3_sizing_unpriced",TRUE
+"s3_sizing_unpriced",TRUE,36,0,"",TRUE
+"s3_risk_mark_expired",TRUE,36,0,"",TRUE
+"s3_risk_mark_never",TRUE,36,0,"",TRUE
+"s3_frozen_increase",TRUE,36,0,"",TRUE
+"s3_frozen_liquidate",TRUE,36,0,"",TRUE
+"s3_sizing_liquidate_stale",TRUE,36,0,"",TRUE
+"s3_sizing_liquidate_frozen",TRUE,36,0,"",TRUE
+"s3_no_bar_session",TRUE,36,0,"",TRUE
+"s3_closed_sessions",TRUE,33,3,"s3_freeze_held s3_stop_refuse s3_many_gaps",TRUE
+"s3_prefix_declared",TRUE,35,1,"s3_sched_prefix",TRUE
+"s3_missing_sweep",TRUE,36,0,"",TRUE
+"s3_offset_full",TRUE,32,4,"s3_hist_offset_bar s3_hist_offset_feature s3_offset_first_stale s3_prescoring_gap",TRUE
+"s3_offset_first_stale",TRUE,36,0,"",TRUE
+"s3_prescoring_gap",TRUE,32,4,"s3_hist_offset_bar s3_hist_offset_feature s3_offset_full s3_offset_first_stale",TRUE
+"s3_tail_gap",TRUE,36,0,"",TRUE
+"s3_mixed_transition",TRUE,36,0,"",TRUE
+"s3_multi_stop",TRUE,36,0,"",TRUE
+"s3_many_gaps",TRUE,36,0,"",TRUE
+"s3_sched_full",TRUE,32,4,"s3_sched_stale s3_skip_stop s3_skip_stop_first s3_sched_prefix",TRUE
+"s3_sched_stale",TRUE,34,2,"s3_skip_stop s3_sched_prefix",TRUE
+"s3_sched_query",TRUE,36,0,"",TRUE
+"s3_sched_none",TRUE,36,0,"",TRUE
+"s3_skip_stop",TRUE,35,1,"s3_skip_stop_first",TRUE
+"s3_skip_stop_first",TRUE,36,0,"",TRUE
+"s3_sched_prefix",TRUE,36,0,"",TRUE
+"s3_sched_sweep",TRUE,36,0,"",TRUE
+"s3_hist_bar_native on constant reads",TRUE,18,0,"18 reads set to 1",TRUE
+"s3_hist_declared on constant reads",TRUE,18,0,"18 reads set to 1",TRUE
+"s3_hist_offset_bar on constant reads",TRUE,13,0,"13 reads set to 1",TRUE
+"s3_hist_offset_feature on constant reads",TRUE,13,0,"13 reads set to 1",TRUE

@@ -38,7 +38,7 @@ lean_not_covered <- function(feature) {
 # lean_hooks_inert() is the default: nothing is recorded, watched or forced,
 # as in production after the switch. loop_harness.R installs its own set.
 #   entry_refusal()        a refusal known at the run's entry (a checkpoint_every
-#                          control key, walk-forward), or NULL
+#                          control key), or NULL
 #   refused(feature)       a fold was refused before its first pulse
 #   fold_start(live)       a lean fold begins; returns the function that ends it
 #   handler(h, live)       the output handler the fold uses
@@ -73,14 +73,16 @@ lean_loop_coverage <- function(execution, entry = NULL) {
   if (!is.null(entry)) lean_not_covered(entry)
   substrate <- execution$history_substrate
   pulses <- execution$pulses_posix
-  if (!is.null(execution$compiled_accounting_model)) lean_not_covered("compiled FIFO")
+  # Cut 26: the compiled selector is covered (the E stage runs its admission
+  # checks, then the lean R FIFO), and so is restart: every fold invocation
+  # starts at pulse one since pulse-level resume was retired
+  # (ledgr_run_restart_nonterminal() returns start_idx = 1L).
   if (!identical(execution$event_mode, "buffered")) lean_not_covered("db_live")
   # D3 Section 2: only the pin's default (a control key is an entry refusal); a sweep candidate
   # carries the sweep's own 0L.
   if (!(as.integer(execution$checkpoint_every) %in% c(10000L, 0L))) {
     lean_not_covered("a checkpoint_every control")
   }
-  if (!identical(as.integer(execution$start_idx), 1L)) lean_not_covered("restart")
   # Corporate actions are covered (LDG-3244, facts.R), with their scheduled
   # dispositions (LDG-3247).
   # Opening positions and carried openings are covered (slice 4, LDG-3243):
@@ -237,6 +239,15 @@ lean_fold_envelope_plain <- function(execution, output_handler) {
       length(setdiff(provider$identity()$declared_families, "sessions")) > 0L)
   epochs <- as.numeric(execution$execution_opportunities_posix %||% pulses_posix[-1L])
   epoch_valid <- ledgr_plan_epoch_valid(epochs)
+  # The compiled selector selects nothing (Cut 26 decision 3; D3-A R9 as
+  # amended): its admission checks run where the pin runs them
+  # (R/fold-engine.R:1741-1748 at d5b3a151); every fold uses the lean R FIFO.
+  if (identical(ledgr_normalize_compiled_accounting_model(execution$compiled_accounting_model), "spot_fifo")) {
+    ledgr_require_compiled_spot_fifo_dispatch(execution, output_handler)
+    if (!is.null(execution$corporate_action_plan)) {
+      ledgr_require_compiled_spot_fifo_event_kinds(execution$corporate_action_plan$event_kinds())
+    }
+  }
   max_events <- max(1L, n_pulse * n)
   output_handler$init_buffers(max_events)
   # Slice 4 (facts.R, Section 19.13): the corporate-action plan, its capture

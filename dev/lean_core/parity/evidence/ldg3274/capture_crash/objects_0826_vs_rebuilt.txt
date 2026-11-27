@@ -1,0 +1,4 @@
+cpp11.o identical
+history_compact.o identical
+spot_fifo.o identical
+ledgr.dll differing bytes: 31401

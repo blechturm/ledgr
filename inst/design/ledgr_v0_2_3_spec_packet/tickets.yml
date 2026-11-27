@@ -4299,6 +4299,315 @@ cuts:
       reasons are kept under rfc_cycle.md's record rule.
     cut_review: "CHANGES_REQUIRED in cut_review_25.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at fc66c0f8): R1-R5 required, R6 advisory, each applied in revision 2 with the reviewer's replacement text: R1 the na_late_def expectation in test-features.R named with its reason; R2 faults.R on the final library with the declared file; R3 declared-case semantics verified independently before recording, single-case mutation and malformed-declaration controls; R4 the gap-parity refusal and NA-cell evidence and carry behaviour declared and witnessed; R5 both clocks and the precompute, reuse, inspection and worker paths; R6 five mutant checks. TTR inclusion judged within the decision; identity design, the utc rewrite, the schema change and the not-run claims confirmed. Re-review 1 (cut_review_25_rereview_1.md, at abfd3f9c): PASS, R1-R6 applied faithfully, no new finding."
     amendment_engine_literals: "2026-11-26, by Claude during LDG-3270, recorded for the close review: the cut declared the engine-version change (identity_and_release_impact, census row 89) but omitted the allowance Cut 24 decision 9 gave for the registered tests that pin the engine version as a literal. The full suite in the default library (dev/feature_parity/evidence/ldg3270/full_tests_run1_4abdb348.log, first run with tests at 4abdb348) failed only those three: test-fingerprint-stability.R:34 and test-strict-feature-acceleration.R:205 (88b4237e... to 100eff97...) and test-strict-ttr-cleanup.R:182 (71177b19... to 3dd1c2fc..., computed under that test's mocks), each failing only on that literal, every indicator, TTR and strategy fingerprint pin unchanged. Stated reason: the declared engine-version change. No other test change is added by this amendment."
+  - id: 26
+    name: "Lean loop slice 5: sweep workers, walk-forward, restart and the compiled selector (macro WS16)"
+    cut: "2026-11-26"
+    status: "closed"
+    closed: "2026-11-27, after workstream 46 closed: its Type 1 close review passed at re-review 1 (two rounds; round 1 F1 counted an error before the fold as a worker entry's outcome, F2 resolved the recorder's --src first). Slice 5, the last slice: sweep workers, walk-forward, the restart routes and the compiled selector run lean (the selector inert: the pin's two admission checks, then the lean R FIFO); every covered workload is identical to the pin with debug off and on, at batch one and with inert hooks (final gate 227 workloads, 3,452 tables, 0 different, plus the worker set and the round-1 witness rerun after the correction); the FIFO census is identical to Cut 22; the checkpoint control and db_live stay refused until the switch. Timing ws46-final attempt-2 (under the maintainer's disposition after attempt-1's protocol set-up refusal) CHECK PASS, largest ratio 0.746, lean 6.3x the pin on 10x7200 and 7.1x on 20x23400; no regression against slice 4 under the 5 percent rule. loop.R 997 production lines. Section 19.14 records five switch obligations. Nothing in R/ or tests/ changes."
+    accepted: "2026-11-26 under the maintainer's instruction to write the cut, run the usual Codex review rounds and tackle the workstream, after the cut review passed at re-review 2 (cut_review_26_rereview_2.md, at 4a9ac70f, no new finding)."
+    opening: >-
+      Written by Claude on 2026-11-26 at the maintainer's request (after Cut
+      25 closed: "go" for the slice-5 probe, then "write the cut and do the
+      usual review rounds with codex"). Slice 5 is macro plan item d after
+      Cut 20: the coverage refusals slice 4 left (interface Section 19.13's
+      table): sweep workers, compiled FIFO, restart, walk-forward and the
+      checkpoint control. This entry, workstream 46 and LDG-3271 to
+      LDG-3274 become the operative brief once the cut review passes and
+      the maintainer accepts. tickets.yml is the sole ticket and sequencing
+      authority. Implementation starts with LDG-3271.
+    authority: >-
+      macro_plan.md WS16 compact-state points 2-3 (coverage by slices) and
+      the order after Cut 20, item d; lean_core_interface.md Section 19
+      (19.2 coverage and its point 3 on workers, 19.6 parity, 19.13 slice
+      4's table) and Section 19.14 (proposed with this cut); the
+      diagnostic-records D3 synthesis Section 2 (the checkpoint control
+      refused before the switch, removed at it; an ignored compatibility
+      control rejected); the pulse-plumbing synthesis R10 (the compiled
+      arm's order until WS14) and R12 (FIFO follows WS14), as amended by
+      decision 3 below; lean_fold_core synthesis (a future compiled FIFO
+      only after WS14); lean_core_rules_ledger.md (LR-20 retires the
+      checkpoint control at the switch); the per-pulse durable records
+      synthesis (pulse-level resume retired); the deletion-readiness seed
+      v2 (accepted 2026-11-15); dev/lean_core/parity/loop_checklist.md;
+      inst/design/manual/optimization_coding_style.qmd (fold path).
+    measured_input: >-
+      Probe at 2bd1a33e (dev/spikes/slice5_probe: README.md, probe.patch,
+      result CSVs a-g). Baseline: the 10 workloads that reach a slice-5
+      refusal, 304 tables identical, each refused at its feature. With each
+      refusal lifted, every table stays identical: dense_cost (the only gate
+      workload selecting compiled_accounting_model = "spot_fifo") runs 9
+      folds lean instead of 6, 40 tables; the two checkpoint witnesses 32
+      tables; walk_forward (10 lean folds) and witness_walk_forward (6);
+      the six workloads with worker sweeps, 212 tables; two new restart
+      workloads (a first attempt failing in the strategy on day 5, a second
+      ledgr_run() under the same run_id), 58 tables. Full gate against
+      loop_freeze.csv: 205 workloads, 3,194 tables, 0 different in each
+      debug mode; 192 PASS, 1 PASS* (s3_sched_none, as before), 12 PATH (the
+      10 workloads now lean, the 2 new ones without a frozen row). The
+      committed worker and full-gate CSVs establish table equality and the
+      parent's recorded paths. The probe author additionally reported twelve
+      worker processes per full-gate mode and successful per-worker lean
+      execution from an external LEAN_PROBE_WORKER_LOG; that log is not
+      committed, so these are unverified author observations, not measured
+      reach established by the saved CSVs. The detailed restart-status and
+      event observations likewise require their raw pin tables for
+      independent verification. LDG-3271 and LDG-3273 commit their own
+      final-code worker-origin, per-fold and condition records; LDG-3272
+      commits the restart pin tables and reach predicates (cut review 26,
+      R9). Findings: ledgr_run_restart_nonterminal() returns start_idx = 1L
+      for a fresh attempt (R/run-resume.R:55), so the lean check at
+      dev/lean_core/loop.R:83 can never fire; achieved INCOMPLETE reopen and
+      completion recovery never enter the fold (R/backtest-runner.R:508,
+      :517, :713; contracts.md, completion evidence); the pin runs
+      spot_fifo.cpp only for buffered ephemeral folds with FILL events
+      (R/compiled-spot-fifo.R:54-107); a pre-existing harness gap:
+      ledgr_parallel_ledgr_source_path() (R/parallel-workers.R:244-262,
+      the same in the pin) makes workers pkgload::load_all() the working
+      directory when it is a ledgr source package, so A0 worker sweeps
+      (sweep_w2, dev/bench/v0_2_3_output_freeze/lib.R:489) run from a
+      worktree root loaded the worktree's release source in both arms. The
+      probe is input, not evidence: workstream 46 produces its own
+      final-code evidence.
+    decisions: >-
+      (1) No behaviour change. Slice 5 reproduces the pin's results; every
+      table of every covered workload stays identical with debug on and
+      off. Execution-code changes stay in dev/lean_core; nothing in R/,
+      tests/, vignettes or the store format changes. A rule a parity failure
+      surfaces goes into the rules ledger in the ticket that found it.
+      (2) Harness first (cut review 26, R6). Repair the active lean-harness
+      worker launch routes: loop_parity.R, loop_variants.R, plan_parity.R
+      and recorder/run.R, including their child drivers. Use a shared
+      harness boundary where practical. Resolve user paths before changing
+      working directory. In both comparison arms and all modes, verify every
+      started worker's actual namespace origin against the arm's declared
+      pin origin; a source-package cwd control must fail with WORKER.
+      Installed-pin comparisons run outside a ledgr source package. Explicit
+      source-pin captures are separately labelled and checked against that
+      source pin, never represented as installed-library comparisons.
+      Inventory the earlier affected worker-table records and their
+      demonstrated launch directories; mark unrecorded directories unknown.
+      Preserve historical records. No package worker-loading behavior
+      changes in this ticket.
+      (3) The compiled selector (maintainer decision, 2026-11-26). The lean
+      loop runs its own R FIFO for every fold, whatever
+      compiled_accounting_model selects, until WS14 decides on compiled
+      execution. The selector's admission checks stay: the pin raises them
+      inside its envelope (R/fold-engine.R:1741-1748 at d5b3a151:
+      ledgr_require_compiled_spot_fifo_dispatch() for a non-buffered run, an
+      output handler without compiled batch append, or a missing native
+      routine; ledgr_require_compiled_spot_fifo_event_kinds() for a
+      corporate-action plan with non-FILL event kinds), so the lean E stage
+      calls the same two package functions at the same point, before the
+      first pulse, with the same arguments, and only then ignores the
+      selector; the package's selector validation before the fold
+      (ledgr_public_compiled_accounting_model(), the public durable-run
+      refusal at ledgr_run entry, R/backtest.R:148-164, and the sweep's
+      refusal for an availability-active run, R/sweep.R:176-178) is
+      untouched. Amendment (cut review 26, R1): append a dated Cut 26
+      amendment to the pulse-plumbing synthesis's D3-A R9, explicitly
+      superseding its compiled-order sentences and the corresponding
+      earlier R9 sentences, including the skeleton's appended R9, in pending
+      lean-core scope. R10 is unchanged. The replacement is: "After the
+      retained selector admission checks, the lean core uses its one R FIFO
+      for NULL and spot_fifo alike until the separately authorized WS14
+      decision. It does not reproduce the old compiled arm's
+      state-before-append order. LR-19 and D3-B's cumulative fill-only
+      limit, P5 refusal boundary and committed-prefix rules remain binding.
+      WS14 either installs one compiled FIFO and retires spot_fifo.cpp, or
+      retires the selector and spot_fifo.cpp." Record the maintainer's
+      2026-11-26 decision and LR-25. Section 19.14 names the two retained
+      admission helpers, their handler-capability and native-binding
+      dependencies, and their disposition in the switch inventory under the
+      deletion-readiness seed Section 6. R12 and lean-fold-core Section 3
+      remain authoritative; no new compiled family or default is authorized
+      here.
+      Refusal proofs (cut review 26, R2): record the public durable refusal
+      at ledgr_run entry and do not count it as an E-stage dispatch witness.
+      Use a corporate-facts-only selected sweep to reach the E event-kind
+      refusal and an availability-active selected sweep to prove the
+      separate upstream refusal. Add a missing-native selected sweep, using
+      a test-only binding seam, which independently fails when the E
+      dispatch call is omitted. Cover the missing-handler-capability and
+      non-buffered E predicates by direct boundary witnesses, or record
+      their public unreachability and verify the retained call and its
+      arguments by source comparison. Compare original conditions,
+      including class and message; exercise the escaping condition as well
+      as the failed-candidate row. Observe the pin's native dispatch
+      directly for the successful selected workloads; output equality is
+      not its reach predicate. Map the compiled adapter's economic refusals,
+      including earliest lot overflow, to existing lean FIFO refusal proofs;
+      add a selected public overflow/competing-failure witness where that
+      composition is not covered. Distinguish unreachable internal-shape
+      assertions from retained product refusals under R1-R3 rather than
+      silently dropping either category. Add a selected-sweep capacity
+      witness with a lowered limit, an at-limit control and a later-pulse
+      over-limit case. Prove the class, message, pulse, stage and P5
+      committed-prefix boundary at batch one and the normal bound; a
+      removed or late capacity check must fail. Attribute any old compiled
+      append-boundary difference to LR-19/D3-B, with its recorded pin
+      outcome, rather than weakening the P5 rule or claiming that all old
+      refusals stay.
+      (4) Walk-forward and restart. The walk-forward entry refusal and its
+      recorder are deleted; walk-forward folds run lean like any committed
+      run, and its worker training sweeps run lean under decision 5.
+      Restart (cut review 26, R3): delete the start_idx coverage check
+      because every fold invocation starts at pulse one. Prove fresh
+      replacement after FAILED without completion evidence and after a
+      RUNNING max_pulses attempt, including opening events and a seeded
+      strategy: the second invocation enters a fresh fold, resets strategy
+      state and sequence, and replaces derived attempt output without
+      duplicates. Separately prove achieved INCOMPLETE reopen and
+      RUNNING/FAILED completion recovery after a terminal-finalization
+      fault. Those cases validate or finalize existing completion evidence,
+      enter no additional fold and invoke no strategy callback; use a
+      callback that fails on replay and check completion, events, equity,
+      diagnostics and final status. Reach predicates distinguish these
+      routes rather than calling all of them replacement. Existing opening
+      and carried-opening coverage remains the input boundary for fresh
+      attempts and walk-forward test folds.
+      (5) Sweep workers (Section 19.2 point 3). Before the switch only the
+      harness can make a worker run lean: after the pin starts its
+      workers, the harness loads the lean core into each from the same
+      pinned library with the parent's debug setting and installs the lean
+      loop. At the switch the lean loop is in the package and workers load
+      it with it; the harness channel is then retired (a switch obligation
+      recorded in Section 19.14). Records (cut review 26, R4): install
+      worker loading and a harness transport wrapper in both gate and inert
+      modes; inert fold hooks remain inert. Identify records by workload
+      attempt, candidate and fold, retain error-path records before worker
+      cleanup, and verify completeness against dispatched tasks and
+      observed envelope entries. Missing, duplicate or foreign-attempt
+      records fail closed. Merge additive counters by sum and bounds by
+      maximum. Record actual namespace origin, envelope identity, debug and
+      hook mode outside the inert hooks; inert zero detector counts alone
+      are not execution proof. Transfer registered edits and reached
+      markers to workers when running a worker mutation. Show a debug-only
+      assertion firing in an actual worker with debug on, and the unchanged
+      production result with debug off. Add worker-local faults for a store
+      access, a terminal durable write, a sink call, hold expansion,
+      append-bound violation and a lowered P5 fill limit. Their own signals
+      must reach the parent even when public result tables match. Keep the
+      worker's no-durable-write check active over the complete candidate
+      execution, not only the pulse loop. A late worker backstop after
+      earlier fills must rerun the complete public workload on pin-only
+      workers, discard all attempted candidate results and restore the
+      entry RNG kind and seed or its absence. The workload must consume and
+      expose entry RNG state outside public calls so omission of
+      restoration differs. Register independent skipped-rerun and
+      skipped-RNG-restoration variants. Exercise a marked failure returned
+      as a candidate row and propagated through stop_on_error, and an
+      ordinary unmarked failing candidate; preserve original conditions.
+      Prove fresh channel state across consecutive sweeps, including worker
+      training sweeps within walk-forward.
+      Feature bridge (cut review 26, R10): keep d5b3a151 as the unchanged
+      main parity oracle. Add a bounded bridge proof for macro item d using
+      the final feature build: prepare the same feature-bearing sweep inputs
+      through implicit preparation and explicit precompute/reuse, including
+      two-worker reconstruction, and check their values, NA masks, indexed
+      planes, axes and feature mapping at the lean consumer boundary. Reuse
+      the accepted feature oracle's comparisons and declared differences
+      rather than replacing its expectations. Demonstrate a changed
+      transferred value or mapping failing the lean-consumption check. Name
+      each process's build and distinguish this bridge from the pin-only
+      gate. Record the remaining full integrated product proof as a switch
+      obligation; do not claim that gate execution on the pin exercised the
+      new package feature path.
+      (6) Workloads, in loop_workloads_slice5.R, each with a loop_reach
+      branch predicate on the pin's tables: the restart routes of decision
+      4; the compiled-selector witnesses of decision 3 and selected sweeps
+      on a fill-heavy shape with partial closes and multiple lots per
+      instrument and on a slice-2 cost shape; walk-forward with costs, a
+      risk chain and worker training sweeps; worker sweeps (workers = 2)
+      over a slice-2, a slice-3 (missing bars), a slice-4 (facts) and a
+      corporate-action workload; the worker witnesses of decision 5.
+      (7) The checkpoint control stays refused (D3 Section 2; cut review
+      26, R7). The adapter continues to refuse a non-default
+      engine.checkpoint_every and every explicit control$checkpoint_every
+      key, including 10000L and NULL, before the first pulse. Preserve both
+      existing checkpoint witnesses and their frozen refusal rows. The
+      remaining coverage guards are this control, db_live/non-buffered
+      execution until R8's switch retirement, and pulses outside the
+      prepared axis.
+      (8) Freeze and variants. Update freeze rows only for the eight
+      existing workloads whose worker, compiled-selector or walk-forward
+      path changes, plus any independently explained record-schema effect;
+      add every new workload with its reason. Record the final path counts,
+      including merged worker folds, from final-code execution. Do not copy
+      the probe's ten-row update list, which includes the two checkpoint
+      paths deliberately excluded from this cut. Variants, recorded as
+      additions in loop_variant_changes.csv, each reached and caught:
+      worker_lean_not_installed, worker_record_dropped, worker_record_duplicated,
+      worker_backstop_rerun_skipped, worker_rng_restore_skipped,
+      worker_wrong_build, compiled_dispatch_skipped, compiled_event_kinds_skipped,
+      compiled_selector_refused, walk_forward_refused, and the worker-local
+      faults of decision 5. Restored-refusal signal (cut review 26, R5): add
+      a distinct execution-path mutation signal, comparing the mutated
+      record with the applicable approved freeze including Cut 26 changes.
+      Pass that freeze to variant subprocesses. Keep this comparison
+      separate from the store/sink path predicate. A reached
+      restored-refusal edit is eligible with zero lean folds when the
+      observed refusal is its intended fault. Require the expected
+      refusal/path change and identical public tables for
+      compiled_selector_refused and walk_forward_refused. An unrelated
+      refusal and an unreached restored-refusal edit must not be CAUGHT;
+      retain the existing negative controls as well.
+      (9) Lines. loop.R stays at or below 1,000 production lines; the cut
+      removes the coverage checks it lifts. Harness, workload and witness
+      lines are reported beside.
+      (10) Close. The full gate, batch one (with an explicit workload
+      list), inert hooks and the variant driver pass with debug off and on
+      from a non-package directory; the hashed-frame witness,
+      loop_dispatch.R, the FIFO and planner suites and cut18_witness.R pass
+      as before. Timing (cut review 26, R8): close with the WS16 quick
+      paired timing record through dev/bench/timing/, using the existing
+      reference shapes and inherited floor/no-regression rules, stated
+      before measurement. Record the pin comparison and the comparison
+      against the accepted slice-4 lean baseline for previously covered
+      runs. Report one representative selected and worker workload
+      descriptively beside it, separating harness worker-loading cost. Any
+      required-bound miss is fixed or explicitly disposed of under WS16's
+      existing rule. No new optimization or full milestone benchmark is
+      added.
+    identity_and_release_impact: >-
+      None. No file in R/, tests/, DESCRIPTION, NAMESPACE, vignettes or the
+      store format changes, and no dependency is added; this does not
+      discharge the switch's existing identity obligations. Design impact:
+      Section 19.14 (slice 5) and Section 19.2's coverage table; the
+      pulse-plumbing synthesis D3-A R9 amendment (decision 3); rules ledger
+      LR-25; switch obligations: retire the harness worker channel, keep the
+      compiled selector inert until WS14 with its two admission helpers and
+      their dependencies in the deletion inventory, remove the checkpoint
+      control (LR-20, already listed), the full integrated proof on the new
+      feature path.
+    sequencing: >-
+      One workstream (46), serial: LDG-3271 (harness: worker launch routes
+      and origin checks, the gap inventory, a re-baselined gate on the
+      unchanged lean core), LDG-3272 (walk-forward, the restart routes and
+      the compiled selector, with the R9 amendment and LR-25), LDG-3273
+      (sweep workers: loader, record channel, worker faults, backstop rerun,
+      and the feature bridge), LDG-3274 (close: freeze, variants and the
+      restored-refusal signal, gate, timing, lines, Section 19.14). Serial
+      so that each ticket's gate run covers the one before. Follows Cut 25;
+      precedes the switch (macro item e).
+    out_of_scope: >-
+      Any behaviour change; the checkpoint control and db_live (removed at
+      the switch); a compiled FIFO or retiring spot_fifo.cpp (WS14); tuning;
+      any change in R/ or tests/; the switch's obligations (the terminal
+      store write, deleting the pin fold and its fallbacks, the full
+      integrated product proof); the per-instrument mask cost; the
+      sweep-architecture RFC.
+    workstreams: [46]
+    review_lifecycle: >-
+      An independent clean-context Codex CLI cut review, iterated to PASS.
+      Workstream 46 receives one independent clean-context Type 1 close
+      review of its whole diff and every acceptance item; it verifies
+      faithful implementation and contained scope and independently asks
+      whether the inputs are right; a design concern returns NEEDS_TYPE_2.
+      Findings receive one correction pass, with a further round only for a
+      wrong answer; a third correction round stops for maintainer
+      disposition. Findings, reviewed ranges and consequential rejection
+      reasons are kept under rfc_cycle.md's record rule.
+    cut_review: "CHANGES_REQUIRED in cut_review_26.md (independent clean-context Codex CLI, gpt-6.1-sol/high, Type 2, at e3f1fdf7): R1-R10 required, each applied in revision 2 with the reviewer's text: R1 the amendment targets D3-A R9 (and the skeleton's R9), not R10, and the admission helpers enter the switch inventory; R2 split, falsifiable compiled refusal witnesses and selected-sweep capacity; R3 fresh replacement distinguished from INCOMPLETE reopen and completion recovery; R4 a complete, attributed worker record channel, worker-local faults, inert loading and the rerun and RNG witnesses; R5 a restored-refusal mutation signal; R6 all four worker launch routes; R7 the checkpoint rows kept and db_live named; R8 the WS16 quick timing record; R9 unverified worker-log claims relabelled; R10 a bounded feature bridge on the final feature build. The selector decision needs no new maintainer choice. Re-review 1 (cut_review_26_rereview_1.md, at d5c0b629): CHANGES_REQUIRED, R1 and R3-R10 applied faithfully; S1 (required): LDG-3272's selector acceptance demanded a failed-candidate row from refusals raised before candidate evaluation; replaced in revision 3 with the reviewer's text. Re-review 2 (cut_review_26_rereview_2.md, at 4a9ac70f): PASS, S1 applied faithfully, no new finding."
 review_gate:
   status: "retired"
   authority: "inst/design/rfc/rfc_governance_lifecycle_v0_2_2_synthesis.md Section 5, accepted 2026-10-14"
@@ -4713,6 +5022,15 @@ workstreams:
     requires_review_acceptance: true
     review: {mode: "Type 1", point: "close of workstream 45, after LDG-3270", reason: "The schema test drops only its two environment checks; ledgr_utc() returns bit-identical values and the same refusals in whole-vector passes; series paths accept post-warmup NA exactly as the fn path does, NaN and Inf still refuse, the contract, vignette, NEWS and rules ledger say so; the oracle's only differences from the pin are the 52 declared cases; identities equal except the engine version."}
     close_review: "Independent clean-context Codex CLI (gpt-6.1-sol/high), Type 1; reports in this packet. Round 1 (ws45_close_review_round1.md, at 7f278de6): CHANGES_REQUIRED, F1-F3 required: F1 ledgr_utc() refused AsIs and other classed character input that the per-element parse accepted (corrected in 812ed1e2: the branch parses as.character(unclass(x)); LTB-0566 covers AsIs forms; the uncorrected rewrite fails it); F2 LTB-0567 compared only sweep summary columns, so a corrupted recovery value passed (corrected in 812ed1e2: the sweep strategy checks the literal value and history evidence at every pulse on serial, reused and worker execution, source_ts_utc joins the carry witness, sweep_witness.R shows a corrupted value and corrupted NA-cell evidence each fail); F3 LDG-3270 had no evidence and the governance equality no saved record (evidence written, governance_compare.R committed and run). Every final-code proof rerun on cand-812ed1e2. Re-review 1 (ws45_close_rereview_1.md, at 254e94af): PASS, F1-F3 resolved, no new finding; the reviewer reproduced the AsIs fix over 90 attribute, form and time-zone combinations, both sweep corruption controls and the governance comparison."
+  - id: 46
+    name: "Lean loop slice 5: sweep workers, walk-forward, restart and the compiled selector"
+    cut: 26
+    status: "complete"
+    accepted: "2026-11-27 under the maintainer's instruction to tackle the workstream and iterate its Codex close review until green, after the close review passed at re-review 1."
+    depends_on_workstream: 45
+    requires_review_acceptance: true
+    review: {mode: "Type 1", point: "close of workstream 46, after LDG-3274", reason: "Every workload stays identical to the pin with debug off and on, every worker on its arm's declared pin; walk-forward, the restart routes and worker sweeps run lean with a complete worker record channel, worker-local faults reaching the parent and a worker backstop rerunning on the pin; the compiled selector runs the lean R FIFO after the pin's admission checks, each refusal and the capacity boundary proven, with the R9 amendment and LR-25; the checkpoint control and db_live stay refused; the feature bridge holds; freeze, variant and timing records carry their reasons."}
+    close_review: "Type 1 close review of workstream 46 (independent clean-context Codex CLI, gpt-6.1-sol/high; reports in this packet): round 1 (ws46_close_review_round1.md, at 400c6a14) CHANGES_REQUIRED with F1 (a selected worker sweep that the pin refuses at E read as a channel fault: the channel required a lean fold or a coverage refusal per envelope entry) and F2 (recorder/run.R resolved a relative --src after changing directory), both harness-only, no public table different; corrected in 9d60a0ee: the worker records an error that ends an entry before its fold as that entry's outcome (class recorded, condition passed on unchanged) and the parent requires folds + refusals + such errors = entries with harness hooks, an early exit without an error faulting; witness s5_workers_compiled_refused in gate, batch-one and inert modes; variant worker_prefold_unrecorded CAUGHT; --src resolved with the other paths; proofs in dev/lean_core/parity/evidence/ldg3274/review_r1/ (every worker workload plus the witness, every mode, debug 0 and 1, 0 different, every frozen path checked; every variant on those workloads CAUGHT; the five negative controls failing closed; the relative --src control). Re-review 1 (ws46_close_rereview_1.md, at 9d60a0ee) PASS: F1 and F2 resolved, the exactly-one-outcome rule confirmed by the reviewer's own probe, the totals reproduced; advisory N1 (inert hooks mark no fold start, so an inert record's error class is not stage evidence) dispositioned by wording in Section 19.14 and review_r1/README.md, no code change."
 tickets:
   - id: "LDG-3126"
     title: "Activate the v0.2.3 ticket authority"
@@ -8771,3 +9089,99 @@ tickets:
       - "dev/feature_parity/evidence/ldg3270/full_tests_final.log (812ed1e2, cand-812ed1e2 first on the library path, default library duckdb 2.0.1) passes 1,366 tests with 0 failed, 0 errors and 1 skip; full_tests_run1_4abdb348.log records the first run's 3 failures, exactly the engine-version literals of the cut's amendment_engine_literals; r_cmd_check.log (e99afc33) reports Status OK with no WARNING or NOTE; governance/ (governance_compare.R) shows the final finding set equals the cut base ca635540's, no finding added."
       - "dev/feature_parity/evidence/ldg3270/lines.csv records R/ production lines 54,966 to 54,986 (features-engine.R -3, timestamp.R +23, bind list unchanged at 59); shapes.md walks the seven shapes over the parser and the normaliser and finds the per-element parse removed and no new loop over a growing collection."
       - "Type 1 close review of workstream 45: round 1 (ws45_close_review_round1.md in this packet, at 7f278de6) returned CHANGES_REQUIRED with F1 (classed character input in ledgr_utc()), F2 (sweep execution, reuse and worker checks of literal values and evidence) and F3 (this evidence and a reproducible governance comparison), each corrected in 812ed1e2 and e99afc33 and the proofs above rerun on the corrected library; re-review 1 (ws45_close_rereview_1.md, at 254e94af) PASS, F1-F3 resolved, no new finding."
+  - id: "LDG-3271"
+    title: "Slice-5 harness: worker launch routes and origin checks"
+    workstream: 46
+    status: "complete"
+    priority: "P1"
+    effort: "M"
+    dependencies: []
+    scope: >-
+      Cut 26 decision 2: loop_parity.R, loop_variants.R, plan_parity.R and
+      recorder/run.R with their child drivers launch workers outside a
+      ledgr source package and check every worker's namespace origin
+      against the arm's declared pin; record the pre-existing gap and its
+      reach; a re-baselined gate on the unchanged lean core.
+    acceptance:
+      - "In both comparison arms and every mode of the four runners, every started worker's namespace origin equals the arm's declared pin origin; a source-package working-directory control fails with a WORKER verdict; user paths are resolved before the working directory changes"
+      - "Explicit source-pin captures are labelled and checked against that source pin, never reported as installed-library comparisons; no package worker-loading behaviour changes"
+      - "The inventory names the earlier worker-table records affected and their demonstrated launch directories (unknown where unrecorded); no historical record is rewritten"
+      - "The full gate and the variant driver on the unchanged lean core pass with debug off and on under the repaired launch (worker sweeps now compared with the pin's workers), any changed path explained"
+    evidence:
+      - "dev/lean_core/load.R (commit 68074ab7) adds lean_harness_workdir(), lean_worker_origin_install() and lean_declared_origin(); loop_parity.R, loop_variants.R (through its loop_parity.R children), plan_parity.R and recorder/run.R resolve their path arguments, move outside any source package and check every started worker's namespace origin in both arms against the declared pin; evidence/ldg3271/controls.txt: from the worktree root each runner passes on avail_incomplete with 2 of 2 workers on pin-lib-d5b3a151/ledgr, and with --workdir=<worktree> each fails with WORKER (exit 1; the workers report the worktree)."
+      - "evidence/ldg3271/src_capture.log: recorder/run.R with --src= prints the installed-pin capture build and labels its --src child 'source pin <archive>', checked against that archive, never as an installed-library comparison; no package worker-loading behaviour changes (no file in R/ changes)."
+      - "evidence/ldg3271/worker_records_inventory.csv (inventory.R): the 89 committed CSVs with sweep_w2 tables, 42 A0 harness records (source tree by design) and 47 lean-harness records, 37 demonstrably launched from the repository root and 10 with no recorded launch directory (unknown); no historical record is rewritten."
+      - "evidence/ldg3271/gate_debug0.csv and gate_debug1.csv (unchanged lean core, repaired launch, against loop_freeze.csv): 203 workloads, 3,136 tables, 0 different, PASS 202 and PASS* 1 (s3_sched_none, as before), every frozen path checked, the six worker-sweep workloads now comparing the pin's workers in both arms (2 of 2 per arm), no path changed; variants_driver.log: 205 manifest rows, 80 variants, 0 failures, the three negative controls failing closed (commit d747d88e)."
+  - id: "LDG-3272"
+    title: "Walk-forward, the restart routes and the compiled selector"
+    workstream: 46
+    status: "complete"
+    priority: "P1"
+    effort: "L"
+    dependencies: ["LDG-3271"]
+    scope: >-
+      Cut 26 decisions 3, 4 and 6 (restart, compiled and walk-forward
+      parts): delete the walk-forward entry refusal, the restart check and
+      the compiled-FIFO check; the lean E stage calls the pin's two
+      selector admission functions in place; the D3-A R9 amendment and
+      LR-25; the restart, compiled-selector and walk-forward witnesses with
+      reach predicates; restart pin tables committed.
+    acceptance:
+      - "walk_forward, witness_walk_forward, dense_cost and every new restart, compiled-selector and walk-forward workload match the pin table for table with debug off and on"
+      - "Restart routes as decision 4: fresh replacement after FAILED without completion evidence and after a RUNNING max_pulses attempt (openings, seeded strategy) enters a fresh fold and replaces without duplicates; INCOMPLETE reopen and RUNNING/FAILED completion recovery enter no fold and invoke no callback (a replay-failing callback), with completion, events, equity, diagnostics and status checked; each route's reach predicate holds on the pin's tables, committed"
+      - "Compiled selector as decision 3: the public durable-run refusal and the availability-active upstream refusal match the pin's original class and message at their public-entry boundaries; the availability refusal escapes with stop_on_error FALSE and TRUE before candidate evaluation and produces no failed-candidate row. The corporate-facts-only E event-kind refusal and the missing-native E dispatch refusal through a test-only seam each match the pin's original class and message both as a failed-candidate row with stop_on_error FALSE and as an escaping condition with stop_on_error TRUE. The missing-native witness independently fails when the E dispatch call is omitted. Cover the handler-capability and non-buffered E predicates by direct boundary witnesses comparing their original conditions, or record public unreachability and verify the retained call and its arguments by source comparison; do not require an unreachable public candidate row. The pin's native dispatch is observed directly on the successful selected workloads; the adapter's economic refusals, including earliest lot overflow, are mapped to lean FIFO refusal proofs, with a selected public overflow/competing-failure witness where that composition is not covered. The selected-sweep capacity witness (lowered limit, at-limit control, later-pulse over-limit) proves class, message, pulse, stage and the P5 committed-prefix boundary at batch one and the normal bound; a removed or late capacity check must fail. Any old compiled append-boundary difference is attributed to LR-19/D3-B with its recorded pin outcome."
+      - "The pulse-plumbing synthesis carries decision 3's dated D3-A R9 amendment superseding the compiled-order sentences (and the skeleton's appended R9) with the maintainer's acceptance; lean_core_rules_ledger.md records LR-25"
+    evidence:
+      - "dev/lean_core/parity/evidence/ldg3272/targeted_debug0.csv and targeted_debug1.csv (commit b05a578d, pin library d5b3a151, run outside any source package): walk_forward (10 lean folds), witness_walk_forward (6), dense_cost and the 15 new slice-5 workloads match the pin table for table with debug off and on (306 tables, 0 different; 14 PASS and 4 PASS* each, PASS* being the four compiled-refusal witnesses that stop before any fold); wf_costs_predicate_debug*.csv rerun s5_walk_forward_costs after its predicate (both folds DONE, fills with fees) was added: PASS."
+      - "Restart routes (evidence/ldg3272/README.md, table \"Restart routes\"; pin tables in pin_tables/, written by dump.R): s5_restart_plain and s5_restart_opening (FAILED without completion evidence, then a fresh fold: attempt 2 DONE with 4 fills, or 2 openings plus 4 fills, no duplicate event_seq, seeded day-3 draw), s5_restart_running (the same max_pulses config twice: fold counts 1 then 2, both RUNNING with the same 4 events, no duplicates), s5_reopen_incomplete and s5_recover_completion (INCOMPLETE reopen and completion recovery: fold counts 1 then 1, a replay-forbidden strategy never called) each hold their reach predicate on the pin's tables and match the pin with debug off and on."
+      - "Compiled selector (evidence/ldg3272/README.md): s5_compiled_durable (ledgr_compiled_spot_fifo_unavailable at ledgr_run entry, no run row) and s5_compiled_availability (ledgr_compiled_availability_unsupported escaping with stop_on_error FALSE and TRUE, no candidate row) match the pin; s5_compiled_event_kinds and s5_compiled_missing_native (test-only seam) match the pin's class and message as a FAILED row and escaping; compiled_dispatch_skipped on s5_compiled_missing_native and compiled_event_kinds_skipped on s5_compiled_event_kinds are CAUGHT with debug off and on (evidence/ldg3273/compiled_*_debug*.csv); the handler-capability and non-buffered predicates are recorded publicly unreachable with the retained calls verified by source comparison; s5_compiled_lots and s5_compiled_costs observe the pin's native dispatch; s5_compiled_overflow maps the adapter's lot overflow to ledgr_invalid_lot_fill in both arms; s5_compiled_capacity_at (limit 9) and s5_compiled_capacity_over (limit 8) match the pin's class, message, pulse and committed prefix at the normal bound and batch one (capacity_batch1_debug*.csv) and capacity_late on s5_compiled_capacity_over is CAUGHT at both bounds (evidence/ldg3273/capacity_late_*); no compiled append-boundary difference appeared to attribute to LR-19/D3-B."
+      - "inst/design/rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md carries \"Amendment: the compiled selector (Cut 26, 2026-11-26)\" with the maintainer's acceptance and local notices at D3-A R9 and the skeleton synthesis's R9; inst/design/ledgr_v0_2_3_spec_packet/lean_core_rules_ledger.md records LR-25 (commit b05a578d)."
+  - id: "LDG-3273"
+    title: "Sweep workers run lean, and the feature bridge"
+    workstream: 46
+    status: "complete"
+    priority: "P1"
+    effort: "L"
+    dependencies: ["LDG-3272"]
+    scope: >-
+      Cut 26 decision 5 and decision 6's worker workloads: the harness
+      loads the lean core into each sweep worker in gate and inert modes,
+      with a complete, attributed record channel to the parent, worker-local
+      faults, the backstop rerun and RNG restoration; the bounded feature
+      bridge on the final feature build.
+    acceptance:
+      - "Every workload with a worker sweep runs every worker fold lean with every table identical to the pin, debug off and on, in gate and inert modes; the parent's record shows, per attempt, candidate and fold, the actual namespace origin, envelope identity, debug and hook mode, and the merged counters and bounds; missing, duplicate or foreign-attempt records fail closed"
+      - "A debug-only assertion fires in an actual worker with debug on; the worker-local faults (store access, terminal durable write, sink call, hold expansion, append-bound violation, lowered P5 fill limit) each reach the parent with their own signal even where public tables match; the no-durable-write check covers the whole candidate execution"
+      - "A late worker backstop after earlier fills reruns the complete public workload on pin-only workers, discards attempted candidate results and restores the entry RNG kind and seed or its absence, in a workload where omitting either differs; a marked failure returned as a candidate row and through stop_on_error, and an unmarked failing candidate, keep their original conditions; channel state is fresh across consecutive sweeps and walk-forward training sweeps"
+      - "The feature bridge (decision 5): on the final feature build, implicit preparation and explicit precompute/reuse with two-worker reconstruction give the lean consumer boundary the values, NA masks, indexed planes, axes and feature mapping the accepted feature oracle expects; a changed transferred value or mapping fails; each process's build is named; the full integrated proof is recorded as a switch obligation"
+    evidence:
+      - "dev/lean_core/parity/evidence/ldg3273/workers_{gate,batch1,inert}_debug{0,1}.csv (run_proofs.R, pin library d5b3a151, outside any source package): the six existing worker workloads, walk_forward, witness_walk_forward and the nine new worker workloads (slice-2 sizing with costs, slice-3 missing bars, slice-4 member facts, a corporate action, consecutive sweeps, an unmarked failing candidate, two backstop witnesses, walk-forward with worker training sweeps) match the pin, 382 tables, 0 different, in gate, batch-one and inert modes with debug off and on; *_workers.csv hold the parent's merged record, 37 worker records per run, each with attempt, sweep, candidate, pid, origin (pin-lib-d5b3a151/ledgr), envelope entries all lean, debug and hook mode (harness or inert) as run, no store call and no worker fault; worker_lean_not_installed, worker_record_dropped, worker_record_duplicated and worker_wrong_build are CAUGHT with the worker signal and identical tables, debug off and on (variant_worker_*), and lean_workers_merge() fails a record from another attempt."
+      - "Worker-local faults (evidence/ldg3273/README.md, table): store_execute (store), worker_terminal_write (store, from the whole-candidate watch, after the pulses), write_in_loop (sink), worker_hold_signal (hold; a worker candidate's memory sink has no implicit-record encoder, so the hook is driven directly to prove transport), expand_whole at batch one (unbounded) and worker_capacity_lowered (the capacity refusal) each reach the parent with their own signal, CAUGHT debug off and on, tables identical where the fault is silent; the debug-only resolver check fires in an actual worker with debug on (variant_cost_columns_short_debug1: 'The cost resolver must return one price and one fee per fill') and does not run with debug off (variant_cost_columns_short_debug0_production), and the unmutated debug-off worker results are unchanged."
+      - "s5_workers_backstop (stop_on_error FALSE, an unmarked failing candidate beside the marked ones, seeded entry draw) and s5_workers_backstop_escape (stop_on_error TRUE, unseeded Wichmann-Hill entry) mark every worker candidate at its sixth strategy call after the day-2 and day-4 fills, rerun the complete workload on pin-only workers (records only from the attempt) and match the pin; worker_backstop_rerun_skipped and worker_rng_restore_skipped are CAUGHT on both, debug off and on; s5_workers_failing keeps the original condition as a row and escaping without a rerun; s5_workers_consecutive (sweeps 1 and 2, four worker processes) and s5_walk_forward_workers (one training sweep per fold) show per-sweep records, and every record's lean folds equal its envelope entries."
+      - "Feature bridge (dev/lean_core/parity/feature_bridge.R; evidence/ldg3273/bridge/): on the final feature build lib-final-2bd1a33e (release head, installed with dev/feature_parity/install_arm.R) and the pin, the oracle's e2e fixtures and indicators plus two parameterised aliases through implicit preparation, implicit with two workers, precompute reuse and reuse with two workers give the lean consumer the same values, NA masks, indexed planes, axes and mapping (check_final.txt: BRIDGE CHECK PASS, 96 records per arm from 9 processes, each naming its build); a changed transferred value (check_fault_value.txt) and a reversed alias map (check_fault_mapping.txt) fail with exit 1 and their component signals; the accepted oracle passes on the final build against the pin with its declared differences (oracle_check_final_vs_pin.txt: CHECK PASS, 694 cases, 52 declared); the bridge is not gate execution, and the full integrated proof is recorded as a switch obligation for Section 19.14 (LDG-3274)."
+  - id: "LDG-3274"
+    title: "Close slice 5"
+    workstream: 46
+    status: "complete"
+    priority: "P1"
+    effort: "M"
+    dependencies: ["LDG-3273"]
+    scope: >-
+      Cut 26 decisions 7 to 10: the retained guards, freeze changes,
+      variants with the restored-refusal signal, the final gate, timing,
+      lines and Section 19.14, then the Type 1 close review of workstream
+      46.
+    acceptance:
+      - "Both checkpoint witnesses keep their frozen refusal rows (10000L and NULL control keys refused before the first pulse); the remaining coverage guards are the checkpoint control, db_live/non-buffered execution and pulses outside the prepared axis"
+      - "loop_freeze_changes.csv updates only the eight existing workloads whose worker, compiled-selector or walk-forward path changed (plus any explained record-schema effect) and adds every new workload, each with its reason, with final path counts from final-code execution; the full gate, batch one with an explicit workload list, inert hooks and the variant driver with the restored-refusal signal (decision 8's additions each CAUGHT for their intended reason, unrelated and unreached restored refusals not CAUGHT, the negative controls failing closed) pass with debug off and on from a non-package directory; the hashed-frame witness, loop_dispatch.R, the FIFO and planner suites and cut18_witness.R pass"
+      - "The WS16 quick paired timing record (dev/bench/timing/, the reference shapes, bounds stated before measurement) against the pin and the slice-4 lean baseline passes or its miss is disposed of under WS16's rule; one selected and one worker workload reported descriptively with harness worker-loading cost separated"
+      - "loop.R at or below 1,000 production lines; production, harness, workload and witness lines before and after reported"
+      - "lean_core_interface.md Section 19.14 records slice 5 with its switch obligations (the harness worker channel, the inert selector with its two admission helpers and their dependencies, the checkpoint control's and db_live's removal, the full integrated feature-path proof) and Section 19.2's coverage table is updated"
+      - "Type 1 close review of workstream 46 (review_lifecycle)"
+    evidence:
+      - "Retained guards (dev/lean_core/parity/evidence/ldg3274/coverage_scan.txt, README): the lean coverage refusals at bc628409 are the checkpoint control (an entry key, loop.R:73, or a non-default value, :84), db_live/non-buffered execution (:80) and pulses outside the prepared axis (:96); lines 65 and 534 are the generic raise and the callback check. witness_checkpoint_control and witness_checkpoint_null keep their frozen refusal rows in both gate runs (lean 0, refused 'a checkpoint_every control', PASS against the frozen rows: 10000L and NULL control keys refused before the first pulse)."
+      - "Freeze and parity on the final code (evidence/ldg3274/, run_close.R from outside any source package): loop_freeze_changes.R/.csv at bc628409 update the gate rows of exactly the eight workloads whose path changed (dense_cost 12 lean folds, dense_risk_features 6, avail_terminal_resume 5, avail_incomplete 6, failures 6, witness_sweep_workers 2, walk_forward 10, witness_walk_forward 6; each refused column empties) and add the 24 slice-5 workloads in gate mode, the capacity and worker witnesses at batch one and the worker witnesses inert, every count from final-code execution (evidence/ldg3272, ldg3273), the checkpoint rows unchanged. Gate debug 0 and 1: 227 workloads, 3,452 tables, 0 different, PASS 222 and PASS* 5, 227 of 227 frozen paths checked; batch one (explicit list) debug 0 and 1: 67 workloads, 914 tables, 0 different, PASS 67; inert debug 0 and 1: 36 workloads, 485 tables, 0 different, PASS* 36; worker records 37 over 15 workloads per gate run and 25 over 9 per batch-one and inert run, every one from pin-lib-d5b3a151/ledgr and the lean envelope, no store call, no worker fault; slice 2/3/4 reach cross-checks 26, 41 and 92 ok. Variant driver with the restored-refusal signal: debug 0, 149 manifest rows, 87 variants, 0 failures; debug 1, 103 rows, 52 variants, 0 failures; decision 8's additions each CAUGHT for their intended reason (worker variants, worker-local faults, compiled dispatch and event kinds, compiled_selector_refused and walk_forward_refused with identical tables and the path differing from the freeze, capacity_late at the normal bound and batch one); control_unrelated_refusal UNRELATED and control_unreached_refusal UNREACHED, and the earlier negative controls failing closed, each with status 1. Hashed-frame witness PASS; loop_dispatch every case ok; plan_parity 427 tables, 0 different, debug 0 and 1; cut18_witness 145 cases x 2, 0 differ. FIFO census (Cut 22's): captures A and B on a single clean build of the pinned source (unwind table checked, capture_crash/pdata.R) run every test, 230 files and 1,327 tests each, the two LTB-0258 duckdb-version asserts failing as Cut 25 fixed in the release (no lot call); population A = B and identical to Cut 22's evidence/fifo_population.csv; fifo_check CHECK PASSED. The day's first captures died with STATUS_BAD_STACK from a DLL linked by three processes at once (capture_crash/README.md: same objects, 329 duplicate .pdata entries, reproduced by a three-process build, a single build survives); the capture skip added on the earlier misreading (48942f66) is withdrawn (ec40f6d7)."
+      - "Timing (protocol cut26-loop-1, bounds in protocol.md before measurement, High performance plan and affinity 0xFFFF): dev/bench/timing/records/cut26-loop-1/ws46-final/attempt-1 refused at slot 2 with no measurement (the candidate arm lacked .lean_lib; d4fe66a6 fixed the protocol's set-up); attempt-2 under the maintainer's disposition (2026-11-27), 12 cells x 8 pairs, 192 slots ok, CHECK PASS, every ratio at or below 1.0: run/fold medians pin -> lean 10x7200 21.21 -> 3.39 / 20.47 -> 2.46 s, 20x23400 77.23 -> 10.93 / 75.26 -> 8.87, 500x1260 8.37 -> 4.06 / 6.83 -> 2.57, 1166x252 3.87 -> 2.89 / 2.20 -> 1.16, slice2_10x7200 27.94 -> 5.71 / 27.34 -> 4.93, facts_10x7200 (descriptive) 20.97 -> 6.60 / 20.09 -> 5.67 (largest ratio 0.746, run 1166x252). Against the slice-4 lean baseline (loop_shortcuts.R --mode=compare --base=2bd1a33e --candidate=ec40f6d7 --rounds=7, identical fills and equity): pulse-loop medians 1.81 -> 1.82, 6.99 -> 7.14, 0.71 -> 0.67 and 3.85 -> 3.81 s, median paired change +0.6, -0.7, +4.3 and +0.8 percent (positive = candidate faster), inside Cut 15's 5 percent rule, no miss. Descriptive (timing_descriptive.R, 5 alternating reps, results identical across arms): a spot_fifo-selected sweep pin 28.12 s, lean 2.99 s; a two-worker sweep pin 13.37 s, lean 3.00 s, of which harness worker loading 0.39 s, timed inside the workers."
+      - "Lines (lines.csv, cut19_lines.R --base=2bd1a33e --final=bc628409): loop.R 993 -> 997 production lines (at or below 1,000), loop_harness.R 177 -> 165, total production 2,665 -> 2,657 (-8), debug unchanged (206); lines_harness.csv reports harness, workload and witness lines beside it (loop_workers.R +163, load.R +60, loop_workloads_slice5.R +509, loop_parity.R +111, feature_bridge.R +199, loop_freeze_changes.R +35, loop_variants.R +6, loop_workloads.R -2)."
+      - "lean_core_interface.md: Section 19.2 retitled for slices 1 to 5 with its coverage table, sweeps paragraph and backstop seam note updated; Section 19.14 records slice 5 and five switch obligations (the harness worker channel, the inert compiled selector with its two admission helpers and their dependencies, the checkpoint control's and db_live's removal, the full integrated feature-path proof, the backstop test seam)."
+      - "Type 1 close review of workstream 46 (independent clean-context Codex CLI, gpt-6.1-sol/high; reports in this packet): round 1 (ws46_close_review_round1.md, at 400c6a14) CHANGES_REQUIRED with F1 (a selected worker sweep that the pin refuses at E read as a channel fault: the channel required a lean fold or a coverage refusal per envelope entry) and F2 (recorder/run.R resolved a relative --src after changing directory), both harness-only, no public table different; corrected in 9d60a0ee: the worker records an error that ends an entry before its fold as that entry's outcome (class recorded, condition passed on unchanged) and the parent requires folds + refusals + such errors = entries with harness hooks, an early exit without an error faulting; witness s5_workers_compiled_refused in gate, batch-one and inert modes; variant worker_prefold_unrecorded CAUGHT; --src resolved with the other paths; proofs in dev/lean_core/parity/evidence/ldg3274/review_r1/ (every worker workload plus the witness, every mode, debug 0 and 1, 0 different, every frozen path checked; every variant on those workloads CAUGHT; the five negative controls failing closed; the relative --src control). Re-review 1 (ws46_close_rereview_1.md, at 9d60a0ee) PASS: F1 and F2 resolved, the exactly-one-outcome rule confirmed by the reviewer's own probe, the totals reproduced; advisory N1 (inert hooks mark no fold start, so an inert record's error class is not stage evidence) dispositioned by wording in Section 19.14 and review_r1/README.md, no code change."

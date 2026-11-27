@@ -1,0 +1,15 @@
+Rscript.exe : 2026-11-27T10:41:14Z installing base d5b3a151ea33bc0c58a8a225335e65988614535d
+At C:\Users\maxth\ledgr-wt\slice5-dev\dev\bench\v0_2_3_lean_tuning_profile\pcore.ps1:5 char:1
++ & "C:\Program Files\R\R-4.6.1\bin\x64\Rscript.exe" @RArgs *> $Log
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-11-27T10:4...35e65988614535d:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-11-27T10:41:42Z installing candidate d5b3a151ea33bc0c58a8a225335e65988614535d
+2026-11-27T10:42:45Z slot 1/192 pair 1 run_10x7200 base ok 22.545383930206299
+2026-11-27T10:42:56Z slot 2/192 pair 1 run_10x7200 candidate error NA
+attempt C:/Users/maxth/ledgr-wt/slice5-dev/dev/bench/timing/records/cut26-loop-1/ws46-final/attempt-1: invalid slot 2 
+error: object '.lean_lib' not found
+check: Rscript dev/bench/timing/check.R 
+--protocol=C:/Users/maxth/ledgr-wt/slice5-dev/dev/bench/timing/protocols/cut26-loop-1 
+--record=C:/Users/maxth/ledgr-wt/slice5-dev/dev/bench/timing/records/cut26-loop-1/ws46-final/attempt-1

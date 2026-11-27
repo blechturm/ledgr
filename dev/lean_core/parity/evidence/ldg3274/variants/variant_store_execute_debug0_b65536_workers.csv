@@ -1,0 +1,3 @@
+"workload","debug","mode","attempt","sweep_seq","run_id","pid","origin","entries","lean","debug","hooks","lean_folds","backstop","store_any"
+"witness_sweep_workers",0,"gate","69912-1-20261126234302.148559",1,"b",62432,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",12
+"witness_sweep_workers",0,"gate","69912-1-20261126234302.148559",1,"a",67080,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,FALSE,"harness",1,"",12

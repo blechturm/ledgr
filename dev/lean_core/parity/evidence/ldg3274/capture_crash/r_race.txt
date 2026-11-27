@@ -1,0 +1,4 @@
+dll before 2026-11-27 11:54:50 
+dll after  2026-11-27 11:54:50 
+native refusal 1 ... `cash` must be a numeric scalar. 
+native refusal 2 ... 11:55:00 exit code 0xC0000028 (-1073741784)

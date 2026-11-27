@@ -1,0 +1,6 @@
+"workload","debug","mode","attempt","sweep_seq","run_id","pid","origin","entries","lean","debug","hooks","lean_folds","backstop","store_any"
+"s5_workers_backstop",1,"gate","65092-1-20261126235802.967747",1,"a",13736,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,TRUE,"harness",1,"test seam: backstop",0
+"s5_workers_backstop",1,"gate","65092-1-20261126235802.967747",1,"b",68680,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,TRUE,"harness",1,"test seam: backstop",0
+"s5_workers_backstop",1,"gate","65092-1-20261126235802.967747",1,"c",68680,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,TRUE,"harness",1,"",0
+"s5_workers_backstop_escape",1,"gate","65092-2-20261126235807.712883",1,"b",11724,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,TRUE,"harness",1,"test seam: backstop",0
+"s5_workers_backstop_escape",1,"gate","65092-2-20261126235807.712883",1,"a",43608,"C:/Users/maxth/ledgr-wt/pin-lib-d5b3a151/ledgr",1,TRUE,TRUE,"harness",1,"test seam: backstop",0

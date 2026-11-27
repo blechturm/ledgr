@@ -1,0 +1,54 @@
+                            case          branch calls expected matches_pin
+                  declared_state state_view:fast    12     TRUE        TRUE
+                  declared_state  state_view:pin     0    FALSE        TRUE
+               no_declared_state state_view:fast    12     TRUE        TRUE
+               no_declared_state  state_view:pin     0    FALSE        TRUE
+             direct_named_atomic state_view:fast     1     TRUE        TRUE
+             direct_named_atomic  state_view:pin     0    FALSE        TRUE
+              direct_named_empty state_view:fast     1     TRUE        TRUE
+              direct_named_empty  state_view:pin     0    FALSE        TRUE
+    direct_named_with_list_field state_view:fast     1     TRUE        TRUE
+    direct_named_with_list_field  state_view:pin     0    FALSE        TRUE
+    direct_named_with_blank_name state_view:fast     1     TRUE        TRUE
+    direct_named_with_blank_name  state_view:pin     0    FALSE        TRUE
+                  direct_unnamed state_view:fast     0    FALSE        TRUE
+                  direct_unnamed  state_view:pin     1     TRUE        TRUE
+            direct_empty_unnamed state_view:fast     0    FALSE        TRUE
+            direct_empty_unnamed  state_view:pin     1     TRUE        TRUE
+          direct_extra_attribute state_view:fast     0    FALSE        TRUE
+          direct_extra_attribute  state_view:pin     1     TRUE        TRUE
+                  direct_classed state_view:fast     0    FALSE        TRUE
+                  direct_classed  state_view:pin     1     TRUE        TRUE
+               direct_not_a_list state_view:fast     0    FALSE        TRUE
+               direct_not_a_list  state_view:pin     1     TRUE        TRUE
+      outside_guarantee_pairlist state_view:fast     1     TRUE       FALSE
+      outside_guarantee_pairlist  state_view:pin     0    FALSE       FALSE
+ outside_guarantee_classed_field state_view:fast     1     TRUE       FALSE
+ outside_guarantee_classed_field  state_view:pin     0    FALSE       FALSE
+ debug_refused   ok
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+            NA TRUE
+          TRUE TRUE
+          TRUE TRUE
+          TRUE TRUE
+          TRUE TRUE
