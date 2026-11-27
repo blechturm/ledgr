@@ -9552,7 +9552,7 @@ tickets:
   - id: "LDG-3277"
     title: "Clarity pass on the lean core"
     workstream: 47
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3276"]
@@ -9565,7 +9565,11 @@ tickets:
       - "Each stage (E, P1 to P5) has a header naming the shared state it reads and writes, checked against its code by the close review"
       - "Variants anchored on changed lines are re-anchored (action reanchor); each changed injected expression is reviewed for the same named fault, and each variant is still CAUGHT for it, debug off and on"
       - "A gate subset passes after each change; production and debug line counts are reported before and after (cut19_lines.R), loop.R at or below 1,000"
-    evidence: []
+    evidence:
+      - "No dev/lean_core production file (loop.R, plan.R, checks.R, fifo.R, prepare.R, loop_harness.R, marks.R, facts.R) names s3 or s4: renamed marks_state and facts_state on parsed tokens (62 in loop.R, 33 in marks.R, 142 in facts.R). No production code comment cites a pin line number, commit, cut, ticket, workstream or review: dev/lean_core/parity/clarity_scan.R (pattern stated in its header: R/x.R:n, 8-hex words, Cut N, LDG-n, review, round n, bare R/F/S finding ids, Workstream/WS ids) found 331 (111 citation lines, 220 symbol uses) before and 0 after (evidence/ldg3277/clarity_scan_before.csv, clarity_scan_after.txt). Code unchanged: clarity_equiv.R --base=afaceaba --final=bba035de, every file's parsed code (comments stripped) identical to the base with the two renames applied: CLARITY EQUIVALENCE PASS (clarity_equiv.txt)."
+      - "Each stage (E, P1 to P5) has a header naming the envelope state it reads and writes, generated from the code by dev/lean_core/parity/stage_state.R (codetools free variables against the envelope's own assignments; <<- targets) and recorded in evidence/ldg3277/stage_state.csv, for the close review to check against the code."
+      - "24 variants whose anchor or injected lines changed (23 renames, 1 anchored trailing citation dropped together with its anchor) are re-anchored with 65 reanchor rows in loop_variant_changes.csv (reanchored_variants.txt); variant_anchor_check.R: all 105 registered variants' edits apply (VARIANT ANCHORS PASS); the variant driver over the 37 workloads those variants use: debug 0 87 manifest rows, 44 variants, 0 failures, the five negative controls failing closed; debug 1 58 rows, 23 variants, 0 failures; each re-anchored injected expression is the old one with the same names renamed, so each tests its named fault."
+      - "A gate subset after the pass (17 workloads: one per slice, workers, walk-forward, the selector, overflow), --freeze, debug 0 and 1: 283 tables, 0 different, PASS 17, every frozen path checked (subset_debug*.csv). Lines (cut19_lines.R --base=afaceaba --final=bba035de, lines.csv): production 2,690 -> 2,690, debug 206 -> 206. LDG-3276 had taken loop.R to 1,003; its overflow check moved into fifo.R's lean_lot_fill_checked() (3e867f45), so loop.R is 997 (at or below 1,000) and fifo.R 473; production 2,657 -> 2,694 over the cut (+37, the overflow refusal), debug unchanged; LDG-3276's proofs reran on that code (evidence/ldg3276/after_move)."
   - id: "LDG-3278"
     title: "Explicit-state spike"
     workstream: 47
@@ -9630,7 +9634,7 @@ tickets:
   - id: "LDG-3281"
     title: "Feature routes end to end on the new pin"
     workstream: 47
-    status: "open"
+    status: "complete"
     priority: "P1"
     effort: "M"
     dependencies: ["LDG-3275"]
@@ -9641,7 +9645,10 @@ tickets:
       - "Before retiring feature_bridge.R, transfer its both-clock, parameterised-alias, multiple-candidate and implicit/precompute/reuse routes, including two-worker routes, into an end-to-end lean-versus-pin proof on the new pin, debug off and on. Feature reads must be observed or drive deterministic targets so unused features cannot yield a vacuous pass."
       - "Retain worker-origin/reach checks and discriminating transferred-value and alias-mapping faults. Record the coverage mapping and each intended fault caught."
       - "Only then retire the boundary-only bridge with its reason and mark Section 19.14 obligation 4 discharged."
-    evidence: []
+    evidence:
+      - "dev/lean_core/parity/loop_workloads_features.R: fe_bar_native and fe_declared run the retired bridge's routes lean against the pin 7f65733f on the feature oracle's fixtures (dev/feature_parity/corpus.R; bar-native and declared-session clocks): the oracle's e2e indicators plus two parameterised aliases (signal = RSI(rsi_n), BBands dn/up with bb_n), two candidates (rsi_n 3 and 5), and four routes each: implicit preparation, implicit on two workers, ledgr_precompute_features() reused through precomputed_features, and that reuse on two workers. The strategy reads every current feature (ledgr_pulse_features()) and sets floor(|s| * 13) mod 3 shares from each instrument's alias-rank-weighted sum, so a wrong value, a swapped alias or an unused feature changes the trades; reach predicates on the pin's tables: four tasks dispatched to workers, every route both candidates with trades and the fixture's status, the four routes agreeing, and on the bar-native fixture the two candidates ending differently. With --freeze, debug 0 and 1: 2 workloads, 32 tables, 0 different, PASS 2, 2 of 2 frozen paths checked (evidence/ldg3281/routes_debug*.csv); the oracle builders' time-stamped snapshot id is fixed in the workload (no field dropped)."
+      - "Worker-origin and reach checks retained (each worker route's records from pin-lib-7f65733f/ledgr and the lean envelope, routes_debug*_workers.csv); the transferred-value fault feat_value_perturbed (one projected value doubled in the lean consumer, feature_fn) and the alias-mapping fault feat_alias_swapped (a candidate's first two aliases mapped to each other's features) each CAUGHT on the table difference, debug off and on (the value fault with debug on also by the context comparator, declared as its expected condition); variant driver with --workloads=fe_bar_native,fe_declared: 4 manifest rows, 2 variants, 0 failures per debug setting, the five negative controls failing closed (evidence/ldg3281/README.md records the coverage mapping)."
+      - "feature_bridge.R retired with its reason (its routes and faults are now these workloads and variants; its evidence stays in evidence/ldg3273/bridge/); lean_core_interface.md Section 19.14 marks obligation 4 (the integrated feature path) discharged."
   - id: "LDG-3282"
     title: "The recorded oracle"
     workstream: 47
