@@ -51,11 +51,11 @@ runner that writes gate/<workload>_lean.rds from the switched package.
 
 | Family | Gate workloads | Recorded | Surviving checker; open obligation |
 | --- | --- | --- | --- |
-| WS15 (1) quiet and fill-heavy runs | crossover_3x40, _10x300, _10x7200, _20x23400, _500x1260; momentum_40x504; fill_heavy_500x1260; prep_fixture | yes | oracle_check.R; O1 |
+| WS15 (1) quiet and fill-heavy runs | crossover_3x40, crossover_10x300, crossover_10x7200, crossover_20x23400, crossover_500x1260, momentum_40x504, fill_heavy_500x1260, prep_fixture | yes | oracle_check.R; O1 |
 | WS15 (2) sizing: raw, mixed, helper, guard/rounding, zero/liquidation, unavailability | s2_sizing_* (14), s3_sizing_liquidate_frozen, s3_sizing_liquidate_stale, s3_sizing_unpriced | yes | oracle_check.R; O1 |
 | WS15 (3) declared sessions, restrictions, stale/frozen marks, terminal/lifetime effects, empty axes | s3_sessions_full, s3_closed_sessions, s3_no_bar_session, s3_many_gaps, s3_tail_gap, s3_freeze_*, s3_frozen_*, s3_stale_reduction, s3_risk_mark_*, s4_terminal*, s4_frozen_*, s4_halt, avail_* | yes | oracle_check.R; O1 |
 | Reordered, changing and empty axes; held nonmembers | s4_membership, s4_subset, s4_no_members_held, s4_nonmember_increase, s4_reread_nonmember, s3_mixed_transition | yes | oracle_check.R; O1 |
-| WS15 (4) due and skipped schedules; schedule settlements | s3_sched_full, _none, _prefix, _query, _stale, _sweep; s3_skip_stop, s3_skip_stop_first; s4_blocked_scheduled; s4_dividend_skip | yes | oracle_check.R; O1 |
+| WS15 (4) due and skipped schedules; schedule settlements | s3_sched_* (6), s3_skip_stop, s3_skip_stop_first, s4_blocked_scheduled, s4_blocked_group, s4_dividend_skip | yes | oracle_check.R; O1 |
 | WS15 (5) opening and carried lots, corporate actions, continued final fills | s4_opening, s4_opening_sessions, s4_carried, s4_carried_lots, s4_dividend*, s4_acq_*, s4_cash_*, s4_quantity_*, s4_bound_dispose, s4_basis_*, final_pulse_trades, s5_restart_opening | yes | oracle_check.R; O1 |
 | WS15 (6) stop-phase INCOMPLETE prefixes, exceptions, append and flush failure, rollback, restart, publication recovery | s4_prefix_*, s4_p1_then_stop, s4_p1_complete, s4_wrap_*, s4_life_capacity_*, s4_capacity_*, reconciliation_stop, witness_error_cleanup*, witness_caught_*, witness_outer_handler, witness_nonfinite, witness_state_refusal, witness_max_pulses, witness_zero_pulses, witness_capacity, s5_recover_completion, s5_reopen_incomplete, s5_restart_*, failures, avail_incomplete, avail_terminal_resume, s3_multi_stop, s3_stop_refuse | yes | oracle_check.R; O1. D3 census open rows: see below |
 | WS15 (7) and Section 5: the maintainer's private reference (Sharadar) | none (vendor data stays private) | no | O2 |
@@ -66,7 +66,7 @@ runner that writes gate/<workload>_lean.rds from the switched package.
 | Stable-ID affordability versus decision-order publication | sell_buy_same_pulse, tight_cash, s2_cost_sale_consumes, s2_cost_insufficient | yes | oracle_check.R; O1 |
 | Chained costs, dust, reversals, repeated lots | s2_cost_chain, s2_cost_fixed, s2_cost_notional, s2_cost_spread, s2_cost_nonpositive_price, s5_compiled_costs, s5_compiled_lots; the FIFO corpus (streams with dust and reversals) | yes | oracle_check.R; fifo_parity.R on the captures; O1, O3 |
 | Continued final fills | final_pulse_trades, s4_prefix_dividend_bought | yes | oracle_check.R; O1 |
-| Seeded and unseeded RNG, caller restoration | witness_surface_seeded, witness_surface_unseeded, witness_error_cleanup_seeded and every workload with a loop_entry_rng entry | yes | oracle_check.R; O1 |
+| Seeded and unseeded RNG, caller restoration | witness_surface_seeded, witness_surface_unseeded, witness_error_cleanup_seeded, and every workload that sets the caller's RNG state at entry (the harness's entry-RNG list) | yes | oracle_check.R; O1 |
 | Worker-count equivalence | witness_sweep_workers, s5_workers_* (9), s5_walk_forward_workers, fe_* (two-worker routes) | yes | oracle_check.R; O1 |
 | Both execution clocks | fe_bar_native, fe_declared, s3_hist_bar_native, s3_hist_declared, dense_cost, dense_dividend_state, dense_risk_features | yes | oracle_check.R; O1 |
 | The accepted A0 successor records (A0 retired as anchor, Cut 27 decision) | the eight fixtures.R workloads: avail_acquisition, avail_incomplete, avail_terminal_resume, dense_cost, dense_dividend_state, dense_risk_features, failures, walk_forward | yes | oracle_check.R; O1 |
@@ -74,6 +74,11 @@ runner that writes gate/<workload>_lean.rds from the switched package.
 | The overflow refusal (LR-26) | ovf_sell_1.9, ovf_hold_1.9, ovf_sell_10, ovf_delta_then_lot, ovf_lot_then_delta | yes | oracle_check.R; O1 |
 | The compiled selector (LR-25) | s5_compiled_* (9), s5_workers_compiled_refused | yes | oracle_check.R; O1 |
 | Walk-forward | walk_forward, witness_walk_forward, s5_walk_forward_costs, s5_walk_forward_workers | yes | oracle_check.R; O1 |
+| Risk: binding and non-binding steps, chains, equity and short refusals, marks | s2_risk_* (6), s3_risk_mark_* (2) | yes | oracle_check.R; O1 |
+| Missing execution bars and sessions | s3_exec_bar_missing, s3_missing_sweep, s3_gap_held | yes | oracle_check.R; O1 |
+| Strategy state, the retained context and strategy errors | witness_state_container, witness_state_refusal, witness_retained_context, s4_state_context, witness_error_custom | yes | oracle_check.R; O1 |
+| Committed-prefix reads (D3-B) and record growth | witness_prefix_reads, witness_prefix_reads_sweep, s4_moves_growth, s2_sizing_growth | yes | oracle_check.R; O1 |
+| Harness controls that retire at the switch: the backstop seam and the checkpoint-control refusal | witness_backstop*, witness_caught_backstop*, witness_caught_rethrow*, witness_checkpoint_* (2) | yes | oracle_check.R while the harness exists. At the switch the backstop seam retires (19.14 obligation 5) and so does the checkpoint control (LR-20). Their records stay as pin evidence and leave the O1 comparison as listed differences. |
 | Close and reopen, selection and promotion, seeds and identity | s5_reopen_incomplete, s5_recover_completion, witness_sweep, s2_sizing_sweep, s3_sched_sweep, s4_facts_sweep (sweep attrs and promotion tables are part of every sweep path's tables) | yes | oracle_check.R; O1 |
 
 ## Deletion-readiness merge witnesses

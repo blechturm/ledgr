@@ -59,6 +59,10 @@ out <- arg("out")
 batch_rows <- as.integer(arg("batch-rows", "65536"))
 mutation <- arg("mutation", "")
 inert <- identical(arg("inert", "0"), "1")   # bind the fold without the harness hooks (row 15)
+# Cut 27 (LDG-3283): the lean arm also runs lean preparation (prepare.R,
+# lean_prepare_install()), the integrated composition. The substrate is built
+# in the parent and shipped to sweep workers, so the parent install covers them.
+prepare <- identical(arg("prepare", "0"), "1")
 freeze_file <- arg("freeze", "")
 dump_dir <- arg("dump", "")                  # saves each workload's pin tables (slice2_reach_cross.R)
 dump_lean <- identical(arg("dump-lean", "0"), "1")   # slice 4: also the lean arm, as <id>_lean.rds
@@ -725,7 +729,8 @@ for (id in ids) {
   entry_rng()
   lean$lean_entry$variant_reached <- FALSE
   if (exists("capacity", envir = lean$lean_loop_last_times, inherits = FALSE)) rm("capacity", envir = lean$lean_loop_last_times)
-  attempt <- if (inert) {
+  restore_prep <- if (prepare) lean$lean_prepare_install() else function() NULL
+  attempt <- tryCatch(if (inert) {
     lean$lean_entry_reset()
     restore <- lean$lean_loop_install(hooks = FALSE)
     value <- tryCatch(run_tables(id), error = escaped, finally = restore())
@@ -733,7 +738,8 @@ for (id in ids) {
   } else tryCatch(lean$lean_loop_run(function() {
     lean$lean_entry$batch_rows <- batch_rows
     run_tables(id)
-  }), error = function(e) structure(list(value = escaped(e)), lean = as.list(lean$lean_entry)))
+  }), error = function(e) structure(list(value = escaped(e)), lean = as.list(lean$lean_entry))),
+  finally = restore_prep())
   t2 <- proc.time()[["elapsed"]]
   workers_lean <- worker_origin$read()
   # Slice 4: the lean arm too, for reach cross-checks and diagnosis.
@@ -744,7 +750,8 @@ for (id in ids) {
       attr(attempt, "lean")$worker_table, stringsAsFactors = FALSE)
   }
   if (nzchar(dump_dir) && !is.null(attr(attempt, "lean")$worker_table)) {
-    saveRDS(attr(attempt, "lean")$worker_table, file.path(dump_dir, paste0(id, "_workers.rds")))
+    # double underscore: "<id>_workers" is also a workload name
+    saveRDS(attr(attempt, "lean")$worker_table, file.path(dump_dir, paste0(id, "__workers.rds")))
   }
   if (!is.null(loop_entry_rng[[id]])) RNGkind("default", "default", "default")
   candidate <- attempt$value

@@ -99,7 +99,7 @@ lean_dirty <- git("status", "--porcelain", "--", ".")
 pin_marker <- readLines(file.path(drv$pin, "LEDGR_SOURCE_COMMIT"), warn = FALSE)[[1L]]
 pin_r <- md5_of(file.path(drv$pin, "R"), "[.]R$")
 tests_md5 <- md5_of(drv$tests, "[.]R$")
-identity <- rbind(
+identity_rows <- rbind(
   data.frame(source = "pin", item = "origin", value = drv$pin),
   data.frame(source = "pin", item = "LEDGR_SOURCE_COMMIT", value = pin_marker),
   data.frame(source = "pin", item = "R/ md5 (all files)", value = pin_r$all),
@@ -113,7 +113,7 @@ identity <- rbind(
   data.frame(source = "run", item = "debug", value = as.character(drv$debug)),
   stringsAsFactors = FALSE
 )
-utils::write.csv(identity, file.path(drv$out, "identity.csv"), row.names = FALSE)
+utils::write.csv(identity_rows, file.path(drv$out, "identity.csv"), row.names = FALSE)
 
 # --- load the pin, then the candidate ----------------------------------------
 source(file.path(drv$lean, "load.R"))
@@ -185,10 +185,28 @@ attach(lean, pos = match("package:ledgr", search()) + 1L, name = "ledgr:candidat
 options(ledgr.candidate_lean = drv$lean)
 
 # --- the suite ----------------------------------------------------------------
-t0 <- proc.time()[["elapsed"]]
-res <- testthat::test_dir(drv$tests, filter = if (nzchar(drv$files)) drv$files else NULL, load_package = "none",
-                          reporter = testthat::SummaryReporter$new(), stop_on_failure = FALSE,
-                          stop_on_warning = FALSE)
+# A scratch copy of the tests has no package beside it: the tests that read
+# the package source find the pin's.
+if (!identical(drv$tests, normalizePath(file.path(drv$pin, "tests", "testthat"), winslash = "/"))) {
+  Sys.setenv(LEDGR_TEST_SOURCE_ROOT = drv$pin)
+}
+# The tests run in environments whose parent is the global environment, so
+# none of this driver's names may stay there (a global `identity` once
+# shadowed base::identity in every tryCatch(error = identity)). What the
+# driver needs afterwards is kept under one hidden name.
+.suite_driver <- list(drv = drv, restore = restore, lean_commit = lean_commit, lean_dirty = lean_dirty,
+                      pin_marker = pin_marker, t0 = proc.time()[["elapsed"]])
+rm(list = ls(globalenv()), envir = globalenv())
+res <- testthat::test_dir(.suite_driver$drv$tests,
+                          filter = if (nzchar(.suite_driver$drv$files)) .suite_driver$drv$files else NULL,
+                          load_package = "none", reporter = testthat::SummaryReporter$new(),
+                          stop_on_failure = FALSE, stop_on_warning = FALSE)
+drv <- .suite_driver$drv
+lean_commit <- .suite_driver$lean_commit
+lean_dirty <- .suite_driver$lean_dirty
+pin_marker <- .suite_driver$pin_marker
+t0 <- .suite_driver$t0
+restore <- .suite_driver$restore
 first_problem <- function(r) {
   for (e in r$results) {
     if (inherits(e, c("expectation_failure", "expectation_error"))) {

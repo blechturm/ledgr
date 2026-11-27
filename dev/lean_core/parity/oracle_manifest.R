@@ -30,11 +30,13 @@ rec <- data.frame(kind = kind_of(files), key = sub("[.]rds$", "", basename(files
                   bytes = file.size(file.path(records, files)),
                   sha256 = vapply(file.path(records, files), sha_file, ""), stringsAsFactors = FALSE)
 if (!all(rec$kind %in% c("gate", "cut18"))) stop("unexpected record kind: ", paste(setdiff(rec$kind, c("gate", "cut18")), collapse = ", "))
-if (any(grepl("_lean$|_workers$", rec$key))) stop("candidate dumps found among the pin records")
+if (any(grepl("_lean$", rec$key))) stop("candidate dumps found among the pin records")
 rows <- list()
 for (i in seq_len(nrow(rec))) {
   x <- readRDS(file.path(records, rec$file[[i]]))
   if (rec$kind[[i]] == "gate") {
+    # a worker table (a data frame) is not a pin record
+    if (is.data.frame(x) || !is.list(x)) stop("not a pin record: ", rec$file[[i]])
     for (p in names(x)) for (t in names(x[[p]])) {
       d <- x[[p]][[t]]
       rows[[length(rows) + 1L]] <- data.frame(kind = "gate", key = rec$key[[i]], path = p, table = t,

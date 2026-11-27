@@ -31,7 +31,8 @@ local({
                     lean = normalizePath(arg("lean", file.path(here, "..")), winslash = "/", mustWork = TRUE)), globalenv())
 })
 rscript <- file.path(R.home("bin"), "Rscript.exe")
-meta <- utils::read.csv(file.path(rd$row, "row.csv"), stringsAsFactors = FALSE, na.strings = character())
+meta <- utils::read.csv(file.path(rd$row, "row.csv"), stringsAsFactors = FALSE, na.strings = character(),
+                        colClasses = "character")
 stopifnot(nrow(meta) == 1L)
 split_titles <- function(s) if (nzchar(s)) trimws(strsplit(s, " || ", fixed = TRUE)[[1L]]) else character()
 pass <- split_titles(meta$pass)
@@ -114,7 +115,7 @@ result <- data.frame(row = row_id, file = meta$file,
                      candidate = paste(paste(pass, cand_out, sep = ": "), collapse = " || "),
                      candidate_smoke = cand$smoke,
                      witness = paste(paste(witness, wit_out, sep = ": "), collapse = " || "),
-                     witness_smoke = wit_smoke, verdict = if (ok) "DEMONSTRATED" else "NOT DEMONSTRATED",
+                     witness_smoke = wit_smoke, verdict = if (!ok) "NOT DEMONSTRATED" else if (length(witness)) "DEMONSTRATED" else "DEMONSTRATED (no witness run)",
                      stringsAsFactors = FALSE)
 utils::write.csv(result, file.path(rd$row, "result.csv"), row.names = FALSE)
 cat(sprintf("%s: %s\n  candidate: %s\n  witness:   %s\n", row_id, result$verdict, result$candidate, result$witness))
