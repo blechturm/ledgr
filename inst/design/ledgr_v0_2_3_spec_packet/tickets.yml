@@ -4612,7 +4612,7 @@ cuts:
     name: "Lean-core switch preparation: the pin advanced, the overflow refusal, clarity, contracts, the test inventory and the recorded oracle (macro WS14a, WS16)"
     cut: "2026-11-27"
     status: "accepted"
-    accepted: "2026-11-27 by the maintainer ("accepted"), after the cut review passed at re-review 2 (cut_review_27_rereview_2.md, at abfdc491, no new finding); the maintainer's standing instruction applies: implement the workstream in one go, then iterate the Codex close review to green."
+    accepted: "2026-11-27 by the maintainer, after the cut review passed at re-review 2 (cut_review_27_rereview_2.md, at abfdc491, no new finding); the maintainer's standing instruction applies: implement the workstream in one go, then iterate the Codex close review to green."
     opening: >-
       Written by Claude on 2026-11-27 at the maintainer's request ("probe
       and draft the switch cut", then the switch readiness map and the
