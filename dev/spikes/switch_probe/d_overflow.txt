@@ -1,0 +1,15 @@
+== sell_at_1.9 
+  pin  run:   ledgr_invalid_accounting_event | Accounting event metadata must provide finite cash_delta and position_delta values. 
+  lean run:   ledgr_config_non_finite | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). 
+  pin  sweep: ledgr_invalid_accounting_event | Accounting event metadata must provide finite cash_delta and position_delta values. 
+  lean sweep: ledgr_config_non_finite | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). 
+== hold_at_1.9 
+  pin  run:   ledgr_config_non_finite | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). 
+  lean run:   ledgr_config_non_finite | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). 
+  pin  sweep: ledgr_config_non_finite | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). 
+  lean sweep: ledgr_config_non_finite | canonical_json() does not allow non-finite numeric values in config (Inf/-Inf/NaN). 
+== sell_at_10 
+  pin  run:   ledgr_invalid_lot_fill | Invalid fill input for lot accounting. 
+  lean run:   ledgr_invalid_lot_fill | Invalid fill input for lot accounting. 
+  pin  sweep: ledgr_invalid_lot_fill | Invalid fill input for lot accounting. 
+  lean sweep: ledgr_invalid_lot_fill | Invalid fill input for lot accounting. 

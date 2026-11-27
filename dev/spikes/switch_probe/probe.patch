@@ -1,0 +1,13 @@
+diff --git a/dev/lean_core/load.R b/dev/lean_core/load.R
+index 34b0d3c3..524f5b1d 100644
+--- a/dev/lean_core/load.R
++++ b/dev/lean_core/load.R
+@@ -10,7 +10,7 @@
+ # are sourced into one environment whose parent is the ledgr namespace; it
+ # records `debug` as `.lean_debug` (not a public option).
+ 
+-lean_core_pin <- "d5b3a151"
++lean_core_pin <- "7f65733f"   # switch probe: the release head as the reference build
+ 
+ lean_core_dir <- function() {
+   for (i in rev(seq_len(sys.nframe()))) {

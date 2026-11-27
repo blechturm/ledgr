@@ -1,0 +1,2 @@
+mode baseline: 233 files, 1366 tests, 0 failed, 0 errors, 1 skipped, 1848 s
+mode lean: 233 files, 1366 tests, 36 failed, 8 errors, 1 skipped, 1800 s
