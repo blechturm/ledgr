@@ -131,7 +131,9 @@ stays until all are complete.
   gate/<workload>_lean.rds for every recorded workload, compared by
   oracle_check.R with no unlisted difference. Accepted differences are
   listed in an --accepted file naming their authority, for example the
-  LR-12/LR-20 store-format changes.
+  LR-12/LR-20 store-format changes, and the `feature_engine_version`
+  digest in `sweep_attrs`, which changes when lean preparation becomes
+  package code (LDG-3283, the integrated run).
 - **O2, maintainer, before the switch run:** the private Sharadar reference
   runs on the live pin and the candidate. Its records stay private, and
   the result is recorded by the maintainer. Cut 27's cut review routes it
