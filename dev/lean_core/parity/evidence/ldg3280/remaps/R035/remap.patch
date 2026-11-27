@@ -1,0 +1,17 @@
+diff --git a/tests/testthat/test-feature-accessor-scaling.R b/tests/testthat/test-feature-accessor-scaling.R
+index a07ef873..00e05598 100644
+--- a/tests/testthat/test-feature-accessor-scaling.R
++++ b/tests/testthat/test-feature-accessor-scaling.R
+@@ -134,10 +134,10 @@ testthat::test_that("[LTB-0139] prepared feature accessors preserve calls and pr
+   )
+   testthat::expect_identical(lookup_a$name_lookup, lookup_b$name_lookup)
+   testthat::expect_identical(lookup_a$known_features, lookup_b$known_features)
+-  fold_source <- paste(deparse(body(ledgr:::ledgr_fold_envelope)), collapse = "\n")
++  fold_source <- ledgr_test_candidate_source("lean_fold_envelope_plain")
+   testthat::expect_match(
+     fold_source,
+-    "feature_name_state = availability_feature_name_state",
++    "ledgr_projection_feature_lookup_state(projection, feature_ids = def_ids, universe = ids, active_alias_map = active_alias_map, feature_name_state = feature_name_state)",
+     fixed = TRUE
+   )
+ 

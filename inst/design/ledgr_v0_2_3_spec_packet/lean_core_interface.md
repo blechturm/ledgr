@@ -5,8 +5,12 @@
   checkpoint's table. Part D holds one section per family; each binds by its
   own status line (macro WS16 family method, point 5). The title dropped
   "First Checkpoint" when the first family (P3) started.
-- Pin: `d5b3a151`, the Cut 11 close. Every `file:line` refers to that commit;
-  `R/` is unchanged since. `C:` means a line of `inst/design/contracts.md`.
+- Pin: `7f65733f`, the release head at Cut 26's close, since Cut 27 (the
+  maintainer, 2026-11-27; the lean fold core synthesis's
+  [pin record](../rfc/rfc_lean_fold_core_v0_2_3_synthesis.md#amendment-maintainer-2026-11-27-the-pin-advances)).
+  Before it, `d5b3a151`, the Cut 11 close: every `file:line` in sections
+  written before Cut 27 refers to that commit. `R/fold-engine.R` is
+  identical in both. `C:` means a line of `inst/design/contracts.md`.
 - Authority: the [skeleton synthesis](../rfc/rfc_lean_core_skeleton_v0_2_3_synthesis.md)
   Sections 2-5 with its accepted
   [pulse plumbing amendment](../rfc/rfc_lean_core_pulse_plumbing_v0_2_3_synthesis.md),
@@ -1671,9 +1675,53 @@ Switch obligations:
    lookup, `corporate_action_plan$event_kinds()`) in the deletion
    inventory as "retain". WS14 either installs one compiled FIFO or retires
    the selector with `spot_fifo.cpp`.
+   Confirmed by Cut 27 decision 10 (2026-11-27): the compiled FIFO's R
+   wrappers (`ledgr_run_compiled_spot_fifo_batch()`,
+   `ledgr_carrier_compiled_pack()`, `ledgr_carrier_compiled_unpack()`,
+   `ledgr_compiled_spot_fifo_suspect()`) and `spot_fifo.cpp` also stay,
+   inert, although only the old fold reaches them
+   (`dev/spikes/switch_probe/c_reachability.csv`). Their direct tests stay
+   unchanged until WS14 (LDG-3280 inventory rows R021, R136 and R137,
+   handling g).
 3. **Checkpoint control.** Remove the control and its entry refusal (LR-20,
    already listed). `db_live` is removed with the old fold.
 4. **Integrated feature path.** Run the full integrated proof: the lean
    loop consuming the new package feature path, end to end. The bridge
    above covers only the consumer boundary.
+   Discharged by Cut 27 (LDG-3281): with the pin advanced to 7f65733f, the
+   gate runs the package feature engine in both arms, and the bridge's
+   routes (both clocks, parameterised aliases, two candidates, implicit,
+   precompute and reuse, each also on two workers) run end to end as the
+   workloads fe_bar_native and fe_declared (parity/loop_workloads_features.R),
+   with the value and alias faults as the variants feat_value_perturbed and
+   feat_alias_swapped. feature_bridge.R is retired; its evidence stays in
+   evidence/ldg3273/bridge/.
 5. **Backstop seam.** Retire the test seam with the harness entry.
+6. **Test seams into the lean stages (Cut 27, amendment_test_inventory
+   (10)).** The suite's injection and observation points into E and P1 to
+   P5 are designed in Cut 28 as an explicit item with its own review. The
+   harness hooks retire at the switch, so a seam a test keeps is designed,
+   not inherited. The rows and the open shapes are in
+   `dev/lean_core/parity/evidence/ldg3280/cut28_design_item.md`.
+
+### 19.15 The overflow refusal at P4 (Cut 27)
+
+- Status: accepted by the maintainer with Cut 27 on 2026-11-27 (decision
+  3, LDG-3276). It is the one exception to LR-15 (the pulse-plumbing
+  amendment "the overflow refusal"; LR-26).
+- Behaviour. P4 keeps the fill cash and position-delta finiteness refusal,
+  as `R/fold-engine.R`'s P4 publication raises it, with the same class,
+  message and precedence:
+  - a successful lot candidate checks all its fill rows, vectorised, with
+    `lean_fill_deltas_finite()` (`fifo.R`);
+  - a failed lot candidate finds its first failing row by prefix
+    bisection with `lean_lot_first_failure()` (`fifo.R`, as
+    `ledgr_fold_fill_candidate()` does), checks the rows before it, then
+    re-raises the lot refusal.
+- Witnesses (`parity/loop_workloads_overflow.R`): ovf_sell_1.9,
+  ovf_hold_1.9 and ovf_sell_10 (one fill), ovf_delta_then_lot and
+  ovf_lot_then_delta (two fills in one pulse, both orders). Each covers the
+  run, the failed sweep candidate and the stopping sweep. Each P4 refusal
+  is asserted at stage "accounting" on its pulse.
+- Variants: ovf_delta_check_omitted, ovf_check_too_early and
+  ovf_earlier_rows_skipped.

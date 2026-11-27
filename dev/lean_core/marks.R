@@ -1,15 +1,15 @@
-# Slice 3 (Cut 19, Section 19.11): marks on a run whose prepared planes hold
-# a missing bar or a non-finite close, schedules and the slice-3 records.
-# The loop (loop.R) holds the slice-3 run state as one environment, `s3`
-# (lean_marks_run_state); the other helpers are pure. The mark rule itself
-# is the pin's (ledgr_availability_valuation_state(), the provider's
-# decision view, ledgr_availability_restrict_frozen() and
+# Slice 3 (Section 19.11): marks on a run whose prepared planes hold a
+# missing bar or a non-finite close, schedules and the slice-3 records.
+# The loop (loop.R) holds the slice-3 run state as one environment,
+# `marks_state` (lean_marks_run_state); the other helpers are pure. The mark
+# rule itself is the package's (ledgr_availability_valuation_state(), the
+# provider's decision view, ledgr_availability_restrict_frozen() and
 # ledgr_carrier_provider_view()); nothing here copies it.
 
 # The slice-3 run state. One environment, so slice 3 adds one binding to the
 # loop's frame: R searches that frame's bindings one by one for every name a
-# pulse stage looks up, and twelve more cost about 12 us per pulse (Cut 19
-# timing). Fields: the pin's valuation state on a marked run (NULL
+# pulse stage looks up, and twelve more cost about 12 us per pulse
+# (measured). Fields: the package's valuation state on a marked run (NULL
 # otherwise), the schedule's decision flags (NULL: every pulse is decided),
 # the frozen set, the stop's affected exposure, and the slice-3 rows, typed
 # and preallocated: valuation, risk and stop rows, pulse-ordered and within
@@ -18,67 +18,66 @@
 # part 3 closes it: stop rows).
 lean_marks_run_state <- function(bars, ids, substrate, provider, history_reader, due, frozen = character(),
                                  marked = FALSE) {
-  s3 <- new.env(parent = emptyenv())
-  # Slice 4 (LDG-3243, decision 5): a carried opening's frozen holdings
-  # start the frozen set, as the pin's fold state does
-  # (R/fold-engine.R:1794), so freeze entry is not recorded twice; such a
+  marks_state <- new.env(parent = emptyenv())
+  # A carried opening's frozen holdings start the frozen set, as the
+  # package's fold state does, so freeze entry is not recorded twice; such a
   # run takes the marked path, since only the valuation state can exit or
-  # keep a frozen holding. So does a run with a corporate-action plan
-  # (LDG-3244): its refusal stops at the valuation (R/fold-engine.R:383-392);
-  # and one that declares a fact family other than sessions (LDG-3246): its
-  # decision axis is the provider's per-pulse context.
-  s3$state <- if (lean_marks_needed(bars) || length(frozen) > 0L || marked) {
+  # keep a frozen holding. So does a run with a corporate-action plan: its
+  # refusal stops at the valuation; and one that declares a fact family
+  # other than sessions: its decision axis is the provider's per-pulse
+  # context.
+  marks_state$state <- if (lean_marks_needed(bars) || length(frozen) > 0L || marked) {
     lean_marks_state(bars, ids, substrate, provider, history_reader)
   }
-  s3$due <- due
-  s3$frozen <- frozen
-  s3$affected <- list(value = NA_real_, details = list(), ts_utc = as.POSIXct(NA, tz = "UTC"), specified = FALSE)
-  s3$xcap <- cap <- 64L
-  s3$xr <- list(pulse = integer(cap), part = integer(cap), instrument_id = character(cap), stage = character(cap),
+  marks_state$due <- due
+  marks_state$frozen <- frozen
+  marks_state$affected <- list(value = NA_real_, details = list(), ts_utc = as.POSIXct(NA, tz = "UTC"), specified = FALSE)
+  marks_state$xcap <- cap <- 64L
+  marks_state$xr <- list(pulse = integer(cap), part = integer(cap), instrument_id = character(cap), stage = character(cap),
     outcome = character(cap), reason_code = character(cap), reasons = character(cap), target = numeric(cap),
     quantity = numeric(cap), price = numeric(cap), mark_source = character(cap), mark_age = integer(cap),
     target_before_risk = numeric(cap), target_after_risk = numeric(cap), position_before = numeric(cap),
     position_after = numeric(cap), detail_json = character(cap), event_seq = rep(NA_integer_, cap))
-  s3$nx <- 0L
-  s3
+  marks_state$nx <- 0L
+  marks_state
 }
 
 # Appends a group of rows of one part, written by index, the buffer doubled
-# when full; a field the group does not carry takes the pin's diagnostic
+# when full; a field the group does not carry takes the package's diagnostic
 # default. The buffer is detached while written, so its columns change in
 # place.
-lean_marks_add_rows <- function(s3, i, part, g) {
+lean_marks_add_rows <- function(marks_state, i, part, g) {
   m <- length(g$instrument_id)
-  rows <- s3$nx + seq_len(m)
-  xr <- s3$xr
-  s3$xr <- NULL
-  if (s3$nx + m > s3$xcap) {
-    while (s3$nx + m > s3$xcap) s3$xcap <- s3$xcap * 2L
-    xr <- lapply(xr, function(v) { length(v) <- s3$xcap; v })
+  rows <- marks_state$nx + seq_len(m)
+  xr <- marks_state$xr
+  marks_state$xr <- NULL
+  if (marks_state$nx + m > marks_state$xcap) {
+    while (marks_state$nx + m > marks_state$xcap) marks_state$xcap <- marks_state$xcap * 2L
+    xr <- lapply(xr, function(v) { length(v) <- marks_state$xcap; v })
   }
   xr$pulse[rows] <- i
   xr$part[rows] <- part
   for (f in names(xr)[-(1:2)]) xr[[f]][rows] <- rep_len(g[[f]] %||% .ledgr_diagnostic_defaults[[f]], m)
-  s3$xr <- xr
-  s3$nx <- s3$nx + m
+  marks_state$xr <- xr
+  marks_state$nx <- marks_state$nx + m
 }
 
 # A slice-3 stop: its rows close the pulse, and the completion row records
 # its affected exposure.
-lean_marks_stop <- function(s3, i, s) {
-  lean_marks_add_rows(s3, i, 3L, s$rows)
-  s3$affected <- s$affected
+lean_marks_stop <- function(marks_state, i, s) {
+  lean_marks_add_rows(marks_state, i, 3L, s$rows)
+  marks_state$affected <- s$affected
 }
 
 # TRUE when any prepared bar is unobserved or any prepared close is not
-# finite. Such a run takes its marks from the pin's valuation state; a run
+# finite. Such a run takes its marks from the package's valuation state; a run
 # with complete planes keeps the constant fixed-basket packet, whose marks
 # are the current closes.
 lean_marks_needed <- function(bars) !all(bars$observed) || !all(is.finite(bars$close))
 
-# The pin's valuation state for the run, built once in E as the pin builds it
-# (R/fold-engine.R:1732-1740): the full prepared bars and session axis and
-# the history reader's pulse columns (cut review R2).
+# The package's valuation state for the run, built once in E as the package
+# builds it: the full prepared bars and session axis and the history
+# reader's pulse columns.
 lean_marks_state <- function(bars, ids, substrate, provider, history_reader) {
   ledgr_availability_valuation_state(bars, ids, substrate$axis, as.integer(provider$valuation_policy$max_sessions),
     ledgr_availability_exhausted_choice(provider$valuation_policy), pulse_columns = history_reader$pulse_columns)
@@ -86,12 +85,11 @@ lean_marks_state <- function(bars, ids, substrate, provider, history_reader) {
 
 # One pulse's marks: the provider's decision view on the run's positions,
 # the valuation state advanced to the pulse with the held set, the frozen
-# restriction and the carrier's provider view (the pin's P1 order,
-# R/fold-engine.R:315-336). Returns the view columns, the valuation, the
-# named full positions, the restricted view (lifetime and terminal facts),
-# the context ids `cids` (the decision axis: members, then held nonmembers,
-# R/availability-provider-prepared.R:522; slice 4 lifts the run-axis
-# refusal) and the P2 input on that axis.
+# restriction and the carrier's provider view (the package's P1 order).
+# Returns the view columns, the valuation, the named full positions, the
+# restricted view (lifetime and terminal facts), the context ids `cids` (the
+# decision axis: members, then held nonmembers, as the prepared provider
+# orders them; no run-axis refusal) and the P2 input on that axis.
 lean_marks_pulse <- function(provider, vs, i, ts_posix, pos, ids) {
   full <- stats::setNames(pos, ids)
   view <- provider$decision_view(ts_posix, full)
@@ -103,17 +101,16 @@ lean_marks_pulse <- function(provider, vs, i, ts_posix, pos, ids) {
        p2 = ledgr_carrier_p2_input(columns, axis))
 }
 
-# A group of diagnostic rows (one per entry of `ids`), with the pin's segment
-# default: `reasons` is the reason code unless given (R/fold-carrier.R:823).
+# A group of diagnostic rows (one per entry of `ids`), with the package's
+# segment default: `reasons` is the reason code unless given.
 lean_marks_group <- function(ids, stage, outcome, reason_code, ..., reasons = reason_code) {
   c(list(instrument_id = ids, stage = stage, outcome = outcome, reason_code = reason_code, reasons = reasons), list(...))
 }
 
-# A P1 stop (the pin's stop_valuation, R/fold-engine.R:338-361): by default
-# the valuation-horizon stop (:512-521), the held instruments without a
-# usable mark, NULL when every holding is priced; or a given stop, such as a
-# corporate-action refusal (:383-392). Its rows, reason and the affected
-# exposure the completion row records.
+# A P1 stop (the package's stop_valuation): by default the valuation-horizon
+# stop, the held instruments without a usable mark, NULL when every holding
+# is priced; or a given stop, such as a corporate-action refusal. Its rows,
+# reason and the affected exposure the completion row records.
 lean_marks_valuation_stop <- function(m, ts_posix, ids = m$cids[m$columns$held & !m$columns$priced],
                                       reason_code = "valuation_horizon_exhausted", reasons = reason_code) {
   if (length(ids) == 0L) return(NULL)
@@ -127,9 +124,9 @@ lean_marks_valuation_stop <- function(m, ts_posix, ids = m$cids[m$columns$held &
          detail_json = vapply(seq_along(ids), function(k) ledgr_availability_detail_json(affected$details[[k]]), "")))
 }
 
-# The frozen set's transitions at this pulse (R/fold-engine.R:522-545):
-# newly frozen holdings in context order, then holdings that left the frozen
-# set in the previous set's order. Returns the new set and the row groups.
+# The frozen set's transitions at this pulse: newly frozen holdings in
+# context order, then holdings that left the frozen set in the previous
+# set's order. Returns the new set and the row groups.
 lean_marks_frozen <- function(m, before) {
   ids <- m$cids
   now <- ids[m$columns$held & m$columns$frozen]
@@ -154,10 +151,10 @@ lean_marks_frozen <- function(m, before) {
   list(set = now, groups = groups)
 }
 
-# The decision rows' per-cell fields on a marked pulse (the pin's
-# append_decision_trace, R/fold-engine.R:927-966): the mark, its source and
-# age, and the reason: a restriction's reasons, or sizing_unavailable for an
-# instrument a sizing helper skipped.
+# The decision rows' per-cell fields on a marked pulse (the package's
+# append_decision_trace): the mark, its source and age, and the reason: a
+# restriction's reasons, or sizing_unavailable for an instrument a sizing
+# helper skipped.
 lean_marks_decision_fields <- function(m, ids, skipped_ids) {
   rs <- m$p2$restriction
   reason <- ifelse(nzchar(rs$reason), rs$reason, "decision_recorded")
@@ -171,9 +168,9 @@ lean_marks_decision_fields <- function(m, ids, skipped_ids) {
   list(mark = m$columns$mark, source = m$p2$mark_source, age = m$columns$mark_age, reason = reason, reasons = reasons)
 }
 
-# A scheduled-skip pulse's rows (R/fold-engine.R:1968-1977, :664-687): the
-# skip row, then evidence for each holding marked from a stale or frozen
-# close (none on a run with complete planes).
+# A scheduled-skip pulse's rows: the skip row, then evidence for each
+# holding marked from a stale or frozen close (none on a run with complete
+# planes).
 lean_marks_skip_rows <- function(m, ids, pos) {
   groups <- list(lean_marks_group("", "decision", "skipped", "scheduled_skip", detail_json = "{}"))
   if (is.null(m)) return(groups)
@@ -188,7 +185,7 @@ lean_marks_skip_rows <- function(m, ids, pos) {
 }
 
 # LR-23 on marks: a decision cell is clean only on a current-close mark of
-# age 0 with the plain decision reason and no risk row (the pin's
+# age 0 with the plain decision reason and no risk row (the package's
 # ledgr_diagnostic_clean_hold() and _fill()). With no marks (`d` NULL) the
 # cell's close is the current close.
 lean_marks_clean <- function(d, close, ids, risk_ids) {
@@ -206,11 +203,11 @@ lean_marks_current <- list(source = "current_close", age = 0L, reason = "decisio
 # decision cells, 3 closes it), and the pulses without decision cells: a
 # scheduled skip and a P1 stop (any reason: the valuation horizon, a
 # corporate-action refusal), each recognised by its row.
-lean_marks_part_counts <- function(s3, np) {
-  k <- seq_len(s3$nx)
-  pulse <- s3$xr$pulse[k]
-  part <- s3$xr$part[k]
-  none <- s3$xr$reason_code[k] == "scheduled_skip" | (s3$xr$stage[k] == "valuation" & s3$xr$outcome[k] == "stopped")
+lean_marks_part_counts <- function(marks_state, np) {
+  k <- seq_len(marks_state$nx)
+  pulse <- marks_state$xr$pulse[k]
+  part <- marks_state$xr$part[k]
+  none <- marks_state$xr$reason_code[k] == "scheduled_skip" | (marks_state$xr$stage[k] == "valuation" & marks_state$xr$outcome[k] == "stopped")
   list(open = tabulate(pulse[part == 1L], np), risk = tabulate(pulse[part == 2L], np),
        stop = tabulate(pulse[part == 3L], np), no_decision = tabulate(pulse[none], np) > 0L)
 }
@@ -223,9 +220,8 @@ lean_marks_part_seq <- function(pulse, part, lay) {
   start + seq_along(pulse) - match(key, key) + 1L
 }
 
-# The risk-mark gate (R/fold-engine.R:973-1013): a new or larger long
-# position on an instrument whose mark is not permissible stops the run.
-# NULL when no target does so.
+# The risk-mark gate: a new or larger long position on an instrument whose
+# mark is not permissible stops the run. NULL when no target does so.
 lean_marks_risk_stop <- function(m, ids, sq, pos, ts_posix) {
   st <- which(sq > pos & sq > 0 & !m$columns$permissible)
   if (length(st) == 0L) return(NULL)
@@ -237,9 +233,8 @@ lean_marks_risk_stop <- function(m, ids, sq, pos, ts_posix) {
          detail_json = canonical_json(list(risk_step = "availability_risk_mark_gate"))))
 }
 
-# Stale-mark risk rows after the risk plan (R/fold-engine.R:1026-1056): each
-# holding or target at a permissible mark older than the pulse, reduced or
-# passed through. NULL when there is none.
+# Stale-mark risk rows after the risk plan: each holding or target at a
+# permissible mark older than the pulse, reduced or passed through. NULL when there is none.
 lean_marks_stale_rows <- function(m, ids, sq, tq, pos) {
   age <- m$columns$mark_age
   st <- which(m$columns$permissible & !is.na(age) & age > 0L & (pos != 0 | tq != 0))

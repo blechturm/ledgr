@@ -1,0 +1,2 @@
+"file","old","new"
+"fifo.R","    if (inherits(out, ""error"")) {","    if (FALSE) {"

@@ -1,0 +1,24 @@
+debug 1 batch_fault (bound 8): status 0, 46 tables, 37 different; verdicts: CAUGHT 3
+debug 1 capacity_check_dropped (bound 65536): status 0, 21 tables, 2 different; verdicts: CAUGHT 2
+debug 1 drop_hold (bound 8): status 0, 46 tables, 37 different; verdicts: CAUGHT 3
+debug 1 expand_extra (bound 1): status 0, 32 tables, 0 different; verdicts: CAUGHT 2
+debug 1 expand_whole (bound 1): status 0, 32 tables, 0 different; verdicts: CAUGHT 2
+debug 1 fault_before_append (bound 8): status 0, 46 tables, 37 different; verdicts: CAUGHT 3
+debug 1 fill_price_ulp (bound 8): status 0, 46 tables, 37 different; verdicts: CAUGHT 3
+debug 1 handler_state_via_init (bound 65536): status 0, 24 tables, 4 different; verdicts: CAUGHT 2
+debug 1 hold_in_loop (bound 8): status 0, 46 tables, 0 different; verdicts: CAUGHT 3
+debug 1 hold_position (bound 8): status 0, 46 tables, 6 different; verdicts: CAUGHT 3
+debug 1 lifetime_capture_population_dropped (bound 65536): status 0, 24 tables, 4 different; verdicts: CAUGHT 2
+debug 1 post_cash_not_installed (bound 65536): status 0, 16 tables, 13 different; verdicts: CAUGHT 1
+debug 1 post_omitted (bound 65536): status 0, 16 tables, 13 different; verdicts: CAUGHT 1
+debug 1 read_fast_path (bound 65536): status 0, 16 tables, 13 different; verdicts: CAUGHT 1
+debug 1 retains_via_append_closure (bound 65536): status 0, 70 tables, 10 different; verdicts: CAUGHT 6
+debug 1 room_without_entry (bound 65536): status 0, 48 tables, 8 different; verdicts: CAUGHT 4
+debug 1 state_view_fast (bound 65536): status 0, 16 tables, 13 different; verdicts: CAUGHT 1
+debug 1 store_append (bound 8): status 0, 46 tables, 0 different; verdicts: CAUGHT 3
+debug 1 store_bind (bound 8): status 0, 46 tables, 0 different; verdicts: CAUGHT 3
+debug 1 store_execute (bound 8): status 0, 46 tables, 0 different; verdicts: CAUGHT 3
+debug 1 store_query (bound 8): status 0, 46 tables, 0 different; verdicts: CAUGHT 3
+debug 1 targets_wrong_refusal (bound 65536): status 0, 16 tables, 13 different; verdicts: CAUGHT 1
+debug 1 write_in_loop (bound 8): status 0, 46 tables, 37 different; verdicts: CAUGHT 3
+58 manifest rows, 23 variants, 0 failures

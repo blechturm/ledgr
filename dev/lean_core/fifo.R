@@ -1,16 +1,16 @@
-# Lean FIFO lot kernel (LDG-3213): the one R implementation of opening, fill
-# and disposition over the typed lot book, for the fold (P4), replay, opening
+# Lean FIFO lot kernel: the one R implementation of opening, fill and
+# disposition over the typed lot book, for the fold (P4), replay, opening
 # import and terminal disposition callers. It is the executable oracle for
-# any later compiled kernel (pulse plumbing R12).
+# any later compiled kernel.
 #
-# It reproduces the pinned ledgr_lot_apply() (R/lot-accounting.R:402 at the
-# pin) bit for bit: the same floating-point operations in the same order,
-# the same refusals in the same order. It never calls the pinned kernel, its
-# operation wrappers or its arithmetic helpers; it shares only boundary
-# validators and condition constructors (ledgr_lot_input, ledgr_lot_applied,
+# It reproduces the package's ledgr_lot_apply() bit for bit: the same
+# floating-point operations in the same order, the same refusals in the same
+# order. It never calls the package's kernel, its operation wrappers or its
+# arithmetic helpers; it shares only boundary validators and condition
+# constructors (ledgr_lot_input, ledgr_lot_applied,
 # ledgr_lot_book_problem, ledgr_accounting_event_error, ledgr_lot_blocks).
 #
-# Validation (interface table Section 11, pulse plumbing R1-R3):
+# Validation (interface table Section 11):
 # - lean_lot_input() is the trusted boundary. It keeps the economic input
 #   rules in production; shape, type and distinct-position checks run only in
 #   debug (LR-18).
@@ -117,6 +117,55 @@ lean_lot_disposition <- function(book, pos, side, qty, price,
                                       realized_model_pnl = realized_model_pnl))
 }
 
+# The first failing row of a refused fill batch and its condition, found by
+# prefix bisection as the package's fold finds it (ledgr_fold_fill_candidate):
+# about log2(n) kernel calls, on the refusal path only.
+lean_lot_first_failure <- function(book, fill, error) {
+  prefix <- function(m) {
+    j <- seq_len(m)
+    tryCatch(lean_lot_fill(book, fill$pos[j], fill$side[j], fill$qty[j], fill$price[j], fill$fee[j]),
+             error = identity)
+  }
+  ok <- 0L
+  failed <- length(fill$k)
+  while (failed - ok > 1L) {
+    mid <- (ok + failed) %/% 2L
+    out <- prefix(mid)
+    if (inherits(out, "error")) {
+      failed <- mid
+      error <- out
+    } else {
+      ok <- mid
+    }
+  }
+  list(row = failed, error = error)
+}
+
+# A pulse's fill batch through the lot kernel with the fill-delta refusal
+# (LR-26): a refused batch checks the rows before its first failing row,
+# then raises that row's lot refusal; a successful one checks all its rows.
+lean_lot_fill_checked <- function(book, fill) {
+  applied <- tryCatch(lean_lot_fill(book, fill$pos, fill$side, fill$qty, fill$price, fill$fee), error = identity)
+  if (inherits(applied, "error")) {
+    failed <- lean_lot_first_failure(book, fill, applied)
+    lean_fill_deltas_finite(fill, seq_len(failed$row - 1L))
+    stop(failed$error)
+  }
+  lean_fill_deltas_finite(fill, seq_along(fill$k))
+  applied
+}
+
+# The fill-delta finiteness refusal the package's accounting-event check
+# makes on publication (LR-26): every published fill row needs a finite cash
+# and position delta. One vectorised test over the rows.
+lean_fill_deltas_finite <- function(fill, rows) {
+  if (length(rows) && !all(is.finite(fill$cash_delta[rows]) & is.finite(fill$position_delta[rows]))) {
+    ledgr_accounting_event_error("Accounting event metadata must provide finite cash_delta and position_delta values.",
+                                 "ledgr_invalid_ledger_meta")
+  }
+  invisible(NULL)
+}
+
 # Close/open leg fees of fill rows: the closing leg takes the fee in
 # proportion to its quantity, the opening leg the rest (CLOSE before OPEN).
 # A row with no positive finite quantity splits nothing.
@@ -134,7 +183,7 @@ lean_fill_leg_fees <- function(fee, close_qty, open_qty) {
 
 # The kernel: lean_lot_simple() when it admits the block, else the general
 # kernel; in debug a served block is also run through the general kernel and
-# the two results must be identical (Cut 15, LDG-3223).
+# the two results must be identical.
 lean_lot_apply <- function(book, input) {
   simple <- lean_lot_simple(book, input)
   if (is.null(simple)) return(lean_lot_general(book, input))
@@ -144,7 +193,7 @@ lean_lot_apply <- function(book, input) {
   simple
 }
 
-# The simple fill block (Cut 15, LDG-3223): every row a fill that either
+# The simple fill block: every row a fill that either
 # opens from a flat instrument with an empty segment of capacity at least
 # one, or closes exactly the one live lot it opposes. Anything else returns
 # NULL (the general kernel). The arithmetic is the general kernel's for

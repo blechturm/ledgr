@@ -1,0 +1,2 @@
+"file","old","new"
+"loop.R","      pos[fill$pos] <<- book$net_by_inst[fill$pos]","      pos[fill$pos] <<- pos[fill$pos] + fill$position_delta"

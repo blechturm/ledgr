@@ -1,0 +1,73 @@
+diff --git a/tests/testthat/test-ws4a-carrier.R b/tests/testthat/test-ws4a-carrier.R
+index a4fdc2c0..1e25454a 100644
+--- a/tests/testthat/test-ws4a-carrier.R
++++ b/tests/testthat/test-ws4a-carrier.R
+@@ -87,7 +87,28 @@ ws4a_sources <- function() {
+   checker <- new.env(parent = baseenv())
+   sys.source(file.path(root, "tools", "check-fold-phase-contract.R"), envir = checker)
+   files <- list.files(file.path(root, "R"), "\\.R$", full.names = TRUE)
+-  checker$ledgr_fold_phase_function_sources(files)
++  out <- checker$ledgr_fold_phase_function_sources(files)
++  # The candidate fold's functions, defined at top level or nested (the lean
++  # stages are closures inside lean_fold_envelope_plain); a name defined more
++  # than once among them is ambiguous and left out.
++  lean <- list()
++  walk <- function(e) {
++    if (!is.call(e)) return(invisible(NULL))
++    if (identical(e[[1L]], as.name("<-")) && is.symbol(e[[2L]]) && is.call(e[[3L]]) &&
++        identical(e[[3L]][[1L]], as.name("function"))) {
++      nm <- as.character(e[[2L]])
++      lean[[nm]] <<- c(lean[[nm]], list(e[[3L]]))
++    }
++    args <- as.list(e)[-1L]
++    for (k in seq_along(args)) if (!identical(args[[k]], quote(expr = ))) walk(args[[k]])
++    invisible(NULL)
++  }
++  for (f in list.files(getOption("ledgr.candidate_lean"), "\\.R$", full.names = TRUE)) {
++    for (e in parse(f, keep.source = FALSE)) walk(e)
++  }
++  lean <- lean[lengths(lean) == 1L]
++  out[names(lean)] <- lapply(lean, `[[`, 1L)
++  out
+ }
+ ws4a_calls <- function(e) {
+   if (is.call(e)) c(list(e), unlist(lapply(as.list(e), ws4a_calls), recursive = FALSE))
+@@ -2456,12 +2477,12 @@ ws4a_json_shapes <- function(e) {
+   vapply(Filter(function(x) grepl("json|JSON", ws4a_head(x)), ws4a_calls(e)), shape, "")
+ }
+ ws4a_d6_routed <- c(
+-  ledgr_fold_stage_observe_settle = "ledgr_availability_detail_json(affected$details[[k]])",
+-  ledgr_fold_stage_decide = "canonical_json(list(intent_reason))",
+-  ledgr_fold_stage_decide = "canonical_json(list(risk_step))",
+-  ledgr_fold_stage_plan = "canonical_json(list(cash_before,virtual_final_cash,recorded_final_cash))",
+-  ledgr_fold_stage_commit = paste0("canonical_json(list(cash_before,virtual_final_cash,recorded_final_cash,intended_gross_exposure,",
+-    "post_risk_gross_exposure,actual_gross_exposure,exposure_basis))")
++  # The lean stages encode one routed detail themselves: P3's affordability
++  # stop. P1's valuation-stop detail and P2's risk-gate detail are encoded in
++  # the marks.R helpers the stages call; P2's intent reason is stored raw and
++  # P5's reconciliation detail is encoded at the terminal transfer
++  # (lean_loop_expand).
++  lean_p3_plan = "canonical_json(list(cash_before,virtual_final_cash,recorded_final_cash))"
+ )
+ ws4a_d6_hits <- function(fns) {
+   unlist(lapply(names(fns), function(nm) {
+@@ -2474,14 +2495,14 @@ ws4a_d6_hits <- function(fns) {
+ 
+ testthat::test_that("[WS4a D6] the fold stages encode JSON only at the routed sites; P4 encodes none", {
+   fns <- ws4a_sources()
+-  stages <- c(paste0("ledgr_fold_stage_", c("observe_settle", "decide", "plan", "apply", "commit")), "ledgr_fold_fill_candidate")
++  stages <- c(paste0("lean_p", 1:5, c("_value", "_decide", "_plan", "_apply", "_commit")), "lean_lot_first_failure")
+   testthat::expect_length(ws4a_d6_hits(fns[stages]), 0L)
+-  testthat::expect_length(ws4a_json_shapes(fns$ledgr_fold_stage_apply), 0L)
++  testthat::expect_length(ws4a_json_shapes(fns$lean_p4_apply), 0L)
+   hit <- function(nm, stmt) length(ws4a_d6_hits(ws4a_inject_into(fns, nm, stmt))) > 0L
+-  testthat::expect_true(hit("ledgr_fold_stage_apply", "encoded <- canonical_json(list(fee = fill$fee))"))
+-  testthat::expect_true(hit("ledgr_fold_stage_plan", "canonical_json(list(intent_reason = x))"))
++  testthat::expect_true(hit("lean_p4_apply", "encoded <- canonical_json(list(fee = fill$fee))"))
++  testthat::expect_true(hit("lean_p3_plan", "canonical_json(list(intent_reason = x))"))
+   testthat::expect_true(hit(
+-    "ledgr_fold_stage_commit",
++    "lean_p5_commit",
+     "canonical_json(list(state_update = next_state))"
+   ))
+ })

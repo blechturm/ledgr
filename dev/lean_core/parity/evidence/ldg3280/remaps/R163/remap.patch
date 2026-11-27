@@ -1,0 +1,17 @@
+diff --git a/tests/testthat/test-ws4a-carrier.R b/tests/testthat/test-ws4a-carrier.R
+index a4fdc2c0..2ddcb9ae 100644
+--- a/tests/testthat/test-ws4a-carrier.R
++++ b/tests/testthat/test-ws4a-carrier.R
+@@ -2684,8 +2684,10 @@ testthat::test_that("[WS4a 3167 precedence] a batch refuses in the per-fill orde
+     "none"
+   }
+   batched <- function(f) {
+-    out <- ns$ledgr_fold_fill_candidate(book, f)
+-    if (is.null(out$failed)) "none" else c(out$failed, condition(out$error))
++    out <- tryCatch(lean_lot_fill(book, f$pos, f$side, f$qty, f$price, f$fee), error = identity)
++    if (!inherits(out, "error")) return("none")
++    out <- lean_lot_first_failure(book, f, out)
++    c(out$row, condition(out$error))
+   }
+   applied <- c("ledgr_lot_state_invariant", "Invalid applied lot rows.")
+   input <- c("ledgr_invalid_lot_fill", "Invalid fill input for lot accounting.")

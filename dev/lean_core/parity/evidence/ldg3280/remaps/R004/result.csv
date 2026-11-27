@@ -1,0 +1,2 @@
+"row","file","candidate","candidate_smoke","witness","witness_smoke","verdict"
+"R004","test-availability-diagnostic-production.R","the production diagnostic path defaults to one typed block: pass","smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","","","DEMONSTRATED (no witness run)"

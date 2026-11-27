@@ -1,0 +1,2 @@
+"row","file","candidate","candidate_smoke","witness","witness_smoke","verdict"
+"R146","test-ws4a-carrier.R","[WS4a V-execution-view V-plan V-fill V-rejection U-3166] the P3 groups are typed and refuse the controls: pass","smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","[WS4a V-execution-view V-plan V-fill V-rejection U-3166] the P3 groups are typed and refuse the controls: fail","smoke PASS (witness run): 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","DEMONSTRATED"

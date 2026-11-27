@@ -1,0 +1,2 @@
+loop.R          code identical (19 top-level expressions)
+CLARITY EQUIVALENCE PASS 

@@ -1,0 +1,11 @@
+ capture                  chunk debug mutation                           exit
+ prep_intraday_5x100k.rds run   0     none                               0   
+ prep_intraday_5x100k.rds run   1     none                               0   
+ prep_intraday_5x100k.rds run   0     axis_last_session_dropped          1   
+ prep_intraday_5x100k.rds run   0     duplicate_within_chunk_not_refused 1   
+ checks calls  failing_checks    verdict
+ 10     201247                   pass   
+ 10     201247                   pass   
+  1          1 axis              caught 
+ 10     201247 duplicate_refused caught 
+4 runs in 49s

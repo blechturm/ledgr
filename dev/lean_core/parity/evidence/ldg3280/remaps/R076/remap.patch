@@ -1,0 +1,18 @@
+diff --git a/tests/testthat/test-pulse-seed-v2.R b/tests/testthat/test-pulse-seed-v2.R
+index a5a57169..1b886ad3 100644
+--- a/tests/testthat/test-pulse-seed-v2.R
++++ b/tests/testthat/test-pulse-seed-v2.R
+@@ -133,10 +133,9 @@ testthat::test_that("rule v2 edge cases: seeds, pulse indices and refusals", {
+     testthat::expect_error(ledgr:::ledgr_pulse_seeds(7L, bad), class = "ledgr_invalid_args",
+       info = paste(format(bad), collapse = " "))
+   }
+-  # The accessor returns NULL for an unseeded fold and one element otherwise.
+-  testthat::expect_null(ledgr:::ledgr_pulse_seed_at(list(pulse_seeds = NULL), 3L))
+-  five <- ledgr:::ledgr_pulse_seeds(7L, 1:5)
+-  testthat::expect_identical(ledgr:::ledgr_pulse_seed_at(list(pulse_seeds = five), 3L), five[[3L]])
++  # The per-pulse read (NULL for an unseeded fold, element i otherwise) is the
++  # fold context's inline index read; 'a straight run reads the v2 vector
++  # over its own calendar' witnesses its values and the all-NA unseeded run.
+ })
+ 
+ testthat::test_that("rule v2 meets the frozen bounds B1-B6 and every control fails", {

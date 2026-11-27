@@ -1,0 +1,28 @@
+ws4a_sources <- function() {
+  root <- ledgr_test_source_root()
+  checker <- new.env(parent = baseenv())
+  sys.source(file.path(root, "tools", "check-fold-phase-contract.R"), envir = checker)
+  files <- list.files(file.path(root, "R"), "\\.R$", full.names = TRUE)
+  out <- checker$ledgr_fold_phase_function_sources(files)
+  # The candidate fold's functions, defined at top level or nested (the lean
+  # stages are closures inside lean_fold_envelope_plain); a name defined more
+  # than once among them is ambiguous and left out.
+  lean <- list()
+  walk <- function(e) {
+    if (!is.call(e)) return(invisible(NULL))
+    if (identical(e[[1L]], as.name("<-")) && is.symbol(e[[2L]]) && is.call(e[[3L]]) &&
+        identical(e[[3L]][[1L]], as.name("function"))) {
+      nm <- as.character(e[[2L]])
+      lean[[nm]] <<- c(lean[[nm]], list(e[[3L]]))
+    }
+    args <- as.list(e)[-1L]
+    for (k in seq_along(args)) if (!identical(args[[k]], quote(expr = ))) walk(args[[k]])
+    invisible(NULL)
+  }
+  for (f in list.files(getOption("ledgr.candidate_lean"), "\\.R$", full.names = TRUE)) {
+    for (e in parse(f, keep.source = FALSE)) walk(e)
+  }
+  lean <- lean[lengths(lean) == 1L]
+  out[names(lean)] <- lapply(lean, `[[`, 1L)
+  out
+}

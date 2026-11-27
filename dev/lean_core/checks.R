@@ -1,18 +1,17 @@
-# Lean-owned checks and computations (Cut 18, amendment lean_owned): fold-only
-# package functions the lean loop called per pulse on the pin, reimplemented
-# here as the implementation that survives the switch (macro plan revision
-# 15; lean_core_interface.md Section 19 lists each with its switch
-# obligation). Each accepts exactly what the pin accepts, with the pin's
-# value; an input outside its plain accept path goes to the pin's function,
-# which raises the pin's refusal with its class, message, payload and
-# precedence. With debug on, the loop compares each result with the pin's on
-# every pulse.
+# Lean-owned checks and computations: fold-only package functions the lean
+# loop called per pulse, reimplemented here as the implementation that
+# survives the switch (lean_core_interface.md Section 19 lists each with its
+# switch obligation). Each accepts exactly what the package accepts, with the
+# package's value; an input outside its plain accept path goes to the
+# package's function, which raises the package's refusal with its class,
+# message, payload and precedence. With debug on, the loop compares each
+# result with the package's on every pulse.
 
-# Debug only: the lean call's outcome against the pin's function on the same
+# Debug only: the lean call's outcome against the package's function on the same
 # inputs. A value must be identical; a refusal must carry the same class
-# vector, message, `reason`, `instrument_ids` and parent condition (cut
-# review 18 amendment, A2). A difference aborts with ledgr_internal_error;
-# otherwise the lean value is returned or the lean condition re-signalled.
+# vector, message, `reason`, `instrument_ids` and parent condition. A
+# difference aborts with ledgr_internal_error; otherwise the lean value is
+# returned or the lean condition re-signalled.
 lean_debug_same <- function(lean, pin, what, i) {
   run <- function(f) tryCatch(list(value = f()), error = function(e) list(error = e))
   sig <- function(o) {
@@ -29,9 +28,9 @@ lean_debug_same <- function(lean, pin, what, i) {
   a$value
 }
 
-# R1: the compiled risk plan as plain steps, once per run; NULL (the pin's
+# The compiled risk plan as plain steps, once per run; NULL (the package's
 # path for the whole run) for a step the lean path does not take: a type
-# other than long_only and max_weight, or a max_weight argument the pin's
+# other than long_only and max_weight, or a max_weight argument the package's
 # ledgr_risk_validate_max_weight() would not return as a finite number in
 # (0, 1].
 lean_risk_steps <- function(risk_plan) {
@@ -50,13 +49,13 @@ lean_risk_steps <- function(risk_plan) {
   steps
 }
 
-# R1: the risk plan on the strategy quantities `sq` (plain doubles in axis
-# order), the pin's ledgr_apply_risk_plan() on a fixed basket, whose
+# The risk plan on the strategy quantities `sq` (plain doubles in axis
+# order), the package's ledgr_apply_risk_plan() on a fixed basket, whose
 # context reads give equity = cash + positions value and the decision close
 # as each instrument's price. Returns the post-risk quantities, or NULL
-# where the pin refuses (equity not finite and non-negative, a nonzero
-# target without a positive finite close): the caller then takes the pin's
-# path, which raises that refusal.
+# where the package refuses (equity not finite and non-negative, a nonzero
+# target without a positive finite close): the caller then takes the
+# package's path, which raises that refusal.
 lean_risk_apply <- function(sq, steps, equity, close) {
   out <- sq
   for (s in steps) {
@@ -77,8 +76,8 @@ lean_risk_apply <- function(sq, steps, equity, close) {
   out
 }
 
-# R1: the post-risk quantities with the pin's admissibility and short-exposure
-# refusals (those raise through the pin's functions, with their payload).
+# The post-risk quantities with the package's admissibility and short-exposure
+# refusals (those raise through the package's functions, with their payload).
 # `targets` is the validated named target vector, `held` the named
 # decision-time positions.
 lean_risk_targets <- function(sq, targets, pos, held, steps, equity, close, ids, risk_plan, ctx) {
@@ -92,7 +91,7 @@ lean_risk_targets <- function(sq, targets, pos, held, steps, equity, close, ids,
   tq
 }
 
-# R1: the pin's path (the fallback, and the debug comparison).
+# The package's path (the fallback, and the debug comparison).
 lean_risk_pin <- function(targets, held, risk_plan, ctx) {
   risked <- ledgr_apply_risk_plan(targets, risk_plan, ctx)
   tq <- as.numeric(risked)
@@ -101,11 +100,11 @@ lean_risk_pin <- function(targets, held, risk_plan, ctx) {
   tq
 }
 
-# R2: the run's cost resolver as plain steps, once per run. The lean path
-# takes the pin's own resolver closure (ledgr_cost_resolver_from_model(),
+# The run's cost resolver as plain steps, once per run. The lean path takes
+# the package's own resolver closure (ledgr_cost_resolver_from_model(),
 # recognised by its body) whose steps carry numeric scalar arguments; NULL
-# (the pin's resolver for the whole run) otherwise. Step types the pin
-# ignores stay out, as in the pin.
+# (the package's resolver for the whole run) otherwise. Step types the
+# package ignores stay out, as in the package.
 lean_cost_steps <- function(resolver) {
   ref <- ledgr_cost_resolver_from_model(ledgr::ledgr_cost_zero())
   e <- environment(resolver)
@@ -128,12 +127,12 @@ lean_cost_steps <- function(resolver) {
   list(steps = steps, digits = as.integer(e$price_round_digits))
 }
 
-# R2: the pin's ledgr_cost_model_resolve() for one batch, the steps in their
+# The package's ledgr_cost_model_resolve() for one batch, the steps in their
 # compiled order on whole columns: the spread multiplies the price, each
 # fee adds in turn (an order-sensitive sum), the notional fee uses the
 # spread-adjusted unrounded price, and the price is rounded last. `side`,
 # `qty` and `open` are the planner's own columns (integer side, doubles of
-# one length), so the pin's input and output shape refusals cannot fire.
+# one length), so the package's input and output shape refusals cannot fire.
 lean_cost_resolve <- function(cost, side, qty, open) {
   price <- as.numeric(open)
   fee <- numeric(length(price))
@@ -149,17 +148,17 @@ lean_cost_resolve <- function(cost, side, qty, open) {
   list(price = round(price, digits = cost$digits), fee = fee)
 }
 
-# R3: the strategy's targets, the pin's ledgr_validate_strategy_targets(raw,
+# The strategy's targets, the package's ledgr_validate_strategy_targets(raw,
 # ids, allow_empty = TRUE). Two plain accept paths: a numeric vector whose
-# only attribute is the axis as names, returned as it is (the pin's
+# only attribute is the axis as names, returned as it is (the package's
 # targets[universe] of it is identical); and a helper's ledgr_target (class
 # exactly ledgr_target, numeric; none of the intermediate classes) whose
 # unclassed values are finite and named exactly by the axis, returned as
-# the pin returns it, unclass(raw)[ids]. `ids_ok` is the pin's universe
-# predicate, evaluated once per run on the fixed axis; both paths need it. The
-# helper path also needs a non-empty axis: on an empty one the pin returns the
-# unclassed helper with its attributes. Anything else goes to the pin's
-# validator, which normalises it or raises its refusal.
+# the package returns it, unclass(raw)[ids]. `ids_ok` is the package's
+# universe predicate, evaluated once per run on the fixed axis; both paths
+# need it. The helper path also needs a non-empty axis: on an empty one the
+# package returns the unclassed helper with its attributes. Anything else
+# goes to the package's validator, which normalises it or raises its refusal.
 lean_targets <- function(raw, ids, ids_attr, ids_ok) {
   if (ids_ok && is.numeric(raw) && identical(attributes(raw), ids_attr) && all(is.finite(raw))) return(raw)
   if (ids_ok && length(ids) > 0L && identical(class(raw), c("ledgr_target", "numeric"))) {
@@ -169,23 +168,23 @@ lean_targets <- function(raw, ids, ids_attr, ids_ok) {
   ledgr_validate_strategy_targets(raw, ids, allow_empty = TRUE)
 }
 
-# R3: the pin's universe predicate in ledgr_validate_strategy_targets()
+# The package's universe predicate in ledgr_validate_strategy_targets()
 # (allow_empty = TRUE), for the run's fixed axis.
 lean_targets_axis_ok <- function(ids) {
   is.character(ids) && !anyNA(ids) && all(nzchar(ids)) && !anyDuplicated(ids)
 }
 
-# R4: the sizing evidence a strategy returned, the pin's
+# The sizing evidence a strategy returned, the package's
 # ledgr_validate_sizing_evidence(x, targets, ids, position, mark). The plain
-# path takes evidence that passes every one of the pin's refusal tests with
+# path takes evidence that passes every one of the package's refusal tests with
 # no `sizing_unavailable` row (whose typed tests then reduce to all-finite
 # quantities, priced rows that need a price, and no price on an unpriced
 # row), evaluated directly rather than through vapply() and repeated
-# subsets; it returns the evidence, or NULL when it is stale by the pin's
+# subsets; it returns the evidence, or NULL when it is stale by the package's
 # four identical(as.numeric(...)) comparisons. The plain path reads no field
 # before the container's shape holds (a list of exactly the helper's class
 # and fields), and takes only columns without a class, on which these
-# operations equal the pin's. Anything else goes to the pin.
+# operations equal the package's. Anything else goes to the package.
 lean_sizing_fields <- c("instrument_id", "requested_quantity", "pre_floor_quantity", "rounded_quantity", "price",
                         "position_before", "reason_code")
 lean_sizing_priced_codes <- c("sizing_rounded", "sizing_rounded_to_zero_addition", "sizing_rounded_to_zero_liquidation")
@@ -217,12 +216,12 @@ lean_sizing_evidence <- function(x, targets, ids, position, mark) {
   ledgr_validate_sizing_evidence(x, targets = targets, context_ids = ids, position = position, mark = mark)
 }
 
-# R5: one declared-state field value. Accepts, unchanged, a value the pin's
+# One declared-state field value. Accepts, unchanged, a value the package's
 # ledgr_strategy_state_validate_value() returns unchanged: an attribute-free
 # scalar of the declared type for a portfolio field, or a vector of the
 # declared type named exactly by the axis for an asset field, with no NaN or
 # infinity in a double. Anything else (a broadcast scalar, reordered names,
-# a classed or otherwise attributed value, a wrong type) goes to the pin.
+# a classed or otherwise attributed value, a wrong type) goes to the package.
 lean_state_value <- function(value, field, axis, axis_attr) {
   plain <- if (identical(field$scope, "asset")) identical(attributes(value), axis_attr) else
     is.null(attributes(value)) && length(value) == 1L
@@ -232,9 +231,9 @@ lean_state_value <- function(value, field, axis, axis_attr) {
   ledgr_strategy_state_validate_value(value, field, axis)
 }
 
-# R5: a declared-state patch, the pin's ledgr_strategy_state_apply_values(...,
+# A declared-state patch, the package's ledgr_strategy_state_apply_values(...,
 # patch = TRUE) for a uniquely named list of declared fields; anything else
-# goes to the pin. `names_ok` is the run's check that the state's own names
+# goes to the package. `names_ok` is the run's check that the state's own names
 # (`state_names`) pass the name predicate; a patch naming exactly those
 # fields in that order, on a state still named so, needs no further name
 # check. Typed missing values reset to the field's default scalar.

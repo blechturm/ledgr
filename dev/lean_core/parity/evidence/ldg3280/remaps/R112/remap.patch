@@ -1,0 +1,18 @@
+diff --git a/tests/testthat/test-strategy-schedule.R b/tests/testthat/test-strategy-schedule.R
+index f95fbeb9..b4b8ecae 100644
+--- a/tests/testthat/test-strategy-schedule.R
++++ b/tests/testthat/test-strategy-schedule.R
+@@ -769,10 +769,10 @@ testthat::test_that("[LTB-0504] run and sweep compile the same schedule once", {
+     1L
+   )
+   for (stage in c(
+-    "ledgr_fold_stage_observe_settle", "ledgr_fold_stage_decide",
+-    "ledgr_fold_stage_plan", "ledgr_fold_stage_apply", "ledgr_fold_stage_commit"
++    "lean_fold_envelope_plain", "lean_p1_value", "lean_p2_decide",
++    "lean_p3_plan", "lean_p4_apply", "lean_p5_commit"
+   )) {
+-    stage_source <- paste(deparse(body(getFromNamespace(stage, "ledgr"))), collapse = "\n")
++    stage_source <- ledgr_test_candidate_source(stage)
+     testthat::expect_false(grepl("ledgr_compile_strategy_schedule", stage_source, fixed = TRUE))
+   }
+ 

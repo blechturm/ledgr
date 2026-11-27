@@ -1,0 +1,17 @@
+test-schema.R:470-507 'validator fails if runs.status does not accept DONE' - hand-built runs DDL carries execution_mode, but the asserted refusal is the runs.status enum check, independent of extra columns; rerun at Cut 28 to confirm.
+test-schema.R:509-563 'create refuses an unmarked table before interpreting its constraints' - models an unmarked old store (schema 108) that rightly keeps the column; missing_marker precedes any column check.
+test-backtest-lifecycle.R:97-133 'durable backtest safety net checkpoints and messages' and :169-177 - DuckDB auto-checkpoint of the store, not engine.checkpoint_every.
+helper-fixtures.R:16 ledgr_checkpoint_duckdb - DuckDB WAL checkpoint, not the retired control.
+test-result-output.R:112-199 [LTB-0107] - asserts print(bt) has no 'Execution Mode:' line; stays true after the switch.
+test-store-gate-contracts.R:2-79 [LTB-0259] - pins binding names, types and count (31), not values; the rule and schema bumps change values only.
+test-schema-version-literals.R [LTB-0269] - census locations are in files outside the switch's code-ownership list (pulse-plumbing Section 7); rerun if Cut 28 edits a censused file.
+test-documentation-contracts.R:2152-2262 [LTB-0509] - matches 'schema 125' in a historical NEWS entry, which stays.
+test-one-execution-path.R:176-228 [LTB-0528] - rule-4 artifacts stay older than rule 6; the block mocks the old binding to 4L, independent of the current value.
+test-strategy-schedule.R:1316-1737 [LTB-0508] - uses ledgr:::ledgr_identity_rule_version symbolically.
+test-availability-schema.R, test-equity-corporate-action-facts.R, test-schema.R:165/185, test-sweep-persistence-schema.R:95, test-walk-forward-schema.R:25 - use ledgr_experiment_store_schema_version symbolically.
+test-availability-fold-witnesses.R:276-308 'run identity excludes exactly the three registered fields' - normalization of db_path/created_at fields; no mode or rule.
+test-walk-forward-identity.R - relative experiment-hash comparisons; the mode field leaves both sides equally.
+tests/claims.yml LCL-0088 ('both execution modes' = dense/availability), LCL-0089 ('without exposing execution-mode internals', stays true), LCL-0527 ('independent execution modes' = one vs two workers), LCL-0518/LCL-0241 scopes (already say rule 4; stale but not changed by this switch item).
+test-strategy-private-context.R:339 - a strategy parameter named 'live', unrelated.
+test-codebase-contracts.R:177, test-execution-spec.R, test-risk-fold.R, test-ledger-writer.R, test-sweep.R, test-fold-phase-contract.R, test-ws4a-carrier.R - hits owned by the parent or the other fork (not inventoried here).
+test-pulse-seed-v2.R:562-593 / :708-725 and other pulse_seed_rule pins - the pulse-seed rule, not the identity rule or a retired control.

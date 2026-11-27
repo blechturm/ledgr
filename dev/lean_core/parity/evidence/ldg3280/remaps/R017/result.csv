@@ -1,0 +1,2 @@
+"row","file","candidate","candidate_smoke","witness","witness_smoke","verdict"
+"R017","test-context-frame-retirement.R","[LTB-0546] flat contexts retire frames across all entrances: pass","smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","[LTB-0546] flat contexts retire frames across all entrances: fail","smoke PASS (witness run): 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","DEMONSTRATED"

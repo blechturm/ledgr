@@ -1,0 +1,2 @@
+"row","file","candidate","candidate_smoke","witness","witness_smoke","verdict"
+"R067","test-ledger-writer.R","[LTB-0521] typed equity and diagnostic stores keep values, classes and order across growth: pass","smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","","","DEMONSTRATED (no witness run)"

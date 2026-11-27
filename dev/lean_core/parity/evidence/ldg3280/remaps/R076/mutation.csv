@@ -1,0 +1,2 @@
+"file","old","new"
+"loop.R","    pulse_seeds <- ledgr_pulse_seeds(seed, seq_len(n_pulse))","    pulse_seeds <- ledgr_pulse_seeds(seed, seq_len(n_pulse) + 1L)"

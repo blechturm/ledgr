@@ -1,0 +1,6 @@
+capture build: installed pin C:/Users/maxth/ledgr-wt/pin-lib-7f65733f/ledgr 
+prep_fixture: 1731 records, 0 fail; capture 7s, replay 7s, 15 MB
+prep_500x1260: 3207 records, 0 fail; capture 207s, replay 90s, 396 MB
+prep_500x2520: 6423 records, 0 fail; capture 708s, replay 347s, 867 MB
+prep_500x5040: 12855 records, 0 fail; capture 3140s, replay 1347s, 1812 MB
+replay evidence written to C:/Users/maxth/ledgr-wt/cut27-scratch/close/prep_out 

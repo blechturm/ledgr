@@ -1,0 +1,9 @@
+"form","seconds_n5000","seconds_n20000","growth_4x_n"
+"super_vector",0,0.02,20
+"super_list_field",0,0,0
+"super_matrix_row",0,0.02,20
+"env_vector",0.04,0.57,14.3
+"env_list_field",0.04,0.55,13.7
+"env_matrix_row",0.2,3.08,15.4
+"env_detach",0,0,0
+"list_in_out",0.0599999999999996,0.65,10.8

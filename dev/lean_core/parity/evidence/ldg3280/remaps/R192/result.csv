@@ -1,0 +1,2 @@
+"row","file","candidate","candidate_smoke","witness","witness_smoke","verdict"
+"R192","test-ws4a-carrier.R","[WS4a D15] the lot kernel never writes a book column by reference: pass || [WS4a D17 F4.35] the lot kernel computes no cash and openings move no cash: pass || [WS4a D19] no named-list FIFO implementation is defined: pass","smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","","","DEMONSTRATED (no witness run)"

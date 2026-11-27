@@ -1,0 +1,3 @@
+fills with both legs: 99778; closing-leg fee differs: 34118 (34.19%); largest difference 7.11e-15
+pure closes: 222; fold split differs from the fee: 13
+example: fee 28.84, close 180, open 159: fold 15.313274336283186, reader 15.313274336283188

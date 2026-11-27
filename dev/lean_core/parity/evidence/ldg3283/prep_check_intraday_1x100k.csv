@@ -1,0 +1,5 @@
+"capture","chunk","debug","mutation","exit","checks","calls","failing_checks","verdict"
+"prep_intraday_1x100k.rds","run","0","none",0,10,201247,"","pass"
+"prep_intraday_1x100k.rds","run","1","none",0,10,201247,"","pass"
+"prep_intraday_1x100k.rds","run","0","axis_last_session_dropped",1,1,1,"axis","caught"
+"prep_intraday_1x100k.rds","run","0","duplicate_within_chunk_not_refused",1,10,201247,"duplicate_refused","caught"

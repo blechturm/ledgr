@@ -1,0 +1,3 @@
+"workload","debug","mode","attempt","sweep_seq","run_id","pid","origin","entries","lean","prefold","debug","hooks","lean_folds","backstop","store_any"
+"witness_sweep_workers",0,"gate","74904-1-20261127213440.413400",1,"b",62188,"C:/Users/maxth/ledgr-wt/pin-lib-7f65733f/ledgr",1,FALSE,"",FALSE,"inert",0,"",0
+"witness_sweep_workers",0,"gate","74904-1-20261127213440.413400",1,"a",68792,"C:/Users/maxth/ledgr-wt/pin-lib-7f65733f/ledgr",1,FALSE,"",FALSE,"inert",0,"",0

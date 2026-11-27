@@ -1,0 +1,2 @@
+"phase","witness","debug","workloads","tables","different","verdicts","exit_status","fork_installed","fork_line","forked_workers"
+"p5gut","install_p5_gut.R",0,"crossover_3x40 s2_cost_chain",32,26,"FAIL 2",1,TRUE,"set p5 (P5 takes and returns its state) (GUT: hd_recon written to a local copy, left out of the returned state); 4 reads and 6 writes in the stage now on `state`, 4 fields assigned back at the call site; findings: none",0

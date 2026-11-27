@@ -1,0 +1,33 @@
+LDG-3280 handler/write-path slice: hit blocks judged unaffected by the switch (one line each).
+Blocks whose only dependence is the helper ledgr_test_next_open_fill are listed with "helper only": they need no own change once the helper row (part_handler.csv) is applied.
+
+test-ledger-writer.R | [LTB-0188] pulse staging writes do not copy with capacity | memory handler source text and allocation probe on the kept handler; no sink mode argument; helper only.
+test-ledger-writer.R | memory output handler grows event buffer and preserves event surface | memory handler buffer growth (kept); no retired argument.
+test-ledger-writer.R | collapse event writes survive allocation and forced garbage collection | ledgr_event_buffer_setv (kept) under GC; nothing the switch changes.
+test-ledger-writer.R | event-buffer writes use the collapse 2.1.8 route | DESCRIPTION floor and ledgr_event_buffer_setv (kept) direct refusal; not a fold assertion.
+test-sweep.R | memory output handler stores typed events equivalent to ledger rows | kept memory handler and payload builder; helper only.
+test-sweep.R | memory output handler preserves full event columns across growth | kept memory handler; helper only.
+test-sweep.R | single-pass sweep summary matches separate reconstruction helpers | reader-side summary and its ledgr_invalid_event_order refusal (kept); helper only.
+test-sweep.R | the shared fold core has a private two-boundary interface | ledgr_execute_fold (kept, c_fold_files_kept.csv; still the envelope's caller) and ledgr_run_fold / ledgr_sweep_run_candidate exist after the switch; formals unchanged.
+test-output-handler-sinks.R | [LTB-0520] a persisted run and a sweep candidate publish the same fill events | run-vs-sweep native event parity through public entry points; binding shared run/sweep execution, unaffected (passes in the probe; its observer is in-process).
+test-run-continuity.R | [LTB-0555] pulse-level persistence and soft-stop seams are absent | R/ source scan for retired needles; none of them occurs in the lean modules (grep of loop/plan/fifo/marks/facts/checks.R), and seed_event_boundary is called by the runner (R/backtest-runner.R:557), not the fold. After the switch the scan covers the lean code automatically.
+test-accounting-core-consolidation.R | [LTB-0020] one preparer gives memory and table sources one block | read-side ledgr_prepare_accounting_events refusals (retained: stored-ledger reads still validate, LR-15).
+test-lot-accounting.R | lot accounting fails closed on invalid fill input | direct test of the kept package kernel ledgr_lot_fill; becomes affected only if the ws4a slice's f-question 1 (does fifo.R replace R/lot-accounting.R for replay/import/recovery) is answered "replace".
+test-derived-state.R | empty ledger produces empty equity_curve and preserves initial_cash | reader rebuild (kept); depends only on helper ledgr_test_modernize_config (controls slice row).
+test-derived-state.R | rebuild failure does not delete existing equity_curve rows | read-side refusal ledgr_invalid_ledger_meta stays (LR-15: stored-ledger reads validate); helper ledgr_test_modernize_config only (controls slice row).
+test-corporate-action-recovery.R | [LTB-0054] durable resume after disposition is exactly once | ledgr_run_fold (kept) max_pulses partial then a fresh replacement; restart is fresh on pin and lean alike (interface 19.14 "Restart"); passes in the probe; no old internal observed.
+test-availability-finalization-prefix.R | fixed-basket failure rolls back its prefix and restarts cleanly | mocks ledgr_run_equity_prefix_commit, a runner finalization function (kept), not a fold function; interrupt rollback is the D3-B error row, unchanged.
+test-runner.R | runner resume appends ledger events without duplicate event_seq and rebuilds tail | ledgr_run_fold (kept) max_pulses then fresh replacement; title wording is historical, assertions hold on the lean fold.
+test-runner.R | [LTB-0007] post-fold failure preserves evidence and resumes finalization | mocks ledgr_finalize_fold_telemetry (kept, runner-side, c_fold_files_kept.csv) and DBI::dbWithTransaction in finalization; not a fold seam.
+test-diagnostic-decoder.R | [LTB-0561] public readers validate one stored diagnostic state once | reader-side (ledgr_diagnostic_decision_order_bad mock is a decoder function).
+test-diagnostic-decoder.R | [LTB-0562] availability readers share one exact handle proof | reader-side.
+test-diagnostic-decoder.R | [LTB-0563] diagnostic query preserves caller memory setting | reader-side ledgr_diagnostic_query; resource-exhaustion class is a reader refusal.
+test-diagnostic-decoder.R | [LTB-0565] every diagnostic query maps real DuckDB exhaustion | reader-side.
+test-availability-validator-sweeps.R | setwise membership bypass validates every persisted invariant | snapshot membership validator (ledgr_snapshot_membership_sweep_rows), not a fold hand-off.
+test-research-cycle-scale.R | [LTB-0209] the positions timeline equals replaying the ledger up to each time | reader/replay side; its ledgr_invalid_accounting_event is a read refusal.
+test-corporate-action-cash.R | [LTB-0217] a resumed plan binds past entitlements like the fresh fold | direct test of the kept ledgr_corporate_action_plan entitlement binding and read-side preparation refusal.
+test-corporate-action-cash.R | [LTB-0036] public run posts one gross dividend and reports it | public runs plus ledgr_run_fold (kept) partial/fresh restart; its spot_fifo refusal (ledgr_compiled_spot_fifo_unavailable) is the retained event-kinds admission check (LR-25, lean E stage loop.R:240-245).
+test-corporate-action-disposition.R | [LTB-0050] DISPOSITION is prepared, constrained and replays through FIFO | direct test of the kept plan method post_disposition with a stub handler, plus read-side preparation.
+test-sweep-persistence-parity.R | retained series match inline-memory summary on R accounting | R path only; unaffected.
+test-sweep-persistence-parity.R | retained series match ordered-event reconstruction on R accounting | R path only; unaffected.
+test-current-only-records.R | [LTB-0264] stored record readers are current-only | fold-internal part only: ledgr_run_fold (kept) max_pulses partial, then refusal of the mutated stored config on restart (config validation, not the deleted lean restart check, which was a harness coverage check: interface 19.14). Its identity-rule literals are the controls slice row.

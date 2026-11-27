@@ -1,0 +1,7 @@
+ovf_sell_1.9                 PASS      identical  lean 3  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=0  pinned 1.9 s  lean 1.7 s
+ovf_hold_1.9                 PASS      identical  lean 3  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=0  pinned 1.4 s  lean 1.7 s
+ovf_sell_10                  PASS      identical  lean 3  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=0  pinned 1.4 s  lean 1.4 s
+ovf_delta_then_lot           PASS      identical  lean 3  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=0  pinned 1.4 s  lean 1.4 s
+ovf_lot_then_delta           PASS      identical  lean 3  refused []  backstop []  store []  sink []  holds 0  append<=1  range<=0  pinned 1.5 s  lean 1.5 s
+frozen paths (gate, debug 0): 5 of 5 workloads checked
+90 tables, 0 different; verdicts: PASS 5

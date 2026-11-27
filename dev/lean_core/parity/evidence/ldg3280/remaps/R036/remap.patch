@@ -1,0 +1,22 @@
+diff --git a/tests/testthat/test-feature-accessor-scaling.R b/tests/testthat/test-feature-accessor-scaling.R
+index a07ef873..38de3de5 100644
+--- a/tests/testthat/test-feature-accessor-scaling.R
++++ b/tests/testthat/test-feature-accessor-scaling.R
+@@ -444,10 +444,15 @@ testthat::test_that("[LTB-0189] availability folds prepare hashed feature lookup
+     direct_equity$equity[[nrow(direct_equity)]]
+   )
+ 
+-  fold_source <- paste(deparse(body(ledgr:::ledgr_fold_envelope)), collapse = "\n")
++  fold_source <- ledgr_test_candidate_source("lean_fold_envelope_plain")
+   testthat::expect_match(
+     fold_source,
+-    "feature_lookup_state = availability_feature_lookup_state",
++    "feature_lookup_state <- ledgr_projection_feature_lookup_state(",
++    fixed = TRUE
++  )
++  testthat::expect_match(
++    ledgr_test_candidate_source("lean_context"),
++    "feature_lookup = feature_lookup_state",
+     fixed = TRUE
+   )
+ })

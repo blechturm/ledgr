@@ -1,0 +1,4 @@
+fe_bar_native                PASS      identical  lean 8  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=30  pinned 4.2 s  lean 4.8 s  workers pin 4/4 lean 4/4 records 4 entries 4
+fe_declared                  PASS      identical  lean 8  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=16  pinned 3.9 s  lean 5.0 s  workers pin 4/4 lean 4/4 records 4 entries 4
+frozen paths (gate, debug 0): 2 of 2 workloads checked
+32 tables, 0 different; verdicts: PASS 2

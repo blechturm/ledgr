@@ -1,0 +1,12 @@
+capture build: installed pin C:/Users/maxth/ledgr-wt/pin-lib-7f65733f/ledgr 
+dense_cost: 20 records, 0 fail; capture 5s, replay 1s, 0 MB
+dense_risk_features: 70 records, 0 fail; capture 4s, replay 1s, 0 MB
+dense_dividend_state: 14 records, 0 fail; capture 3s, replay 1s, 0 MB
+avail_terminal_resume: 28 records, 0 fail; capture 4s, replay 1s, 0 MB
+avail_acquisition: 21 records, 0 fail; capture 3s, replay 1s, 0 MB
+avail_incomplete: 10 records, 0 fail; capture 4s, replay 1s, 0 MB
+walk_forward: 44 records, 0 fail; capture 6s, replay 1s, 0 MB
+failures: 7 records, 0 fail; capture 4s, replay 1s, 0 MB
+momentum_40x504: 21 records, 0 fail; capture 2s, replay 1s, 0 MB
+fill_heavy_500x1260: 1249 records, 0 fail; capture 21s, replay 3s, 124 MB
+replay evidence written to C:/Users/maxth/ledgr-wt/cut27-scratch/close/fifo_rec_out 

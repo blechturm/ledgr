@@ -1,0 +1,76 @@
+diff --git a/tests/testthat/test-ws4a-carrier.R b/tests/testthat/test-ws4a-carrier.R
+index a4fdc2c0..72050d28 100644
+--- a/tests/testthat/test-ws4a-carrier.R
++++ b/tests/testthat/test-ws4a-carrier.R
+@@ -87,7 +87,28 @@ ws4a_sources <- function() {
+   checker <- new.env(parent = baseenv())
+   sys.source(file.path(root, "tools", "check-fold-phase-contract.R"), envir = checker)
+   files <- list.files(file.path(root, "R"), "\\.R$", full.names = TRUE)
+-  checker$ledgr_fold_phase_function_sources(files)
++  out <- checker$ledgr_fold_phase_function_sources(files)
++  # The candidate fold's functions, defined at top level or nested (the lean
++  # stages are closures inside lean_fold_envelope_plain); a name defined more
++  # than once among them is ambiguous and left out.
++  lean <- list()
++  walk <- function(e) {
++    if (!is.call(e)) return(invisible(NULL))
++    if (identical(e[[1L]], as.name("<-")) && is.symbol(e[[2L]]) && is.call(e[[3L]]) &&
++        identical(e[[3L]][[1L]], as.name("function"))) {
++      nm <- as.character(e[[2L]])
++      lean[[nm]] <<- c(lean[[nm]], list(e[[3L]]))
++    }
++    args <- as.list(e)[-1L]
++    for (k in seq_along(args)) if (!identical(args[[k]], quote(expr = ))) walk(args[[k]])
++    invisible(NULL)
++  }
++  for (f in list.files(getOption("ledgr.candidate_lean"), "\\.R$", full.names = TRUE)) {
++    for (e in parse(f, keep.source = FALSE)) walk(e)
++  }
++  lean <- lean[lengths(lean) == 1L]
++  out[names(lean)] <- lapply(lean, `[[`, 1L)
++  out
+ }
+ ws4a_calls <- function(e) {
+   if (is.call(e)) c(list(e), unlist(lapply(as.list(e), ws4a_calls), recursive = FALSE))
+@@ -450,11 +471,10 @@ testthat::test_that("[WS4a D7] openings take no Kahan step and keep a nonzero co
+ # settlement install reads the lot-derived net (net_by_inst, no arithmetic),
+ # or is one of these named sources.
+ ws4a_d11_sources <- c(
+-  # P4: the pulse's working copy, the compiled batch's positions (the C++
+-  # writes each touched position from its lot net) and the install.
+-  ledgr_fold_stage_apply = "positions <- fold_state$positions",
+-  ledgr_fold_stage_apply = "positions <- as.numeric(batch$positions)",
+-  ledgr_fold_stage_apply = "fold_state$positions <- positions",
++  # P4: the fill and rejection records' instrument columns (run-axis
++  # indices, not positions); lean P4 writes positions only from the lot net.
++  lean_p4_apply = "fl$pos[rows] <<- fill$pos",
++  lean_p4_apply = "rj$pos <<- c(rj$pos, rejection$pos)",
+   # Replay: initial positions imported as given (cut 5 amendment); each
+   # touched instrument's position_after from its applied rows (lot net).
+   ledgr_replay_accounting_events = "positions <- stats::setNames(rep(0, length(ids)), ids)",
+@@ -468,7 +488,7 @@ ws4a_d11_sources <- c(
+ ws4a_d11_hits <- function(fns) {
+   unlist(lapply(names(fns), function(nm) {
+     unlist(lapply(ws4a_assigns(fns[[nm]]), function(x) {
+-      if (!"positions" %in% all.names(x[[2L]])) return(NULL)
++      if (!any(c("positions", "pos") %in% all.names(x[[2L]]))) return(NULL)
+       rhs <- all.names(x[[3L]])
+       from_net <- "net_by_inst" %in% rhs && !any(c("+", "-", "*", "/") %in% rhs)
+       if (!from_net && !ws4a_txt(x) %in% ws4a_d11_sources[names(ws4a_d11_sources) == nm]) paste0(nm, ": ", ws4a_txt(x))
+@@ -478,14 +498,14 @@ ws4a_d11_hits <- function(fns) {
+ 
+ testthat::test_that("[WS4a D11] P4 and replay read positions from the lot-derived net", {
+   fns <- ws4a_sources()
+-  examined <- fns[c("ledgr_fold_stage_apply", "ledgr_replay_accounting_events", "ledgr_disposition_post",
++  examined <- fns[c("lean_p4_apply", "ledgr_replay_accounting_events", "ledgr_disposition_post",
+     "ledgr_carrier_settlement_install")]
+   testthat::expect_length(ws4a_d11_hits(examined), 0L)
+   testthat::expect_true(any(grepl("net_by_inst", vapply(examined, ws4a_txt, ""))))
+   # Every named source is still a write in its function.
+   writes <- unlist(lapply(names(examined), function(nm) paste(nm, vapply(ws4a_assigns(examined[[nm]]), ws4a_txt, ""))))
+   testthat::expect_true(all(paste(names(ws4a_d11_sources), ws4a_d11_sources) %in% writes))
+-  p4 <- function(stmt) list(ledgr_fold_stage_apply = ws4a_inject(fns$ledgr_fold_stage_apply, stmt))
++  p4 <- function(stmt) list(lean_p4_apply = ws4a_inject(fns$lean_p4_apply, stmt))
+   testthat::expect_gt(length(ws4a_d11_hits(p4("positions[[inst_idx]] <- positions[[inst_idx]] + qty"))), 0L)
+   testthat::expect_gt(length(ws4a_d11_hits(p4("fold_state$positions <- planned"))), 0L)
+   testthat::expect_gt(length(ws4a_d11_hits(p4("positions[[inst_idx]] <- lot_res$book$net_by_inst[[inst_idx]] + qty"))), 0L)

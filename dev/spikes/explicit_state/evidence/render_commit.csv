@@ -1,0 +1,2 @@
+"set","loop_lines_before","loop_lines_after","envelope_lines_before","envelope_lines_after","lines_over_120_before","lines_over_120_after","chars_before","chars_after","rewritten_reads","rewritten_superassignments","rewritten_envelope_assignments","superassignments_left","rendering_identical_to_ast"
+"commit",1460,1462,1218,1220,23,27,76530,77079,21,7,5,101,TRUE

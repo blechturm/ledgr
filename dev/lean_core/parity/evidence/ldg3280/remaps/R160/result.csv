@@ -1,0 +1,2 @@
+"row","file","candidate","candidate_smoke","witness","witness_smoke","verdict"
+"R160","test-ws4a-carrier.R","[WS4a D6] the fold stages encode JSON only at the routed sites; P4 encodes none: pass","smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","[WS4a D6] the fold stages encode JSON only at the routed sites; P4 encodes none: fail","smoke PASS (witness run): 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","DEMONSTRATED"

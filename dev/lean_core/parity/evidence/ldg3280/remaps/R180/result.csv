@@ -1,0 +1,2 @@
+"row","file","candidate","candidate_smoke","witness","witness_smoke","verdict"
+"R180","test-availability-economics.R","affordability credits accepted reductions before purchases: pass || existing short holdings may hold or consume cash to cover: pass","smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","affordability credits accepted reductions before purchases: fail","smoke PASS (witness run): 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","DEMONSTRATED"

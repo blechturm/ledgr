@@ -1,0 +1,51 @@
+debug 0 batch_fault (bound 8): status 0, 46 tables, 37 different; verdicts: CAUGHT 3
+debug 0 capacity_check_dropped (bound 65536): status 0, 21 tables, 2 different; verdicts: CAUGHT 2
+debug 0 capture_lost_at_growth (bound 65536): status 0, 16 tables, 1 different; verdicts: CAUGHT 1
+debug 0 capture_validation_deferred (bound 65536): status 0, 13 tables, 3 different; verdicts: CAUGHT 1
+debug 0 captured_row_dropped (bound 65536): status 0, 16 tables, 1 different; verdicts: CAUGHT 1
+debug 0 captured_row_duplicated (bound 1): status 0, 16 tables, 13 different; verdicts: CAUGHT 1
+debug 0 context_lost_at_growth (bound 65536): status 0, 16 tables, 13 different; verdicts: CAUGHT 1
+debug 0 corporate_rows_after_fills (bound 65536): status 0, 16 tables, 13 different; verdicts: CAUGHT 1
+debug 0 decision_on_run_axis (bound 65536): status 0, 16 tables, 13 different; verdicts: CAUGHT 1
+debug 0 decision_order_run_axis (bound 65536): status 0, 32 tables, 26 different; verdicts: CAUGHT 2
+debug 0 disposition_skipped (bound 65536): status 0, 16 tables, 6 different; verdicts: CAUGHT 1
+debug 0 drop_hold (bound 8): status 0, 46 tables, 37 different; verdicts: CAUGHT 3
+debug 0 empty_domain_row_dropped (bound 65536): status 0, 16 tables, 4 different; verdicts: CAUGHT 1
+debug 0 entitlement_bound_after_fills (bound 65536): status 0, 32 tables, 8 different; verdicts: CAUGHT 2
+debug 0 expand_extra (bound 1): status 0, 32 tables, 0 different; verdicts: CAUGHT 2
+debug 0 expand_whole (bound 1): status 0, 32 tables, 0 different; verdicts: CAUGHT 2
+debug 0 fault_before_append (bound 8): status 0, 46 tables, 37 different; verdicts: CAUGHT 3
+debug 0 fill_price_ulp (bound 8): status 0, 46 tables, 37 different; verdicts: CAUGHT 3
+debug 0 fill_seq_contiguous (bound 65536): status 0, 16 tables, 13 different; verdicts: CAUGHT 1
+debug 0 frozen_opening_ignored (bound 65536): status 0, 16 tables, 3 different; verdicts: CAUGHT 1
+debug 0 handler_state_via_init (bound 65536): status 0, 48 tables, 8 different; verdicts: CAUGHT 4
+debug 0 hold_in_loop (bound 8): status 0, 46 tables, 0 different; verdicts: CAUGHT 3
+debug 0 hold_position (bound 8): status 0, 46 tables, 6 different; verdicts: CAUGHT 3
+debug 0 lifetime_capture_population_dropped (bound 65536): status 0, 46 tables, 6 different; verdicts: CAUGHT 4
+debug 0 moves_lost_at_growth (bound 65536): status 0, 16 tables, 13 different; verdicts: CAUGHT 1
+debug 0 nonfill_block_unsplit (bound 1): status 0, 16 tables, 0 different; verdicts: CAUGHT 1
+debug 0 nonfill_commit_late (bound 65536): status 0, 11 tables, 1 different; verdicts: CAUGHT 1
+debug 0 nonfill_position_history_ignored (bound 1): status 0, 16 tables, 2 different; verdicts: CAUGHT 1
+debug 0 nonfill_position_history_ignored (bound 65536): status 0, 32 tables, 4 different; verdicts: CAUGHT 2
+debug 0 outside_context_actionable (bound 65536): status 0, 16 tables, 13 different; verdicts: CAUGHT 1
+debug 0 post_cash_not_installed (bound 65536): status 0, 16 tables, 3 different; verdicts: CAUGHT 1
+debug 0 post_omitted (bound 65536): status 0, 16 tables, 6 different; verdicts: CAUGHT 1
+debug 0 record_lost_at_growth (bound 65536): status 0, 16 tables, 13 different; verdicts: CAUGHT 1
+debug 0 retains_via_append_closure (bound 65536): status 0, 70 tables, 10 different; verdicts: CAUGHT 6
+debug 0 room_without_entry (bound 65536): status 0, 48 tables, 8 different; verdicts: CAUGHT 4
+debug 0 skip_calls_strategy (bound 65536): status 0, 16 tables, 9 different; verdicts: CAUGHT 1
+debug 0 stale_risk_rows_dropped (bound 65536): status 0, 16 tables, 3 different; verdicts: CAUGHT 1
+debug 0 state_not_aligned (bound 65536): status 0, 16 tables, 12 different; verdicts: CAUGHT 1
+debug 0 stop_affected_unspecified (bound 65536): status 0, 16 tables, 1 different; verdicts: CAUGHT 1
+debug 0 store_append (bound 8): status 0, 46 tables, 0 different; verdicts: CAUGHT 3
+debug 0 store_bind (bound 8): status 0, 46 tables, 0 different; verdicts: CAUGHT 3
+debug 0 store_execute (bound 8): status 0, 46 tables, 0 different; verdicts: CAUGHT 3
+debug 0 store_query (bound 8): status 0, 46 tables, 0 different; verdicts: CAUGHT 3
+debug 0 valuation_stop_counts_pulse (bound 65536): status 0, 16 tables, 1 different; verdicts: CAUGHT 1
+debug 0 write_in_loop (bound 8): status 0, 46 tables, 37 different; verdicts: CAUGHT 3
+control control_unrelated: UNRELATED, status 1 (expected UNRELATED, status 1)
+control control_unreached: UNREACHED, status 1 (expected UNREACHED, status 1)
+control control_wrong_store_path: MISSED, status 1 (expected MISSED, status 1)
+control control_unrelated_refusal: UNRELATED, status 1 (expected UNRELATED, status 1)
+control control_unreached_refusal: UNREACHED, status 1 (expected UNREACHED, status 1)
+87 manifest rows, 44 variants, 0 failures

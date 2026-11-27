@@ -1,0 +1,17 @@
+"workload","path","table","debug","stage","mutation","lean_calls","rows","identical","first_difference","pinned_s","lean_s","workers_pinned","workers_lean","workers_ok"
+"prep_fixture","run","equity_curve",0,"plan","reason_levels_swapped",47,47,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","ledger_events",0,"plan","reason_levels_swapped",47,72,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_completion",0,"plan","reason_levels_swapped",47,1,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_diagnostic_coverage",0,"plan","reason_levels_swapped",47,1,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_diagnostic_implicit",0,"plan","reason_levels_swapped",47,237,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_diagnostic_summary",0,"plan","reason_levels_swapped",47,1,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_diagnostics",0,"plan","reason_levels_swapped",47,507,FALSE,"row 444 column reason_code: execution_bar_missing vs insufficient_cash",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_promotion_context",0,"plan","reason_levels_swapped",47,0,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_provenance",0,"plan","reason_levels_swapped",47,1,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_tags",0,"plan","reason_levels_swapped",47,0,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_telemetry",0,"plan","reason_levels_swapped",47,1,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","runs",0,"plan","reason_levels_swapped",47,1,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","fills",0,"plan","reason_levels_swapped",47,71,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","trades",0,"plan","reason_levels_swapped",47,35,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","metrics",0,"plan","reason_levels_swapped",47,9,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_conditions",0,"plan","reason_levels_swapped",47,0,TRUE,"",2.55,2.14,"0/0 ","0/0 ",TRUE

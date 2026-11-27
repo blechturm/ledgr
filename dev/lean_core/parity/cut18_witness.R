@@ -3,7 +3,7 @@
 # against the named pinned callable, on the required cases of
 # cut18_witness_cases.csv, with debug off and on.
 #
-#   Rscript dev/lean_core/parity/cut18_witness.R --lib=<pinned library> --out=<csv> [--mutation=<name>]
+#   Rscript dev/lean_core/parity/cut18_witness.R --lib=<pinned library> --out=<csv> [--mutation=<name>] [--dump=<dir>]
 #
 # Each case evaluates the lean call and the pin call on the same inputs. A
 # value must be identical (types, names, attributes; doubles bit for bit,
@@ -371,13 +371,27 @@ dbg_case("refusal_against_value", dbg_refusal("A"), function() 1, dbg_differs)
 manifest <- utils::read.csv(file.path(here, "cut18_witness_cases.csv"), stringsAsFactors = FALSE)
 ids_grid <- vapply(cases, function(k) paste(k$replacement, k$id, sep = "|"), "")
 rows <- list()
+# --dump=<dir> (Cut 27, LDG-3282): every case's outcome, the value or the
+# normalized condition with its parents, as compared here; the pin's as
+# cut18_pin.rds and the lean core's per debug setting as cut18_lean_d<0|1>.rds,
+# each a list named "<replacement>|<case>".
+dumped <- list(pin = list(), lean_d0 = list(), lean_d1 = list())
 for (debug in c(FALSE, TRUE)) {
   lean$.lean_debug <- debug
   for (k in cases) {
     a <- outcome(k$lean); b <- outcome(k$pin)
+    key <- paste(k$replacement, k$id, sep = "|")
+    dumped[[if (debug) "lean_d1" else "lean_d0"]][[key]] <- a
+    if (!debug) dumped$pin[[key]] <- b
     rows[[length(rows) + 1L]] <- data.frame(replacement = k$replacement, case = k$id, debug = as.integer(debug),
       outcome = if (is.null(b$error)) "value" else paste0("refusal: ", b$error$class[[1L]]), identical = identical(a, b))
   }
+}
+if (nzchar(opt("dump", ""))) {
+  dir.create(opt("dump"), recursive = TRUE, showWarnings = FALSE)
+  saveRDS(dumped$pin, file.path(opt("dump"), "cut18_pin.rds"))
+  saveRDS(dumped$lean_d0, file.path(opt("dump"), "cut18_lean_d0.rds"))
+  saveRDS(dumped$lean_d1, file.path(opt("dump"), "cut18_lean_d1.rds"))
 }
 res <- do.call(rbind, rows)
 utils::write.csv(res, opt("out"), row.names = FALSE)

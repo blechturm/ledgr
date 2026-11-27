@@ -1,0 +1,2 @@
+"file","old","new"
+"plan.R","  open <- next_open[pos]","  open <- unname(stats::setNames(next_open, instrument_ids)[instrument_ids[pos]])"

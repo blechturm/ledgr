@@ -1,0 +1,39 @@
+crossover_3x40               PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.0 s  lean 5.1 s
+reconciliation_stop          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.0 s  lean 1.7 s
+tight_cash                   PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.0 s  lean 2.5 s
+witness_surface_seeded       PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.5 s  lean 2.7 s
+witness_sweep                PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.8 s  lean 2.5 s
+witness_zero_pulses          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.4 s  lean 2.5 s
+s2_sizing_rebalance          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.4 s  lean 3.9 s
+s3_freeze_exit               PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.5 s  lean 3.3 s
+s4_carried_lots              PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.5 s  lean 2.2 s
+s4_basis_unknown             PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.7 s  lean 1.4 s
+s4_dividend                  PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.8 s  lean 2.7 s
+s4_dividend_mixed            PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.8 s  lean 2.8 s
+s4_capacity_block            PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.7 s
+s4_capacity_after_fill_run   PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.8 s
+s4_capacity_fill_run         PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.6 s  lean 0.8 s
+s4_v201_default              PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.0 s  lean 2.8 s
+s4_subset                    PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.7 s  lean 2.5 s
+s4_acq_held                  PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.0 s  lean 3.4 s
+s4_terminal_choices          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.0 s  lean 3.2 s
+s4_p1_then_stop              PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.1 s  lean 2.3 s
+s4_life_capacity_p1_ok_run   PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.9 s  lean 1.2 s
+s4_life_capacity_p5_ok_run   PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.9 s  lean 1.1 s
+s4_wrap_plan_p1_run          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.7 s  lean 0.7 s
+s4_wrap_plan_p1_eq_run       PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.8 s  lean 0.8 s
+s4_wrap_plan_p5_run          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.8 s  lean 0.8 s
+s4_wrap_plan_p5_eq_run       PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 0.8 s  lean 0.9 s
+s4_wrap_drain_run            PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.8 s  lean 2.4 s
+s5_workers_sizing            PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.6 s  lean 5.2 s  workers pin 2/2 lean 2/2 records 2 entries 2
+s5_workers_missing           PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.6 s  lean 4.3 s  workers pin 2/2 lean 2/2 records 2 entries 2
+s5_workers_facts             PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.7 s  lean 3.5 s  workers pin 2/2 lean 2/2 records 2 entries 2
+s5_workers_dividend          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.6 s  lean 3.3 s  workers pin 2/2 lean 2/2 records 2 entries 2
+s5_workers_consecutive       PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.6 s  lean 6.3 s  workers pin 4/4 lean 4/4 records 4 entries 4
+s5_workers_failing           PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.7 s  lean 6.4 s  workers pin 4/4 lean 4/4 records 4 entries 4
+s5_workers_backstop          PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.5 s  lean 4.1 s  workers pin 2/2 lean 2/2 records 3 entries 3
+s5_workers_backstop_escape   PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 1.4 s  lean 3.2 s  workers pin 2/2 lean 2/2 records 2 entries 2
+s5_walk_forward_workers      PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 4.2 s  lean 7.0 s  workers pin 4/4 lean 4/4 records 4 entries 4
+s5_workers_compiled_refused  PASS*     identical  lean 0  refused []  backstop []  store []  sink []  holds 0  append<=0  range<=0  pinned 2.4 s  lean 3.3 s  workers pin 4/4 lean 4/4 records 4 entries 4
+frozen paths (inert, debug 1): 37 of 37 workloads checked
+496 tables, 0 different; verdicts: PASS* 37

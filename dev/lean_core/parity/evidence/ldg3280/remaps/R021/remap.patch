@@ -1,0 +1,22 @@
+diff --git a/tests/testthat/test-cross-asset-corrections.R b/tests/testthat/test-cross-asset-corrections.R
+index b93910ab..63bd8d6b 100644
+--- a/tests/testthat/test-cross-asset-corrections.R
++++ b/tests/testthat/test-cross-asset-corrections.R
+@@ -466,7 +466,7 @@ testthat::test_that("[LTB-0498] R and compiled FIFO share the dust boundary", {
+     as.data.frame(public_r)[public_stable]
+   )
+ 
+-  fold_source <- paste(deparse(body(ledgr:::ledgr_fold_stage_apply)), collapse = "\n")
++  fold_source <- ledgr_test_candidate_source("lean_p4_apply")
+   replay_source <- paste(
+     deparse(body(ledgr:::ledgr_replay_accounting_events)),
+     collapse = "\n"
+@@ -476,7 +476,7 @@ testthat::test_that("[LTB-0498] R and compiled FIFO share the dust boundary", {
+   # lot-derived net; replay from the applied rows' lot-derived position.
+   # LDG-3167 (design note Section 5, category 3): P4 reads the net of every
+   # fill's instrument from the batch's candidate book.
+-  testthat::expect_match(fold_source, "positions[fill$pos] <- candidate$book$net_by_inst[fill$pos]", fixed = TRUE)
++  testthat::expect_match(fold_source, "pos[fill$pos] <<- book$net_by_inst[fill$pos]", fixed = TRUE)
+   testthat::expect_match(replay_source, "applied$position_after", fixed = TRUE)
+   testthat::expect_match(
+     cpp_source,

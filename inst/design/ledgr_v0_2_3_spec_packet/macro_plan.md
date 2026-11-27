@@ -1313,12 +1313,44 @@ execution-sensitive economics cuts are held to rule 17 instead.
      `dbAppendTable()`, the batch bound of the D3 synthesis); and the
      package R work in fill events and accounting rows. The parked
      stored-format RFC question (implicit-table indexes, compact hold
-     encoding) is decided before or with this item.
+     encoding) is decided before or with this item. Moved out of the
+     switch by the Cut 27 amendment below.
 
   Order (unchanged, revision 14, reconfirmed 2026-11-15): slices 3-5 port
   the remaining features against the live pin; then the full public parity
   gate; then the switch. Duplication between the lean fast paths and their
   package fallbacks stays until the switch, as the differential oracle.
+- **Amendment (maintainer, 2026-11-27, Cut 27 decision 10 and
+  amendment_fee_split).**
+  - **A0 retires as an anchor.** The parity gate runs A0's eight workloads
+    live against the pin. Cut 27's recorded pin outcomes (decision 7,
+    LDG-3282: `dev/lean_core/parity/evidence/ldg3282`, records under
+    `C:/Users/maxth/ledgr-wt/pin-outcomes-7f65733f`) replace its records.
+    The test cut's external anchors become those outcomes and the v0.2.2
+    real-data reference. A0's retirement replaces its anchor role only, not
+    unrelated negative proofs.
+  - **Obligation 7 leaves the switch.** The store-write levers, with the
+    parked stored-format question, move to their own cut after the switch,
+    with their RFC.
+  - **The compiled FIFO stays inert until WS14 (unchanged).** Its R
+    wrappers and `spot_fifo.cpp` remain, and only the selector's two
+    admission checks run (LR-25).
+  - **The private Sharadar reference** runs at Cut 28's gate, by the
+    maintainer.
+  - **The deferred resource gates are not claimed by Cut 27.** WS9b's
+    integrated parent, worker and resource evidence, the first
+    checkpoint's residuals, and the D3 capacity, terminal, finalization and
+    reader peaks are taken on the final switch candidate and the new pin
+    before deletion is accepted (Cut 28). The earlier single-cell memory
+    waiver is not generalized.
+  - **One fee split (Cut 28).** The stored-run fills reader
+    (`R/accounting-replay.R`) calls `ledgr_fill_leg_fees()`, the one
+    implementation of the split rule that the fold uses. A witness compares
+    a run's fold leg fees with its stored fills reader exactly. The
+    LDG-3279 probe found that 34% of two-leg fills differ in the last bit,
+    and 13 of 222 pure closes split differently. Stored readers' leg fees
+    may change in the last bit; that is Cut 28's identity and release
+    impact.
 - **Old-code citations (maintainer, 2026-11-04).** Before the switch cut
   deletes the current fold, it tags the last commit with the old core as
   `pre-lean-core` and adds one sentence to `inst/design/README.md`: code
@@ -1373,7 +1405,9 @@ execution-sensitive economics cuts are held to rule 17 instead.
   again from the contracts; the rest of the suite is pruned as above. The
   new fold-core suite has three layers: reference runs on a small set of
   fixtures compared byte for byte with recorded results (the v0.2.2
-  real-data reference, A0 and the dense oracle stay the external anchors);
+  real-data reference, A0 and the dense oracle stay the external anchors;
+  since the Cut 27 amendment above, Cut 27's recorded pin outcomes take A0's
+  place);
   invariants checked on every such run (cash conservation, positions equal
   to their lots, fee reconciliation, and no lookahead: perturbing later bars
   changes no earlier decision); and one negative witness per registered
@@ -1664,7 +1698,8 @@ per-pulse durable records routing was accepted on 2026-11-03.
 - The strategy API implemented, its pattern article executed and cold-read.
 - Economics RFCs accepted and implemented.
 - RNG equivalence passing; memory and worker budgets set.
-- Dense parity lane, A0 and the v0.2.2 reference reproduced or each
+- Dense parity lane, A0 (since Cut 27: the recorded pin outcomes that
+  replace it as an anchor) and the v0.2.2 reference reproduced or each
   difference decided; full peer suite timed after the consolidations; WS14's
   targets met or each remaining premium measured and consciously accepted;
   warm independent-book and actual parameter-grid scaling both recorded.

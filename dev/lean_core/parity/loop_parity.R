@@ -59,6 +59,10 @@ out <- arg("out")
 batch_rows <- as.integer(arg("batch-rows", "65536"))
 mutation <- arg("mutation", "")
 inert <- identical(arg("inert", "0"), "1")   # bind the fold without the harness hooks (row 15)
+# Cut 27 (LDG-3283): the lean arm also runs lean preparation (prepare.R,
+# lean_prepare_install()), the integrated composition. The substrate is built
+# in the parent and shipped to sweep workers, so the parent install covers them.
+prepare <- identical(arg("prepare", "0"), "1")
 freeze_file <- arg("freeze", "")
 dump_dir <- arg("dump", "")                  # saves each workload's pin tables (slice2_reach_cross.R)
 dump_lean <- identical(arg("dump-lean", "0"), "1")   # slice 4: also the lean arm, as <id>_lean.rds
@@ -106,7 +110,7 @@ store_variant <- function(call, path, prepare = FALSE, dead = NULL) variant("sto
     paste0("      if (nf == n_fill) { lean_entry$variant_reached <- TRUE; ", if (!is.null(dead)) paste0("if (FALSE) ", dead, "; "),
            call, " }"), "after", mark = FALSE)), tables = "^$", path = path)
 loop_mutations <- list(
-  fill_price_ulp = variant("differ", list(edit("loop.R", "lean_loop_publish", "    ca <- lean_facts_rows(s4)   # accepted corporate-action rows (slice 4)",   # Cut 21 re-anchor
+  fill_price_ulp = variant("differ", list(edit("loop.R", "lean_loop_publish", "    ca <- lean_facts_rows(facts_state)   # accepted corporate-action rows (slice 4)",   # Cut 21 re-anchor
     "    if (nf > 0L) fl$price[[1L]] <<- fl$price[[1L]] * (1 + .Machine$double.eps)", "after")),
     error = "FILL cash and position deltas do not reconcile"),
   drop_hold = variant("differ", list(edit("loop.R", "lean_loop_expand", "      hc <- which(hold)",
@@ -246,9 +250,9 @@ loop_mutations <- list(
   valuation_stop_counts_pulse = variant("differ", list(edit("loop.R", "lean_p1_value",
     "        stop_reason <<- st$reason", "        processed <<- processed + 1L", "before")),   # Cut 21 re-anchor
     tables = "^run_telemetry$|^runs$|^run_completion$"),
-  stop_affected_unspecified = variant("differ", list(edit("marks.R", "lean_marks_stop", "  s3$affected <- s$affected")),
+  stop_affected_unspecified = variant("differ", list(edit("marks.R", "lean_marks_stop", "  marks_state$affected <- s$affected")),
     tables = "^run_completion$"),
-  stale_risk_rows_dropped = variant("differ", list(edit("loop.R", "lean_p2_decide", "        lean_marks_add_rows(s3, i, 2L, sr)")),
+  stale_risk_rows_dropped = variant("differ", list(edit("loop.R", "lean_p2_decide", "        lean_marks_add_rows(marks_state, i, 2L, sr)")),
     tables = "^run_diagnostic", error = "."),
   clean_rule_ignores_marks = variant("differ", list(edit("marks.R", "lean_marks_clean",
     "  x <- d$source == \"current_close\" & !is.na(d$age) & d$age == 0L & is.finite(d$mark) &",
@@ -259,14 +263,14 @@ loop_mutations <- list(
     tables = "^run_diagnostics$"),
   # Cut 21, LDG-3243 (cut review R1): the carried frozen set ignored, so the
   # window's first pulse records freeze entry a second time.
-  frozen_opening_ignored = variant("differ", list(edit("marks.R", "lean_marks_run_state", "  s3$frozen <- frozen",
-    "  s3$frozen <- character()")), tables = "^run_diagnostic"),
+  frozen_opening_ignored = variant("differ", list(edit("marks.R", "lean_marks_run_state", "  marks_state$frozen <- frozen",
+    "  marks_state$frozen <- character()")), tables = "^run_diagnostic"),
   # Cut 21, LDG-3244 (decision 11; cut review R3, R4, R6, R8): the plan's
   # post call omitted, and its cash not installed: with debug on the
   # settlement check names the fault at that pulse; with debug off the
   # economic tables differ.
   post_omitted = variant("differ", list(edit("loop.R", "lean_p1_value",
-    "      posted <- lean_facts_post(s4, i, run_id, event_seq, cash, pos, book, ids, close)",
+    "      posted <- lean_facts_post(facts_state, i, run_id, event_seq, cash, pos, book, ids, close)",
     "      posted <- list(state = list(cash = cash, positions = stats::setNames(pos, ids), lot_state = book), next_event_seq = event_seq)")),
     error = "Lean corporate-action settlement ran 0 post calls", tables = "^ledger_events$"),
   post_cash_not_installed = variant("differ", list(edit("loop.R", "lean_p1_value", "      lean_settle(posted$state, i)",
@@ -275,8 +279,8 @@ loop_mutations <- list(
   # Captured rows lost or repeated after a correct installation: the event
   # tables, not the settlement check, catch them. The duplicate is the
   # captured tail after the last fill, written twice.
-  captured_row_dropped = variant("differ", list(edit("facts.R", "lean_facts_accept", "  blocks[[s4$nb]] <- rows",
-    "  blocks[[s4$nb]] <- rows[-1L, , drop = FALSE]")), tables = "^ledger_events$"),
+  captured_row_dropped = variant("differ", list(edit("facts.R", "lean_facts_accept", "  blocks[[facts_state$nb]] <- rows",
+    "  blocks[[facts_state$nb]] <- rows[-1L, , drop = FALSE]")), tables = "^ledger_events$"),
   captured_row_duplicated = variant("differ", list(edit("loop.R", "lean_loop_publish",
     "    lean_facts_emit_ca(output_handler, ca, cur, .Machine$integer.max, bound, tick)   # rows after the last fill",
     "    if (!is.null(ca)) lean_facts_emit_ca(output_handler, ca, nrow(ca), .Machine$integer.max, bound, tick)", "after")),
@@ -293,25 +297,25 @@ loop_mutations <- list(
   # The capture's acceptance check skipped: the pin's P1 refusal of an
   # overflowing cash delta is lost and a later failure takes its place.
   capture_validation_deferred = variant("differ", list(edit("facts.R", "lean_facts_accept",
-    "  p <- ledgr_validate_accounting_append(rows, prior_event_seq = s4$bseq, prior_ts_utc = s4$bts)",
+    "  p <- ledgr_validate_accounting_append(rows, prior_event_seq = facts_state$bseq, prior_ts_utc = facts_state$bts)",
     "  p <- list(event_seq = rows$event_seq, ts_utc = rows$ts_utc)")),
     error = ".", tables = "^run_conditions$"),
   # Accepted corporate-action rows kept out of the committed prefix.
   nonfill_commit_late = variant("differ", list(
-    edit("loop.R", "lean_fold_envelope_plain", "    count = function() NROW(pre_events) + retains * s4$nrows + n_committed,",
+    edit("loop.R", "lean_fold_envelope_plain", "    count = function() NROW(pre_events) + retains * facts_state$nrows + n_committed,",
       "    count = function() NROW(pre_events) + n_committed,", mark = FALSE),   # inside list(): the next edit marks the reach
-    edit("loop.R", "lean_fold_envelope_plain", "      ca <- lean_facts_rows(s4)", "      ca <- NULL")),
+    edit("loop.R", "lean_fold_envelope_plain", "      ca <- lean_facts_rows(facts_state)", "      ca <- NULL")),
     tables = "^prefix_reads$"),
   # The capture's growth loses the blocks already held.
-  capture_lost_at_growth = variant("differ", list(edit("facts.R", "lean_facts_accept", "    length(blocks) <- s4$cap",
-    "    blocks <- vector(\"list\", s4$cap)")), error = ".", tables = "^ledger_events$"),
+  capture_lost_at_growth = variant("differ", list(edit("facts.R", "lean_facts_accept", "    length(blocks) <- facts_state$cap",
+    "    blocks <- vector(\"list\", facts_state$cap)")), error = ".", tables = "^ledger_events$"),
   # A captured block written whole, past the terminal batch bound.
   nonfill_block_unsplit = variant("unbounded", list(edit("facts.R", "lean_facts_emit_ca",
     "    e <- min(last, cur + bound - 1L)", "    e <- last")), tables = "^$"),
   # Close review round 1, F1: the retaining handler's room not checked at
   # the capture or the fill commit; the pin's capacity refusal is lost.
   capacity_check_dropped = variant("differ", list(edit("facts.R", "lean_facts_capacity",
-    "  if (s4$retains && s4$nrows + incoming > 0L) {", "  if (FALSE) {")), error = ".", tables = "^sweep|^prefix_reads$"),
+    "  if (facts_state$retains && facts_state$nrows + incoming > 0L) {", "  if (FALSE) {")), error = ".", tables = "^sweep|^prefix_reads$"),
   # Cut 21, LDG-3246 (decision 11; cut review R5, R8): the context axis. The
   # constant execution view on a facts run; decision rows numbered by run
   # position, not context ordinal; decision_order on the run axis; the
@@ -323,27 +327,27 @@ loop_mutations <- list(
     "      if (!is.na(exec_ts)) view <- lean_exec_view(length(actionable))", "after")),
     error = ".", tables = "^run_diagnostic|^fills$|^ledger_events$"),
   decision_on_run_axis = variant("differ", list(edit("loop.R", "lean_loop_expand",
-    "      add(lay$dec0[dp] + dk, dp, list(instrument_id = ids[lean_facts_rpos(s4, dk, dp)], stage = \"decision\", outcome = \"recorded\",",
-    "      add(lay$dec0[dp] + lean_facts_rpos(s4, dk, dp), dp, list(instrument_id = ids[lean_facts_rpos(s4, dk, dp)], stage = \"decision\", outcome = \"recorded\",")),
+    "      add(lay$dec0[dp] + dk, dp, list(instrument_id = ids[lean_facts_rpos(facts_state, dk, dp)], stage = \"decision\", outcome = \"recorded\",",
+    "      add(lay$dec0[dp] + lean_facts_rpos(facts_state, dk, dp), dp, list(instrument_id = ids[lean_facts_rpos(facts_state, dk, dp)], stage = \"decision\", outcome = \"recorded\",")),
     error = ".", tables = "^run_diagnostic"),
   decision_order_run_axis = variant("differ", list(edit("loop.R", "lean_loop_expand",
-    "        decision_order = as.numeric((kk - 1) * n + rq),   # (ordinal - 1) x axis size + run position (R/fold-engine.R:1330)",
+    "        decision_order = as.numeric((kk - 1) * n + rq),   # (ordinal - 1) x axis size + run position",
     "        decision_order = as.numeric((kk - 1) * n + kk + 0 * {lean_entry$variant_reached <- TRUE; 0}),", mark = FALSE)),
     error = "decision-order evidence is corrupt", tables = "^run_diagnostic"),
   state_not_aligned = variant("differ", list(edit("loop.R", "lean_p1_value",
-    "      if (!identical(m$cids, s4$axis)) strategy_state <<- lean_facts_align(s4, strategy_state, state_declaration,",
-    "      if (FALSE) strategy_state <<- lean_facts_align(s4, strategy_state, state_declaration,")), error = ".", tables = "."),
+    "      if (!identical(m$cids, facts_state$axis)) strategy_state <<- lean_facts_align(facts_state, strategy_state, state_declaration,",
+    "      if (FALSE) strategy_state <<- lean_facts_align(facts_state, strategy_state, state_declaration,")), error = ".", tables = "."),
   empty_domain_row_dropped = variant("differ", list(edit("loop.R", "lean_p2_decide",
-    "    if (n == 0L) lean_marks_add_rows(s3, i, 2L, lean_marks_group(\"\", \"decision\", \"recorded\", \"empty_public_domain\"))")),
+    "    if (n == 0L) lean_marks_add_rows(marks_state, i, 2L, lean_marks_group(\"\", \"decision\", \"recorded\", \"empty_public_domain\"))")),
     error = ".", tables = "^run_diagnostic"),
   outside_context_actionable = variant("differ", list(edit("loop.R", "lean_p3_plan",
     "      batch <- lean_plan_pulse(context_pos = ctx_pos, target_qty = tq, position = pos,",
     "      batch <- lean_plan_pulse(context_pos = seq_along(tq), target_qty = tq, position = pos,")),
     error = ".", tables = "^fills$|^ledger_events$"),
   context_lost_at_growth = variant("differ", list(edit("facts.R", "lean_facts_context",
-    "  while (s4$ncx + m > length(cx)) length(cx) <- 2L * length(cx)",
-    paste("  while (s4$ncx + m > length(cx)) { length(cx) <- 2L * length(cx); lean_entry$variant_reached <- TRUE;",
-          "if (s4$ncx > 0L) cx[[s4$ncx]] <- NA_integer_ }"), mark = FALSE)),
+    "  while (facts_state$ncx + m > length(cx)) length(cx) <- 2L * length(cx)",
+    paste("  while (facts_state$ncx + m > length(cx)) { length(cx) <- 2L * length(cx); lean_entry$variant_reached <- TRUE;",
+          "if (facts_state$ncx > 0L) cx[[facts_state$ncx]] <- NA_integer_ }"), mark = FALSE)),
     error = ".", tables = "^run_diagnostic"),
   # Cut 21, LDG-3247 (decision 11; cut review R2, R7, R8): dispositions and
   # terminal stops. The plan's scheduled dispositions skipped; a terminal
@@ -367,17 +371,17 @@ loop_mutations <- list(
     "after")), error = ".", tables = "^ledger_events$"),
   entitlement_bound_after_fills = variant("differ", list(
     edit("loop.R", "lean_p4_apply",
-      "    if (!is.null(s4$plan) && i < n_pulse) s4$plan$bind_boundary(i + 1L, ledgr_fold_positions_snapshot(pos, ids))"),
+      "    if (!is.null(facts_state$plan) && i < n_pulse) facts_state$plan$bind_boundary(i + 1L, ledgr_fold_positions_snapshot(pos, ids))"),
     edit("loop.R", "lean_p4_apply", "    explicit_k <- if (length(clean_k)) differs[match(differs, clean_k, 0L) == 0L] else differs",
-      "    if (!is.null(s4$plan) && i < n_pulse) s4$plan$bind_boundary(i + 1L, ledgr_fold_positions_snapshot(pos, ids))",
+      "    if (!is.null(facts_state$plan) && i < n_pulse) facts_state$plan$bind_boundary(i + 1L, ledgr_fold_positions_snapshot(pos, ids))",
       "before", mark = FALSE)), error = ".", tables = "^ledger_events$"),
   nonfill_position_history_ignored = variant("differ", list(edit("loop.R", "lean_settle",
-    "    lean_facts_moved(s4, i, pos, fs$positions)")), error = ".", tables = "^run_diagnostic"),
+    "    lean_facts_moved(facts_state, i, pos, fs$positions)")), error = ".", tables = "^run_diagnostic"),
   moves_lost_at_growth = variant("differ", list(edit("facts.R", "lean_facts_moved",
-    "  while (s4$nmv + length(k) > length(mv$pulse)) mv <- lapply(mv, function(v) { length(v) <- 2L * length(v); v })",
-    c("  while (s4$nmv + length(k) > length(mv$pulse)) {",
+    "  while (facts_state$nmv + length(k) > length(mv$pulse)) mv <- lapply(mv, function(v) { length(v) <- 2L * length(v); v })",
+    c("  while (facts_state$nmv + length(k) > length(mv$pulse)) {",
       "    mv <- lapply(mv, function(v) { length(v) <- 2L * length(v); v })",
-      "    lean_entry$variant_reached <- TRUE; mv$net[[s4$nmv]] <- NA_real_", "  }"), mark = FALSE)),
+      "    lean_entry$variant_reached <- TRUE; mv$net[[facts_state$nmv]] <- NA_real_", "  }"), mark = FALSE)),
     error = ".", tables = "^run_diagnostic"),
   # Workstream 40 close review round 1, F1: a run with lifetime facts and no
   # corporate-action plan treated as one that cannot capture, so its fills
@@ -388,19 +392,19 @@ loop_mutations <- list(
   # read through append_event_rows() (the reviewer's wrapped append), and
   # a room without the handler's entry events.
   lifetime_capture_population_dropped = variant("differ", list(edit("facts.R", "lean_facts_run_state",
-    "  s4$captures <- !is.null(s4$plan) || \"lifetime\" %in% s4$provider$identity()$declared_families",
-    "  s4$captures <- !is.null(s4$plan)")), error = ".", tables = "^sweep|^prefix_reads$"),
+    "  facts_state$captures <- !is.null(facts_state$plan) || \"lifetime\" %in% facts_state$provider$identity()$declared_families",
+    "  facts_state$captures <- !is.null(facts_state$plan)")), error = ".", tables = "^sweep|^prefix_reads$"),
   handler_state_via_init = variant("differ", list(edit("facts.R", "lean_facts_run_state",
-    "  s4$retains <- is.function(handler$events)",
-    "  s4$retains <- is.function(handler$events) && is.environment(get0(\"state\", envir = environment(handler$init_buffers), inherits = FALSE))")),
+    "  facts_state$retains <- is.function(handler$events)",
+    "  facts_state$retains <- is.function(handler$events) && is.environment(get0(\"state\", envir = environment(handler$init_buffers), inherits = FALSE))")),
     error = ".", tables = "^sweep|^prefix_reads$"),
   retains_via_append_closure = variant("differ", list(edit("facts.R", "lean_facts_run_state",
-    "  s4$retains <- is.function(handler$events)",
-    "  s4$retains <- is.function(handler$events) && is.environment(get0(\"state\", envir = environment(handler$append_event_rows), inherits = FALSE))")),
+    "  facts_state$retains <- is.function(handler$events)",
+    "  facts_state$retains <- is.function(handler$events) && is.environment(get0(\"state\", envir = environment(handler$append_event_rows), inherits = FALSE))")),
     error = ".", tables = "^sweep|^prefix_reads$"),
   room_without_entry = variant("differ", list(edit("facts.R", "lean_facts_run_state",
-    "  s4$hmax <- s4$entry + as.integer(lean_hooks$capacity(max_events))",
-    "  s4$hmax <- as.integer(lean_hooks$capacity(max_events))")),
+    "  facts_state$hmax <- facts_state$entry + as.integer(lean_hooks$capacity(max_events))",
+    "  facts_state$hmax <- as.integer(lean_hooks$capacity(max_events))")),
     error = ".", tables = "^sweep|^prefix_reads$"),
   # the valuation state given scoring ordinals instead of prepared columns
   wrong_origin = variant("differ", list(edit("marks.R", "lean_marks_state",
@@ -420,13 +424,13 @@ loop_mutations <- list(
   # The growth copy loses the last record already written (close review
   # round 1, F1): it takes the padding's NA in every column.
   record_lost_at_growth = variant("differ", list(edit("marks.R", "lean_marks_add_rows",
-    "    xr <- lapply(xr, function(v) { length(v) <- s3$xcap; v })",
-    "    xr <- lapply(xr, function(v) { v[[s3$nx]] <- v[[length(v)]]; v })", "after")),
+    "    xr <- lapply(xr, function(v) { length(v) <- marks_state$xcap; v })",
+    "    xr <- lapply(xr, function(v) { v[[marks_state$nx]] <- v[[length(v)]]; v })", "after")),
     tables = "^run_diagnostic", error = "."),
   # Cut 19, LDG-3239: the strategy called on a pulse the schedule skips, and
   # the skip pulse's evidence rows dropped.
   skip_calls_strategy = variant("differ", list(edit("loop.R", "lean_p2_decide",
-    "    if (!is.null(s3$due) && !isTRUE(s3$due[[i]])) {", "    if (FALSE) {")), tables = "^run_diagnostic", error = "."),
+    "    if (!is.null(marks_state$due) && !isTRUE(marks_state$due[[i]])) {", "    if (FALSE) {")), tables = "^run_diagnostic", error = "."),
   skip_evidence_dropped = variant("differ", list(edit("marks.R", "lean_marks_skip_rows", "  if (length(ev) > 0L) {",
     "  if (FALSE) {")), tables = "^run_diagnostic", error = "."),
   # Round 4, finding 3: a sweep with workers not refused at entry.
@@ -439,6 +443,34 @@ loop_mutations <- list(
     prepare = TRUE, dead = "DBI::dbBind(stmt, list(7L))"),
   control_unreached = variant("differ", list(edit("loop.R", "lean_loop_debug_packet",
     "  full <- stats::setNames(pos, ids)", "  stop(\"control: never reached with debug off\")", "before"))),
+  # Cut 27 decision 2 (LDG-3281): the feature routes' transferred-value and
+  # alias-mapping faults, in the lean consumer. One projected value doubled
+  # where the strategy reads it, or a candidate's first two aliases mapped to
+  # each other's features: the targets, trades and results change.
+  feat_value_perturbed = variant("differ", list(edit("loop.R", "feature_fn", "      as.numeric(mat[, pidx])[cp]",
+    c("      v <- as.numeric(mat[, pidx])[cp]",
+      "      k <- which(is.finite(v) & v != 0)",
+      "      if (length(k)) v[[k[[1L]]]] <- v[[k[[1L]]]] * 2",
+      "      v"))), error = "Lean context field .* differs from the pin's"),
+  feat_alias_swapped = variant("differ", list(edit("loop.R", "lean_fold_envelope_plain",
+    "  active_alias_map <- ledgr_normalize_alias_map(execution$active_alias_map)",
+    "  if (length(active_alias_map) > 1L) active_alias_map[c(1L, 2L)] <- active_alias_map[c(2L, 1L)]", "after"))),
+  # Cut 27 decision 3 (LDG-3276): the fill-delta refusal at P4. Omitted, the
+  # pin's accounting refusal is lost; checked on the whole batch before the
+  # lot kernel, the lot refusal of a sale at 10 is lost; the earlier rows
+  # left unchecked after a later lot failure, the multi-fill accounting
+  # refusal is lost.
+  ovf_delta_check_omitted = variant("differ", list(
+    edit("fifo.R", "lean_lot_fill_checked", "    lean_fill_deltas_finite(fill, seq_len(failed$row - 1L))"),
+    edit("fifo.R", "lean_lot_fill_checked", "  lean_fill_deltas_finite(fill, seq_along(fill$k))")),
+    lost = "finite cash_delta and position_delta", error = "canonical_json[(][)] does not allow non-finite|Invalid fill input for lot accounting"),
+  ovf_check_too_early = variant("differ", list(
+    edit("fifo.R", "lean_lot_fill_checked", "  applied <- tryCatch(lean_lot_fill(book, fill$pos, fill$side, fill$qty, fill$price, fill$fee), error = identity)",
+      "  lean_fill_deltas_finite(fill, seq_along(fill$k))", "before")),
+    lost = "Invalid fill input for lot accounting", error = "finite cash_delta and position_delta"),
+  ovf_earlier_rows_skipped = variant("differ", list(
+    edit("fifo.R", "lean_lot_fill_checked", "    lean_fill_deltas_finite(fill, seq_len(failed$row - 1L))")),
+    lost = "finite cash_delta and position_delta", error = "Invalid fill input for lot accounting"),
   # Cut 26 (LDG-3273): the sweep-worker channel (loop_workers.R). A worker
   # without the lean loop, a dropped or duplicated record and a worker on
   # another build of the same commit each fail the channel check ("worker");
@@ -597,6 +629,8 @@ source(file.path(here, "loop_workloads_slice2.R"))
 source(file.path(here, "loop_workloads_slice3.R"))
 source(file.path(here, "loop_workloads_slice4.R"))
 source(file.path(here, "loop_workloads_slice5.R"))
+source(file.path(here, "loop_workloads_overflow.R"))   # Cut 27 decision 3
+source(file.path(here, "loop_workloads_features.R"))   # Cut 27 decision 2
 extra <- c(list(
   crossover_3x40 = crossover(3L, 40L),
   crossover_10x300 = crossover(10L, 300L),
@@ -621,7 +655,7 @@ extra <- c(list(
     collect_open(fx$snapshot, db, "lp-prep-fixture", fx$exp, seed = 1L,
                  params = utils::modifyList(lc_prep_fixture_params, list(trade = TRUE, lookback = 10L, n = 3L)))
   }
-), loop_constructed, loop_witnesses, loop_slice2, loop_slice3, loop_slice4, loop_slice5)
+), loop_constructed, loop_witnesses, loop_slice2, loop_slice3, loop_slice4, loop_slice5, loop_overflow, loop_features)
 all_ids <- c(names(a0_workloads), names(extra))
 ids <- strsplit(arg("workloads", paste(all_ids, collapse = ",")), ",")[[1L]]
 if (length(bad <- setdiff(ids, all_ids))) stop("unknown workload(s): ", paste(bad, collapse = ", "), call. = FALSE)
@@ -695,7 +729,8 @@ for (id in ids) {
   entry_rng()
   lean$lean_entry$variant_reached <- FALSE
   if (exists("capacity", envir = lean$lean_loop_last_times, inherits = FALSE)) rm("capacity", envir = lean$lean_loop_last_times)
-  attempt <- if (inert) {
+  restore_prep <- if (prepare) lean$lean_prepare_install() else function() NULL
+  attempt <- tryCatch(if (inert) {
     lean$lean_entry_reset()
     restore <- lean$lean_loop_install(hooks = FALSE)
     value <- tryCatch(run_tables(id), error = escaped, finally = restore())
@@ -703,7 +738,8 @@ for (id in ids) {
   } else tryCatch(lean$lean_loop_run(function() {
     lean$lean_entry$batch_rows <- batch_rows
     run_tables(id)
-  }), error = function(e) structure(list(value = escaped(e)), lean = as.list(lean$lean_entry)))
+  }), error = function(e) structure(list(value = escaped(e)), lean = as.list(lean$lean_entry))),
+  finally = restore_prep())
   t2 <- proc.time()[["elapsed"]]
   workers_lean <- worker_origin$read()
   # Slice 4: the lean arm too, for reach cross-checks and diagnosis.
@@ -714,7 +750,8 @@ for (id in ids) {
       attr(attempt, "lean")$worker_table, stringsAsFactors = FALSE)
   }
   if (nzchar(dump_dir) && !is.null(attr(attempt, "lean")$worker_table)) {
-    saveRDS(attr(attempt, "lean")$worker_table, file.path(dump_dir, paste0(id, "_workers.rds")))
+    # double underscore: "<id>_workers" is also a workload name
+    saveRDS(attr(attempt, "lean")$worker_table, file.path(dump_dir, paste0(id, "__workers.rds")))
   }
   if (!is.null(loop_entry_rng[[id]])) RNGkind("default", "default", "default")
   candidate <- attempt$value

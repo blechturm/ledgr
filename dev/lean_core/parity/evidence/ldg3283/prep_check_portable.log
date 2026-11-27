@@ -1,0 +1,15 @@
+ capture           chunk debug mutation exit checks calls failing_checks
+ prep_500x1260.rds run   0     none     0    13      5730               
+ prep_500x1260.rds run   1     none     0    13      5730               
+ prep_500x2520.rds run   0     none     0    13     11466               
+ prep_500x2520.rds run   1     none     0    13     11466               
+ prep_500x5040.rds run   0     none     0    13     22938               
+ prep_500x5040.rds run   1     none     0    13     22938               
+ verdict
+ pass   
+ pass   
+ pass   
+ pass   
+ pass   
+ pass   
+6 runs in 1107s

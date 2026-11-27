@@ -1,0 +1,3 @@
+"file","test","failed","error","skipped","passed","problem"
+"test-output-handler-sinks.R","[LTB-0519] a worker-executed memory sink delivers the in-process native surfaces",0,FALSE,FALSE,37,""
+"test-output-handler-sinks.R","[LTB-0520] a persisted run and a sweep candidate publish the same fill events",0,FALSE,FALSE,62,""

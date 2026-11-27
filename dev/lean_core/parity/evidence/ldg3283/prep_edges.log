@@ -1,0 +1,61 @@
+ event                        instrument session
+ exit                         BBB        25     
+ changed column order         BBB        25     
+ entry                        FFF        25     
+ re-entry                     BBB        49     
+ changed column order         BBB        49     
+ carry expiry                 CCC        49     
+ relisting                    CCC        73     
+ carry expiry                 DDD        25     
+ carry expiry                 EEE        49     
+ listing                      FFF        24     
+ inactive                     CCC        48     
+ off-axis request             CCC        48     
+ late-known fact              EEE        49     
+ late-known fact              EEE        50     
+ min_observations window      CCC        49     
+ min_observations window      DDD        25     
+ min_observations window      EEE        49     
+ finite lookback across tiles all        96     
+ lookback = Inf               all        96     
+ detail                                                         near_edge_w8
+ leaves membership                                              TRUE        
+ held former member moves to the end of the decision axis       TRUE        
+ joins membership                                               TRUE        
+ rejoins membership                                             TRUE        
+ returns to its member position                                 TRUE        
+ last bar s43, carry 5                                          TRUE        
+ bars resume after the inactive interval                        TRUE        
+ last bar s19, carry 5                                          TRUE        
+ last bar s43, carry 5                                          TRUE        
+ first bar                                                      TRUE        
+ known_inactive starts                                          TRUE        
+ explicitly named while off the decision axis                   TRUE        
+ effective                                                      TRUE        
+ known                                                          TRUE        
+ lookback 10, min_observations 8: 5 carried, 1 missing          TRUE        
+ lookback 10, min_observations 8: 5 carried, 1 missing          TRUE        
+ lookback 10, min_observations 8: 5 carried, 1 missing          TRUE        
+ lookback 30 at s96; 4 tiles at width 8; 3 tiles at width 12    TRUE        
+ every session to s96; 12 tiles at width 8; 8 tiles at width 12 TRUE        
+ near_edge_w12
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+ TRUE         
+PASS: 19 events, all 11 listed kinds, each within one session of an edge at widths 8 and 12

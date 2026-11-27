@@ -1,0 +1,17 @@
+"workload","path","table","debug","stage","mutation","lean_calls","rows","identical","first_difference","pinned_s","lean_s","workers_pinned","workers_lean","workers_ok"
+"prep_fixture","run","equity_curve",0,"plan","hold_target_changed",47,47,FALSE,"<rows 47 vs 0>",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","ledger_events",0,"plan","hold_target_changed",47,72,FALSE,"<rows 72 vs 1>",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_completion",0,"plan","hold_target_changed",47,1,FALSE,"<rows 1 vs 0>",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_diagnostic_coverage",0,"plan","hold_target_changed",47,1,FALSE,"row 1 column logical_count: 507 vs 1",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_diagnostic_implicit",0,"plan","hold_target_changed",47,237,FALSE,"<rows 237 vs 0>",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_diagnostic_summary",0,"plan","hold_target_changed",47,1,FALSE,"row 1 column decisions: 258 vs 0",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_diagnostics",0,"plan","hold_target_changed",47,507,FALSE,"<rows 507 vs 1>",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_promotion_context",0,"plan","hold_target_changed",47,0,TRUE,"",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_provenance",0,"plan","hold_target_changed",47,1,TRUE,"",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_tags",0,"plan","hold_target_changed",47,0,TRUE,"",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_telemetry",0,"plan","hold_target_changed",47,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","runs",0,"plan","hold_target_changed",47,1,FALSE,"row 1 column status: INCOMPLETE vs FAILED",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","fills",0,"plan","hold_target_changed",47,71,FALSE,"<missing>",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","trades",0,"plan","hold_target_changed",47,35,FALSE,"<missing>",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","metrics",0,"plan","hold_target_changed",47,9,FALSE,"<missing>",2.58,1.53,"0/0 ","0/0 ",TRUE
+"prep_fixture","run","run_conditions",0,"plan","hold_target_changed",47,0,FALSE,"<rows 0 vs 1>",2.58,1.53,"0/0 ","0/0 ",TRUE

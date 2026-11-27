@@ -1,0 +1,2 @@
+"file","old","new"
+"loop.R","    live$cur_stage <- ""valuation""","    live$cur_stage <- ""valuation""; invisible(ledgr_compile_strategy_schedule(NULL, list(), NULL, pulses_posix))"
