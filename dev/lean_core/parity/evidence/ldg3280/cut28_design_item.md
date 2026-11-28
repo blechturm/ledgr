@@ -28,12 +28,11 @@ A seam that is not exercised must not let a test pass vacuously.
 
 ## The rows
 
-The inventory rows that need an injection or observation point: the 28
-rows with handling `a`, and two rows with other letters that also need one
-(R088, R147; row review F4). Full text is in census/inventory.csv,
-`target_or_authority`. R028 left this list: its event-kind refusal is
-unreachable from public input and moves to a ledger entry (row review F6,
-LR-29), so it is a `c` row.
+The inventory rows that need an injection or observation point: the 30
+rows with handling `a`. R088 and R147 gained the letter in the row review
+(F4). Full text is in census/inventory.csv, `target_or_authority`. R028 left
+this list: its event-kind refusal is unreachable from public input and
+moves to a ledger entry (row review F6, LR-29), so it is a `b,c` row.
 
 Function names are the reference. The `loop.R:N` line numbers in the rows
 were taken on cut27-dev and drift by a few lines.
@@ -71,7 +70,7 @@ Cut 28 has to design.
 | R046 | test-history-integration.R | [LTB-0302] pulse inspection is P1/P2-only | faults in P3, P4 and P5 |
 | R086 | test-risk-fold.R | same-pulse fills resolve before events | counts of cost-resolver calls and P4 fill records |
 | R087 | test-risk-fold.R | [LTB-0281] the a part: stage order (decision (6)) | an observation of the stage order per pulse |
-| R088 | test-risk-fold.R | [LTB-0136] logical commitment per pulse (LR-20) | the committed fill count after each P5 (`n_committed` in lean_p5_commit) |
+| R088 | test-risk-fold.R | [LTB-0136] logical commitment per pulse (LR-20) | the committed fill count after each P5 (`n_committed`, an envelope variable that lean_p5_commit writes) |
 | R090 | test-risk-fold.R | [LTB-0280] handler faults preserve atomicity | faults in the terminal transfer (first and later batch) |
 | R107 | test-strategy-context-projection.R | [LTB-0089] contexts expose only current features | the returned state per decided pulse |
 | R108 | test-strategy-context-surface.R | [LTB-0091] authored surface table | the same as R107 |

@@ -230,7 +230,7 @@ row edits, each tagged with its finding:
 | Finding | Rows | Correction |
 | --- | --- | --- |
 | F1 LR-27 not carried | R026, R182, R186, R101, new R197 | `telemetry_stride` added to the removed fields; R197 drops the validator from test-api-exports.R's `internal_boundaries` (c) |
-| F2 claims registry | R195 | every c entry checked: `census/registry_rewrites.csv` (`registry_rewrites.R`) gives 27 field rewrites in 17 entries and the 8 entries whose text survives; `claims_registry_affected.csv` regenerated with each entry's status |
+| F2 claims registry | R195 | every c entry checked: `census/registry_rewrites.csv` (`registry_rewrites.R`) gives, after re-review 1 (N2), 65 field rewrites in 18 entries with every other field of those entries kept for a stated reason, and the 8 entries whose text survives whole; `claims_registry_affected.csv` regenerated with each entry's status |
 | F3 R013 owner half | R013 | option (a): the existing [WS4a F4.19] block owns the service's values; R013 is c and its block is deleted |
 | F4 seams missing from the design item | R147, R088 | R147 a,b and R088 a,c; both added to the design item |
 | F5 b rows neither shown nor gated | R087, R091 | both named Cut 28 gates (`remaps/R087/gate.md`, `remaps/R091/gate.md`) |
@@ -251,18 +251,41 @@ when there are fills (`event_kinds/structure.csv`). Second, the corpus: all
 plans, every declared kind `FILL`, kinds always matching the fills, and no
 refusal. The pin's test reached the refusal only by mocking the planner. So
 the refusal follows decision (1)'s pattern: rules-ledger entry LR-29,
-drafted for the maintainer's approval, makes it debug-only. R028 becomes
-b,c. Its replacement witness checks that the planner declares only the two
-literal kinds, so a planner that declares another kind fails first. Its P4
-source anchors are remapped (`remaps/R028`, two witnesses). The spot_fifo
-refusal of corporate-action kinds stays at fold entry, with its public
-witness in test-corporate-action-cash.R.
+drafted for the maintainer's approval, takes it out of production. In debug
+the switched P3 (`lean_p3_plan`) makes both kind checks, as the interface's
+P3 placement says. Cut 28 adds that call, because today only the harness
+adapter `lean_stage_plan` makes it (re-review N1). R028 becomes b,c. Its
+replacement witness checks that the planner declares only the two literal
+kinds and that every exit goes through `lean_plan_result`, which passes
+them on unchanged. So a planner that declares another kind fails first. The
+spot_fifo refusal of corporate-action kinds stays at fold entry. Its public
+witness in test-corporate-action-cash.R ([LTB-0036]) reaches only CASHFLOW,
+so the block keeps a direct table of the check for CASHFLOW, DISPOSITION
+and an unknown kind (re-review N3). Its P4 source anchors are remapped
+(`remaps/R028`, two witnesses).
 
 **Open for the maintainer.**
 - **LR-29**: approve the entry's text.
-- **R135**: should D25's kernel scan also cover fifo.R's `lean_lot_*`
-  kernel, or stay on the R/ kernel with R131's D3 scan as fifo.R's only
-  vectorization witness?
+- **R135**: D25's remapped set already holds `lean_p4_apply` and
+  `lean_lot_first_failure`. Should it also hold fifo.R's other kernel
+  functions (`lean_lot_apply`, `lean_lot_simple`, `lean_lot_general`,
+  `lean_lot_apply_blocks`), with their loops listed as approved exceptions?
+  Or should it stay as written, recording that those functions have no loop
+  scan? D3 (R131) checks their indexing only.
+
+**Re-review 1** (`inst/design/ledgr_v0_2_3_spec_packet/inventory_row_review_rereview_1.md`)
+returned CHANGES_REQUIRED, with no design change needed. It reproduced every
+script output byte for byte and every demonstration. It resolved F1, F3-F5
+and F7-F12, and found N1-N7. The second round answers them:
+- N1: LR-29 and R028 are corrected, as above.
+- N2: `registry_rewrites.R` now lists every field of each rewritten entry
+  and stops if one is missing. That gives 65 field rewrites in 18 entries,
+  LCL-0135 among them. LCL-0054 gains LTB-0036.
+- N3 and N6: R028's block is extended.
+- N4: the stale texts are corrected.
+- N5: R135's choice is restated.
+- N7: R166's dead handler mock is dropped. It also attached a capability
+  the compiled dispatch guard reads.
 
 **The helpers after the switch (F11).** `remaps/helper-candidate.R` reads
 the candidate directory from `getOption("ledgr.candidate_lean")`, and R192's
@@ -290,7 +313,8 @@ candidate, with lean debug on, as the ticket asks.
 `suite_reconcile.R` (`suite/reconcile.csv`) finds 39 failing or erroring
 blocks, every one with an inventory row. The switch probe's seed had 41.
 The two that now pass are LTB-0282 (R009, a) and "fixed baskets use the
-canonical valuation-state service" (R013, b,c). The census predicted both:
-with debug on they pass only through the lean debug comparator. No block
-fails that did not fail in the probe. 134 inventory rows' blocks pass
-today; their rows say what Cut 28 does to them.
+canonical valuation-state service" (R013, then b,c; c since the row
+review). The census predicted both: with debug on they pass only through
+the lean debug comparator. No block fails that did not fail in the probe.
+135 inventory rows' blocks pass today (134 before the correction round
+added R197); their rows say what Cut 28 does to them.

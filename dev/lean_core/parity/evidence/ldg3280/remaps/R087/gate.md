@@ -17,7 +17,7 @@ package function.
 
 The remap to apply then: wrap `lean_plan_pulse` with the block's own capture
 function, keep the fold run and its fixture, take the last returned batch,
-and keep the four frozen name lists (`names(batch)`, `names(batch$fill)`,
+and keep the three frozen name lists (`names(batch)`, `names(batch$fill)`,
 `names(batch$rejection)`) unchanged. plan.R's `lean_plan_result` and
 `lean_plan_groups` already build these names. Witness: renaming one fill
 field in `lean_plan_groups` must fail the block.

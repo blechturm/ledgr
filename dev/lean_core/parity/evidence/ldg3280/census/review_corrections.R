@@ -66,21 +66,22 @@ set("R147", "target_or_authority", paste(
   "Skip half (a, row review F4; cut28_design_item.md): observe that a skipped pulse reconciles against the fold cash, with the +1 mutant injected at P5's skip reconciliation",
   "(expected <- if (is.null(batch)) cash, in lean_p5_commit). A source-text anchor instead would be a weakening (remaps/R147/finding.md)."))
 set("R088", "handling", "a,c")
-add("R088", "target_or_authority", "The committed-count witness needs an observation inside lean_p5_commit (n_committed), listed in cut28_design_item.md (row review F4).")
+add("R088", "target_or_authority", "The committed-count witness needs an observation of n_committed after each P5 (an envelope variable that lean_p5_commit writes), listed in cut28_design_item.md (row review F4).")
 
 # F5: R087's b part and R091 are named Cut 28 gates.
 fix("R087", "target_or_authority", "The plan-batch, fill and rejection field sets stay, remapped to lean_plan_pulse's batch (identical names in plan.R) (b).",
-    "The plan-batch, fill and rejection field sets stay, remapped to lean_plan_pulse's batch (identical names in plan.R) (b): wrap lean_plan_pulse with the same capture, take its last returned batch and keep the four frozen name lists. Cut 28 gate (row review F5): the capture must wrap lean_plan_pulse inside a running fold, which local_mocked_bindings() reaches only once it is a package function; a direct call would replace the fold fixture.")
+    "The plan-batch, fill and rejection field sets stay, remapped to lean_plan_pulse's batch (identical names in plan.R) (b): wrap lean_plan_pulse with the same capture, take its last returned batch and keep the three frozen name lists (names(batch), names(batch$fill), names(batch$rejection)). Cut 28 gate (row review F5): the capture must wrap lean_plan_pulse inside a running fold, which local_mocked_bindings() reaches only once it is a package function; a direct call would replace the fold fixture.")
 add("R091", "target_or_authority", "Cut 28 gate (row review F5), as R092: the merged long-only step exists only after the deletion-readiness 4.3 merge.")
 
 # F6: R028 resolved by the reachability probe and LR-29 (drafted).
 set("R028", "handling", "b,c")
 set("R028", "target_or_authority", paste(
   "LR-29 (drafted for the maintainer's approval; row review F6): both planners declare their kinds only from a literal, no kind or FILL when the plan has fills",
-  "(dev/lean_core/parity/event_kind_reach_probe.R; evidence/ldg3280/event_kinds), so no public input reaches the unsupported pulse-plan kind refusal. It is debug-only on the lean path,",
-  "as lean_core_interface.md's P3 placement ('Event kinds | debug-only | P4') states; LR-29 reconciles that with pulse-plumbing Section 4's 'unsupported-kind' refusal under R3.",
-  "c: the mocked-planner runs retire; the replacement witness checks that every plan lean_plan_pulse returns declares one of the two literal kinds, so a planner that declares another kind fails first and must restore the production refusal.",
-  "The spot_fifo refusal of corporate-action kinds stays at fold entry (ledgr_require_compiled_spot_fifo_event_kinds on the corporate-action plan) and keeps its public witness in test-corporate-action-cash.R (a spot_fifo sweep refused with ledgr_compiled_spot_fifo_unavailable).",
+  "(dev/lean_core/parity/event_kind_reach_probe.R; evidence/ldg3280/event_kinds), so no public input reaches the unsupported pulse-plan kind refusal. The switched fold does not check it in production.",
+  "Today only the harness adapter lean_stage_plan checks it, in debug; Cut 28 adds the same debug-only calls (ledgr_fold_plan_event_kinds, and the FILL-only check when the selector is spot_fifo) to lean_p3_plan, as lean_core_interface.md's P3 placement ('Event kinds | debug-only | P4') states (re-review N1).",
+  "LR-29 reconciles that placement with pulse-plumbing Section 4's 'unsupported-kind' refusal under R3.",
+  "c: the mocked-planner runs retire; the replacement witness checks that every plan lean_plan_pulse returns declares one of the two literal kinds, that every exit goes through lean_plan_result, which passes the kinds on unchanged, and that `none` is the empty integer (re-review N6), so a planner that declares another kind fails first and must restore the production refusal.",
+  "The spot_fifo refusal of corporate-action kinds stays at fold entry (ledgr_require_compiled_spot_fifo_event_kinds on the corporate-action plan). Its public witness, [LTB-0036] in test-corporate-action-cash.R, reaches only CASHFLOW, so the remapped block keeps a direct, mock-free table of that check for CASHFLOW, DISPOSITION and an unknown kind (re-review N3).",
   "b: the P4 source anchors move to lean_p4_apply (fill <- batch$fill; applied <- lean_lot_fill_checked(book, fill); no per-fill loop); the 'fills = fill' anchor was the compiled arm's hand-off (LR-25). Demonstrated in remaps/R028."))
 set("R028", "justification", "Row review F6 (NEEDS_TYPE_2). The pin's refusal was reachable only through the test's mocked planner: both planners build kinds from literals. The decision-(1) pattern (LR-28) applies.")
 
@@ -106,7 +107,7 @@ add("R131", "target_or_authority", "Census allowances (approved 2026-11-27): lea
 add("R133", "target_or_authority", "Census allowances (approved 2026-11-27): the write predicate's variable set gains lean's name pos; two lean named sources, fl$pos[rows] <<- fill$pos and rj$pos <<- c(rj$pos, rejection$pos), which write no position.")
 add("R144", "target_or_authority", "Census allowances (approved 2026-11-27): P2's positions-snapshot names and the debug-only setNames(tq, ids), P3's debug view comparison by field name, and the skip's mark-source token test; the exactness check applies the block's full predicate (name-keyed plus %in%).")
 add("R150", "target_or_authority", "Census allowances (approved 2026-11-27): lean_plan_affordability's match(id_perm, axis_pos, 0L) (integer axis positions) and lean_p3_plan's debug-only field-name comparison; ledgr_fold_scheduled_skip_plan leaves the planner set.")
-add("R135", "target_or_authority", "Kernel scan (row review F8): after the switch the fold's kernel is fifo.R. OPEN, the maintainer's choice: (a) D25 also scans fifo.R's lean_lot_* kernel for lot work in loops; or (b) D25 stays on the R/ kernel and R131's D3 scan is recorded as fifo.R's only vectorization witness.")
+add("R135", "target_or_authority", "Kernel scan (row review F8, restated after re-review N5): after the switch the fold's kernel is fifo.R. The remapped D25 set already holds lean_p4_apply and lean_lot_first_failure, and its ops list already bans lean_lot_* calls inside loops; fifo.R's other kernel functions (lean_lot_apply, lean_lot_simple, lean_lot_general, lean_lot_apply_blocks) are not in it. D3 (R131) scans indexing, not loops. OPEN, the maintainer's choice: (a) add those fifo.R functions to D25's kernel set, with their existing loops (fifo.R:266, :339, :422, :606, :618 on 867a93ac) each listed as an approved exception or rewritten; or (b) keep D25's set as written and record that those functions have no loop scan, D3 covering only their indexing.")
 for (id in c("R157", "R173")) {
   set(id, "target_or_authority", "No remap of its own (row review F8): the block's only dependence is the fixture helper ws4a_3166_plan, row R189, whose remap keeps the plan identical() to the pin's (remaps/R189/identity_probe.csv); the block text and its validator assertions are unchanged.")
 }
@@ -132,6 +133,12 @@ set("R166", "target_or_authority", paste(
   "c (LR-25): the appended > 0 count observes the compiled publication arm, which the public spot_fifo path no longer reaches, and is dropped; the DONE/1000 sweep assertion stays.",
   "b: the canonical-candidate line moves from the deleted ledgr_fold_fill_candidate to lean_lot_fill then lean_lot_first_failure (fifo.R), as R163. Demonstrated in remaps/R166."))
 fix("R169", "target_or_authority", "rules-ledger entry LR-28, drafted for the maintainer's approval.", "rules-ledger entry LR-28, approved by the maintainer 2026-11-27.")
+
+# Re-review 1 (inventory_row_review_rereview_1.md, CHANGES_REQUIRED): N1, N3
+# and N6 are in R028's text above, N5 in R135's, N4 and N7 here.
+fix("R073", "justification", "The 'service' bundle has no lean object; mapping it to one envelope entry is the representation choice the maintainer approves.",
+    "The 'service' count follows ledgr_strategy_schedule_query, the call the pin's increment follows (re-review N4).")
+add("R166", "target_or_authority", "The c half drops the counted() handler mock with the count (re-review N7): the mock attached an append_compiled_spot_batch method to every handler, a capability the compiled dispatch guard reads.")
 
 utils::write.csv(x, p, row.names = FALSE, fileEncoding = "UTF-8")
 letters_n <- table(unlist(strsplit(x$handling, ",")))

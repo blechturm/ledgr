@@ -13,7 +13,7 @@
 "LCL-0106","LTB-0106","LTB-0106:R082=c","survives"
 "LCL-0111","LTB-0111","LTB-0111:R083=c","survives"
 "LCL-0119","LTB-0119","LTB-0119:R109=a","unchanged (no c disposition)"
-"LCL-0135","LTB-0135","LTB-0135:R052=b","unchanged (no c disposition)"
+"LCL-0135","LTB-0135","LTB-0135:R052=b","rewrite"
 "LCL-0136","LTB-0136","LTB-0136:R088=a,c","rewrite"
 "LCL-0137","LTB-0137","LTB-0137:R089=a","unchanged (no c disposition)"
 "LCL-0138","LTB-0138","LTB-0138:R051=b","unchanged (no c disposition)"

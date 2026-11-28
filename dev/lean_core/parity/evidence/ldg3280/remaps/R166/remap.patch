@@ -1,17 +1,37 @@
 diff --git a/tests/testthat/test-ws4a-carrier.R b/tests/testthat/test-ws4a-carrier.R
-index a4fdc2c0..1fe68f88 100644
+index a4fdc2c0..a17beaf6 100644
 --- a/tests/testthat/test-ws4a-carrier.R
 +++ b/tests/testthat/test-ws4a-carrier.R
-@@ -2920,7 +2920,7 @@ testthat::test_that("[WS4a compiled overflow] the compiled path refuses an overf
-   # Ordinary compiled fills are appended and unchanged.
-   testthat::expect_identical(counted(ws4a_public_ovf(FALSE, 10, cash, list(S = 5), compiled = TRUE))$sweep,
+@@ -2902,25 +2902,10 @@ testthat::test_that("[WS4a compiled overflow] the compiled path refuses an overf
+   input <- c("ledgr_invalid_lot_fill", "Invalid fill input for lot accounting.")
+   cash <- ledgr_opening(cash = 1000)
+   negative <- ledgr_opening(cash = 1000, positions = c(S = 1e308), cost_basis = c(S = -1))
+-  appended <- 0L
+-  handler <- ns$ledgr_output_handler
+-  counted <- function(expr) testthat::with_mocked_bindings(
+-    ledgr_output_handler = function(sink, ...) {
+-      h <- handler(sink, ...)
+-      append <- h$append_compiled_spot_batch
+-      h$append_compiled_spot_batch <- function(batch) {
+-        appended <<- appended + 1L
+-        append(batch)
+-      }
+-      h
+-    },
+-    expr,
+-    .package = "ledgr"
+-  )
+-  # Ordinary compiled fills are appended and unchanged.
+-  testthat::expect_identical(counted(ws4a_public_ovf(FALSE, 10, cash, list(S = 5), compiled = TRUE))$sweep,
++  # LR-25: the public spot_fifo path runs the lean R FIFO, so the compiled
++  # append count retires, with the handler mock that attached it.
++  testthat::expect_identical(ws4a_public_ovf(FALSE, 10, cash, list(S = 5), compiled = TRUE)$sweep,
      c("DONE", "1000"))
 -  testthat::expect_gt(appended, 0L)
-+  # LR-25: the public spot_fifo path runs the lean R FIFO; the compiled append count retires.
    # Earliest-row precedence at the wrapper: row 1 overflows its opened basis,
    # row 2 has an infinite fee, which the native batch refuses with its own
    # input message. Row 1 refuses first, as in the canonical candidate;
-@@ -2934,7 +2934,10 @@ testthat::test_that("[WS4a compiled overflow] the compiled path refuses an overf
+@@ -2934,7 +2919,10 @@ testthat::test_that("[WS4a compiled overflow] the compiled path refuses an overf
      exec_ts = c(86400, 86400), cash_delta = -(qty * 10 + fee), position_delta = qty)
    wrapper <- function(f) condition(ns$ledgr_run_compiled_spot_fifo_batch("w", f, state, c("A", "B"), 1L))
    testthat::expect_identical(wrapper(fills(c(1e308, 1), c(0, Inf))), input[[2L]])
