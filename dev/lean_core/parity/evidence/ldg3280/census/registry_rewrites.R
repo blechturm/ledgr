@@ -68,16 +68,17 @@ whole("LCL-0022", "R028", "LR-29", "overlapping_evidence",
   "LCL-0054 owns the spot_fifo FILL-only check at fold entry; LCL-0006 covers selector equality and contains no non-FILL event.")
 whole("LCL-0054", "R028", "LR-29; LR-25", "scope",
   "Compiled execution refuses every declared non-FILL corporate-action accounting event at fold entry, before accounting; pulse plans declare only FILL by construction (LR-29)")
-whole("LCL-0054", "R028", "LR-29; LR-25", "oracle_class", "direct table of the FILL-only check plus a public spot_fifo sweep refusal")
-whole("LCL-0054", "R028", "LR-29; LR-25", "detecting_blocks", "LTB-0026 LTB-0036")
+whole("LCL-0054", "R028", "LR-29; LR-25", "oracle_class", "direct table of the FILL-only check")
+same("LCL-0054", "R028", "LR-29; LR-25", "detecting_blocks",
+  "LTB-0026 stays the only detecting block: its direct table covers every kind, and it keeps the claim's fast profile (re-review 2 M1: LTB-0036 is a review block).")
 same("LCL-0054", "R028", "LR-29; LR-25", "protected_contract_or_defect", "The protected property is unchanged.")
 whole("LCL-0054", "R028", "LR-29; LR-25", "oracle_independence",
-  "Literal kinds are passed to the FILL-only check directly, and a dividend corporate action runs through a public spot_fifo sweep; the predicate is not copied into the expected side.")
+  "Literal kinds are passed to the FILL-only check directly; the predicate is not copied into the expected side.")
 whole("LCL-0054", "R028", "LR-29; LR-25", "smallest_failing_change",
   "Special-case CASHFLOW, omit DISPOSITION or accept unknown kinds in ledgr_require_compiled_spot_fifo_event_kinds(), or stop calling it on the corporate-action plan at fold entry.")
-whole("LCL-0054", "R028", "LR-29; LR-25", "cheapest_adequate_lane", "A direct table call and one short public sweep; fast.")
+whole("LCL-0054", "R028", "LR-29; LR-25", "cheapest_adequate_lane", "One direct table call; fast.")
 whole("LCL-0054", "R028", "LR-29; LR-25", "overlapping_evidence",
-  "LCL-0022 guards the planner's kinds; LCL-0031 owns the public dividend posting that LTB-0036 also exercises.")
+  "LCL-0022 guards the planner's kinds. The review block LTB-0036 (test-corporate-action-cash.R, under LCL-0031) reaches the fold-entry call publicly with a dividend (CASHFLOW) through a spot_fifo sweep.")
 
 # Logical per-pulse commitment: LR-20.
 A <- "LR-20; D3-A R7/R9/R10; D3-B max_pulses"
@@ -153,13 +154,14 @@ same("LCL-0288", "R047", A, c("detecting_blocks", "oracle_class", "protected_con
 A <- "pulse plumbing Section 7; LR-12"
 part("LCL-0506", "R064 R065", A, "scope", "(buffered DuckDB, db_live and memory)", "(durable DuckDB and memory)")
 part("LCL-0506", "R064 R065", A, "scope", ", and the db_live writer keeps its validation order, sequence choice and transactional behavior",
-  ", and the durable fold transaction rolls back a failed pulse's rows (single-path and transaction witnesses: test-risk-fold.R LTB-0280, LTB-0137)")
+  ", and a failed pulse's rows roll back with the durable fold transaction")
 part("LCL-0506", "R064 R065", A, "smallest_failing_change", ", or move it ahead of the db_live writer's validation", "")
 part("LCL-0506", "R064 R065", A, "cheapest_adequate_lane", "three handlers", "two handlers")
+whole("LCL-0506", "R064 R065", A, "detecting_blocks", "LTB-0515")
 whole("LCL-0506", "R064 R065", A, "overlapping_evidence",
-  "The recorded pin outcomes (LDG-3282) freeze the bytes of every published row; this claim owns the single-computation routing.")
-same("LCL-0506", "R064 R065", A, c("detecting_blocks", "oracle_class", "protected_contract_or_defect", "oracle_independence"),
-  "LTB-0516 retires with the writer (R065) and LTB-0515 keeps the durable and memory arms; the oracle, the protected defect and the shifted-value witness are unchanged.")
+  "The recorded pin outcomes (LDG-3282) freeze the bytes of every published row; the review blocks LTB-0280 and LTB-0137 (test-risk-fold.R) witness the durable fold transaction's rollback; this claim owns the single-computation routing.")
+same("LCL-0506", "R064 R065", A, c("oracle_class", "protected_contract_or_defect", "oracle_independence"),
+  "LTB-0516 retires with the writer (R065, re-review 2 M2) and LTB-0515 keeps the durable and memory arms; the oracle, the protected defect and the shifted-value witness are unchanged.")
 part("LCL-0507", "R031", "LR-12; pulse plumbing Section 7", "scope",
   "a buffered DuckDB handler has no append_compiled_spot_batch binding and is refused, while the memory handler is admitted under the same buffered spec",
   "a DuckDB handler has no append_compiled_spot_batch binding and is refused, while the memory handler is admitted under the same spec (LR-12 drops the buffered-mode precondition)")

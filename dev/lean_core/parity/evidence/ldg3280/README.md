@@ -287,6 +287,17 @@ and F7-F12, and found N1-N7. The second round answers them:
 - N7: R166's dead handler mock is dropped. It also attached a capability
   the compiled dispatch guard reads.
 
+**Re-review 2** (`inst/design/ledgr_v0_2_3_spec_packet/inventory_row_review_rereview_2.md`)
+returned PASS_AFTER_PATCHES. It resolved N1 and N3-N7 and reproduced every
+script output and demonstration. Its three patches are applied as written:
+- M1: LCL-0054 keeps LTB-0026 as its only detecting block, so it keeps its
+  fast profile; the review block LTB-0036 moves to overlapping evidence.
+- M2: LCL-0506's detecting blocks become LTB-0515, because LTB-0516 retires
+  with the writer; the review blocks LTB-0280 and LTB-0137 move to
+  overlapping evidence.
+- M3: LR-29 and R028 say that Cut 28 moves `ledgr_fold_plan_event_kinds()`
+  out of R/fold-engine.R, unchanged, beside lean P3.
+
 **The helpers after the switch (F11).** `remaps/helper-candidate.R` reads
 the candidate directory from `getOption("ledgr.candidate_lean")`, and R192's
 `ws4a_sources()` lists that directory. Neither exists after the switch.
