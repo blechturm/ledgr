@@ -1,7 +1,8 @@
 # Lean Core Deletion Readiness: Addendum 1
 
 - Author: Claude, 2026-11-28, at the maintainer's request.
-- Status: **draft**, for the maintainer's acceptance before Cut 28.
+- Status: **accepted** by the maintainer on 2026-11-28, with Section 3
+  decided as option (b). Binds the switch cut (Cut 28) with seed v2.
   Extends the accepted
   [seed v2](rfc_lean_core_deletion_readiness_v0_2_3_seed_v2.md); changes none
   of its classifications.
@@ -95,7 +96,7 @@ Section 6 says the FIFO, the planner and valuation have no runtime fallback.
 That is true of the fold. It is not true of the package: the package lot
 kernel keeps three production callers after the switch (rule 8 above).
 
-## 3. Open: when the kernel merge lands
+## 3. When the kernel merge lands (decided: in Cut 28)
 
 On 2026-11-28 the maintainer agreed to keep the switch as Cut 27 decision
 (7) set it, and to merge the kernels in their own cut after the switch.
@@ -126,8 +127,12 @@ Claude now recommends (b). The merge is mostly routing: fifo.R already has
 these callers, and its parity proof already exists. (a) would need an
 exception to a macro rule for one cut's convenience.
 
+**Decision (maintainer, 2026-11-28): (b).** The kernels merge in Cut 28,
+and Cut 27 decision (7)'s test ownership follows: the D7 block witnesses
+the one merged kernel.
+
 ## 4. Not in this addendum
 
 The holistic reviews' other findings are routed by the maintainer's
-2026-11-28 decision, to Cut 28 or to the subtraction cut after it, and are
-not classifications.
+2026-11-28 decision, to Cut 28 or to a product cleanup cut after the test
+cut (macro plan, amendment of 2026-11-28), and are not classifications.

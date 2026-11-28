@@ -1351,6 +1351,55 @@ execution-sensitive economics cuts are held to rule 17 instead.
     and 13 of 222 pure closes split differently. Stored readers' leg fees
     may change in the last bit; that is Cut 28's identity and release
     impact.
+- **Amendment (maintainer, 2026-11-28, after the two holistic reviews and
+  the inventory row review).** The reviews are in the packet:
+  `holistic_review_codex.md` (A), `holistic_review_claude.md` (B), and
+  `inventory_row_review.md` with re-reviews 1 and 2 (closed
+  PASS_AFTER_PATCHES at `5dd9e3ae`).
+  - **Decided.** Rules-ledger entry LR-29 is approved. Deletion-readiness
+    [addendum 1](../rfc/rfc_lean_core_deletion_readiness_v0_2_3_addendum.md)
+    is accepted: it classifies the eight rules implemented twice that the
+    reviews found, so switch obligation 3 is met for them. Inventory row
+    R135 takes option (a): D25 scans the whole fold kernel.
+  - **The lot kernels merge in Cut 28** (addendum Section 3, option (b)).
+    fifo.R's kernel becomes the package kernel under the package names.
+    Opening import, replay and terminal dispositions move onto it, and the
+    old body goes. That keeps contract-execution-fold-carrier's "one typed
+    lot implementation" and rule 6 at every cut. The FIFO parity check is
+    extended to the opening-import and terminal-disposition streams.
+  - **Into Cut 28**, besides the addendum's eight classifications:
+    - LR-29's debug-only kind check in lean P3, with
+      `ledgr_fold_plan_event_kinds()` moved out of R/fold-engine.R;
+    - the hydration helpers in the feature-engine fingerprint (A H1);
+    - the deletion list redone, with debug comparators and the old P3 seat
+      counted (B H2);
+    - the runner's second preparation path deleted (A H4, B H7);
+    - the bar-packet arm and read counter of the fold history service
+      (A H5);
+    - the dead execution-spec fields (A H6, B H6);
+    - the duplicated risk-plan and spec validation (A H8);
+    - the quadratic rejection buffer (A H9, B H4);
+    - the terminal indexes, prepared once (A H10);
+    - the diagnostic-writer buffers (B H5);
+    - the stage headers, recording writes made through helper closures
+      (B H12).
+  - **A product cleanup cut after the test cut, before the WS14
+    checkpoint.** The package-side items not tied to the switch:
+    - the feature payload round trip (A H2);
+    - the dead context accessors (A H3);
+    - the membership guard's pairwise work (A H11);
+    - the walk-forward score frames (A H12);
+    - the second carry replay (A H13);
+    - the per-row timestamp formatting (A H14);
+    - the output handler's second append boundary and dead methods (B H8);
+    - finalisation's re-reading and re-validation (B H9);
+    - the shadowed names and design-history vocabulary (B H11, H13, H14).
+
+    It follows the subtraction cut's rules below. It adds no behavior and
+    changes no registered test, fixture or oracle. It records its removed
+    line count and its identity impact under rule 5. A finding that turns
+    out to need a behavior or contract change goes to its owner. WS14
+    measures after it.
 - **Old-code citations (maintainer, 2026-11-04).** Before the switch cut
   deletes the current fold, it tags the last commit with the old core as
   `pre-lean-core` and adds one sentence to `inst/design/README.md`: code
@@ -1442,7 +1491,8 @@ execution-sensitive economics cuts are held to rule 17 instead.
   follows with the product frozen: the fold-core rebuild with its mutant
   proof, and the subtraction of the rest, where each removed or merged
   block carries its stated reason in the ticket evidence. Both cuts precede
-  the WS14 checkpoint. The test cut's evidence is the mutant record, the
+  the WS14 checkpoint, and so does the product cleanup cut after the test
+  cut (amendment of 2026-11-28, "Lean core switch" above). The test cut's evidence is the mutant record, the
   removed and added block and line counts, every registered claim still
   detected and the fast-lane time against its bound.
 

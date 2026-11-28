@@ -34,7 +34,7 @@ census.md referred back. Each row keeps its question in `question`.
 | R087 [LTB-0281] stage packets in order | (6): stage order kept (a seam), plan-batch field sets remapped, packet field sets retired | a,b,c |
 | R097 rng-isolation past the default checkpoint | (8): resized to cross a terminal batch boundary | c |
 | R101 sampled fold-loop telemetry | (2): retired, LR-27 approved (and R197, test-api-exports.R's validator entry) | c |
-| R132 [WS4a D7] no opening Kahan step | (7): R/lot-accounting.R stays the owner; the witness also covers lean_lot_opening through a seam | a |
+| R132 [WS4a D7] no opening Kahan step | (7): R/lot-accounting.R stays the owner; the witness also covers lean_lot_opening through a seam. Since 2026-11-28 the kernels merge in Cut 28, so the block witnesses the one kernel with no seam | d |
 | R136, R137 compiled pack/unpack | (9): kept until WS14 | g |
 | R169 staging capacity | (1): no public input reaches it; retired, LR-28 approved | c |
 
@@ -251,7 +251,7 @@ when there are fills (`event_kinds/structure.csv`). Second, the corpus: all
 plans, every declared kind `FILL`, kinds always matching the fills, and no
 refusal. The pin's test reached the refusal only by mocking the planner. So
 the refusal follows decision (1)'s pattern: rules-ledger entry LR-29,
-drafted for the maintainer's approval, takes it out of production. In debug
+approved by the maintainer on 2026-11-28, takes it out of production. In debug
 the switched P3 (`lean_p3_plan`) makes both kind checks, as the interface's
 P3 placement says. Cut 28 adds that call, because today only the harness
 adapter `lean_stage_plan` makes it (re-review N1). R028 becomes b,c. Its
@@ -264,14 +264,13 @@ so the block keeps a direct table of the check for CASHFLOW, DISPOSITION
 and an unknown kind (re-review N3). Its P4 source anchors are remapped
 (`remaps/R028`, two witnesses).
 
-**Open for the maintainer.**
-- **LR-29**: approve the entry's text.
-- **R135**: D25's remapped set already holds `lean_p4_apply` and
-  `lean_lot_first_failure`. Should it also hold fifo.R's other kernel
-  functions (`lean_lot_apply`, `lean_lot_simple`, `lean_lot_general`,
-  `lean_lot_apply_blocks`), with their loops listed as approved exceptions?
-  Or should it stay as written, recording that those functions have no loop
-  scan? D3 (R131) checks their indexing only.
+**The maintainer's decisions (2026-11-28).**
+- **LR-29**: approved.
+- **R135**: option (a). D25 scans the whole fold kernel. With the kernel
+  merge in Cut 28, fifo.R's kernel becomes the package's `ledgr_lot_apply`
+  and its operations, so D25's existing names cover it. Each of its loops is
+  listed as an approved exception, with its reason, or rewritten. This is a
+  Cut 28 gate.
 
 **Re-review 1** (`inst/design/ledgr_v0_2_3_spec_packet/inventory_row_review_rereview_1.md`)
 returned CHANGES_REQUIRED, with no design change needed. It reproduced every

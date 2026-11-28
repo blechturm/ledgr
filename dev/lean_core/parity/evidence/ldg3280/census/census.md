@@ -174,17 +174,17 @@ detector and 1 claims-registry row.
 
 That table is the census as first written. The maintainer's decisions
 (`decision_rows.R`) and the row review's correction round
-(`review_corrections.R`, 2026-11-28) changed it. Now `inventory.csv` has 197
+(`review_corrections.R`, 2026-11-28, including the maintainer's kernel-merge decision that day, which made R132 `d`) changed it. Now `inventory.csv` has 197
 rows: 174 test blocks, 21 helpers, 1 maintained detector and 1
 claims-registry row. A row whose block splits across dispositions counts
 under each of its letters:
 
 | handling | blocks | all rows |
 |---|---:|---:|
-| a lean injection or observation | 29 | 30 |
+| a lean injection or observation | 28 | 29 |
 | b mechanical remap | 75 | 87 |
 | c authorized semantic disposition | 75 | 85 |
-| d resolved by the switch | 1 | 1 |
+| d resolved by the switch | 2 | 2 |
 | e fixed in this cut (LDG-3276) | 1 | 1 |
 | g kept until WS14 (decision 10) | 4 | 4 |
 | f unclear, needs the maintainer | 0 | 0 |

@@ -28,11 +28,18 @@ A seam that is not exercised must not let a test pass vacuously.
 
 ## The rows
 
-The inventory rows that need an injection or observation point: the 30
+The inventory rows that need an injection or observation point: the 29
 rows with handling `a`. R088 and R147 gained the letter in the row review
-(F4). Full text is in census/inventory.csv, `target_or_authority`. R028 left
-this list: its event-kind refusal is unreachable from public input and
-moves to a ledger entry (row review F6, LR-29), so it is a `b,c` row.
+(F4). Full text is in census/inventory.csv, `target_or_authority`. Two rows
+left this list:
+- R028: its event-kind refusal is unreachable from public input and moves
+  to a ledger entry (row review F6, LR-29), so it is a `b,c` row.
+- R132: the lot kernels merge in Cut 28 (maintainer, 2026-11-28), so its D7
+  block witnesses the one kernel through the package names and needs no
+  seam (`d`).
+
+After the merge, the `lean_lot_*` names in these rows (R089's
+`lean_lot_fill`, for example) mean the merged package functions.
 
 Function names are the reference. The `loop.R:N` line numbers in the rows
 were taken on cut27-dev and drift by a few lines.
@@ -53,7 +60,6 @@ F10).
 | R042 | test-fill-model.R | next-open planning consumes the prepared open | observation of the planner's next_open argument | lean_plan_pulse (plan.R) |
 | R087 | test-risk-fold.R | [LTB-0281] the b part: plan-batch, fill and rejection field sets | capture of the returned batch | lean_plan_pulse (plan.R) |
 | R089 | test-risk-fold.R | [LTB-0137] a failed pulse publishes no partial fills | a second-row failure in P4's candidate computation | lean_lot_fill (fifo.R) |
-| R132 | test-ws4a-carrier.R | [WS4a D7] no opening Kahan step (decision (7)) | the opening's compensation steps, with mutants built through `body<-` as the pin's D7 block does | lean_lot_opening (fifo.R) |
 
 ### Observation or injection inside a stage closure
 

@@ -76,7 +76,7 @@ add("R091", "target_or_authority", "Cut 28 gate (row review F5), as R092: the me
 # F6: R028 resolved by the reachability probe and LR-29 (drafted).
 set("R028", "handling", "b,c")
 set("R028", "target_or_authority", paste(
-  "LR-29 (drafted for the maintainer's approval; row review F6): both planners declare their kinds only from a literal, no kind or FILL when the plan has fills",
+  "LR-29 (approved by the maintainer 2026-11-28; row review F6): both planners declare their kinds only from a literal, no kind or FILL when the plan has fills",
   "(dev/lean_core/parity/event_kind_reach_probe.R; evidence/ldg3280/event_kinds), so no public input reaches the unsupported pulse-plan kind refusal. The switched fold does not check it in production.",
   "Today only the harness adapter lean_stage_plan checks it, in debug; Cut 28 adds the same debug-only calls (ledgr_fold_plan_event_kinds, and the FILL-only check when the selector is spot_fifo) to lean_p3_plan, as lean_core_interface.md's P3 placement ('Event kinds | debug-only | P4') states (re-review N1). ledgr_fold_plan_event_kinds is defined in R/fold-engine.R, which the switch deletes, so Cut 28 moves it unchanged beside lean P3 (re-review 2, M3).",
   "LR-29 reconciles that placement with pulse-plumbing Section 4's 'unsupported-kind' refusal under R3.",
@@ -107,7 +107,7 @@ add("R131", "target_or_authority", "Census allowances (approved 2026-11-27): lea
 add("R133", "target_or_authority", "Census allowances (approved 2026-11-27): the write predicate's variable set gains lean's name pos; two lean named sources, fl$pos[rows] <<- fill$pos and rj$pos <<- c(rj$pos, rejection$pos), which write no position.")
 add("R144", "target_or_authority", "Census allowances (approved 2026-11-27): P2's positions-snapshot names and the debug-only setNames(tq, ids), P3's debug view comparison by field name, and the skip's mark-source token test; the exactness check applies the block's full predicate (name-keyed plus %in%).")
 add("R150", "target_or_authority", "Census allowances (approved 2026-11-27): lean_plan_affordability's match(id_perm, axis_pos, 0L) (integer axis positions) and lean_p3_plan's debug-only field-name comparison; ledgr_fold_scheduled_skip_plan leaves the planner set.")
-add("R135", "target_or_authority", "Kernel scan (row review F8, restated after re-review N5): after the switch the fold's kernel is fifo.R. The remapped D25 set already holds lean_p4_apply and lean_lot_first_failure, and its ops list already bans lean_lot_* calls inside loops; fifo.R's other kernel functions (lean_lot_apply, lean_lot_simple, lean_lot_general, lean_lot_apply_blocks) are not in it. D3 (R131) scans indexing, not loops. OPEN, the maintainer's choice: (a) add those fifo.R functions to D25's kernel set, with their existing loops (fifo.R:266, :339, :422, :606, :618 on 867a93ac) each listed as an approved exception or rewritten; or (b) keep D25's set as written and record that those functions have no loop scan, D3 covering only their indexing.")
+add("R135", "target_or_authority", "Kernel scan (row review F8, restated after re-review N5): after the switch the fold's kernel is fifo.R. The remapped D25 set already holds lean_p4_apply and lean_lot_first_failure, and its ops list already bans lean_lot_* calls inside loops; fifo.R's other kernel functions (lean_lot_apply, lean_lot_simple, lean_lot_general, lean_lot_apply_blocks) are not in it. D3 (R131) scans indexing, not loops. Decided by the maintainer 2026-11-28, option (a): D25 scans the whole fold kernel. With the kernel merge in Cut 28 (deletion-readiness addendum 1, Section 3 (b)), fifo.R's kernel becomes the body of the package's ledgr_lot_apply and its operations, so D25's existing kernel names cover it; each of its loops (fifo.R:266, :339, :422, :606, :618 on 867a93ac) is either listed by its header as an approved exception, with its reason, or rewritten. Cut 28 gate for this addition: the merged kernel exists only after the merge.")
 for (id in c("R157", "R173")) {
   set(id, "target_or_authority", "No remap of its own (row review F8): the block's only dependence is the fixture helper ws4a_3166_plan, row R189, whose remap keeps the plan identical() to the pin's (remaps/R189/identity_probe.csv); the block text and its validator assertions are unchanged.")
 }
@@ -139,6 +139,15 @@ fix("R169", "target_or_authority", "rules-ledger entry LR-28, drafted for the ma
 fix("R073", "justification", "The 'service' bundle has no lean object; mapping it to one envelope entry is the representation choice the maintainer approves.",
     "The 'service' count follows ledgr_strategy_schedule_query, the call the pin's increment follows (re-review N4).")
 add("R166", "target_or_authority", "The c half drops the counted() handler mock with the count (re-review N7): the mock attached an append_compiled_spot_batch method to every handler, a capability the compiled dispatch guard reads.")
+
+# The maintainer's decisions of 2026-11-28 after the reviews: the lot kernels
+# merge in Cut 28 (deletion-readiness addendum 1, Section 3 (b)).
+set("R132", "handling", "d")
+set("R132", "target_or_authority", paste(
+  "Resolved by the switch (maintainer 2026-11-28: the lot kernels merge in Cut 28, deletion-readiness addendum 1, rule 8 and Section 3 (b)).",
+  "fifo.R's kernel becomes the body of the package's ledgr_lot_opening/ledgr_lot_fill/ledgr_lot_disposition and ledgr_lot_apply, under the package names,",
+  "so the block's direct calls of ledgr_lot_opening and its body<- mutants witness the fold's one kernel; amendment_test_inventory (7)'s seam into lean_lot_opening is no longer needed. The block is unchanged.",
+  "Cut 28 gate: the merged kernel exists only after the merge."))
 
 utils::write.csv(x, p, row.names = FALSE, fileEncoding = "UTF-8")
 letters_n <- table(unlist(strsplit(x$handling, ",")))
