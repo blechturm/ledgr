@@ -16,3 +16,9 @@ the remap leaves that file unchanged.
 
 Recommendation: reclassify R157 as "covered by R189; block text unchanged".
 Its witness stays a validator fault in kept R/ code, outside the candidate.
+
+## Resolution (row review F8 and F12, 2026-11-28)
+
+The row now states that it has no remap of its own and rests on R189. R189's
+witness is now an identity probe (the plan is identical() to the pin's), not
+the fixture crash.

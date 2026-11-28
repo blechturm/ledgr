@@ -1,5 +1,5 @@
 diff --git a/tests/testthat/test-position-facts-context.R b/tests/testthat/test-position-facts-context.R
-index 21949872..ab448512 100644
+index 21949872..0eb891f5 100644
 --- a/tests/testthat/test-position-facts-context.R
 +++ b/tests/testthat/test-position-facts-context.R
 @@ -386,12 +386,20 @@ testthat::test_that("preparation counters increment at one site per run and cand
@@ -10,7 +10,7 @@ index 21949872..ab448512 100644
 -  testthat::local_mocked_bindings(
 -    ledgr_context_preparation_increment = function(counts, name) {
 +  # The preparation sites, counted at the preparers the fold calls in E: the
-+  # fold service (one envelope entry), the feature resolver and the
++  # fold service (its schedule query), the feature resolver and the
 +  # fill-axis map.
 +  count <- function(name, f) {
 +    force(f)
@@ -22,7 +22,7 @@ index 21949872..ab448512 100644
 +    }
 +  }
 +  testthat::local_mocked_bindings(
-+    ledgr_fold_envelope = count("service", ledgr:::ledgr_fold_envelope),
++    ledgr_strategy_schedule_query = count("service", ledgr:::ledgr_strategy_schedule_query),
 +    ledgr_projection_feature_lookup_state = count("feature_resolver", ledgr:::ledgr_projection_feature_lookup_state),
 +    ledgr_position_fact_fill_axis = count("fill_axis_map", ledgr:::ledgr_position_fact_fill_axis),
      .package = "ledgr"

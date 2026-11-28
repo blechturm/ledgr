@@ -1,0 +1,2 @@
+"file","old","new"
+"loop.R","      feature_lookup = feature_lookup_state, feature_vector = fv, projection_idx = projection_idx[[i]],","      feature_lookup = {ledgr_strategy_schedule_query(execution$schedule_sessions, pulses_posix, execution$schedule_params); feature_lookup_state}, feature_vector = fv, projection_idx = projection_idx[[i]],"

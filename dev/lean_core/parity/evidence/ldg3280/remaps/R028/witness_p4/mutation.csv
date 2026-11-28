@@ -1,0 +1,2 @@
+"file","old","new"
+"loop.R","      applied <- lean_lot_fill_checked(book, fill)","      local(for (i in seq_along(fill$k)) NULL); applied <- lean_lot_fill_checked(book, fill)"

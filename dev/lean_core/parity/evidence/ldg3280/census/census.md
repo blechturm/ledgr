@@ -172,6 +172,23 @@ detector and 1 claims-registry row.
 | e fixed in this cut (LDG-3276) | 1 | 1 |
 | f unclear, needs the maintainer | 11 | 12 |
 
+That table is the census as first written. The maintainer's decisions
+(`decision_rows.R`) and the row review's correction round
+(`review_corrections.R`, 2026-11-28) changed it. Now `inventory.csv` has 197
+rows: 174 test blocks, 21 helpers, 1 maintained detector and 1
+claims-registry row. A row whose block splits across dispositions counts
+under each of its letters:
+
+| handling | blocks | all rows |
+|---|---:|---:|
+| a lean injection or observation | 29 | 30 |
+| b mechanical remap | 75 | 87 |
+| c authorized semantic disposition | 75 | 85 |
+| d resolved by the switch | 1 | 1 |
+| e fixed in this cut (LDG-3276) | 1 | 1 |
+| g kept until WS14 (decision 10) | 4 | 4 |
+| f unclear, needs the maintainer | 0 | 0 |
+
 - **Seed:** all 41 seed blocks have a row.
 - **Census:** 132 blocks, all passing in the probe. None of the affected
   blocks is skipped. The suite's one skipped block is not affected.

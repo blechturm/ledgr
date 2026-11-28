@@ -15,3 +15,9 @@ the kept `ledgr_carrier_new` in R/fold-carrier.R. A lean mutation cannot
 reach it. Its registered witness stays a validator fault in kept R/ code.
 
 Recommendation: merge R173 into R189 rather than keep a separate "b" row.
+
+## Resolution (row review F8 and F12, 2026-11-28)
+
+The row now states that it has no remap of its own and rests on R189. R189's
+witness is now an identity probe (the plan is identical() to the pin's), not
+the fixture crash.

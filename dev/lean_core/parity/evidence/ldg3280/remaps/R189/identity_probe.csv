@@ -1,0 +1,7 @@
+"call","debug","fixture_call","identical"
+"list()",TRUE,TRUE,TRUE
+"list(cash = 100)",TRUE,FALSE,TRUE
+"list(cash = 1e+06)",TRUE,FALSE,TRUE
+"list()",FALSE,TRUE,TRUE
+"list(cash = 100)",FALSE,FALSE,TRUE
+"list(cash = 1e+06)",FALSE,FALSE,TRUE

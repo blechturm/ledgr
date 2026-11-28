@@ -47,3 +47,8 @@ retires by decision (3), and the block keeps only its public-run `DONE`
 check, unchanged. The inventory row should then cite F4.19 as the b-half
 owner instead of describing a remap. The `DONE`
 status assertion on the public run can stay as it is.
+
+## Resolution (row review F3, 2026-11-28)
+
+The maintainer chose the first resolution: F4.19 is the owner witness. The
+row is now c only, and the block is deleted at Cut 28.

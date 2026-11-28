@@ -1,0 +1,5 @@
+"planner","kinds","allowed"
+"pin ledgr_fold_build_availability_pulse_plan","none",TRUE
+"pin ledgr_fold_build_availability_pulse_plan","if (length(fills) > 0L) 1L else none",TRUE
+"lean lean_plan_pulse","none",TRUE
+"lean lean_plan_pulse","if (length(fills) > 0L) 1L else none",TRUE

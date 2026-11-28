@@ -34,3 +34,9 @@ Recommendation: split the row. The empty-plan half follows R194. The skip
 half moves to the Cut 28 seam item, as a runtime observation that a skipped
 pulse's reconciliation uses the fold cash, with the `+1` mutant injected
 through the seam.
+
+## Resolution (row review F4, 2026-11-28)
+
+The row is now a,b. The empty-plan half (b) goes through R194. The skip half
+(a) is in cut28_design_item.md, with the +1 mutant injected at P5's skip
+reconciliation.

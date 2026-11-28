@@ -1,0 +1,25 @@
+diff --git a/tests/testthat/test-ws4a-carrier.R b/tests/testthat/test-ws4a-carrier.R
+index a4fdc2c0..1fe68f88 100644
+--- a/tests/testthat/test-ws4a-carrier.R
++++ b/tests/testthat/test-ws4a-carrier.R
+@@ -2920,7 +2920,7 @@ testthat::test_that("[WS4a compiled overflow] the compiled path refuses an overf
+   # Ordinary compiled fills are appended and unchanged.
+   testthat::expect_identical(counted(ws4a_public_ovf(FALSE, 10, cash, list(S = 5), compiled = TRUE))$sweep,
+     c("DONE", "1000"))
+-  testthat::expect_gt(appended, 0L)
++  # LR-25: the public spot_fifo path runs the lean R FIFO; the compiled append count retires.
+   # Earliest-row precedence at the wrapper: row 1 overflows its opened basis,
+   # row 2 has an infinite fee, which the native batch refuses with its own
+   # input message. Row 1 refuses first, as in the canonical candidate;
+@@ -2934,7 +2934,10 @@ testthat::test_that("[WS4a compiled overflow] the compiled path refuses an overf
+     exec_ts = c(86400, 86400), cash_delta = -(qty * 10 + fee), position_delta = qty)
+   wrapper <- function(f) condition(ns$ledgr_run_compiled_spot_fifo_batch("w", f, state, c("A", "B"), 1L))
+   testthat::expect_identical(wrapper(fills(c(1e308, 1), c(0, Inf))), input[[2L]])
+-  testthat::expect_identical(ns$ledgr_fold_fill_candidate(state$lot_state, fills(c(1e308, 1), c(0, Inf)))$failed, 1L)
++  canonical <- fills(c(1e308, 1), c(0, Inf))
++  refused <- tryCatch(lean_lot_fill(state$lot_state, canonical$pos, canonical$side, canonical$qty, canonical$price, canonical$fee), error = identity)
++  testthat::expect_s3_class(refused, "error")
++  testthat::expect_identical(lean_lot_first_failure(state$lot_state, canonical, refused)$row, 1L)
+   testthat::expect_identical(wrapper(fills(c(1, 1e308), c(Inf, 0))), "`fill_fee` must be finite >= 0.")
+   testthat::expect_identical(wrapper(fills(c(1, 1e308), c(0, 0))), input[[2L]])
+   testthat::expect_identical(wrapper(fills(c(1, 2), c(0, 0))), "none")

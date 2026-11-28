@@ -1,0 +1,2 @@
+"row","file","candidate","candidate_smoke","witness","witness_smoke","verdict"
+"R028_p4","test-execution-spec.R","[LTB-0026] accounting refuses every unhandled pulse event kind: pass","smoke PASS: 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","[LTB-0026] accounting refuses every unhandled pulse event kind: fail","smoke PASS (witness run): 1 envelope entries; ledger 120 rows, equity 91, fills 120 identical to the pin","DEMONSTRATED"

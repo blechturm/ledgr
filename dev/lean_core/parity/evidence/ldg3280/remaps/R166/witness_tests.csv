@@ -1,0 +1,1 @@
+"test-ws4a-carrier.R","[WS4a compiled overflow] the compiled path refuses an overflowing fill as invalid fill input",1,FALSE,FALSE,8,"Expected `lean_lot_first_failure(state$lot_state, canonical, refused)$row` to be identical to 1L. Differences:   `actual`: 2 `expected`: 1 "

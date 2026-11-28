@@ -1,0 +1,2 @@
+"file","note","pass","witness"
+"test-position-facts-context.R","Second witness for the service count (row review F7): the pulse context builds the schedule query on every pulse and discards it, so 'service' becomes the pulse count.","preparation counters increment at one site per run and candidate","preparation counters increment at one site per run and candidate"

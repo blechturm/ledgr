@@ -1,0 +1,2 @@
+"test-position-facts-context.R","position facts build only on first read and services prepare once",1,FALSE,FALSE,2,"Expected `mget(c(""service"", ""feature_resolver"", ""fill_axis_map""), preparations)` to be identical to `list(service = 1L, feature_resolver = 1L, fill_axis_map = 1L)`. Differences:   `actual$service`: 9 `expected$service`: 1 "
+"test-position-facts-context.R","preparation counters increment at one site per run and candidate",0,TRUE,FALSE,0,"Error: value for 'service' not found"
